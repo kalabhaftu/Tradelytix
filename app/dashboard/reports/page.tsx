@@ -401,47 +401,63 @@ export default function ReportsPage() {
                         </p>
                     </div>
                     <div className="no-export flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={handleDownloadReport} disabled={isExporting} className="h-8 text-[11px] font-bold uppercase tracking-wider border-border/30 hover:bg-muted-foreground/10 rounded-xl gap-1.5">
-                            <TrendingUp className="h-3.5 w-3.5 opacity-60" />
-                            Export
+                        {/* Export CSV Button */}
+                        <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={isExporting} className="h-8 text-[11px] font-bold uppercase tracking-wider border-border/30 hover:bg-muted-foreground/10 rounded-xl gap-1.5">
+                            <Download className="h-3.5 w-3.5 opacity-60" />
+                            Export CSV
                         </Button>
 
-                        <Dialog>
-                            <DialogTrigger asChild>
+                        {/* Share Dropdown */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm" className="h-8 text-[11px] font-bold uppercase tracking-wider border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 rounded-xl gap-1.5">
                                     <Share2 className="h-3.5 w-3.5" />
                                     Share
                                 </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-2xl bg-card border border-border/10 p-0 overflow-hidden rounded-[32px]">
-                                <div className="p-8">
-                                    <DialogHeader className="mb-6">
-                                        <DialogTitle className="text-xl font-black tracking-tighter uppercase">Generate Performance Asset</DialogTitle>
-                                        <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Render high-fidelity performance card for your network</DialogDescription>
-                                    </DialogHeader>
-                                    {tradingActivity && psychMetrics && (
-                                        <div className="flex justify-center">
-                                            <PerformanceCard
-                                                period={"LATEST AUDIT"}
-                                                stats={{
-                                                    totalTrades: tradingActivity.totalTrades,
-                                                    winRate: tradingActivity.winRate,
-                                                    totalPnL: psychMetrics.totalNetPnL,
-                                                    longestWinStreak: psychMetrics.longestWinStreak,
-                                                    longestLoseStreak: psychMetrics.longestLoseStreak,
-                                                    tradingDays: tradingActivity.tradingDaysActive,
-                                                    avgTradesPerMonth: tradingActivity.avgTradesPerMonth
-                                                }}
-                                                userName={user?.firstName ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` : undefined}
-                                            />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="gap-2 text-xs font-medium cursor-pointer">
+                                            <LayoutDashboard className="h-3.5 w-3.5" />
+                                            Performance Card
+                                        </DropdownMenuItem>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-2xl bg-card border border-border/10 p-0 overflow-hidden rounded-[32px]">
+                                        <div className="p-8">
+                                            <DialogHeader className="mb-6">
+                                                <DialogTitle className="text-xl font-black tracking-tighter uppercase">Generate Performance Asset</DialogTitle>
+                                                <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Render high-fidelity performance card for your network</DialogDescription>
+                                            </DialogHeader>
+                                            {tradingActivity && psychMetrics && (
+                                                <div className="flex justify-center">
+                                                    <PerformanceCard
+                                                        period={"LATEST AUDIT"}
+                                                        stats={{
+                                                            totalTrades: tradingActivity.totalTrades,
+                                                            winRate: tradingActivity.winRate,
+                                                            totalPnL: psychMetrics.totalNetPnL,
+                                                            longestWinStreak: psychMetrics.longestWinStreak,
+                                                            longestLoseStreak: psychMetrics.longestLoseStreak,
+                                                            tradingDays: tradingActivity.tradingDaysActive,
+                                                            avgTradesPerMonth: tradingActivity.avgTradesPerMonth
+                                                        }}
+                                                        userName={user?.firstName ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` : undefined}
+                                                    />
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-2 mt-2 text-[10px] text-muted-foreground">
+                                                <span>Trader: <span className="font-semibold text-foreground">{user?.firstName ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` : 'Set your name in settings'}</span></span>
+                                            </div>
                                         </div>
-                                    )}
-                                    <div className="flex items-center gap-2 mt-2 text-[10px] text-muted-foreground">
-                                        <span>Trader: <span className="font-semibold text-foreground">{user?.firstName ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` : 'Set your name in settings'}</span></span>
-                                    </div>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
+                                    </DialogContent>
+                                </Dialog>
+                                <DropdownMenuItem onClick={handlePageSnapshot} disabled={isExporting} className="gap-2 text-xs font-medium">
+                                    <ImageIcon className="h-3.5 w-3.5" />
+                                    Page Snapshot
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
 

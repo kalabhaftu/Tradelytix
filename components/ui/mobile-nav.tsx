@@ -67,8 +67,8 @@ export function MobileBottomNav() {
   const activeTab = getActiveTab()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background border-t border-border/50 safe-area-inset-bottom">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background/95 backdrop-blur-md border-t border-border/30 safe-area-inset-bottom">
+      <div className="flex items-center justify-evenly h-14 max-w-md mx-auto">
         {mobileNavItems.map((item) => {
           const Icon = item.icon
           const isActive = activeTab === item.id
@@ -78,25 +78,21 @@ export function MobileBottomNav() {
               key={item.id}
               onClick={() => router.push(item.href)}
               className={cn(
-                "flex flex-col items-center justify-center flex-1 h-full py-1 px-1 rounded-lg transition-colors duration-200",
+                "flex flex-col items-center justify-center min-w-[56px] h-full py-1 transition-all duration-200 touch-manipulation",
                 isActive
                   ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground active:text-foreground"
               )}
             >
               <div className={cn(
-                "p-1.5 rounded-lg transition-all duration-200",
-                isActive && "bg-primary/10"
+                "flex items-center justify-center w-10 h-7 rounded-full transition-all duration-200",
+                isActive && "bg-primary/15"
               )}>
-                <Icon
-                  className={cn(
-                  "h-5 w-5 transition-transform duration-200",
-                  isActive && "scale-110"
-                )} />
+                <Icon className="h-[18px] w-[18px] shrink-0" />
               </div>
               <span className={cn(
-                "text-[10px] mt-0.5 font-medium truncate",
-                isActive && "text-primary"
+                "text-[9px] font-semibold tracking-wide mt-0.5",
+                isActive ? "text-primary" : "text-muted-foreground/80"
               )}>
                 {item.label}
               </span>

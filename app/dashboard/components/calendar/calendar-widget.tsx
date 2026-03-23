@@ -105,14 +105,14 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         },
       })
 
-      // Logo bar height
-      const logoBarHeight = 56
+      // Logo bar height - increased for larger logo
+      const logoBarHeight = 70
       const cardW = cardCanvas.width
       const cardH = cardCanvas.height
-      const padding = withGradient ? Math.round(32 * scale) : 0
-      // For gradient: only top/left/right padding, logo bar directly under card
+      // Always use padding to create separation between card and logo
+      const padding = withGradient ? Math.round(32 * scale) : Math.round(16 * scale)
       const totalW = cardW + padding * 2
-      const totalH = cardH + padding + Math.round(logoBarHeight * scale) + (withGradient ? padding : 0)
+      const totalH = cardH + padding + Math.round(logoBarHeight * scale) + padding
 
       const out = document.createElement('canvas')
       out.width = totalW
@@ -147,27 +147,28 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         ctx.drawImage(cardCanvas, padding, padding)
         ctx.restore()
       } else {
+        // For basic: still use padding to create separation
         ctx.fillStyle = resolvedBg
         ctx.fillRect(0, 0, totalW, totalH)
-        ctx.drawImage(cardCanvas, 0, 0)
+        ctx.drawImage(cardCanvas, padding, padding)
       }
 
-      // Logo bar directly attached under the card (no gap)
+      // Logo bar positioned below the card with consistent spacing
       const barY = padding + cardH
       const logoYPos = barY + Math.round((logoBarHeight / 2) * scale)
       
-      // Draw actual logo image (scaled down from 512px)
-      const logoSize = Math.round(18 * scale)
-      const logoX = totalW / 2 - Math.round(70 * scale)
+      // Draw actual logo image - LARGER size like Tradezella
+      const logoSize = Math.round(24 * scale)
+      const logoX = totalW / 2 - Math.round(85 * scale)
       ctx.drawImage(logoImg, logoX, logoYPos - logoSize / 2, logoSize, logoSize)
       
-      // Draw text
-      const fontSize = Math.round(12 * scale)
+      // Draw text - LARGER font
+      const fontSize = Math.round(16 * scale)
       ctx.font = `800 ${fontSize}px -apple-system, BlinkMacSystemFont, "Inter", sans-serif`
-      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.35)'
+      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.5)'
       ctx.textAlign = 'left'
       ctx.textBaseline = 'middle'
-      ctx.fillText('DELTALYTIX', logoX + logoSize + Math.round(10 * scale), logoYPos)
+      ctx.fillText('DELTALYTIX', logoX + logoSize + Math.round(12 * scale), logoYPos)
 
       out.toBlob((blob) => {
         if (!blob) { toast.error("Failed to capture screenshot"); return }

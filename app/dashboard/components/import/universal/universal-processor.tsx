@@ -125,14 +125,32 @@ export default function UniversalProcessor({
           success: true,
           trades: formattedTrades,
           detectedPlatform: 'AI-Processed',
-          mappedFields: {},
+          mappedFields: {
+            instrument: 'AI-detected',
+            side: 'AI-detected',
+            quantity: 'AI-detected',
+            entryPrice: 'AI-detected',
+            closePrice: 'AI-detected',
+            entryDate: 'AI-detected',
+            closeDate: 'AI-detected',
+            pnl: 'AI-detected',
+            commission: 'AI-detected',
+            stopLoss: null,
+            takeProfit: null,
+            swap: null,
+            timeInPosition: 'AI-detected',
+            ticket: null
+          },
           missingRequiredFields: [],
           warnings: [],
           errors: [],
           stats: {
             totalRows: csvData.length,
             processedRows: formattedTrades.length,
-            skippedRows: csvData.length - formattedTrades.length
+            skippedRows: csvData.length - formattedTrades.length,
+            tradesWithStopLoss: 0,
+            tradesWithTakeProfit: 0,
+            tradesWithCommission: formattedTrades.length
           }
         })
         setAiProcessingState('complete')

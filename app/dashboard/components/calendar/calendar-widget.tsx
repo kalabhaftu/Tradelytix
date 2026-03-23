@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, memo, useCallback, useMemo } from "react"
 import { format, addMonths, subMonths, getYear } from "date-fns"
 import { enUS } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Camera, ImageIcon } from "lucide-react"
+import { ChevronLeft, ChevronRight, Camera } from "lucide-react"
 import html2canvas from 'html2canvas'
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -44,7 +44,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
   const { refetchNotes } = useCalendarNotes()
 
   // View Store
-  const { viewMode, setViewMode, selectedDate, setSelectedDate, selectedWeekDate, setSelectedWeekDate, screenshotWithGradient, setScreenshotWithGradient } = useCalendarViewStore()
+  const { viewMode, setViewMode, selectedDate, setSelectedDate, selectedWeekDate, setSelectedWeekDate } = useCalendarViewStore()
   const [showWeeklyModal, setShowWeeklyModal] = useState(false)
 
   useEffect(() => {
@@ -64,71 +64,55 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
 
     try {
       toast.info("Capturing screenshot...")
+
+      // Capture the actual rendered dimensions so the output matches
+      // exactly what the user sees on their device (desktop or mobile).
+      const rect = calendarRef.current.getBoundingClientRect()
+      const dpr = window.devicePixelRatio || 1
+
       const canvas = await html2canvas(calendarRef.current, {
-        backgroundColor: null,
-        scale: 2,
+        // A solid background so cells are never transparent
+        backgroundColor: 'hsl(var(--background))',
+        scale: Math.max(dpr, 2),
         logging: false,
         useCORS: true,
-        windowWidth: 1200,
-        onclone: (clonedDoc) => {
-          const wrapper = clonedDoc.getElementById('advanced-calendar-capture')
-          if (wrapper) {
-            wrapper.style.padding = '50px 60px 70px 60px'
-            // Deep premium dark gradient if toggled, otherwise theme background
-            if (screenshotWithGradient) {
-              wrapper.style.background = 'linear-gradient(135deg, #0f0c29 0%, #302b63 60%, #0a0812 100%)'
-            } else {
-              wrapper.style.background = 'hsl(var(--background))'
-            }
-            wrapper.style.borderRadius = '0px'
-            wrapper.style.display = 'flex'
-            wrapper.style.flexDirection = 'column'
-            wrapper.style.alignItems = 'center'
-            wrapper.style.justifyContent = 'center'
-            wrapper.style.width = '1100px' // Cute, tighter size
-            wrapper.style.height = 'fit-content'
+        // Lock viewport to exact rendered size to prevent mobile reflow
+        windowWidth: Math.round(rect.width),
+        windowHeight: Math.round(rect.height),
+        onclone: (_clonedDoc, clonedElem) => {
+          // Pin to real rendered size
+          clonedElem.style.width = `${rect.width}px`
+          clonedElem.style.height = `${rect.height}px`
+          clonedElem.style.overflow = 'hidden'
 
-            const card = wrapper.querySelector('[data-widget-card]') as HTMLElement || wrapper.querySelector('.rounded-2xl') as HTMLElement
-            if (card) {
-              card.style.width = '100%'
-              card.style.maxWidth = '980px'
-              card.style.boxShadow = screenshotWithGradient 
-                ? '0 30px 60px -12px rgba(0,0,0,0.7), 0 0 100px -20px rgba(48,43,99,0.5)'
-                : '0 30px 60px -12px hsl(var(--foreground)/0.1)'
-              card.style.border = '1px solid hsl(var(--border)/0.5)'
-              card.style.background = 'hsl(var(--background))'
-              card.style.height = 'auto'
-              card.style.minHeight = '600px'
-              card.style.borderRadius = '16px'
-            }
-
-            const watermark = clonedDoc.getElementById('calendar-watermark')
-            if (watermark) {
-              watermark.style.display = 'flex'
-              watermark.style.marginTop = '40px'
-              const svg = watermark.querySelector('svg')
-              if (svg) svg.style.fill = screenshotWithGradient ? '#ffffff' : 'hsl(var(--foreground))'
-            }
+          // Ensure card background is fully opaque
+          const card = clonedElem.querySelector('[data-widget-card]') as HTMLElement
+          if (card) {
+            card.style.background = 'hsl(var(--background))'
+            card.style.height = `${rect.height}px`
           }
-        }
+
+          // Hide screenshot buttons inside the capture
+          clonedElem.querySelectorAll('.screenshot-btn').forEach((el) => {
+            (el as HTMLElement).style.display = 'none'
+          })
+        },
       })
+
       canvas.toBlob((blob) => {
-        if (!blob) {
-          toast.error("Failed to capture screenshot")
-          return
-        }
+        if (!blob) { toast.error("Failed to capture screenshot"); return }
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
-        link.download = `calendar-${format(currentDate, 'yyyy-MM-dd')}.png`
+        link.download = `calendar-${format(currentDate, 'yyyy-MM')}.png`
         link.click()
         URL.revokeObjectURL(url)
         toast.success("Screenshot saved!")
       }, 'image/png')
-    } catch (error) {
+    } catch {
       toast.error("Failed to capture screenshot")
     }
-  }, [currentDate, screenshotWithGradient])
+  }, [currentDate])
 
   // Navigation
   const handlePrev = useCallback(() => {
@@ -183,31 +167,16 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
   // Header right content — settings gear + snapshot
   const headerControls = (
     <div className="flex items-center gap-1.5">
-      {/* Snapshot controls */}
-      <div className="flex items-center gap-0.5 bg-muted/20 rounded-lg p-0.5 border border-border/30">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleScreenshot}
-          className="h-6 px-1.5 text-[10px] font-bold gap-1 hover:bg-primary/5 hover:text-primary transition-all"
-        >
-          <Camera className="h-3 w-3" />
-          <span className="hidden lg:inline">Snapshot</span>
-        </Button>
-        <div className="w-px h-3 bg-border/30" />
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setScreenshotWithGradient(!screenshotWithGradient)}
-          className={cn(
-            "h-6 w-6 transition-all",
-            screenshotWithGradient ? "text-primary bg-primary/10" : "text-muted-foreground/40"
-          )}
-          title={screenshotWithGradient ? "Gradient: ON" : "Gradient: OFF"}
-        >
-          <ImageIcon className="h-3 w-3" />
-        </Button>
-      </div>
+      {/* Snapshot button — hidden in screenshot output via class */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleScreenshot}
+        className="screenshot-btn h-6 px-1.5 text-[10px] font-bold gap-1 hover:bg-primary/5 hover:text-primary transition-all bg-muted/20 border border-border/30 rounded-lg"
+      >
+        <Camera className="h-3 w-3" />
+        <span className="hidden lg:inline">Snapshot</span>
+      </Button>
 
       {/* Settings gear */}
       <CalendarSettings />
@@ -328,14 +297,6 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
           </div>
         </div>
 
-        {/* Footer with Logo - visible branding */}
-        <div className="flex items-center justify-center gap-2 py-2.5 px-4 border-t border-border/20 bg-muted/5 flex-shrink-0">
-          <Logo className="w-4 h-4 text-muted-foreground/60" />
-          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">
-            Deltalytix
-          </span>
-        </div>
-
         <CalendarModal
           isOpen={selectedDate !== null}
           onOpenChange={(open) => !open && setSelectedDate(null)}
@@ -344,15 +305,6 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
           isLoading={isLoading}
         />
       </WidgetCard>
-
-      {/* Hidden watermark/logo for screenshots */}
-      <div id="calendar-watermark" className="hidden flex-col items-center justify-center pb-6 gap-2">
-        <div className="flex items-center gap-3">
-          <Logo className="w-8 h-8" />
-          <span className="text-lg font-black uppercase tracking-[0.25em] watermark-text">Deltalytix</span>
-        </div>
-        <span className="text-[10px] font-medium uppercase tracking-widest text-white/60">Trading Performance Analytics</span>
-      </div>
 
       <WeeklyModal
         isOpen={showWeeklyModal}

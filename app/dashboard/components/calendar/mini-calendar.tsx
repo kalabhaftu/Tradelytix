@@ -124,7 +124,10 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
         const link = document.createElement('a')
         link.href = url
         link.download = `mini-calendar-${format(currentDate, 'yyyy-MM')}${withGradient ? '-styled' : ''}.png`
+        link.style.display = 'none'
+        document.body.appendChild(link)
         link.click()
+        document.body.removeChild(link)
         URL.revokeObjectURL(url)
         toast.success("Screenshot saved!")
       }, 'image/png')

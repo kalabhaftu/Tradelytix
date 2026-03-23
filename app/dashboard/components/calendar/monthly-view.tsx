@@ -67,9 +67,10 @@ const DayCell = memo(function DayCell({
       className={cn(
         "relative flex flex-col items-center justify-center rounded-[4px] md:rounded-[6px] border transition-all duration-150 select-none group",
         // Mini calendar: taller cells so they are properly rectangular not square
+        // Advanced calendar: no fixed aspect-ratio on mobile, just flex-grow to fill
         isMiniCalendar 
           ? "min-h-[68px] sm:min-h-[76px] lg:min-h-[84px]" 
-          : "aspect-square md:aspect-auto md:min-h-[100px] cursor-pointer",
+          : "min-h-[60px] sm:min-h-[80px] md:min-h-[100px] cursor-pointer",
 
         // No trades — uses theme tokens so it works in any color scheme
         !hasTrades && isCurrentMonth && "bg-muted/5 border-border/20 hover:border-border/40",
@@ -328,7 +329,7 @@ export default function MonthlyView({
 
   return (
     <div className="flex h-full w-full overflow-x-auto overflow-y-hidden">
-      <div className={cn("flex flex-1 w-full h-full", isMiniCalendar ? "min-w-[320px]" : "min-w-[700px]")}>
+      <div className={cn("flex flex-1 w-full h-full", isMiniCalendar ? "min-w-[300px]" : "min-w-0 sm:min-w-[500px] lg:min-w-[700px]")}>
         {/* Main Calendar Grid */}
         <div className="flex-1 flex flex-col min-w-0 h-full">
           {/* Weekday Headers */}

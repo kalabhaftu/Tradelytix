@@ -2,7 +2,13 @@
 
 import React, { useState, useMemo, useCallback, useRef } from "react"
 import { format, addMonths, subMonths } from "date-fns"
-import { ChevronLeft, ChevronRight, Camera } from "lucide-react"
+import { ChevronLeft, ChevronRight, Camera, ImageIcon, Sparkles } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import html2canvas from 'html2canvas'
 import { toast } from "sonner"
 import { WidgetCard } from '../widget-card'
@@ -26,40 +32,51 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const calendarRef = useRef<HTMLDivElement>(null)
 
-  const handleScreenshot = useCallback(async () => {
+  const handleScreenshot = useCallback(async (withGradient: boolean) => {
     if (!calendarRef.current) return
     try {
       toast.info("Capturing screenshot...")
 
-      // Measure the actual rendered card dimensions so the screenshot
-      // matches exactly what the user sees on their device.
       const rect = calendarRef.current.getBoundingClientRect()
-      const devicePixelRatio = window.devicePixelRatio || 1
+      const dpr = window.devicePixelRatio || 1
+
+      // Resolve the background color from CSS variable
+      const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim()
+      const resolvedBg = bgColor ? `hsl(${bgColor})` : '#0d0d0d'
 
       const canvas = await html2canvas(calendarRef.current, {
-        backgroundColor: null,
-        // Use device pixel ratio so the output is crisp on retina screens
-        // without distorting the layout dimensions
-        scale: Math.max(devicePixelRatio, 2),
+        backgroundColor: withGradient ? null : resolvedBg,
+        scale: Math.max(dpr, 2),
         logging: false,
         useCORS: true,
-        // Match the real rendered width so columns don't collapse to mobile
         windowWidth: Math.round(rect.width),
         windowHeight: Math.round(rect.height),
         onclone: (clonedDoc, clonedElem) => {
-          // Force the cloned element to exactly the real rendered size so
-          // html2canvas doesn't snap to a mobile viewport and reflow the grid.
           clonedElem.style.width = `${rect.width}px`
           clonedElem.style.height = `${rect.height}px`
           clonedElem.style.overflow = 'hidden'
 
-          // Ensure the card itself is fully opaque
-          const card = clonedElem.querySelector('[data-widget-card]') as HTMLElement
-          if (card) {
-            card.style.background = 'hsl(var(--background))'
+          if (withGradient) {
+            clonedElem.style.background = 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)'
+            clonedElem.style.padding = '16px'
+            clonedElem.style.borderRadius = '20px'
           }
 
-          // Show the watermark that is normally hidden
+          const card = clonedElem.querySelector('[data-widget-card]') as HTMLElement
+          if (card) {
+            card.style.background = resolvedBg
+            if (withGradient) {
+              card.style.boxShadow = '0 20px 40px -12px rgba(0,0,0,0.5)'
+              card.style.borderRadius = '16px'
+            }
+          }
+
+          // Hide screenshot button in capture
+          clonedElem.querySelectorAll('.screenshot-btn').forEach((el) => {
+            (el as HTMLElement).style.display = 'none'
+          })
+
+          // Show watermark
           const watermark = clonedDoc.getElementById('mini-calendar-watermark')
           if (watermark) {
             watermark.style.display = 'flex'
@@ -72,7 +89,7 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
-        link.download = `mini-calendar-${format(currentDate, 'yyyy-MM')}.png`
+        link.download = `mini-calendar-${format(currentDate, 'yyyy-MM')}${withGradient ? '-styled' : ''}.png`
         link.click()
         URL.revokeObjectURL(url)
         toast.success("Screenshot saved!")
@@ -147,16 +164,29 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
             <div className="px-1.5 py-0.5 rounded bg-chart-4/10 border border-chart-4/20 text-chart-4 text-[10px] font-black">
               {tradedDaysCount}d
             </div>
-            {/* Screenshot button — hidden inside the captured image via the watermark approach */}
-            <Button
-              className="h-6 w-6 p-0 screenshot-btn"
-              variant="ghost"
-              size="icon"
-              onClick={handleScreenshot}
-              aria-label="Take screenshot"
-            >
-              <Camera className="h-3.5 w-3.5" />
-            </Button>
+            {/* Screenshot dropdown — icon only, hidden in screenshot */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  className="h-6 w-6 p-0 screenshot-btn"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Take screenshot"
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-36">
+                <DropdownMenuItem onClick={() => handleScreenshot(false)} className="gap-2 text-xs font-medium">
+                  <ImageIcon className="h-3.5 w-3.5" />
+                  Basic
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleScreenshot(true)} className="gap-2 text-xs font-medium">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Gradient
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 

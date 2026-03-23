@@ -340,7 +340,10 @@ export default function ReportsPage() {
             const a = document.createElement('a')
             a.href = url
             a.download = `deltalytix-metrics-${format(new Date(), 'yyyy-MM-dd')}.csv`
+            a.style.display = 'none'
+            document.body.appendChild(a)
             a.click()
+            document.body.removeChild(a)
             URL.revokeObjectURL(url)
             toast.success('Metrics exported successfully!')
         } catch (err) {
@@ -385,7 +388,10 @@ export default function ReportsPage() {
                 const a = document.createElement('a')
                 a.download = `deltalytix-report-${Date.now()}.png`
                 a.href = url
+                a.style.display = 'none'
+                document.body.appendChild(a)
                 a.click()
+                document.body.removeChild(a)
                 URL.revokeObjectURL(url)
                 toast.success('Page snapshot saved!')
             }, 'image/png')

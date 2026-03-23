@@ -164,7 +164,10 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         const link = document.createElement('a')
         link.href = url
         link.download = `calendar-${format(currentDate, 'yyyy-MM')}${withGradient ? '-styled' : ''}.png`
+        link.style.display = 'none'
+        document.body.appendChild(link)
         link.click()
+        document.body.removeChild(link)
         URL.revokeObjectURL(url)
         toast.success("Screenshot saved!")
       }, 'image/png')
@@ -262,93 +265,92 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         className="overflow-hidden flex flex-col h-full"
       >
         {/* Unified Header: Navigation + Stats + Controls */}
-        <div className="flex flex-row items-center justify-between gap-3 px-3 sm:px-5 py-2 sm:py-3 border-b border-border/20 bg-muted/5 flex-shrink-0 overflow-x-auto">
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex flex-row flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-border/20 bg-muted/5 flex-shrink-0">
+          {/* Left side: Navigation + This month button */}
+          <div className="flex items-center gap-1.5 shrink-0">
             {/* Navigation Group */}
             <div className="flex items-center gap-0.5 bg-muted/30 rounded-lg p-0.5 border border-border/30 font-bold shrink-0">
-              <Button variant="ghost" size="icon" onClick={handlePrev} className="h-6 w-6 hover:bg-background" aria-label="Previous">
+              <Button variant="ghost" size="icon" onClick={handlePrev} className="h-7 w-7 hover:bg-background" aria-label="Previous">
                 <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
-              <div className="px-2 min-w-[90px] text-center">
-                <span className="text-[11px] font-black capitalize tracking-tight">
+              <div className="px-2 min-w-[80px] sm:min-w-[90px] text-center">
+                <span className="text-[10px] sm:text-[11px] font-black capitalize tracking-tight">
                   {viewMode === 'daily'
                     ? format(currentDate, 'MMM yyyy')
                     : format(currentDate, 'yyyy')
                   }
                 </span>
               </div>
-              <Button variant="ghost" size="icon" onClick={handleNext} className="h-6 w-6 hover:bg-background" aria-label="Next">
+              <Button variant="ghost" size="icon" onClick={handleNext} className="h-7 w-7 hover:bg-background" aria-label="Next">
                 <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             </div>
 
+            {/* This month button — consistent height with nav group */}
             <Button
               onClick={() => setCurrentDate(new Date())}
               variant="outline"
-              size="sm"
               className="h-7 px-2.5 text-[10px] font-black bg-muted/20 hover:bg-muted border-border/40 transition-colors hidden sm:inline-flex"
             >
               This month
             </Button>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0 justify-end">
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-[10px] font-bold text-muted-foreground mr-1">
-                {viewMode === 'daily' ? 'Monthly stats:' : 'Yearly stats:'}
-              </span>
+          {/* Right side: Stats + View switcher + Controls */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Stats label - hide on mobile */}
+            <span className="text-[9px] sm:text-[10px] font-bold text-muted-foreground hidden md:block">
+              {viewMode === 'daily' ? 'Monthly:' : 'Yearly:'}
+            </span>
 
-              {/* Stats Badges */}
-              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider">
-                <div className={cn(
-                  "px-1.5 py-0.5 rounded border shadow-sm flex items-center",
-                  isPositive ? "bg-long/10 border-long/20 text-long" : "bg-short/10 border-short/20 text-short"
-                )}>
-                  {formatCompact(displayTotal)}
-                </div>
-                <div className="px-1.5 py-0.5 rounded bg-chart-4/10 border border-chart-4/20 text-chart-4 border-solid shadow-sm">
-                  {tradedDaysCount} d
-                </div>
+            {/* Stats Badges */}
+            <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider">
+              <div className={cn(
+                "px-1.5 py-0.5 rounded border shadow-sm flex items-center",
+                isPositive ? "bg-long/10 border-long/20 text-long" : "bg-short/10 border-short/20 text-short"
+              )}>
+                {formatCompact(displayTotal)}
+              </div>
+              <div className="px-1.5 py-0.5 rounded bg-chart-4/10 border border-chart-4/20 text-chart-4 border-solid shadow-sm">
+                {tradedDaysCount}d
               </div>
             </div>
 
             <div className="w-px h-4 bg-border/40 hidden sm:block" />
 
-            <div className="flex items-center gap-2">
-              {/* View Switcher Controls Container */}
-              <div className="flex items-center p-0.5 bg-muted/30 border border-border/30 rounded-lg mr-2 hidden md:flex">
-                <button
-                  onClick={() => setViewMode('daily')}
-                  className={cn(
-                    "px-2.5 py-1 text-[10px] font-black rounded-md transition-all",
-                    viewMode === 'daily'
-                      ? "bg-background shadow-sm text-foreground border border-border/40"
-                      : "text-muted-foreground/50 hover:text-foreground"
-                  )}
-                >
-                  Daily
-                </button>
-                <button
-                  onClick={() => setViewMode('weekly')}
-                  className={cn(
-                    "px-2.5 py-1 text-[10px] font-black rounded-md transition-all",
-                    viewMode === 'weekly'
-                      ? "bg-background shadow-sm text-foreground border border-border/40"
-                      : "text-muted-foreground/50 hover:text-foreground"
-                  )}
-                >
-                  Yearly
-                </button>
-              </div>
-
-              {headerControls}
+            {/* View Switcher — hide on small screens */}
+            <div className="hidden md:flex items-center p-0.5 bg-muted/30 border border-border/30 rounded-lg">
+              <button
+                onClick={() => setViewMode('daily')}
+                className={cn(
+                  "px-2 py-1 text-[10px] font-black rounded-md transition-all",
+                  viewMode === 'daily'
+                    ? "bg-background shadow-sm text-foreground border border-border/40"
+                    : "text-muted-foreground/50 hover:text-foreground"
+                )}
+              >
+                Daily
+              </button>
+              <button
+                onClick={() => setViewMode('weekly')}
+                className={cn(
+                  "px-2 py-1 text-[10px] font-black rounded-md transition-all",
+                  viewMode === 'weekly'
+                    ? "bg-background shadow-sm text-foreground border border-border/40"
+                    : "text-muted-foreground/50 hover:text-foreground"
+                )}
+              >
+                Yearly
+              </button>
             </div>
+
+            {headerControls}
           </div>
         </div>
 
-        {/* Calendar Content - responsive min-width based on container */}
+        {/* Calendar Content - fully responsive without horizontal scroll */}
         <div className="flex-1 min-h-0 overflow-auto relative">
-          <div className="min-w-[400px] h-full flex flex-col">
+          <div className="h-full flex flex-col">
             {viewMode === 'daily' ? (
             <MonthlyView
               currentDate={currentDate}

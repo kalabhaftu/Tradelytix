@@ -88,6 +88,11 @@ export interface ReportStatsResponse {
   psychMetrics: PsychMetricsDTO | null
   sessionPerformance: SessionPerformanceDTO | null
   rMultipleDistribution: RMultipleDistributionDTO | null
+  rMultipleDataQuality: {
+    totalTrades: number
+    tradesWithStopLoss: number
+    percentageComplete: number
+  } | null
   chartData: {
     equityCurve: any[]
     outcomeDistribution: any[]
@@ -253,6 +258,7 @@ export async function calculateReportStatistics(
       psychMetrics: null,
       sessionPerformance: null,
       rMultipleDistribution: null,
+      rMultipleDataQuality: null,
       chartData: null,
       filteredTrades: [],
       filterOptions: buildFilterOptions(symbols, strategies),
@@ -349,6 +355,9 @@ function computeAllMetrics(
     '2R to 3R': 0,
     '>3R': 0,
   }
+
+  // Track R-multiple data quality (trades with valid stop loss)
+  let tradesWithStopLoss = 0
 
   let totalRMultipleDelta = 0
 
@@ -477,6 +486,10 @@ function computeAllMetrics(
     }
 
     // R-multiple distribution (PRICE POINTS - OPTION 1)
+    // Track if trade has valid stop loss for data quality indicator
+    const hasValidStopLoss = trade.stopLoss && trade.stopLoss !== 0 && trade.stopLoss !== trade.entryPrice
+    if (hasValidStopLoss) tradesWithStopLoss++
+
     const r = calculateRMultiple(trade.side, trade.entryPrice, trade.closePrice, trade.stopLoss)
     totalRMultipleDelta += r
 
@@ -582,6 +595,11 @@ function computeAllMetrics(
     },
     sessionPerformance: sessions,
     rMultipleDistribution: rDistribution,
+    rMultipleDataQuality: {
+      totalTrades: sorted.length,
+      tradesWithStopLoss,
+      percentageComplete: sorted.length > 0 ? Math.round((tradesWithStopLoss / sorted.length) * 100) : 0
+    },
     chartData: {
       equityCurve,
       outcomeDistribution: outcomeDistribution.filter(d => d.value > 0),

@@ -24,7 +24,8 @@ import {
     Download,
     FileText,
     Image as ImageIcon,
-    LayoutDashboard
+    LayoutDashboard,
+    AlertCircle
 } from 'lucide-react'
 import {
     format,
@@ -226,6 +227,7 @@ export default function ReportsPage() {
     const psychMetrics = reportData?.psychMetrics ?? null
     const sessionPerformance = reportData?.sessionPerformance ?? null
     const rMultipleDistribution = reportData?.rMultipleDistribution ?? null
+    const rMultipleDataQuality = reportData?.rMultipleDataQuality ?? null
 
     // Pre-computed R-Multiple data for Recharts
     const rMultipleChartData = useMemo(() => {
@@ -632,7 +634,24 @@ export default function ReportsPage() {
                                     <div className="lg:col-span-5 space-y-4 flex flex-col">
                                         <div className="flex flex-col space-y-6">
                                             <div className="space-y-4">
-                                                <h2 className="text-[11px] uppercase tracking-[0.2em] font-black text-muted-foreground">R-Multiple Distribution</h2>
+                                                <div className="flex items-center justify-between">
+                                    <h2 className="text-[11px] uppercase tracking-[0.2em] font-black text-muted-foreground">R-Multiple Distribution</h2>
+                                    {rMultipleDataQuality && rMultipleDataQuality.percentageComplete < 100 && (
+                                        <TooltipProvider delayDuration={100}>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+                                                        <AlertCircle className="h-3 w-3 text-amber-500" />
+                                                        <span className="text-[9px] font-bold text-amber-500">{rMultipleDataQuality.percentageComplete}% data</span>
+                                                    </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top" className="max-w-[220px]">
+                                                    <p className="text-xs">Only {rMultipleDataQuality.tradesWithStopLoss} of {rMultipleDataQuality.totalTrades} trades have stop loss data. R-Multiple calculations require stop loss for accuracy.</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    )}
+                                </div>
                                                 <div className="bg-muted/5 border border-border/40 rounded-2xl p-6 h-[280px] flex flex-col">
                                                     <div className="flex-1 w-full">
                                                         <ResponsiveContainer width="100%" height="100%">

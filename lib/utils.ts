@@ -548,6 +548,13 @@ export function calculateStatistics(trades: Trade[], accounts: Account[] = [], p
     (statistics as any).averageLoss = 0;
   }
 
+  // Add aliased properties for widgets that use avgWin/avgLoss naming
+  (statistics as any).avgWin = (statistics as any).averageWin;
+  (statistics as any).avgLoss = (statistics as any).averageLoss;
+  (statistics as any).riskRewardRatio = (statistics as any).avgLoss > 0 
+    ? (statistics as any).avgWin / (statistics as any).avgLoss 
+    : 0;
+
   // Set the maximum winning streak achieved
   statistics.winningStreak = maxWinningStreak;
 

@@ -517,7 +517,7 @@ export default function ReportsPage() {
                     </div>
                 ) : (
                     <Tabs defaultValue="overview" className="w-full" onValueChange={setSelectedTab}>
-                        <TabsList className="mb-8 p-1 bg-muted/20 border border-border/40 rounded-xl no-export w-full flex-wrap justify-center">
+                        <TabsList className="mb-8 p-1 bg-muted/20 border border-border/40 rounded-xl no-export w-full justify-start sm:justify-center overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                             <TabsTrigger value="overview" className="px-3 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap">
                                 <TrendingUp className="h-3.5 w-3.5 shrink-0" />
                                 Overview

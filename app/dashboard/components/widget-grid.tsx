@@ -321,8 +321,11 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
         >
           {/* Mobile: 2-col grid that stacks, Tablet: 3-col, Desktop: 5-col */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
-            {kpiLayout.map((widget, index) => (
-              <div key={`kpi-slot-${index}`} className="relative">
+            {kpiLayout.map((widget, index) => {
+              // On mobile (2-col), if this is the 5th item (index 4) and it would be alone, span full width
+              const isLastItemAlone = index === 4 && kpiLayout.filter(w => w !== null).length === 5
+              return (
+              <div key={`kpi-slot-${index}`} className={cn("relative", isLastItemAlone && "col-span-2 sm:col-span-1")}>
                 {widget ? (
                   <div className="relative group h-full">
                     {/* Edit mode controls */}
@@ -359,7 +362,8 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
                   )
               )}
             </div>
-          ))}
+          )})}
+          
           </div>
         </div>
       </div>

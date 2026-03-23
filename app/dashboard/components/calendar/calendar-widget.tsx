@@ -361,8 +361,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
 
         {/* Calendar Content - fully responsive without horizontal scroll */}
         <div className="flex-1 min-h-0 overflow-auto relative">
-          <div className="h-full flex flex-col">
-            {viewMode === 'daily' ? (
+          {viewMode === 'daily' ? (
             <MonthlyView
               currentDate={currentDate}
               calendarData={localCalendarData}
@@ -377,8 +376,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
               year={getYear(currentDate)}
               calendarData={localCalendarData}
             />
-            )}
-          </div>
+          )}
         </div>
 
         <CalendarModal

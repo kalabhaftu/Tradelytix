@@ -45,10 +45,10 @@ export default function RecentTradesWidget() {
     <WidgetCard title="Recent Trades">
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 sm:gap-4 pb-2 border-b border-border/30 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 shrink-0">
-          <div className="w-[70px] sm:w-[80px] shrink-0">Date</div>
-          <div className="flex-1 text-left">Symbol</div>
-          <div className="w-[70px] sm:w-[80px] text-right shrink-0">P&L</div>
+        <div className="grid grid-cols-[minmax(70px,0.8fr)_1fr_minmax(70px,0.8fr)] gap-2 pb-2 border-b border-border/30 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 shrink-0">
+          <div>Date</div>
+          <div className="text-left">Symbol</div>
+          <div className="text-right">P&L</div>
         </div>
 
         {/* Trades List - scrollable with full height utilization */}
@@ -84,17 +84,17 @@ export default function RecentTradesWidget() {
               return (
                 <div
                   key={trade.id || index}
-                  className="flex items-center justify-between gap-3 sm:gap-4 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors px-1"
+                  className="grid grid-cols-[minmax(70px,0.8fr)_1fr_minmax(70px,0.8fr)] gap-2 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors px-1 items-center"
                 >
-                  <div className="w-[70px] sm:w-[80px] text-muted-foreground/60 font-medium shrink-0">
+                  <div className="text-muted-foreground/60 font-medium">
                     {formatDate(trade.entryDate)}
                   </div>
-                  <div className="flex-1 font-bold truncate text-left" title={trade.symbol || trade.instrument}>
+                  <div className="font-bold truncate text-left" title={trade.symbol || trade.instrument}>
                     {trade.symbol || trade.instrument}
                   </div>
                   <div
                     className={cn(
-                      'w-[70px] sm:w-[80px] text-right font-bold font-mono shrink-0',
+                      'text-right font-bold font-mono',
                       isProfitable
                         ? 'text-long'
                         : isLoss

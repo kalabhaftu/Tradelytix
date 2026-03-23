@@ -66,10 +66,10 @@ const DayCell = memo(function DayCell({
       onClick={!isMiniCalendar && onClick ? onClick : undefined}
       className={cn(
         "relative flex flex-col items-center justify-center rounded-[4px] md:rounded-[6px] border transition-all duration-150 select-none group",
-        // Mini calendar: no min-height, cells fill available space via grid-rows-6
-        // Advanced calendar: slight min-height for readability
+        // Mini calendar: taller cells so they are properly rectangular not square
+        // Advanced calendar: no fixed aspect-ratio on mobile, just flex-grow to fill
         isMiniCalendar 
-          ? "h-full" 
+          ? "min-h-[68px] sm:min-h-[76px] lg:min-h-[84px]" 
           : "min-h-[60px] sm:min-h-[80px] md:min-h-[100px] cursor-pointer",
 
         // No trades — uses theme tokens so it works in any color scheme
@@ -344,8 +344,8 @@ export default function MonthlyView({
             ))}
           </div>
 
-          {/* Day Grid - flex-1 to fill available height, 6 rows to fit all weeks */}
-          <div className={cn("flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 min-h-0 grid-rows-6", hideWeekends ? "grid-cols-5" : "grid-cols-7")}>
+          {/* Day Grid - flex-1 to fill available height, grid rows distribute evenly */}
+          <div className={cn("flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 min-h-0", hideWeekends ? "grid-cols-5" : "grid-cols-7", isMiniCalendar ? "auto-rows-fr" : "auto-rows-fr")}>
             {weeks.map((week, weekIndex) => (
               <React.Fragment key={weekIndex}>
                 {week.map((date) => {

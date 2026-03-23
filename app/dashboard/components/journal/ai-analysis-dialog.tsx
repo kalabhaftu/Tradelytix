@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Sparkles, CalendarDays as CalendarIcon, TrendingUp, Brain, AlertTriangle, Target, Lightbulb } from "lucide-react"
+import { Loader2, Sparkles, CalendarDays as CalendarIcon, TrendingUp, Brain, AlertTriangle, Target, Lightbulb, Flame, Crosshair, ShieldAlert, Zap } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { toast } from "sonner"
 import { cn, cleanContent } from '@/lib/utils'
@@ -143,13 +143,15 @@ export function AIAnalysisDialog({ isOpen, onClose, accountId }: AIAnalysisDialo
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="p-6 pb-4 border-b shrink-0">
+        <DialogHeader className="p-6 pb-4 border-b shrink-0 bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <DialogTitle>AI Trading Psychology Analysis</DialogTitle>
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <Crosshair className="h-5 w-5 text-primary" />
+            </div>
+            <DialogTitle>Trading Performance Audit</DialogTitle>
           </div>
-          <DialogDescription>
-            Get insights into your trading psychology, emotional patterns, and performance based on your journal entries and trades
+          <DialogDescription className="text-sm">
+            Brutally honest analysis of your trading patterns, psychology, and execution. No sugarcoating.
           </DialogDescription>
         </DialogHeader>
 
@@ -221,14 +223,19 @@ export function AIAnalysisDialog({ isOpen, onClose, accountId }: AIAnalysisDialo
             {/* Analysis Results */}
             {analysis ? (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                {/* Summary */}
-                <Card>
+                {/* Summary - The Verdict */}
+                <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
-                      <Brain className="h-5 w-5 text-primary mt-0.5" />
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <Flame className="h-5 w-5 text-primary" />
+                      </div>
                       <div className="space-y-2 flex-1">
-                        <h3 className="font-semibold text-sm">Summary</h3>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
+                        <h3 className="font-semibold text-sm flex items-center gap-2">
+                          The Verdict
+                          <Badge variant="outline" className="text-xs font-normal">Bottom Line</Badge>
+                        </h3>
+                        <p className="text-sm leading-relaxed">
                           {cleanContent(analysis.summary)}
                         </p>
                       </div>
@@ -236,18 +243,23 @@ export function AIAnalysisDialog({ isOpen, onClose, accountId }: AIAnalysisDialo
                   </CardContent>
                 </Card>
 
-                {/* Emotional Patterns */}
+                {/* Emotional Patterns - Psychology Leaks */}
                 {analysis.emotionalPatterns.length > 0 && (
-                  <Card>
+                  <Card className="border-blue-500/20">
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
-                        <TrendingUp className="h-5 w-5 text-blue-400 mt-0.5" />
+                        <div className="p-2 rounded-lg bg-blue-500/10">
+                          <Brain className="h-5 w-5 text-blue-400" />
+                        </div>
                         <div className="space-y-2 flex-1">
-                          <h3 className="font-semibold text-sm">Emotional Patterns</h3>
-                          <ul className="space-y-2">
+                          <h3 className="font-semibold text-sm flex items-center gap-2">
+                            Psychology Patterns
+                            <Badge variant="outline" className="text-xs font-normal border-blue-500/30 text-blue-400">Mental Game</Badge>
+                          </h3>
+                          <ul className="space-y-2.5">
                             {analysis.emotionalPatterns.map((pattern, index) => (
-                              <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
-                                <span className="text-blue-400 mt-0.5">•</span>
+                              <li key={index} className="text-sm flex items-start gap-2">
+                                <ShieldAlert className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
                                 <span className="flex-1">{cleanContent(pattern)}</span>
                               </li>
                             ))}
@@ -258,18 +270,23 @@ export function AIAnalysisDialog({ isOpen, onClose, accountId }: AIAnalysisDialo
                   </Card>
                 )}
 
-                {/* Performance Insights */}
+                {/* Performance Insights - P&L Leaks */}
                 {analysis.performanceInsights.length > 0 && (
-                  <Card>
+                  <Card className="border-amber-500/20">
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
-                        <Target className="h-5 w-5 text-long mt-0.5" />
+                        <div className="p-2 rounded-lg bg-amber-500/10">
+                          <Target className="h-5 w-5 text-amber-400" />
+                        </div>
                         <div className="space-y-2 flex-1">
-                          <h3 className="font-semibold text-sm">Performance Insights</h3>
-                          <ul className="space-y-2">
+                          <h3 className="font-semibold text-sm flex items-center gap-2">
+                            Data Insights
+                            <Badge variant="outline" className="text-xs font-normal border-amber-500/30 text-amber-400">Numbers</Badge>
+                          </h3>
+                          <ul className="space-y-2.5">
                             {analysis.performanceInsights.map((insight, index) => (
-                              <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
-                                <span className="text-long mt-0.5">•</span>
+                              <li key={index} className="text-sm flex items-start gap-2">
+                                <TrendingUp className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
                                 <span className="flex-1">{cleanContent(insight)}</span>
                               </li>
                             ))}
@@ -283,16 +300,16 @@ export function AIAnalysisDialog({ isOpen, onClose, accountId }: AIAnalysisDialo
                 {/* Strengths & Weaknesses */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {analysis.strengths.length > 0 && (
-                    <Card>
+                    <Card className="border-long/20">
                       <CardContent className="p-4">
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           <h3 className="font-semibold text-sm flex items-center gap-2">
-                            <Badge variant="default" className="text-xs">Strengths</Badge>
+                            <Badge className="text-xs bg-long/20 text-long border border-long/30">What&apos;s Working</Badge>
                           </h3>
-                          <ul className="space-y-1.5">
+                          <ul className="space-y-2">
                             {analysis.strengths.map((strength, index) => (
-                              <li key={index} className="text-xs text-muted-foreground flex items-start gap-2">
-                                <span className="text-long">✓</span>
+                              <li key={index} className="text-sm flex items-start gap-2">
+                                <span className="text-long font-bold">+</span>
                                 <span className="flex-1">{cleanContent(strength)}</span>
                               </li>
                             ))}
@@ -303,16 +320,16 @@ export function AIAnalysisDialog({ isOpen, onClose, accountId }: AIAnalysisDialo
                   )}
 
                   {analysis.weaknesses.length > 0 && (
-                    <Card>
+                    <Card className="border-short/20">
                       <CardContent className="p-4">
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           <h3 className="font-semibold text-sm flex items-center gap-2">
-                            <Badge variant="destructive" className="text-xs">Areas to Improve</Badge>
+                            <Badge variant="destructive" className="text-xs">Problems to Fix</Badge>
                           </h3>
-                          <ul className="space-y-1.5">
+                          <ul className="space-y-2">
                             {analysis.weaknesses.map((weakness, index) => (
-                              <li key={index} className="text-xs text-muted-foreground flex items-start gap-2">
-                                <AlertTriangle className="h-3 w-3 text-orange-400 mt-0.5" />
+                              <li key={index} className="text-sm flex items-start gap-2">
+                                <AlertTriangle className="h-4 w-4 text-short mt-0.5 shrink-0" />
                                 <span className="flex-1">{cleanContent(weakness)}</span>
                               </li>
                             ))}
@@ -323,22 +340,29 @@ export function AIAnalysisDialog({ isOpen, onClose, accountId }: AIAnalysisDialo
                   )}
                 </div>
 
-                {/* Recommendations */}
+                {/* Recommendations - Action Plan */}
                 {analysis.recommendations.length > 0 && (
-                  <Card>
+                  <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
-                        <Lightbulb className="h-5 w-5 text-yellow-400 mt-0.5" />
-                        <div className="space-y-2 flex-1">
-                          <h3 className="font-semibold text-sm">Recommendations</h3>
-                          <ul className="space-y-2">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <Zap className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="space-y-3 flex-1">
+                          <h3 className="font-semibold text-sm flex items-center gap-2">
+                            Action Plan
+                            <Badge variant="outline" className="text-xs font-normal">Do These Now</Badge>
+                          </h3>
+                          <ol className="space-y-3">
                             {analysis.recommendations.map((rec, index) => (
-                              <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
-                                <span className="text-yellow-400 mt-0.5">→</span>
-                                <span className="flex-1">{cleanContent(rec)}</span>
+                              <li key={index} className="text-sm flex items-start gap-3">
+                                <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/20 text-primary text-xs font-bold shrink-0">
+                                  {index + 1}
+                                </span>
+                                <span className="flex-1 pt-0.5">{cleanContent(rec)}</span>
                               </li>
                             ))}
-                          </ul>
+                          </ol>
                         </div>
                       </div>
                     </CardContent>
@@ -347,15 +371,30 @@ export function AIAnalysisDialog({ isOpen, onClose, accountId }: AIAnalysisDialo
               </div>
             ) : (
               <div className="flex-1 flex items-center justify-center min-h-[300px]">
-                <div className="text-center space-y-4">
+                <div className="text-center space-y-4 max-w-md">
                   <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                    <Sparkles className="h-8 w-8 text-primary" />
+                    <Crosshair className="h-8 w-8 text-primary" />
                   </div>
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">Ready to Analyze</p>
-                    <p className="text-xs text-muted-foreground max-w-sm">
-                      Select a date range and click &ldquo;Generate Analysis&rdquo; to get AI-powered insights into your trading psychology
+                    <p className="text-base font-semibold">Ready for the Truth?</p>
+                    <p className="text-sm text-muted-foreground">
+                      This analysis will tell you what you need to hear, not what you want to hear. 
+                      Select a date range and prepare for an honest assessment of your trading.
                     </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-2">
+                    <span className="flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3" />
+                      P&L Patterns
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Brain className="h-3 w-3" />
+                      Psychology Leaks
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Target className="h-3 w-3" />
+                      Execution Gaps
+                    </span>
                   </div>
                 </div>
               </div>
@@ -368,16 +407,16 @@ export function AIAnalysisDialog({ isOpen, onClose, accountId }: AIAnalysisDialo
             <Button variant="outline" onClick={onClose} disabled={isAnalyzing}>
               Close
             </Button>
-            <Button onClick={handleAnalyze} disabled={isAnalyzing}>
+            <Button onClick={handleAnalyze} disabled={isAnalyzing} className="font-medium">
               {isAnalyzing ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Analyzing...
+                  Auditing Your Trading...
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Generate Analysis
+                  <Zap className="h-4 w-4 mr-2" />
+                  Run Performance Audit
                 </>
               )}
             </Button>

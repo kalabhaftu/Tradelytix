@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useCallback } from 'react'
+import React, { useEffect, useMemo, useCallback, useState } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -17,8 +17,11 @@ import {
   XCircle, 
   Info,
   Sparkles,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Loader2,
+  Wand2
 } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   Card,
   CardContent,
@@ -62,8 +65,80 @@ export default function UniversalProcessor({
   processedTrades, 
   setProcessedTrades 
 }: PlatformProcessorProps) {
-  const [processingResult, setProcessingResult] = React.useState<ProcessingResult | null>(null)
-  const [showFieldMapping, setShowFieldMapping] = React.useState(false)
+  const [processingResult, setProcessingResult] = useState<ProcessingResult | null>(null)
+  const [showFieldMapping, setShowFieldMapping] = useState(false)
+  const [isUsingAI, setIsUsingAI] = useState(false)
+  const [aiProcessingState, setAiProcessingState] = useState<'idle' | 'processing' | 'complete' | 'error'>('idle')
+
+  // AI fallback processing
+  const processWithAI = useCallback(async () => {
+    if (csvData.length === 0) return
+    
+    setIsUsingAI(true)
+    setAiProcessingState('processing')
+    
+    try {
+      const response = await fetch('/api/ai/format-trades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          headers,
+          rows: csvData.slice(0, 100) // Limit to 100 rows for AI processing
+        })
+      })
+
+      if (!response.ok) throw new Error('AI processing failed')
+      
+      const reader = response.body?.getReader()
+      if (!reader) throw new Error('No response body')
+
+      let fullText = ''
+      const decoder = new TextDecoder()
+      
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        fullText += decoder.decode(value, { stream: true })
+      }
+
+      // Parse the streamed JSON response
+      const jsonMatch = fullText.match(/\[[\s\S]*\]/)
+      if (jsonMatch) {
+        const trades = JSON.parse(jsonMatch[0])
+        const formattedTrades = trades.map((trade: any, idx: number) => ({
+          ...trade,
+          id: `ai-${Date.now()}-${idx}`,
+          userId: '',
+          accountId: '',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }))
+        
+        setProcessedTrades(formattedTrades as Trade[])
+        setProcessingResult({
+          success: true,
+          trades: formattedTrades,
+          detectedPlatform: 'AI-Processed',
+          mappedFields: {},
+          missingRequiredFields: [],
+          warnings: [],
+          errors: [],
+          stats: {
+            totalRows: csvData.length,
+            processedRows: formattedTrades.length,
+            skippedRows: csvData.length - formattedTrades.length
+          }
+        })
+        setAiProcessingState('complete')
+        toast.success(`AI processed ${formattedTrades.length} trades successfully`)
+      } else {
+        throw new Error('Could not parse AI response')
+      }
+    } catch (error) {
+      setAiProcessingState('error')
+      toast.error('AI processing failed. Please try the CSV-AI option with manual column mapping.')
+    }
+  }, [csvData, headers, setProcessedTrades])
 
   const processTrades = useCallback(() => {
     const result = processUniversalCSV(headers, csvData, {
@@ -73,8 +148,19 @@ export default function UniversalProcessor({
     })
     
     setProcessingResult(result)
+    
+    // Auto-trigger AI if universal processing failed or found no trades
+    if (!result.success || result.trades.length === 0) {
+      // Don't auto-trigger if we already tried AI
+      if (!isUsingAI && csvData.length > 0) {
+        toast.info('Auto-detection unsuccessful. Switching to AI processing...')
+        processWithAI()
+        return
+      }
+    }
+    
     setProcessedTrades(result.trades as Trade[])
-  }, [csvData, headers, setProcessedTrades])
+  }, [csvData, headers, setProcessedTrades, isUsingAI, processWithAI])
 
   useEffect(() => {
     processTrades()
@@ -95,10 +181,22 @@ export default function UniversalProcessor({
     [processedTrades]
   )
 
-  if (!processingResult) {
+  if (!processingResult || aiProcessingState === 'processing') {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="flex flex-col items-center justify-center h-64 gap-4">
+        {aiProcessingState === 'processing' ? (
+          <>
+            <div className="p-3 rounded-full bg-primary/10">
+              <Wand2 className="h-8 w-8 text-primary animate-pulse" />
+            </div>
+            <div className="text-center">
+              <p className="font-semibold">AI Processing Your Trades</p>
+              <p className="text-sm text-muted-foreground">Analyzing and formatting your CSV data...</p>
+            </div>
+          </>
+        ) : (
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        )}
       </div>
     )
   }
@@ -108,11 +206,21 @@ export default function UniversalProcessor({
       <CardHeader className="flex flex-row items-start justify-between space-y-0 border-b shrink-0 p-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">Universal CSV Processor</CardTitle>
+            {isUsingAI ? (
+              <Wand2 className="h-5 w-5 text-primary" />
+            ) : (
+              <Sparkles className="h-5 w-5 text-primary" />
+            )}
+            <CardTitle className="text-base">
+              {isUsingAI ? 'AI CSV Processor' : 'Universal CSV Processor'}
+            </CardTitle>
           </div>
           <CardDescription className="text-xs">
-            Auto-detected: <Badge variant="secondary" className="ml-1">{processingResult.detectedPlatform || 'Unknown'}</Badge>
+            {isUsingAI ? (
+              <>Mode: <Badge variant="default" className="ml-1 bg-primary/20 text-primary">AI-Powered</Badge></>
+            ) : (
+              <>Auto-detected: <Badge variant="secondary" className="ml-1">{processingResult.detectedPlatform || 'Unknown'}</Badge></>
+            )}
           </CardDescription>
         </div>
         

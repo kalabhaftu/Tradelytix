@@ -1,12 +1,16 @@
 'use client'
 
-import React from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import { WidgetCard } from '../widget-card'
 import { useData } from '@/context/data-provider'
 import { cn, BREAK_EVEN_THRESHOLD } from '@/lib/utils'
 
+const ROW_HEIGHT = 36 // Approximate height of each trade row in pixels
+
 export default function RecentTradesWidget() {
   const { formattedTrades } = useData()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [visibleRowCount, setVisibleRowCount] = useState(10) // Default fallback
 
   // CRITICAL FIX: Group trades first to handle partial closes correctly
   // This ensures partial closes are shown as single trades, not multiple entries
@@ -15,13 +19,37 @@ export default function RecentTradesWidget() {
     return groupTradesByExecution(formattedTrades)
   }, [formattedTrades, groupTradesByExecution])
 
-  // All trades sorted newest-first — no hard cap.
-  // The container is overflow-y-auto so the widget height controls how many
-  // are visible; resizing taller reveals more rows without needing a reload.
-  const recentTrades = React.useMemo(() => {
+  // All trades sorted newest-first
+  const allRecentTrades = React.useMemo(() => {
     return groupedTrades
       .sort((a: any, b: any) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime())
   }, [groupedTrades])
+
+  // Calculate how many rows can fit in the container
+  useEffect(() => {
+    const calculateVisibleRows = () => {
+      if (containerRef.current) {
+        const containerHeight = containerRef.current.clientHeight
+        const rowsThatFit = Math.floor(containerHeight / ROW_HEIGHT)
+        setVisibleRowCount(Math.max(1, rowsThatFit))
+      }
+    }
+
+    calculateVisibleRows()
+
+    // Use ResizeObserver for dynamic height changes (when user resizes widget)
+    const resizeObserver = new ResizeObserver(calculateVisibleRows)
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current)
+    }
+
+    return () => resizeObserver.disconnect()
+  }, [])
+
+  // Only show trades that fit in the current container height
+  const recentTrades = React.useMemo(() => {
+    return allRecentTrades.slice(0, visibleRowCount)
+  }, [allRecentTrades, visibleRowCount])
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -45,14 +73,14 @@ export default function RecentTradesWidget() {
     <WidgetCard title="Recent Trades">
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="grid grid-cols-[minmax(70px,0.8fr)_1fr_minmax(70px,0.8fr)] gap-2 pb-2 border-b border-border/30 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 shrink-0">
+        <div className="grid grid-cols-[1fr_1.2fr_auto] gap-3 pb-2 border-b border-border/30 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 shrink-0">
           <div>Date</div>
-          <div className="text-left">Symbol</div>
-          <div className="text-right">P&L</div>
+          <div>Symbol</div>
+          <div className="text-right min-w-[70px]">P&L</div>
         </div>
 
-        {/* Trades List - scrollable with full height utilization */}
-        <div className="space-y-0.5 flex-1 min-h-0 overflow-y-auto">
+        {/* Trades List - shows only what fits, no scrolling */}
+        <div ref={containerRef} className="flex-1 min-h-0 overflow-hidden">
           {recentTrades.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
               <div className="p-3 bg-muted/30 rounded-full mb-1">
@@ -84,17 +112,18 @@ export default function RecentTradesWidget() {
               return (
                 <div
                   key={trade.id || index}
-                  className="grid grid-cols-[minmax(70px,0.8fr)_1fr_minmax(70px,0.8fr)] gap-2 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors px-1 items-center"
+                  className="grid grid-cols-[1fr_1.2fr_auto] gap-3 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors px-1 items-center"
+                  style={{ height: ROW_HEIGHT }}
                 >
-                  <div className="text-muted-foreground/60 font-medium">
+                  <div className="text-muted-foreground/60 font-medium truncate">
                     {formatDate(trade.entryDate)}
                   </div>
-                  <div className="font-bold truncate text-left" title={trade.symbol || trade.instrument}>
+                  <div className="font-bold truncate" title={trade.symbol || trade.instrument}>
                     {trade.symbol || trade.instrument}
                   </div>
                   <div
                     className={cn(
-                      'text-right font-bold font-mono',
+                      'text-right font-bold font-mono min-w-[70px]',
                       isProfitable
                         ? 'text-long'
                         : isLoss

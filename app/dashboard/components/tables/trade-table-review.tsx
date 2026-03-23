@@ -663,13 +663,13 @@ export function TradeTableReview() {
       <div className="rounded-2xl sm:rounded-3xl border border-border bg-background shadow-md">
         {isMobile ? (
           <div className="relative w-full overflow-hidden rounded-2xl sm:rounded-3xl">
-            <Table className="w-full text-sm table-fixed">
+            <Table className="w-full text-sm">
               <TableHeader className="sticky top-0 z-20 bg-background border-b shadow-sm">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-10 px-3 text-[10px] uppercase tracking-wider font-bold text-muted-foreground w-[30%]">Instr.</TableHead>
-                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-center w-[20%]">Side</TableHead>
-                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-right w-[25%]">PnL</TableHead>
-                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-center w-[25%]"></TableHead>
+                  <TableHead className="h-10 px-3 text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Instr.</TableHead>
+                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-center">Side</TableHead>
+                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-right">PnL</TableHead>
+                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-center"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -771,8 +771,8 @@ export function TradeTableReview() {
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
-                      <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
+                    <TableCell colSpan={4} className="h-48 text-center p-0">
+                      <div className="flex flex-col items-center justify-center h-full w-full text-muted-foreground gap-2">
                         <div className="p-3 bg-muted/30 rounded-full">
                           <BarChart3 className="h-6 w-6 opacity-40" />
                         </div>

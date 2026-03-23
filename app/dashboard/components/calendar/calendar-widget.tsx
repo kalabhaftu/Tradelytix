@@ -370,8 +370,8 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
           </div>
         </div>
 
-        {/* Calendar Content - fully responsive without horizontal scroll */}
-        <div className="flex-1 min-h-0 overflow-auto relative">
+        {/* Calendar Content - fully responsive, fills available space */}
+        <div className="flex-1 min-h-0 overflow-hidden relative">
           {viewMode === 'daily' ? (
             <MonthlyView
               currentDate={currentDate}

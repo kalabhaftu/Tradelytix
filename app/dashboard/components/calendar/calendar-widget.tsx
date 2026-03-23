@@ -152,24 +152,22 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         ctx.drawImage(cardCanvas, 0, 0)
       }
 
-      // Logo bar directly attached under the card (no gap between card bottom and logo bar)
-      const barY = withGradient ? padding + cardH : cardH
+      // Logo bar directly attached under the card (no gap)
+      const barY = padding + cardH
       const logoYPos = barY + Math.round((logoBarHeight / 2) * scale)
       
-      // Draw actual logo image - larger size like TradeZella
-      const logoSize = Math.round(24 * scale)
-      const textWidth = Math.round(95 * scale) // approximate text width for centering
-      const totalLogoWidth = logoSize + Math.round(12 * scale) + textWidth
-      const logoX = (totalW - totalLogoWidth) / 2
+      // Draw actual logo image (scaled down from 512px)
+      const logoSize = Math.round(18 * scale)
+      const logoX = totalW / 2 - Math.round(70 * scale)
       ctx.drawImage(logoImg, logoX, logoYPos - logoSize / 2, logoSize, logoSize)
       
-      // Draw text - larger font
-      const fontSize = Math.round(15 * scale)
+      // Draw text
+      const fontSize = Math.round(12 * scale)
       ctx.font = `800 ${fontSize}px -apple-system, BlinkMacSystemFont, "Inter", sans-serif`
-      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)'
+      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.35)'
       ctx.textAlign = 'left'
       ctx.textBaseline = 'middle'
-      ctx.fillText('DELTALYTIX', logoX + logoSize + Math.round(12 * scale), logoYPos)
+      ctx.fillText('DELTALYTIX', logoX + logoSize + Math.round(10 * scale), logoYPos)
 
       out.toBlob((blob) => {
         if (!blob) { toast.error("Failed to capture screenshot"); return }

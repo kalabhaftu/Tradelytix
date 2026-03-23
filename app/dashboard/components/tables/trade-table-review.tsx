@@ -663,13 +663,13 @@ export function TradeTableReview() {
       <div className="rounded-2xl sm:rounded-3xl border border-border bg-background shadow-md">
         {isMobile ? (
           <div className="relative w-full overflow-hidden rounded-2xl sm:rounded-3xl">
-            <Table className="w-full text-sm">
+            <Table className="w-full text-sm table-fixed">
               <TableHeader className="sticky top-0 z-20 bg-background border-b shadow-sm">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-10 px-3 text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Instr.</TableHead>
-                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-center">Side</TableHead>
-                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-right">PnL</TableHead>
-                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-center"></TableHead>
+                  <TableHead className="h-10 px-3 text-[10px] uppercase tracking-wider font-bold text-muted-foreground w-[30%]">Instr.</TableHead>
+                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-center w-[20%]">Side</TableHead>
+                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-right w-[25%]">PnL</TableHead>
+                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-center w-[25%]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

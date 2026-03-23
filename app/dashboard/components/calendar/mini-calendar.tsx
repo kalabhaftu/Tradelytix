@@ -253,7 +253,7 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
           </div>
         </div>
 
-        {/* Calendar grid - fills available space */}
+        {/* Calendar grid - fills available height, no vertical overflow */}
         <div className="flex-1 min-h-0 overflow-hidden">
           <MonthlyView
             hideWeekends

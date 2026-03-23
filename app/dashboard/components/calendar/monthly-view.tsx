@@ -65,12 +65,12 @@ const DayCell = memo(function DayCell({
     <div
       onClick={!isMiniCalendar && onClick ? onClick : undefined}
       className={cn(
-        "relative flex flex-col items-center justify-center rounded-[4px] md:rounded-[6px] border transition-all duration-150 select-none group h-full",
-        // Mini calendar: cells fill available space
-        // Advanced calendar: cells fill available grid space with pointer
+        "relative flex flex-col items-center justify-center rounded-[4px] md:rounded-[6px] border transition-all duration-150 select-none group",
+        // Mini calendar: taller cells so they are properly rectangular not square
+        // Advanced calendar: cells fill grid space
         isMiniCalendar 
-          ? "min-h-[48px]" 
-          : "min-h-[48px] cursor-pointer",
+          ? "min-h-[68px] sm:min-h-[76px] lg:min-h-[84px]" 
+          : "min-h-[60px] sm:min-h-[80px] md:min-h-[100px] cursor-pointer",
 
         // No trades — uses theme tokens so it works in any color scheme
         !hasTrades && isCurrentMonth && "bg-muted/5 border-border/20 hover:border-border/40",
@@ -247,7 +247,7 @@ function WeeklySummary({
   return (
     <div
       className={cn(
-        "flex flex-col items-start justify-center rounded-[8px] border p-2.5 cursor-pointer transition-all hover:bg-muted/30 group h-full",
+        "flex flex-col items-start justify-center rounded-[8px] border p-2.5 cursor-pointer transition-all hover:bg-muted/30 group flex-1",
         "bg-muted/10 border-border/20"
       )}
       onClick={() => onReviewWeek?.(weekDays[0])}
@@ -328,7 +328,7 @@ export default function MonthlyView({
     : WEEKDAYS
 
   return (
-    <div className="flex h-full w-full overflow-hidden">
+    <div className="flex h-full w-full overflow-x-auto overflow-y-hidden">
       <div className={cn("flex flex-1 w-full h-full", isMiniCalendar ? "min-w-[300px]" : "min-w-0 sm:min-w-[500px] lg:min-w-[700px]")}>
         {/* Main Calendar Grid */}
         <div className="flex-1 flex flex-col min-w-0 h-full">
@@ -344,8 +344,8 @@ export default function MonthlyView({
             ))}
           </div>
 
-          {/* Day Grid - flex-1 to fill available height, grid rows distribute evenly */}
-          <div className={cn("flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0", hideWeekends ? "grid-cols-5" : "grid-cols-7")} style={{ gridTemplateRows: `repeat(${weeks.length}, 1fr)` }}>
+          {/* Day Grid - flex-1 to fill remaining space, auto-rows-fr for equal row heights */}
+          <div className={cn("flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 min-h-0", hideWeekends ? "grid-cols-5" : "grid-cols-7", "auto-rows-fr")}>
             {weeks.map((week, weekIndex) => (
               <React.Fragment key={weekIndex}>
                 {week.map((date) => {
@@ -372,7 +372,7 @@ export default function MonthlyView({
           </div>
         </div>
 
-        {/* Weekly Summaries Sidebar — uses same grid layout as the day grid */}
+        {/* Weekly Summaries Sidebar — uses same flex layout as the day grid */}
         {!isMiniCalendar && (
           <div className="hidden lg:flex flex-col w-[110px] xl:w-[125px] border-l border-border/10 ml-1 shrink-0">
             {/* Spacer matches weekday-header height exactly (py-1.5 md:py-2 + text line = ~34px on md) */}
@@ -380,8 +380,8 @@ export default function MonthlyView({
               <div className="h-[16px]" /> {/* text-[11px] line height */}
             </div>
 
-            {/* Week rows — uses grid to align with day grid rows */}
-            <div className="flex-1 grid gap-1 md:gap-1.5 p-2 pt-0 pl-1" style={{ gridTemplateRows: `repeat(${weeks.length}, 1fr)` }}>
+            {/* Week rows — flex-1 so they fill remaining space and align with grid rows */}
+            <div className="flex-1 flex flex-col gap-1 md:gap-1.5 p-2 pt-0 pl-1 min-h-0">
               {weeks.map((week, index) => (
                 <WeeklySummary
                   key={index}

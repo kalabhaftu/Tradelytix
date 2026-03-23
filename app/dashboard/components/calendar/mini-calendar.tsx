@@ -115,22 +115,24 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
         ctx.drawImage(cardCanvas, 0, 0)
       }
 
-      // Logo bar directly attached under the card (no gap)
-      const barY = padding + cardH
+      // Logo bar directly attached under the card (no gap between card bottom and logo bar)
+      const barY = withGradient ? padding + cardH : cardH
       const logoYPos = barY + Math.round((logoBarHeight / 2) * scale)
       
-      // Draw actual logo image (scaled down from 512px)
-      const logoSize = Math.round(16 * scale)
-      const logoX = totalW / 2 - Math.round(60 * scale)
+      // Draw actual logo image - larger size like TradeZella
+      const logoSize = Math.round(22 * scale)
+      const textWidth = Math.round(85 * scale) // approximate text width for centering
+      const totalLogoWidth = logoSize + Math.round(10 * scale) + textWidth
+      const logoX = (totalW - totalLogoWidth) / 2
       ctx.drawImage(logoImg, logoX, logoYPos - logoSize / 2, logoSize, logoSize)
       
-      // Draw text
-      const fontSize = Math.round(11 * scale)
+      // Draw text - larger font
+      const fontSize = Math.round(14 * scale)
       ctx.font = `800 ${fontSize}px -apple-system, BlinkMacSystemFont, "Inter", sans-serif`
-      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.35)'
+      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)'
       ctx.textAlign = 'left'
       ctx.textBaseline = 'middle'
-      ctx.fillText('DELTALYTIX', logoX + logoSize + Math.round(8 * scale), logoYPos)
+      ctx.fillText('DELTALYTIX', logoX + logoSize + Math.round(10 * scale), logoYPos)
 
       out.toBlob((blob) => {
         if (!blob) { toast.error("Failed to capture screenshot"); return }

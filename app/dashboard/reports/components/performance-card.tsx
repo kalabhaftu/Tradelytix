@@ -43,28 +43,31 @@ export function PerformanceCard({ period, stats, userName }: PerformanceCardProp
         setIsExporting(true)
 
         try {
-            // Dynamically import html2canvas to avoid SSR issues
             const html2canvas = (await import('html2canvas')).default
 
-            // Measure the card as rendered — pin dimensions in the clone so
-            // html2canvas never reflows it into a different viewport size.
-            const rect = cardRef.current.getBoundingClientRect()
+            // Clone into a hidden container at full size to avoid any clipping
+            const cardEl = cardRef.current
+            const clone = cardEl.cloneNode(true) as HTMLElement
+            clone.style.position = 'fixed'
+            clone.style.left = '-9999px'
+            clone.style.top = '0'
+            clone.style.width = '480px'  // Fixed width for consistent exports
+            clone.style.height = 'auto'
+            clone.style.transform = 'none'
+            clone.style.overflow = 'visible'
+            document.body.appendChild(clone)
 
-            const canvas = await html2canvas(cardRef.current, {
+            // Wait for layout
+            await new Promise(r => setTimeout(r, 50))
+
+            const canvas = await html2canvas(clone, {
                 scale: 3,
                 useCORS: true,
                 logging: false,
-                // Solid background so the card is never transparent
                 backgroundColor: null,
-                windowWidth: Math.round(rect.width),
-                windowHeight: Math.round(rect.height),
-                onclone: (_doc: Document, el: HTMLElement) => {
-                    el.style.width = `${rect.width}px`
-                    el.style.height = `${rect.height}px`
-                    el.style.overflow = 'hidden'
-                    el.style.borderRadius = '24px'
-                },
             })
+
+            document.body.removeChild(clone)
 
             canvas.toBlob((blob) => {
                 if (!blob) {
@@ -75,7 +78,10 @@ export function PerformanceCard({ period, stats, userName }: PerformanceCardProp
                 const a = document.createElement('a')
                 a.href = url
                 a.download = `deltalytix-performance-${Date.now()}.png`
+                a.style.display = 'none'
+                document.body.appendChild(a)
                 a.click()
+                document.body.removeChild(a)
                 URL.revokeObjectURL(url)
                 toast.success('Performance card exported!')
             }, 'image/png')
@@ -121,11 +127,11 @@ export function PerformanceCard({ period, stats, userName }: PerformanceCardProp
                 ref={cardRef}
                 data-performance-card
                 className={cn(
-                    "relative w-full overflow-hidden rounded-3xl p-7 flex flex-col gap-6",
+                    "relative w-full max-w-[480px] mx-auto overflow-hidden rounded-3xl p-6 sm:p-7 flex flex-col gap-5",
                     "border border-border bg-card text-card-foreground",
                     "shadow-xl"
                 )}
-                style={{ aspectRatio: '1.91 / 1', minHeight: 220 }}
+                style={{ minHeight: 280 }}
             >
                 {/* Subtle background glow — uses theme colors, not hardcoded */}
                 <div className="pointer-events-none absolute inset-0">

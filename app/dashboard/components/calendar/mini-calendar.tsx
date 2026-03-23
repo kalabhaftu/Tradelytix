@@ -43,7 +43,6 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
       const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim()
       const resolvedBg = bgColor ? `hsl(${bgColor})` : '#0d0d0d'
 
-      // Capture the card only — logo will be drawn below it
       const cardCanvas = await html2canvas(calendarRef.current, {
         backgroundColor: resolvedBg,
         scale,
@@ -55,17 +54,16 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
           clonedElem.style.width = `${rect.width}px`
           clonedElem.style.height = `${rect.height}px`
           clonedElem.style.overflow = 'hidden'
-          // Hide screenshot button
           clonedElem.querySelectorAll('.screenshot-btn').forEach((el) => {
             (el as HTMLElement).style.display = 'none'
           })
         },
       })
 
-      const logoBarHeight = 48
+      const logoBarHeight = 52
       const cardW = cardCanvas.width
       const cardH = cardCanvas.height
-      const padding = withGradient ? Math.round(20 * scale) : 0
+      const padding = withGradient ? Math.round(28 * scale) : 0
       const totalW = cardW + padding * 2
       const totalH = cardH + padding * 2 + Math.round(logoBarHeight * scale)
 
@@ -83,10 +81,10 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
         ctx.fillRect(0, 0, totalW, totalH)
 
         ctx.save()
-        ctx.shadowColor = 'rgba(0,0,0,0.5)'
-        ctx.shadowBlur = 40 * scale
-        ctx.shadowOffsetY = 10 * scale
-        const r = 14 * scale
+        ctx.shadowColor = 'rgba(0,0,0,0.55)'
+        ctx.shadowBlur = 45 * scale
+        ctx.shadowOffsetY = 12 * scale
+        const r = 16 * scale
         ctx.beginPath()
         ctx.moveTo(padding + r, padding)
         ctx.lineTo(padding + cardW - r, padding)
@@ -102,21 +100,32 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
         ctx.drawImage(cardCanvas, padding, padding)
         ctx.restore()
       } else {
+        ctx.fillStyle = resolvedBg
+        ctx.fillRect(0, 0, totalW, totalH)
         ctx.drawImage(cardCanvas, 0, 0)
       }
 
-      // Logo bar — always below the card, never overlapping cells
+      // Draw logo bar at bottom
       const barY = padding + cardH + (withGradient ? padding : 0)
-      ctx.fillStyle = withGradient ? 'rgba(0,0,0,0)' : resolvedBg
-      ctx.fillRect(0, barY, totalW, Math.round(logoBarHeight * scale))
-
-      const fontSize = Math.round(12 * scale)
-      ctx.font = `900 ${fontSize}px -apple-system, BlinkMacSystemFont, "Inter", sans-serif`
-      ctx.textAlign = 'center'
+      
+      // Draw logo icon (delta triangle) + text
+      const logoSize = Math.round(14 * scale)
+      const logoX = totalW / 2 - Math.round(60 * scale)
+      const logoYPos = barY + Math.round((logoBarHeight / 2) * scale)
+      
+      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.35)'
+      ctx.beginPath()
+      ctx.moveTo(logoX + logoSize / 2, logoYPos - logoSize / 2)
+      ctx.lineTo(logoX + logoSize, logoYPos + logoSize / 2)
+      ctx.lineTo(logoX, logoYPos + logoSize / 2)
+      ctx.closePath()
+      ctx.fill()
+      
+      const fontSize = Math.round(11 * scale)
+      ctx.font = `800 ${fontSize}px -apple-system, BlinkMacSystemFont, "Inter", sans-serif`
+      ctx.textAlign = 'left'
       ctx.textBaseline = 'middle'
-      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.35)'
-      const logoY = barY + Math.round((logoBarHeight / 2) * scale)
-      ctx.fillText('△  DELTALYTIX', totalW / 2, logoY)
+      ctx.fillText('DELTALYTIX', logoX + logoSize + Math.round(7 * scale), logoYPos)
 
       out.toBlob((blob) => {
         if (!blob) { toast.error("Failed to capture screenshot"); return }

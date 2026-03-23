@@ -183,7 +183,6 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
       <div
         id="mini-calendar-watermark"
         className="hidden absolute bottom-0 left-0 right-0 items-center justify-center gap-2.5 py-3 bg-muted/10 border-t border-border/20"
-        style={{ display: 'none' }}
       >
         <Logo className="w-5 h-5 text-foreground/70" />
         <span className="text-sm font-black uppercase tracking-[0.2em] text-foreground/70">Deltalytix</span>

@@ -180,26 +180,26 @@ export default function TradingOverview({ size = 'large' }: TradingOverviewProps
   return (
     <WidgetCard title="Trading Overview" headerRight={settingsButton}>
       {hasData ? (
-        <div className="h-full flex flex-col gap-5">
+        <div className="h-full flex flex-col gap-3 sm:gap-5">
           {/* Top: Streak + Risk — flowing inline metrics */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Current Streak */}
-            <div className="space-y-1">
+            <div className="space-y-0.5 sm:space-y-1">
               <div className="flex items-center gap-1.5">
                 {streakData.isWinning ? (
-                  <Flame className="h-3.5 w-3.5 text-chart-4" />
+                  <Flame className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-chart-4" />
                 ) : (
-                  <Snowflake className="h-3.5 w-3.5 text-chart-1" />
+                  <Snowflake className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-chart-1" />
                 )}
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Streak</span>
+                <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Streak</span>
               </div>
               <p className={cn(
-                "text-2xl font-bold tracking-tight font-mono",
+                "text-xl sm:text-2xl font-bold tracking-tight font-mono",
                 streakData.isWinning ? "text-long" : "text-short"
               )}>
                 {streakData.currentStreak}
               </p>
-              <div className="flex items-center gap-3 text-[10px] text-muted-foreground/60">
+              <div className="flex items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px] text-muted-foreground/60">
                 <span className="flex items-center gap-1">
                   <TrendingUp className="h-2.5 w-2.5 text-long" />
                   Best: {streakData.longestWinStreak}
@@ -212,10 +212,10 @@ export default function TradingOverview({ size = 'large' }: TradingOverviewProps
             </div>
 
             {/* Max Drawdown */}
-            <div className="space-y-1">
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Max Drawdown</span>
+            <div className="space-y-0.5 sm:space-y-1">
+              <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Max Drawdown</span>
               <p className={cn(
-                "text-2xl font-bold tracking-tight font-mono",
+                "text-xl sm:text-2xl font-bold tracking-tight font-mono",
                 riskStats.maxDrawdown > 1000 ? "text-short" : riskStats.maxDrawdown > 500 ? "text-warning" : "text-foreground"
               )}>
                 ${riskStats.maxDrawdown.toLocaleString('en-US', { maximumFractionDigits: 0 })}
@@ -223,10 +223,10 @@ export default function TradingOverview({ size = 'large' }: TradingOverviewProps
             </div>
 
             {/* Largest Loss */}
-            <div className="space-y-1">
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Largest Loss</span>
+            <div className="space-y-0.5 sm:space-y-1">
+              <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Largest Loss</span>
               <p className={cn(
-                "text-2xl font-bold tracking-tight font-mono",
+                "text-xl sm:text-2xl font-bold tracking-tight font-mono",
                 riskStats.largestLoss > 500 ? "text-short" : "text-foreground"
               )}>
                 ${riskStats.largestLoss.toLocaleString('en-US', { maximumFractionDigits: 0 })}
@@ -234,9 +234,9 @@ export default function TradingOverview({ size = 'large' }: TradingOverviewProps
             </div>
 
             {/* Avg Loss */}
-            <div className="space-y-1">
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Avg Loss</span>
-              <p className="text-2xl font-bold tracking-tight font-mono text-foreground">
+            <div className="space-y-0.5 sm:space-y-1">
+              <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Avg Loss</span>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-foreground">
                 ${riskStats.avgLoss.toLocaleString('en-US', { maximumFractionDigits: 0 })}
               </p>
             </div>

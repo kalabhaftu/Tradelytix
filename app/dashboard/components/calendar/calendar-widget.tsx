@@ -306,9 +306,9 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
           </div>
         </div>
 
-        {/* Calendar Content */}
-        <div className="flex-1 min-h-[450px] md:min-h-[500px] overflow-auto relative">
-          <div className="min-w-[600px] h-full flex flex-col">
+        {/* Calendar Content - responsive min-width based on container */}
+        <div className="flex-1 min-h-0 overflow-auto relative">
+          <div className="min-w-[400px] h-full flex flex-col">
             {viewMode === 'daily' ? (
             <MonthlyView
               currentDate={currentDate}
@@ -328,6 +328,14 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
           </div>
         </div>
 
+        {/* Footer with Logo - visible branding */}
+        <div className="flex items-center justify-center gap-2 py-2.5 px-4 border-t border-border/20 bg-muted/5 flex-shrink-0">
+          <Logo className="w-4 h-4 text-muted-foreground/60" />
+          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">
+            Deltalytix
+          </span>
+        </div>
+
         <CalendarModal
           isOpen={selectedDate !== null}
           onOpenChange={(open) => !open && setSelectedDate(null)}
@@ -338,9 +346,12 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
       </WidgetCard>
 
       {/* Hidden watermark/logo for screenshots */}
-      <div id="calendar-watermark" className="hidden flex-col items-center justify-center pb-6">
-        <Logo className="w-12 h-12" />
-        <span className="text-xl font-bold mt-2 font-mono tracking-widest text-[var(--foreground)] watermark-text">DELTA</span>
+      <div id="calendar-watermark" className="hidden flex-col items-center justify-center pb-6 gap-2">
+        <div className="flex items-center gap-3">
+          <Logo className="w-8 h-8" />
+          <span className="text-lg font-black uppercase tracking-[0.25em] watermark-text">Deltalytix</span>
+        </div>
+        <span className="text-[10px] font-medium uppercase tracking-widest text-white/60">Trading Performance Analytics</span>
       </div>
 
       <WeeklyModal

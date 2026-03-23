@@ -40,9 +40,9 @@ export function WidgetCard({
     return (
       <div
         className={cn(
-          'w-full h-full overflow-hidden',
-          'bg-muted/10 border border-border/40 rounded-2xl',
-          'p-4',
+          'w-full h-full overflow-hidden widget-card',
+          'bg-muted/10 border border-border/40 rounded-xl sm:rounded-2xl',
+          'p-3 sm:p-4',
           className
         )}
       >
@@ -54,16 +54,16 @@ export function WidgetCard({
   return (
     <div
       className={cn(
-        'w-full h-full overflow-hidden flex flex-col',
-        'bg-muted/10 border border-border/40 rounded-2xl',
-        !noPadding && 'p-5',
+        'w-full h-full overflow-hidden flex flex-col widget-card',
+        'bg-muted/10 border border-border/40 rounded-xl sm:rounded-2xl',
+        !noPadding && 'p-3 sm:p-5',
         className
       )}
     >
       {title && (
-        <div className="flex items-center justify-between mb-4 flex-shrink-0">
+        <div className="flex items-center justify-between mb-3 sm:mb-4 flex-shrink-0">
           <div className="flex items-center gap-1.5">
-            <h3 className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">
+            <h3 className="text-[9px] sm:text-[10px] uppercase font-black tracking-widest text-muted-foreground">
               {title}
             </h3>
           </div>

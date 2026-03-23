@@ -188,7 +188,7 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
         </div>
 
         {/* Calendar Grid - uses MonthlyView */}
-        <div className="flex-1 min-h-[350px] md:min-h-[400px] overflow-y-auto relative">
+        <div className="flex-1 min-h-0 overflow-y-auto relative">
           <MonthlyView
             hideWeekends
             currentDate={currentDate}
@@ -196,12 +196,23 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
             isMiniCalendar={true}
           />
         </div>
+
+        {/* Footer with Logo - visible branding */}
+        <div className="flex items-center justify-center gap-2 py-2 px-3 border-t border-border/20 bg-muted/5 flex-shrink-0">
+          <Logo className="w-3.5 h-3.5 text-muted-foreground/60" />
+          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">
+            Deltalytix
+          </span>
+        </div>
       </WidgetCard>
       
       {/* Hidden watermark/logo for screenshots */}
-      <div id="mini-calendar-watermark" className="hidden flex-col items-center justify-center pb-6">
-        <Logo className="w-12 h-12" />
-        <span className="text-xl font-bold mt-2 font-mono tracking-widest text-[#ffffff] watermark-text">DELTA</span>
+      <div id="mini-calendar-watermark" className="hidden flex-col items-center justify-center pb-6 gap-2">
+        <div className="flex items-center gap-3">
+          <Logo className="w-7 h-7" />
+          <span className="text-base font-black uppercase tracking-[0.25em] text-white watermark-text">Deltalytix</span>
+        </div>
+        <span className="text-[9px] font-medium uppercase tracking-widest text-white/60">Trading Performance Analytics</span>
       </div>
     </div>
   )

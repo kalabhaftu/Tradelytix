@@ -49,9 +49,9 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
 
   return (
     <WidgetCard isKpi>
-      <div className="h-full flex flex-col justify-center gap-1">
+      <div className="h-full flex flex-col justify-center gap-0.5 sm:gap-1">
         <div className="flex items-center gap-1.5">
-          <span className="text-[8px] uppercase font-black tracking-widest text-muted-foreground/60">
+          <span className="text-[7px] sm:text-[8px] uppercase font-black tracking-widest text-muted-foreground/60 truncate">
             Account Balance & P&L
           </span>
           <TooltipProvider delayDuration={100}>
@@ -72,12 +72,12 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
           </TooltipProvider>
         </div>
 
-        <div className="text-xl font-black font-mono text-foreground tracking-tighter">
+        <div className="text-lg sm:text-xl font-black font-mono text-foreground tracking-tighter kpi-value">
           {formatCompactCurrency(totalBalance)}
         </div>
 
         <div className="flex flex-col gap-0.5">
-          <div className="flex items-center gap-3 text-[10px]">
+          <div className="flex items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px]">
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground/50">P&L:</span>
               <span className={cn(
@@ -94,7 +94,7 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-1 text-[10px]">
+          <div className="flex items-center gap-1 text-[9px] sm:text-[10px]">
             <span className="text-muted-foreground/50">Net:</span>
             <span className={cn(
               "font-bold font-mono",

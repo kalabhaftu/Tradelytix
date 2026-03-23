@@ -42,16 +42,16 @@ const DayWinRate = React.memo(function DayWinRate({ size }: DayWinRateProps) {
 
   return (
     <WidgetCard isKpi>
-      <div className="h-full flex items-center justify-between">
-        <div className="flex flex-col gap-0.5">
-          <div className="flex items-center gap-2">
-            <span className="text-[8px] uppercase font-black tracking-widest text-muted-foreground/60">
+      <div className="h-full flex items-center justify-between gap-2">
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="text-[7px] sm:text-[8px] uppercase font-black tracking-widest text-muted-foreground/60">
               Day Win %
             </span>
             <TooltipProvider delayDuration={100}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="w-3 h-3 rounded-full bg-muted flex items-center justify-center cursor-help">
+                  <div className="w-3 h-3 rounded-full bg-muted flex items-center justify-center cursor-help flex-shrink-0">
                     <Info className="h-3 w-3 text-muted-foreground" />
                   </div>
                 </TooltipTrigger>
@@ -61,7 +61,7 @@ const DayWinRate = React.memo(function DayWinRate({ size }: DayWinRateProps) {
               </Tooltip>
             </TooltipProvider>
           </div>
-          <span className="text-xl font-black font-mono text-foreground tracking-tighter">
+          <span className="text-lg sm:text-xl font-black font-mono text-foreground tracking-tighter kpi-value">
             {dayWinRate.toFixed(1)}%
           </span>
         </div>
@@ -69,10 +69,11 @@ const DayWinRate = React.memo(function DayWinRate({ size }: DayWinRateProps) {
         <div className="flex-shrink-0">
           <CircularProgress
             value={dayWinRate}
-            size={48}
-            strokeWidth={5}
+            size={40}
+            strokeWidth={4}
             color={getColor(dayWinRate)}
             showPercentage={false}
+            className="sm:w-12 sm:h-12"
           />
         </div>
       </div>

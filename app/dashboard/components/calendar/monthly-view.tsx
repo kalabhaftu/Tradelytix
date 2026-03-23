@@ -66,7 +66,10 @@ const DayCell = memo(function DayCell({
       onClick={!isMiniCalendar && onClick ? onClick : undefined}
       className={cn(
         "relative flex flex-col items-center justify-center rounded-[4px] md:rounded-[6px] border transition-all duration-150 select-none group",
-        isMiniCalendar ? "aspect-square" : "aspect-square md:aspect-auto md:min-h-[100px] cursor-pointer",
+        // Mini calendar uses flex-grow with min-height, advanced calendar uses aspect ratio
+        isMiniCalendar 
+          ? "min-h-[48px] md:min-h-[56px] lg:min-h-[64px]" 
+          : "aspect-square md:aspect-auto md:min-h-[100px] cursor-pointer",
 
         // No trades — dark neutral
         !hasTrades && isCurrentMonth && "bg-transparent md:bg-[#16181d] border-transparent md:border-[#22252b] hover:border-border/30",
@@ -83,33 +86,49 @@ const DayCell = memo(function DayCell({
         // Not current month
         !isCurrentMonth && "opacity-20 pointer-events-none",
         
-        // Today styling for simple cell
-        isTodayDate && isCurrentMonth && !isMiniCalendar && "ring-1 ring-primary ring-offset-0 md:ring-1",
+        // Today styling - applies to both mini and advanced calendar
+        isTodayDate && isCurrentMonth && "ring-1 ring-primary ring-offset-0",
       )}
     >
       {/* =======================
           MOBILE & MINI VIEW (Simple)
           ======================= */}
       <div className={cn(
-        "flex flex-col items-center justify-center w-full h-full relative",
+        "flex flex-col items-center justify-center w-full h-full relative p-1",
         !isMiniCalendar && "md:hidden"
       )}>
         {/* Simple Note Dot */}
         {hasNotes && (
-          <div className="absolute top-[10%] right-[10%] md:top-1 md:right-1.5 w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-primary" />
+          <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary" aria-label="Has notes" />
         )}
         
         {/* Centered Date Number for Simple View */}
         <span
           className={cn(
-            "text-sm md:text-sm font-semibold",
+            "text-xs md:text-sm font-bold leading-none",
             isTodayDate && isCurrentMonth
-              ? "text-primary-foreground bg-primary rounded-full w-6 h-6 flex items-center justify-center"
+              ? "text-primary-foreground bg-primary rounded-full w-5 h-5 md:w-6 md:h-6 flex items-center justify-center text-[10px] md:text-xs"
               : "text-foreground/80",
           )}
         >
           {format(date, 'd')}
         </span>
+        
+        {/* Mini P&L indicator for cells with trades */}
+        {hasTrades && (
+          <span
+            className={cn(
+              "text-[9px] md:text-[10px] font-bold mt-0.5 leading-none",
+              isProfit ? "text-long" : isLoss ? "text-short" : "text-muted-foreground"
+            )}
+          >
+            {dayData && dayData.pnl !== undefined && (
+              dayData.pnl < 0 
+                ? `-$${Math.abs(dayData.pnl) >= 1000 ? (Math.abs(dayData.pnl) / 1000).toFixed(1) + 'k' : Math.abs(dayData.pnl).toFixed(0)}`
+                : `$${dayData.pnl >= 1000 ? (dayData.pnl / 1000).toFixed(1) + 'k' : dayData.pnl.toFixed(0)}`
+            )}
+          </span>
+        )}
       </div>
 
       {/* =======================
@@ -311,11 +330,11 @@ export default function MonthlyView({
 
   return (
     <div className="flex h-full w-full overflow-x-auto overflow-y-hidden">
-      <div className={cn("flex flex-1 w-full h-full", isMiniCalendar ? "min-w-[400px]" : "min-w-[700px]")}>
+      <div className={cn("flex flex-1 w-full h-full", isMiniCalendar ? "min-w-[320px]" : "min-w-[700px]")}>
         {/* Main Calendar Grid */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 h-full">
           {/* Weekday Headers */}
-          <div className={cn("grid gap-1 md:gap-1.5 px-2 md:px-3 py-1.5 md:py-2", hideWeekends ? "grid-cols-5" : "grid-cols-7")}>
+          <div className={cn("grid gap-1 md:gap-1.5 px-2 md:px-3 py-1.5 md:py-2 shrink-0", hideWeekends ? "grid-cols-5" : "grid-cols-7")}>
             {displayWeekdays.map((day) => (
               <div
                 key={day}
@@ -326,8 +345,8 @@ export default function MonthlyView({
             ))}
           </div>
 
-          {/* Day Grid */}
-          <div className={cn("flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 auto-rows-fr min-h-0", hideWeekends ? "grid-cols-5" : "grid-cols-7")}>
+          {/* Day Grid - flex-1 to fill available height, grid rows distribute evenly */}
+          <div className={cn("flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 min-h-0", hideWeekends ? "grid-cols-5" : "grid-cols-7", isMiniCalendar ? "auto-rows-fr" : "auto-rows-fr")}>
             {weeks.map((week, weekIndex) => (
               <React.Fragment key={weekIndex}>
                 {week.map((date) => {

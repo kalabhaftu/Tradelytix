@@ -660,16 +660,16 @@ export function TradeTableReview() {
         </div>
       </div>
 
-      <div className="rounded-3xl border border-border bg-background shadow-md">
+      <div className="rounded-2xl sm:rounded-3xl border border-border bg-background shadow-md">
         {isMobile ? (
-          <div className="relative w-full overflow-hidden rounded-3xl">
+          <div className="relative w-full overflow-hidden rounded-2xl sm:rounded-3xl">
             <Table className="w-full text-sm">
               <TableHeader className="sticky top-0 z-20 bg-background border-b shadow-sm">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-9 px-3 text-[11px] uppercase tracking-wide font-medium text-muted-foreground">Instr.</TableHead>
-                  <TableHead className="h-9 px-2 text-[11px] uppercase tracking-wide font-medium text-muted-foreground text-center">Side</TableHead>
-                  <TableHead className="h-9 px-2 text-[11px] uppercase tracking-wide font-medium text-muted-foreground text-right">PnL</TableHead>
-                  <TableHead className="h-9 px-2 text-[11px] uppercase tracking-wide font-medium text-muted-foreground text-center w-[60px]"></TableHead>
+                  <TableHead className="h-10 px-3 text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Instr.</TableHead>
+                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-center">Side</TableHead>
+                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-right">PnL</TableHead>
+                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-center w-[60px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -683,27 +683,27 @@ export function TradeTableReview() {
                     return (
                       <React.Fragment key={row.id}>
                         <TableRow
-                          className="hover:bg-muted/30 transition-colors cursor-pointer"
+                          className="hover:bg-muted/30 active:bg-muted/50 transition-colors cursor-pointer touch-manipulation"
                           onClick={() => row.toggleExpanded()}
                         >
-                          <TableCell className="px-3 py-2.5">
-                            <span className="font-bold tracking-tight text-xs">{trade.instrument}</span>
+                          <TableCell className="px-3 py-3">
+                            <span className="font-bold tracking-tight text-sm">{trade.instrument}</span>
                           </TableCell>
-                          <TableCell className="px-2 py-2.5 text-center">
-                            <Badge variant={isLong ? 'default' : 'destructive'} className="text-[10px] uppercase font-bold px-1.5 py-0">
+                          <TableCell className="px-2 py-3 text-center">
+                            <Badge variant={isLong ? 'default' : 'destructive'} className="text-[10px] uppercase font-bold px-2 py-0.5">
                               {trade.side?.toUpperCase().slice(0, 4)}
                             </Badge>
                           </TableCell>
-                          <TableCell className="px-2 py-2.5 text-right">
-                            <span className={cn('font-bold font-mono text-xs', pnlValue >= 0 ? 'text-profit' : 'text-loss')}>
+                          <TableCell className="px-2 py-3 text-right">
+                            <span className={cn('font-bold font-mono text-sm', pnlValue >= 0 ? 'text-profit' : 'text-loss')}>
                               {pnlValue >= 0 ? '+' : ''}{formatCurrency(pnlValue)}
                             </span>
                           </TableCell>
-                          <TableCell className="px-2 py-2.5 text-center">
+                          <TableCell className="px-2 py-3 text-center">
                             <Button
                               variant="secondary"
                               size="sm"
-                              className="h-6 px-2 text-[10px]"
+                              className="h-8 px-3 text-xs touch-manipulation"
                               onClick={(e) => { e.stopPropagation(); handleViewDetails(trade) }}
                             >
                               View
@@ -756,11 +756,11 @@ export function TradeTableReview() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-2 mt-2 pt-3 border-t border-border/30">
-                                <Button variant="outline" size="sm" className="h-7 text-[11px] flex-1" onClick={() => handleEditTrade(trade)}>
+                                <Button variant="outline" size="sm" className="h-9 text-xs flex-1 touch-manipulation" onClick={() => handleEditTrade(trade)}>
                                   Edit
                                 </Button>
-                                <Button variant="outline" size="sm" className="h-7 text-[11px] flex-1" onClick={() => handleViewChart(trade)}>
-                                  <BarChart3 className="h-3 w-3 mr-1" /> Chart
+                                <Button variant="outline" size="sm" className="h-9 text-xs flex-1 touch-manipulation" onClick={() => handleViewChart(trade)}>
+                                  <BarChart3 className="h-3.5 w-3.5 mr-1.5" /> Chart
                                 </Button>
                               </div>
                             </TableCell>

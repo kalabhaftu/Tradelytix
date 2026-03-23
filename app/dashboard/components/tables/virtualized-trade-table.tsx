@@ -158,9 +158,9 @@ export const VirtualizedTradeTable = memo(function VirtualizedTradeTable({
   }
 
   return (
-    <div className="border rounded-lg overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-4 px-4 py-3 bg-muted/50 border-b font-semibold text-sm">
+    <div className="border rounded-lg sm:rounded-xl overflow-hidden">
+      {/* Header - hide on mobile, show condensed on tablet */}
+      <div className="hidden md:flex items-center gap-4 px-4 py-3 bg-muted/50 border-b font-semibold text-sm">
         {onTradeSelect && <div className="flex-shrink-0 w-4" />}
         <div className="flex-shrink-0 w-24">Symbol</div>
         <div className="flex-shrink-0 w-16">Side</div>
@@ -172,8 +172,14 @@ export const VirtualizedTradeTable = memo(function VirtualizedTradeTable({
         <div className="flex-shrink-0 w-32">Date</div>
       </div>
 
+      {/* Mobile header - simplified */}
+      <div className="flex md:hidden items-center justify-between px-3 py-2 bg-muted/50 border-b text-xs font-semibold text-muted-foreground">
+        <span>Trades</span>
+        <span>{trades.length} total</span>
+      </div>
+
       {/* Trades List */}
-      <div style={{ maxHeight: containerHeight, overflowY: 'auto' }}>
+      <div style={{ maxHeight: containerHeight, overflowY: 'auto' }} className="overflow-x-auto">
         {trades.map((trade, index) => (
           <TradeRow
             key={trade.id}
@@ -186,7 +192,7 @@ export const VirtualizedTradeTable = memo(function VirtualizedTradeTable({
       </div>
 
       {/* Footer with count */}
-      <div className="px-4 py-2 border-t bg-muted/30 text-sm text-muted-foreground text-center">
+      <div className="px-3 sm:px-4 py-2 border-t bg-muted/30 text-xs sm:text-sm text-muted-foreground text-center">
         Showing {trades.length} trade{trades.length !== 1 ? 's' : ''}
       </div>
     </div>

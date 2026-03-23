@@ -15,12 +15,12 @@ export default function RecentTradesWidget() {
     return groupTradesByExecution(formattedTrades)
   }, [formattedTrades, groupTradesByExecution])
 
-  // Get last 14 trades (sorted by most recent entry date)
-  // Limited to fit height without scrolling
+  // Get last 20 trades (sorted by most recent entry date)
+  // Increased limit to utilize full widget height
   const recentTrades = React.useMemo(() => {
     return groupedTrades
       .sort((a: any, b: any) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime())
-      .slice(0, 14)
+      .slice(0, 20)
   }, [groupedTrades])
 
   const formatCurrency = (amount: number) => {
@@ -51,8 +51,8 @@ export default function RecentTradesWidget() {
           <div className="w-[70px] sm:w-[80px] text-right shrink-0">P&L</div>
         </div>
 
-        {/* Trades List */}
-        <div className="space-y-0.5 flex-1 overflow-hidden">
+        {/* Trades List - scrollable with full height utilization */}
+        <div className="space-y-0.5 flex-1 min-h-0 overflow-y-auto">
           {recentTrades.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
               <div className="p-3 bg-muted/30 rounded-full mb-1">

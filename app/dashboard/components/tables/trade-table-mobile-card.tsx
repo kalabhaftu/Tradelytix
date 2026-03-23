@@ -50,8 +50,9 @@ export function TradeTableMobileCard({
   return (
     <div
       className={cn(
-        "border rounded-lg p-4 space-y-3 transition-all",
-        isSelected && "ring-2 ring-primary",
+        "border rounded-xl p-3 sm:p-4 space-y-3 transition-all touch-manipulation",
+        "active:scale-[0.99] active:bg-muted/20",
+        isSelected && "ring-2 ring-primary bg-primary/5",
         canExpand && "bg-muted/30",
         isExpanded && "bg-muted/50"
       )}
@@ -155,24 +156,24 @@ export function TradeTableMobileCard({
         )}
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-2 pt-2 border-t">
+      {/* Actions - larger touch targets for mobile */}
+      <div className="flex gap-2 pt-3 border-t">
         <Button
           variant="outline"
           size="sm"
           onClick={onViewDetails}
-          className="flex-1"
+          className="flex-1 h-10 sm:h-9 text-xs sm:text-sm touch-manipulation"
         >
-          <Eye className="h-4 w-4 mr-1" />
+          <Eye className="h-4 w-4 mr-1.5" />
           View
         </Button>
         <Button
           variant="outline"
           size="sm"
           onClick={onEdit}
-          className="flex-1"
+          className="flex-1 h-10 sm:h-9 text-xs sm:text-sm touch-manipulation"
         >
-          <Pencil className="h-4 w-4 mr-1" />
+          <Pencil className="h-4 w-4 mr-1.5" />
           Edit
         </Button>
         {(trade as any).imageOne && (
@@ -180,9 +181,9 @@ export function TradeTableMobileCard({
             variant="outline"
             size="sm"
             onClick={onViewChart}
-            className="flex-1"
+            className="flex-1 h-10 sm:h-9 text-xs sm:text-sm touch-manipulation"
           >
-            <BarChart3 className="h-4 w-4 mr-1" />
+            <BarChart3 className="h-4 w-4 mr-1.5" />
             Chart
           </Button>
         )}

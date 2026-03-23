@@ -10,7 +10,13 @@ import {
   SUPPORTED_PLATFORMS,
   type ProcessingResult 
 } from '@/lib/csv/universal-csv-processor'
-import { PlatformProcessorProps } from '../config/platforms'
+
+interface UniversalProcessorProps {
+  csvData: string[][]
+  headers: string[]
+  setProcessedTrades: React.Dispatch<React.SetStateAction<Trade[]>>
+  accountNumber: string
+}
 import { 
   CheckCircle2, 
   AlertTriangle, 
@@ -62,9 +68,9 @@ const formatDuration = (seconds: number): string => {
 export default function UniversalProcessor({ 
   headers, 
   csvData, 
-  processedTrades, 
-  setProcessedTrades 
-}: PlatformProcessorProps) {
+  setProcessedTrades,
+  accountNumber 
+}: UniversalProcessorProps) {
   const [processingResult, setProcessingResult] = useState<ProcessingResult | null>(null)
   const [showFieldMapping, setShowFieldMapping] = useState(false)
   const [isUsingAI, setIsUsingAI] = useState(false)

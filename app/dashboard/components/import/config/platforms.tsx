@@ -21,14 +21,7 @@ export interface ProcessedData {
   processedData: string[][]
 }
 
-export interface PlatformProcessorProps {
-  csvData: string[][]
-  headers: string[]
-  processedTrades: Trade[]
-  setProcessedTrades: React.Dispatch<React.SetStateAction<Trade[]>>
-  accountNumber?: string
-  accountNumbers?: string[]
-}
+
 
 type StepComponent = 
   | typeof ImportTypeSelection

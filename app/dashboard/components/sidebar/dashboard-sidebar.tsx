@@ -124,7 +124,7 @@ export function DashboardSidebar() {
         </SidebarGroup>
 
         {/* Spacer to push utility items to bottom */}
-        <div className="flex-1" />
+        <div className="flex-1 min-h-0" />
 
         <SidebarSeparator />
 
@@ -163,8 +163,8 @@ export function DashboardSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Footer — Sidebar toggle - extra pb on mobile to clear bottom nav */}
-      <SidebarFooter className="border-t border-border p-2 pb-20 md:pb-2">
+      {/* Footer — Collapse button anchored at absolute bottom */}
+      <SidebarFooter className="border-t border-border p-2 mt-auto">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={toggleSidebar} tooltip="Collapse" className="w-full justify-start text-muted-foreground hover:text-foreground">

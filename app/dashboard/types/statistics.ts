@@ -17,6 +17,10 @@ export interface StatisticsProps {
   biggestLoss: number;
   averageWin: number;
   averageLoss: number;
+  // Aliased properties for backward compatibility with widgets
+  avgWin?: number;
+  avgLoss?: number;
+  riskRewardRatio?: number;
   // Payout statistics
   totalPayouts: number;
   nbPayouts: number;

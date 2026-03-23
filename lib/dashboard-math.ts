@@ -8,6 +8,7 @@ import {
   calculatePeakToTroughDrawdown,
   calculateExpectancy 
 } from '@/lib/math/performance-metrics'
+import { calculateTotalStartingBalance } from '@/lib/utils/balance-calculator'
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -143,13 +144,12 @@ export function calculateDailyCumulativePnl(trades: Partial<Trade>[]) {
 export function calculateAccountBalanceChart(trades: Partial<Trade>[], activeAccountsData?: any[]) {
   const dailyMap = getDailyAggregations(trades)
   
-  let currentBalance = 0
+  // Use calculateTotalStartingBalance for proper prop-firm phase deduplication
+  // This prevents double/triple counting when master account has multiple phases
+  let startingBalance = 0
   if (activeAccountsData && activeAccountsData.length > 0) {
-    currentBalance = activeAccountsData.reduce((total, acc) => total + (acc.startingBalance || 0), 0)
+    startingBalance = calculateTotalStartingBalance(activeAccountsData)
   }
-
-  const totalPnl = Object.values(dailyMap).reduce((sum, day) => sum + day.pnl, 0)
-  const startingBalance = currentBalance - totalPnl
 
   let rollingBalance = startingBalance
   return Object.entries(dailyMap)

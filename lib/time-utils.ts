@@ -105,3 +105,111 @@ export function formatTimeInZone(date: Date | string | number, formatStr: string
   if (isNaN(parsedDate.getTime())) return 'N/A';
   return formatInTimeZone(parsedDate, timezone, formatStr);
 }
+
+/**
+ * Calculate trade duration in seconds with timezone-safe parsing.
+ * 
+ * Handles common CSV timestamp formats:
+ * - ISO 8601: "2024-01-15T09:30:00Z" or "2024-01-15T09:30:00-05:00"
+ * - US format: "01/15/2024 09:30:00" (assumed broker timezone if no offset)
+ * - Plain date: "2024-01-15" with separate time field
+ * 
+ * If timestamps lack timezone info, assumes they are in the broker's local timezone
+ * (typically America/New_York for US brokers, or UTC for NinjaTrader exports).
+ * 
+ * @param entryDate - Trade entry timestamp
+ * @param closeDate - Trade close timestamp
+ * @param fallbackTimezone - Timezone to assume if timestamps lack timezone info (default: America/New_York)
+ * @returns Duration in seconds, or 0 if calculation fails
+ */
+export function calculateTradeDuration(
+  entryDate: Date | string | number | null | undefined,
+  closeDate: Date | string | number | null | undefined,
+  fallbackTimezone: string = DEFAULT_TIMEZONE
+): number {
+  if (!entryDate || !closeDate) return 0;
+
+  try {
+    // Parse dates, handling various formats
+    const entry = normalizeToUTC(entryDate, fallbackTimezone);
+    const close = normalizeToUTC(closeDate, fallbackTimezone);
+
+    if (!entry || !close) return 0;
+    
+    const durationMs = close.getTime() - entry.getTime();
+    
+    // Sanity check: duration should be positive and reasonable (< 30 days)
+    if (durationMs < 0 || durationMs > 30 * 24 * 60 * 60 * 1000) {
+      return 0;
+    }
+    
+    return Math.round(durationMs / 1000); // Convert to seconds
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Normalize a date to UTC, handling timezone-naive strings.
+ * 
+ * @param date - Input date (various formats)
+ * @param fallbackTimezone - Timezone to assume for naive timestamps
+ * @returns Date object in UTC, or null if parsing fails
+ */
+function normalizeToUTC(
+  date: Date | string | number,
+  fallbackTimezone: string
+): Date | null {
+  if (!date) return null;
+  
+  // Already a Date object
+  if (date instanceof Date) {
+    return isNaN(date.getTime()) ? null : date;
+  }
+  
+  // Number (timestamp)
+  if (typeof date === 'number') {
+    const d = new Date(date);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  
+  // String - check if it has timezone info
+  const dateStr = String(date).trim();
+  
+  // ISO 8601 with timezone (Z or +/-offset)
+  if (/Z$|[+-]\d{2}:\d{2}$|[+-]\d{4}$/.test(dateStr)) {
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  
+  // ISO 8601 without timezone - assume fallback timezone
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(dateStr)) {
+    // Convert to zoned time then to UTC
+    try {
+      const zonedDate = toZonedTime(new Date(dateStr + 'Z'), fallbackTimezone);
+      const offset = getTimezoneOffset(fallbackTimezone, new Date(dateStr));
+      const utcDate = new Date(zonedDate.getTime() - offset);
+      return isNaN(utcDate.getTime()) ? new Date(dateStr) : utcDate;
+    } catch {
+      return new Date(dateStr);
+    }
+  }
+  
+  // Plain date format (various) - parse and assume fallback timezone
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * Get timezone offset in milliseconds for a specific date.
+ * This handles DST transitions correctly.
+ */
+function getTimezoneOffset(timezone: string, date: Date): number {
+  try {
+    const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
+    return tzDate.getTime() - utcDate.getTime();
+  } catch {
+    return 0;
+  }
+}

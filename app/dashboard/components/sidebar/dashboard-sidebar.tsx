@@ -38,17 +38,18 @@ import { useData } from '@/context/data-provider'
 const navItems = [
   { id: 'widgets', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
   { id: 'reports', label: 'Reports', icon: BarChart3, href: '/dashboard/reports' },
-  { id: 'journal', label: 'Journal', icon: BookOpen, href: '/dashboard/journal' },
-  { id: 'accounts', label: 'Accounts', icon: Users, href: '/dashboard/accounts' },
   { id: 'table', label: 'Trades', icon: Table, href: '/dashboard/table' },
+  { id: 'journal', label: 'Journal', icon: BookOpen, href: '/dashboard/journal' },
   { id: 'playbook', label: 'Playbook', icon: List, href: '/dashboard/playbook' },
+  { id: 'accounts', label: 'Accounts', icon: Users, href: '/dashboard/accounts' },
   { id: 'backtesting', label: 'Backtesting', icon: FlaskConical, href: '/dashboard/backtesting' },
 ]
 
-const toolItems = [
-  { id: 'settings', label: 'Settings', icon: Settings, href: '/dashboard/settings' },
-  { id: 'data', label: 'Data', icon: Database, href: '/dashboard/data' },
+// Utility items at the bottom
+const utilityItems = [
   { id: 'docs', label: 'Documentation', icon: FileText, href: '/docs' },
+  { id: 'data', label: 'Data', icon: Database, href: '/dashboard/data' },
+  { id: 'settings', label: 'Settings', icon: Settings, href: '/dashboard/settings' },
 ]
 
 export function DashboardSidebar() {
@@ -99,7 +100,7 @@ export function DashboardSidebar() {
       </SidebarHeader>
 
       {/* Main nav */}
-      <SidebarContent>
+      <SidebarContent className="flex flex-col">
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -122,14 +123,28 @@ export function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* Spacer to push utility items to bottom */}
+        <div className="flex-1" />
+
         <SidebarSeparator />
 
-        {/* Tools */}
+        {/* Utility items at bottom of content area */}
         <SidebarGroup>
-          <SidebarGroupLabel>Tools</SidebarGroupLabel>
+          <SidebarGroupLabel>Utilities</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {toolItems.map((item) => (
+              {/* Refresh Data action */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip="Refresh Data"
+                  onClick={() => refreshTrades()}
+                >
+                  <RefreshCw />
+                  <span>Refresh Data</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {utilityItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
                     tooltip={item.label}
@@ -143,23 +158,12 @@ export function DashboardSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-
-              {/* Refresh Data action */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  tooltip="Refresh Data"
-                  onClick={() => refreshTrades()}
-                >
-                  <RefreshCw />
-                  <span>Refresh Data</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Footer — Sidebar toggle at bottom */}
+      {/* Footer — Sidebar toggle */}
       <SidebarFooter className="border-t border-border p-2">
         <SidebarMenu>
           <SidebarMenuItem>

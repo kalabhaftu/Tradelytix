@@ -78,7 +78,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
       const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim()
       const resolvedBg = bgColor ? `hsl(${bgColor})` : '#0d0d0d'
 
-      // Capture just the card — no extra padding, no logo inside
+      // Capture just the card
       const cardCanvas = await html2canvas(calendarRef.current, {
         backgroundColor: resolvedBg,
         scale,
@@ -90,22 +90,20 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
           clonedElem.style.width = `${rect.width}px`
           clonedElem.style.height = `${rect.height}px`
           clonedElem.style.overflow = 'hidden'
-          // Hide the screenshot camera button
           clonedElem.querySelectorAll('.screenshot-btn').forEach((el) => {
             (el as HTMLElement).style.display = 'none'
           })
         },
       })
 
-      // Logo bar height in logical pixels — same as in the reference
-      const logoBarHeight = 52
+      // Logo bar height
+      const logoBarHeight = 56
       const cardW = cardCanvas.width
       const cardH = cardCanvas.height
-      const padding = withGradient ? Math.round(24 * scale) : 0
+      const padding = withGradient ? Math.round(32 * scale) : 0
       const totalW = cardW + padding * 2
       const totalH = cardH + padding * 2 + Math.round(logoBarHeight * scale)
 
-      // Compose onto a new canvas
       const out = document.createElement('canvas')
       out.width = totalW
       out.height = totalH
@@ -119,12 +117,11 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         ctx.fillStyle = grad
         ctx.fillRect(0, 0, totalW, totalH)
 
-        // Draw card with shadow + rounded corners
         ctx.save()
-        ctx.shadowColor = 'rgba(0,0,0,0.55)'
-        ctx.shadowBlur = 60 * scale
-        ctx.shadowOffsetY = 12 * scale
-        const r = 16 * scale
+        ctx.shadowColor = 'rgba(0,0,0,0.6)'
+        ctx.shadowBlur = 50 * scale
+        ctx.shadowOffsetY = 15 * scale
+        const r = 20 * scale
         ctx.beginPath()
         ctx.moveTo(padding + r, padding)
         ctx.lineTo(padding + cardW - r, padding)
@@ -140,23 +137,34 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         ctx.drawImage(cardCanvas, padding, padding)
         ctx.restore()
       } else {
+        ctx.fillStyle = resolvedBg
+        ctx.fillRect(0, 0, totalW, totalH)
         ctx.drawImage(cardCanvas, 0, 0)
       }
 
-      // Draw logo bar at the bottom — always outside the card
+      // Draw logo bar at bottom
       const barY = padding + cardH + (withGradient ? padding : 0)
-      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.0)' : resolvedBg
-      ctx.fillRect(0, barY, totalW, Math.round(logoBarHeight * scale))
-
-      // Logo text
-      const fontSize = Math.round(13 * scale)
-      ctx.font = `900 ${fontSize}px -apple-system, BlinkMacSystemFont, "Inter", sans-serif`
-      ctx.textAlign = 'center'
+      
+      // Draw the actual logo SVG + text
+      const logoSize = Math.round(16 * scale)
+      const logoX = totalW / 2 - Math.round(70 * scale)
+      const logoYPos = barY + Math.round((logoBarHeight / 2) * scale)
+      
+      // Draw logo icon (simplified delta shape)
+      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.35)'
+      ctx.beginPath()
+      ctx.moveTo(logoX + logoSize / 2, logoYPos - logoSize / 2)
+      ctx.lineTo(logoX + logoSize, logoYPos + logoSize / 2)
+      ctx.lineTo(logoX, logoYPos + logoSize / 2)
+      ctx.closePath()
+      ctx.fill()
+      
+      // Draw text
+      const fontSize = Math.round(12 * scale)
+      ctx.font = `800 ${fontSize}px -apple-system, BlinkMacSystemFont, "Inter", sans-serif`
+      ctx.textAlign = 'left'
       ctx.textBaseline = 'middle'
-      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.35)'
-      ctx.letterSpacing = `${Math.round(3 * scale)}px`
-      const logoY = barY + Math.round((logoBarHeight / 2) * scale)
-      ctx.fillText('△  DELTALYTIX', totalW / 2, logoY)
+      ctx.fillText('DELTALYTIX', logoX + logoSize + Math.round(8 * scale), logoYPos)
 
       out.toBlob((blob) => {
         if (!blob) { toast.error("Failed to capture screenshot"); return }

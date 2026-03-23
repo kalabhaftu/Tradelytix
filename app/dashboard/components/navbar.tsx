@@ -73,17 +73,12 @@ export default function Navbar() {
         </div>
 
         {/* Right: Account Selector + Filters + Template + Import + Notifications + Theme + Profile */}
-        <div className="flex items-center gap-1.5">
-          {/* Account Selector — Wallet icon */}
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          {/* Account Selector — hidden on mobile, shown in profile dropdown */}
           <Popover open={accountPopoverOpen} onOpenChange={setAccountPopoverOpen}>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 px-2.5 hover:bg-muted/50 border border-border/50 bg-card/50">
+              <Button variant="ghost" size="icon" className="hidden sm:flex h-8 w-8 hover:bg-muted/50 border border-border/50 bg-card/50">
                 <Wallet className="h-4 w-4" />
-                {accountNumbers.length > 0 && (
-                  <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-xs">
-                    {accountNumbers.length}
-                  </Badge>
-                )}
               </Button>
             </PopoverTrigger>
             <PopoverContent
@@ -96,26 +91,32 @@ export default function Navbar() {
             </PopoverContent>
           </Popover>
 
-          {/* Filters */}
-          <CombinedFilters
-            onSave={() => setFiltersPopoverOpen(false)}
-            open={filtersPopoverOpen}
-            onOpenChange={setFiltersPopoverOpen}
-          />
+          {/* Filters — hidden on mobile */}
+          <div className="hidden sm:block">
+            <CombinedFilters
+              onSave={() => setFiltersPopoverOpen(false)}
+              open={filtersPopoverOpen}
+              onOpenChange={setFiltersPopoverOpen}
+            />
+          </div>
 
-          {/* Template Selector */}
-          <TemplateSelector />
+          {/* Template Selector — hidden on mobile */}
+          <div className="hidden md:block">
+            <TemplateSelector />
+          </div>
 
-          {/* Import */}
+          {/* Import — always visible, icon only on mobile */}
           <ImportButton />
 
-          {/* Notifications */}
+          {/* Notifications — always visible */}
           <NotificationCenter />
 
-          {/* Theme */}
-          <ThemeSwitcher />
+          {/* Theme — hidden on mobile, in profile dropdown */}
+          <div className="hidden sm:block">
+            <ThemeSwitcher />
+          </div>
 
-          {/* Profile dropdown */}
+          {/* Profile dropdown — includes mobile-only items */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
@@ -145,12 +146,47 @@ export default function Navbar() {
                 </div>
               </div>
               <DropdownMenuSeparator />
+
+              {/* Mobile-only: Accounts */}
+              <DropdownMenuItem
+                className="sm:hidden cursor-pointer"
+                onSelect={(e) => { e.preventDefault(); setAccountPopoverOpen(true) }}
+              >
+                <Wallet className="mr-2 h-4 w-4" />
+                Accounts
+                {accountNumbers.length > 0 && (
+                  <Badge variant="secondary" className="ml-auto h-5 px-1.5 text-xs">
+                    {accountNumbers.length}
+                  </Badge>
+                )}
+              </DropdownMenuItem>
+
+              {/* Mobile-only: Filters */}
+              <DropdownMenuItem
+                className="sm:hidden cursor-pointer"
+                onSelect={(e) => { e.preventDefault(); setFiltersPopoverOpen(true) }}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Filters
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator className="sm:hidden" />
+
               <DropdownMenuItem asChild>
                 <Link href="/dashboard/settings" className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </Link>
               </DropdownMenuItem>
+
+              {/* Mobile-only: Theme toggle in menu */}
+              <div className="sm:hidden px-2 py-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Theme</span>
+                  <ThemeSwitcher />
+                </div>
+              </div>
+
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}

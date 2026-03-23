@@ -3,7 +3,13 @@
 import { useState, useEffect, useRef, memo, useCallback, useMemo } from "react"
 import { format, addMonths, subMonths, getYear } from "date-fns"
 import { enUS } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Camera } from "lucide-react"
+import { ChevronLeft, ChevronRight, Camera, ImageIcon, Sparkles } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import html2canvas from 'html2canvas'
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -59,40 +65,47 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
   }, [serverCalendarData])
 
 
-  const handleScreenshot = useCallback(async () => {
+  const handleScreenshot = useCallback(async (withGradient: boolean) => {
     if (!calendarRef.current) return
 
     try {
       toast.info("Capturing screenshot...")
 
-      // Capture the actual rendered dimensions so the output matches
-      // exactly what the user sees on their device (desktop or mobile).
       const rect = calendarRef.current.getBoundingClientRect()
       const dpr = window.devicePixelRatio || 1
 
+      // Resolve the background color from CSS variable
+      const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim()
+      const resolvedBg = bgColor ? `hsl(${bgColor})` : '#0d0d0d'
+
       const canvas = await html2canvas(calendarRef.current, {
-        // A solid background so cells are never transparent
-        backgroundColor: 'hsl(var(--background))',
+        backgroundColor: withGradient ? null : resolvedBg,
         scale: Math.max(dpr, 2),
         logging: false,
         useCORS: true,
-        // Lock viewport to exact rendered size to prevent mobile reflow
         windowWidth: Math.round(rect.width),
         windowHeight: Math.round(rect.height),
         onclone: (_clonedDoc, clonedElem) => {
-          // Pin to real rendered size
           clonedElem.style.width = `${rect.width}px`
           clonedElem.style.height = `${rect.height}px`
           clonedElem.style.overflow = 'hidden'
 
-          // Ensure card background is fully opaque
-          const card = clonedElem.querySelector('[data-widget-card]') as HTMLElement
-          if (card) {
-            card.style.background = 'hsl(var(--background))'
-            card.style.height = `${rect.height}px`
+          if (withGradient) {
+            clonedElem.style.background = 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)'
+            clonedElem.style.padding = '24px'
+            clonedElem.style.borderRadius = '24px'
           }
 
-          // Hide screenshot buttons inside the capture
+          const card = clonedElem.querySelector('[data-widget-card]') as HTMLElement
+          if (card) {
+            card.style.background = resolvedBg
+            if (withGradient) {
+              card.style.boxShadow = '0 25px 50px -12px rgba(0,0,0,0.5)'
+              card.style.borderRadius = '16px'
+            }
+          }
+
+          // Hide screenshot buttons
           clonedElem.querySelectorAll('.screenshot-btn').forEach((el) => {
             (el as HTMLElement).style.display = 'none'
           })
@@ -104,7 +117,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
-        link.download = `calendar-${format(currentDate, 'yyyy-MM')}.png`
+        link.download = `calendar-${format(currentDate, 'yyyy-MM')}${withGradient ? '-styled' : ''}.png`
         link.click()
         URL.revokeObjectURL(url)
         toast.success("Screenshot saved!")
@@ -164,19 +177,31 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
     return count;
   }, [localCalendarData, currentDate, viewMode])
 
-  // Header right content — settings gear + snapshot
+  // Header right content — settings gear + snapshot dropdown
   const headerControls = (
     <div className="flex items-center gap-1.5">
-      {/* Snapshot button — hidden in screenshot output via class */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleScreenshot}
-        className="screenshot-btn h-6 px-1.5 text-[10px] font-bold gap-1 hover:bg-primary/5 hover:text-primary transition-all bg-muted/20 border border-border/30 rounded-lg"
-      >
-        <Camera className="h-3 w-3" />
-        <span className="hidden lg:inline">Snapshot</span>
-      </Button>
+      {/* Snapshot dropdown — icon only, hidden in screenshot output */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="screenshot-btn h-7 w-7 hover:bg-primary/5 hover:text-primary transition-all bg-muted/20 border border-border/30 rounded-lg"
+          >
+            <Camera className="h-3.5 w-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuItem onClick={() => handleScreenshot(false)} className="gap-2 text-xs font-medium">
+            <ImageIcon className="h-3.5 w-3.5" />
+            Basic
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleScreenshot(true)} className="gap-2 text-xs font-medium">
+            <Sparkles className="h-3.5 w-3.5" />
+            With Gradient
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {/* Settings gear */}
       <CalendarSettings />

@@ -712,9 +712,9 @@ export function TradeTableReview() {
                         </TableRow>
                         {/* Accordion detail row */}
                         {isExpanded && (
-                          <TableRow className="bg-muted/10 border-b border-border/30">
-                            <TableCell colSpan={4} className="px-3 py-3">
-                              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                          <TableRow className="bg-muted/5 border-b border-border/30">
+                            <TableCell colSpan={4} className="px-3 py-4">
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
                                 <div className="flex justify-between">
                                   <span className="text-muted-foreground">Date</span>
                                   <span className="font-mono">{formatInTimeZone(new Date(trade.entryDate), timezone, 'yyyy-MM-dd')}</span>
@@ -740,9 +740,9 @@ export function TradeTableReview() {
                                   <span className="font-mono">{formatQuantity(trade.quantity)}</span>
                                 </div>
                               </div>
-                              <div className="mt-3 pt-3 border-t border-border/30">
-                                <p className="text-xs text-muted-foreground mb-1 font-semibold">Trade Notes</p>
-                                <div className="max-h-[150px] overflow-y-auto bg-background/50 rounded-md text-xs">
+                              <div className="mt-4 pt-3 border-t border-border/20">
+                                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 font-bold">Trade Notes</p>
+                                <div className="max-h-[120px] overflow-y-auto bg-background/30 rounded-lg p-2 text-xs">
                                   {trade.comment && trade.comment.trim() !== '' && trade.comment !== '<p></p>' && !trade.comment.includes('"children":[]') && !trade.comment.includes('"text":""') ? (
                                     <div className="pointer-events-none scale-[0.95] origin-top-left w-[105%]">
                                       <LexicalEditor
@@ -755,12 +755,12 @@ export function TradeTableReview() {
                                   )}
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2 mt-2 pt-3 border-t border-border/30">
-                                <Button variant="outline" size="sm" className="h-9 text-xs flex-1 touch-manipulation" onClick={() => handleEditTrade(trade)}>
-                                  Edit
+                              <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/20">
+                                <Button variant="outline" size="sm" className="h-10 text-xs flex-1 touch-manipulation font-medium" onClick={() => handleEditTrade(trade)}>
+                                  Edit Trade
                                 </Button>
-                                <Button variant="outline" size="sm" className="h-9 text-xs flex-1 touch-manipulation" onClick={() => handleViewChart(trade)}>
-                                  <BarChart3 className="h-3.5 w-3.5 mr-1.5" /> Chart
+                                <Button variant="outline" size="sm" className="h-10 text-xs flex-1 touch-manipulation font-medium" onClick={() => handleViewChart(trade)}>
+                                  <BarChart3 className="h-4 w-4 mr-1.5" /> View Chart
                                 </Button>
                               </div>
                             </TableCell>

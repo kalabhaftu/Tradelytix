@@ -20,7 +20,11 @@ import {
     Building2,
     Clock,
     List,
-    Table as TableIcon
+    Table as TableIcon,
+    Download,
+    FileText,
+    Image as ImageIcon,
+    LayoutDashboard
 } from 'lucide-react'
 import {
     format,
@@ -31,7 +35,7 @@ import {
 } from 'date-fns'
 import { motion } from 'framer-motion'
 import html2canvas from 'html2canvas'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useUserStore } from '@/store/user-store'
 import { DateRange } from '@/components/ui/custom-date-range-picker'
 import { toast } from 'sonner'
@@ -61,6 +65,12 @@ import {
     DialogTitle,
     DialogTrigger
 } from '@/components/ui/dialog'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
     Tooltip,
@@ -277,20 +287,63 @@ export default function ReportsPage() {
         }
     }
 
-    const handleDownloadReport = async () => {
+    // Export trades as CSV
+    const handleExportCSV = useCallback(() => {
+        if (!filteredTrades || filteredTrades.length === 0) {
+            toast.error('No trades to export')
+            return
+        }
+
+        setIsExporting(true)
+        try {
+            const headers = [
+                'Date', 'Instrument', 'Side', 'Entry Price', 'Close Price',
+                'Quantity', 'P&L', 'Commission', 'Net P&L', 'Account'
+            ]
+
+            const rows = filteredTrades.map((trade: any) => [
+                format(new Date(trade.entryDate), 'yyyy-MM-dd HH:mm'),
+                trade.instrument || '',
+                trade.side || '',
+                trade.entryPrice || 0,
+                trade.closePrice || 0,
+                trade.quantity || 0,
+                trade.pnl || 0,
+                trade.commission || 0,
+                (trade.pnl || 0) - (trade.commission || 0),
+                trade.accountNumber || ''
+            ])
+
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+            ].join('\n')
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `deltalytix-trades-${format(new Date(), 'yyyy-MM-dd')}.csv`
+            a.click()
+            URL.revokeObjectURL(url)
+            toast.success('CSV exported successfully!')
+        } catch (err) {
+            console.error('[Reports] CSV export error:', err)
+            toast.error('Failed to export CSV')
+        } finally {
+            setIsExporting(false)
+        }
+    }, [filteredTrades])
+
+    // Screenshot page snapshot
+    const handlePageSnapshot = useCallback(async () => {
         const element = document.getElementById('report-content')
         if (!element) return
 
         setIsExporting(true)
         try {
-            // Read the current background color from the document root so we get
-            // the resolved CSS variable value (not the unparsed string).
-            const bgColor = getComputedStyle(document.documentElement)
-                .getPropertyValue('--background')
-                .trim()
-            // --background is stored as "H S% L%" — wrap in hsl()
+            const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim()
             const resolvedBg = bgColor ? `hsl(${bgColor})` : '#0d0d0d'
-
             const rect = element.getBoundingClientRect()
             const dpr = window.devicePixelRatio || 1
 
@@ -302,11 +355,8 @@ export default function ReportsPage() {
                 windowWidth: Math.round(rect.width),
                 windowHeight: Math.round(rect.height),
                 onclone: (_clonedDoc: Document, clonedContent: HTMLElement) => {
-                    // Lock rendered dimensions so html2canvas doesn't reflow
                     clonedContent.style.width = `${rect.width}px`
                     clonedContent.style.background = resolvedBg
-                    clonedContent.style.borderRadius = '0px'
-                    // Hide interactive elements that should not appear in export
                     clonedContent.querySelectorAll('.no-export').forEach((el) => {
                         (el as HTMLElement).style.display = 'none'
                     })
@@ -314,22 +364,22 @@ export default function ReportsPage() {
             })
 
             canvas.toBlob((blob) => {
-                if (!blob) { toast.error('Export failed'); return }
+                if (!blob) { toast.error('Snapshot failed'); return }
                 const url = URL.createObjectURL(blob)
                 const a = document.createElement('a')
                 a.download = `deltalytix-report-${Date.now()}.png`
                 a.href = url
                 a.click()
                 URL.revokeObjectURL(url)
-                toast.success('Report exported successfully!')
+                toast.success('Page snapshot saved!')
             }, 'image/png')
         } catch (err) {
-            console.error('[Reports] export error:', err)
-            toast.error('Failed to export report')
+            console.error('[Reports] snapshot error:', err)
+            toast.error('Failed to capture snapshot')
         } finally {
             setIsExporting(false)
         }
-    }
+    }, [])
 
     const handleFilterChange = (key: string, value: string) => {
         setAdvancedFilters(prev => ({ ...prev, [key]: value }))
@@ -351,47 +401,63 @@ export default function ReportsPage() {
                         </p>
                     </div>
                     <div className="no-export flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={handleDownloadReport} disabled={isExporting} className="h-8 text-[11px] font-bold uppercase tracking-wider border-border/30 hover:bg-muted-foreground/10 rounded-xl gap-1.5">
-                            <TrendingUp className="h-3.5 w-3.5 opacity-60" />
-                            Export
+                        {/* Export CSV Button */}
+                        <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={isExporting} className="h-8 text-[11px] font-bold uppercase tracking-wider border-border/30 hover:bg-muted-foreground/10 rounded-xl gap-1.5">
+                            <Download className="h-3.5 w-3.5 opacity-60" />
+                            Export CSV
                         </Button>
 
-                        <Dialog>
-                            <DialogTrigger asChild>
+                        {/* Share Dropdown */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm" className="h-8 text-[11px] font-bold uppercase tracking-wider border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 rounded-xl gap-1.5">
                                     <Share2 className="h-3.5 w-3.5" />
                                     Share
                                 </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-2xl bg-card border border-border/10 p-0 overflow-hidden rounded-[32px]">
-                                <div className="p-8">
-                                    <DialogHeader className="mb-6">
-                                        <DialogTitle className="text-xl font-black tracking-tighter uppercase">Generate Performance Asset</DialogTitle>
-                                        <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Render high-fidelity performance card for your network</DialogDescription>
-                                    </DialogHeader>
-                                    {tradingActivity && psychMetrics && (
-                                        <div className="flex justify-center">
-                                            <PerformanceCard
-                                                period={"LATEST AUDIT"}
-                                                stats={{
-                                                    totalTrades: tradingActivity.totalTrades,
-                                                    winRate: tradingActivity.winRate,
-                                                    totalPnL: psychMetrics.totalNetPnL,
-                                                    longestWinStreak: psychMetrics.longestWinStreak,
-                                                    longestLoseStreak: psychMetrics.longestLoseStreak,
-                                                    tradingDays: tradingActivity.tradingDaysActive,
-                                                    avgTradesPerMonth: tradingActivity.avgTradesPerMonth
-                                                }}
-                                                userName={user?.firstName ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` : undefined}
-                                            />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="gap-2 text-xs font-medium cursor-pointer">
+                                            <LayoutDashboard className="h-3.5 w-3.5" />
+                                            Performance Card
+                                        </DropdownMenuItem>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-2xl bg-card border border-border/10 p-0 overflow-hidden rounded-[32px]">
+                                        <div className="p-8">
+                                            <DialogHeader className="mb-6">
+                                                <DialogTitle className="text-xl font-black tracking-tighter uppercase">Generate Performance Asset</DialogTitle>
+                                                <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Render high-fidelity performance card for your network</DialogDescription>
+                                            </DialogHeader>
+                                            {tradingActivity && psychMetrics && (
+                                                <div className="flex justify-center">
+                                                    <PerformanceCard
+                                                        period={"LATEST AUDIT"}
+                                                        stats={{
+                                                            totalTrades: tradingActivity.totalTrades,
+                                                            winRate: tradingActivity.winRate,
+                                                            totalPnL: psychMetrics.totalNetPnL,
+                                                            longestWinStreak: psychMetrics.longestWinStreak,
+                                                            longestLoseStreak: psychMetrics.longestLoseStreak,
+                                                            tradingDays: tradingActivity.tradingDaysActive,
+                                                            avgTradesPerMonth: tradingActivity.avgTradesPerMonth
+                                                        }}
+                                                        userName={user?.firstName ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` : undefined}
+                                                    />
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-2 mt-2 text-[10px] text-muted-foreground">
+                                                <span>Trader: <span className="font-semibold text-foreground">{user?.firstName ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` : 'Set your name in settings'}</span></span>
+                                            </div>
                                         </div>
-                                    )}
-                                    <div className="flex items-center gap-2 mt-2 text-[10px] text-muted-foreground">
-                                        <span>Trader: <span className="font-semibold text-foreground">{user?.firstName ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` : 'Set your name in settings'}</span></span>
-                                    </div>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
+                                    </DialogContent>
+                                </Dialog>
+                                <DropdownMenuItem onClick={handlePageSnapshot} disabled={isExporting} className="gap-2 text-xs font-medium">
+                                    <ImageIcon className="h-3.5 w-3.5" />
+                                    Page Snapshot
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
 

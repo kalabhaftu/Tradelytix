@@ -659,7 +659,7 @@ export function processUniversalCSV(
         case 'stopLoss':
           const sl = parseNumeric(cellValue)
           if (sl !== null && sl !== 0) {
-            trade.stopLoss = sl
+            trade.stopLoss = sl.toString() as any // bypass strict typing if needed, but it should be string
             result.stats.tradesWithStopLoss++
           }
           break
@@ -667,7 +667,7 @@ export function processUniversalCSV(
         case 'takeProfit':
           const tp = parseNumeric(cellValue)
           if (tp !== null && tp !== 0) {
-            trade.takeProfit = tp
+            trade.takeProfit = tp.toString() as any
             result.stats.tradesWithTakeProfit++
           }
           break

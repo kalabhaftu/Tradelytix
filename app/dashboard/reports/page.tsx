@@ -287,53 +287,69 @@ export default function ReportsPage() {
         }
     }
 
-    // Export trades as CSV
+    // Export metrics as CSV spreadsheet
     const handleExportCSV = useCallback(() => {
-        if (!filteredTrades || filteredTrades.length === 0) {
-            toast.error('No trades to export')
+        if (!tradingActivity || !psychMetrics) {
+            toast.error('No metrics to export')
             return
         }
 
         setIsExporting(true)
         try {
-            const headers = [
-                'Date', 'Instrument', 'Side', 'Entry Price', 'Close Price',
-                'Quantity', 'P&L', 'Commission', 'Net P&L', 'Account'
+            const rows: [string, string | number][] = [
+                // Performance
+                ['--- PERFORMANCE ---', ''],
+                ['Net P&L', psychMetrics.totalNetPnL],
+                ['Win Rate (%)', tradingActivity.winRate],
+                ['Profit Factor', psychMetrics.profitFactor],
+                ['Expectancy ($)', psychMetrics.expectancy],
+                ['Max Drawdown ($)', psychMetrics.maxDrawdown],
+                ['Total R Multiple', psychMetrics.totalRMultiple],
+                ['Peak Equity ($)', psychMetrics.peakEquity],
+                ['Recovery Factor', psychMetrics.recoveryFactor],
+                ['R:R Efficiency', psychMetrics.rrEfficiency],
+                ['Consistency Score (%)', psychMetrics.consistencyScore],
+                // Trading Activity
+                ['', ''],
+                ['--- TRADING ACTIVITY ---', ''],
+                ['Total Trades', tradingActivity.totalTrades],
+                ['Trading Days Active', tradingActivity.tradingDaysActive],
+                ['Avg Trades / Month', tradingActivity.avgTradesPerMonth],
+                ['Longest Win Streak', psychMetrics.longestWinStreak],
+                ['Longest Lose Streak', psychMetrics.longestLoseStreak],
+                ['Avg Win ($)', psychMetrics.avgWin],
+                ['Avg Loss ($)', psychMetrics.avgLoss],
+                ['Avg Holding Time', psychMetrics.avgHoldingTime],
+                // Best / Worst
+                ['', ''],
+                ['--- BEST & WORST ---', ''],
+                ['Most Traded Day', tradingActivity.mostTradedDay || '—'],
+                ['Most Profitable Day', tradingActivity.mostProfitableDay || '—'],
+                ['Most Profitable Instrument', tradingActivity.mostProfitablePair || '—'],
+                ['Most Losing Day', tradingActivity.mostLosingDay || '—'],
+                ['Most Losing Instrument', tradingActivity.mostLosingPair || '—'],
             ]
 
-            const rows = filteredTrades.map((trade: any) => [
-                format(new Date(trade.entryDate), 'yyyy-MM-dd HH:mm'),
-                trade.instrument || '',
-                trade.side || '',
-                trade.entryPrice || 0,
-                trade.closePrice || 0,
-                trade.quantity || 0,
-                trade.pnl || 0,
-                trade.commission || 0,
-                (trade.pnl || 0) - (trade.commission || 0),
-                trade.accountNumber || ''
-            ])
-
             const csvContent = [
-                headers.join(','),
-                ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+                '"Metric","Value"',
+                ...rows.map(([label, value]) => `"${label}","${value}"`)
             ].join('\n')
 
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
             const url = URL.createObjectURL(blob)
             const a = document.createElement('a')
             a.href = url
-            a.download = `deltalytix-trades-${format(new Date(), 'yyyy-MM-dd')}.csv`
+            a.download = `deltalytix-metrics-${format(new Date(), 'yyyy-MM-dd')}.csv`
             a.click()
             URL.revokeObjectURL(url)
-            toast.success('CSV exported successfully!')
+            toast.success('Metrics exported successfully!')
         } catch (err) {
             console.error('[Reports] CSV export error:', err)
-            toast.error('Failed to export CSV')
+            toast.error('Failed to export metrics')
         } finally {
             setIsExporting(false)
         }
-    }, [filteredTrades])
+    }, [tradingActivity, psychMetrics])
 
     // Screenshot page snapshot
     const handlePageSnapshot = useCallback(async () => {

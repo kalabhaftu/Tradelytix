@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button"
 import { CalendarData } from "@/app/dashboard/types/calendar"
 import { useData } from "@/context/data-provider"
 import MonthlyView from "./monthly-view"
-import { Logo } from "@/components/logo"
 
 const formatCompact = (value: number) => {
   if (Math.abs(value) >= 1000) return `$${(value / 1000).toFixed(1)}k`
@@ -39,52 +38,87 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
 
       const rect = calendarRef.current.getBoundingClientRect()
       const dpr = window.devicePixelRatio || 1
+      const scale = Math.max(dpr, 2)
 
-      // Resolve the background color from CSS variable
       const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim()
       const resolvedBg = bgColor ? `hsl(${bgColor})` : '#0d0d0d'
 
-      const canvas = await html2canvas(calendarRef.current, {
-        backgroundColor: withGradient ? null : resolvedBg,
-        scale: Math.max(dpr, 2),
+      // Capture the card only — logo will be drawn below it
+      const cardCanvas = await html2canvas(calendarRef.current, {
+        backgroundColor: resolvedBg,
+        scale,
         logging: false,
         useCORS: true,
         windowWidth: Math.round(rect.width),
         windowHeight: Math.round(rect.height),
-        onclone: (clonedDoc, clonedElem) => {
+        onclone: (_clonedDoc, clonedElem) => {
           clonedElem.style.width = `${rect.width}px`
           clonedElem.style.height = `${rect.height}px`
           clonedElem.style.overflow = 'hidden'
-
-          if (withGradient) {
-            clonedElem.style.background = 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)'
-            clonedElem.style.padding = '16px'
-            clonedElem.style.borderRadius = '20px'
-          }
-
-          const card = clonedElem.querySelector('[data-widget-card]') as HTMLElement
-          if (card) {
-            card.style.background = resolvedBg
-            if (withGradient) {
-              card.style.boxShadow = '0 20px 40px -12px rgba(0,0,0,0.5)'
-              card.style.borderRadius = '16px'
-            }
-          }
-
-          // Hide screenshot button in capture
+          // Hide screenshot button
           clonedElem.querySelectorAll('.screenshot-btn').forEach((el) => {
             (el as HTMLElement).style.display = 'none'
           })
-
-          // Show watermark
-          const watermark = clonedDoc.getElementById('mini-calendar-watermark')
-          if (watermark) {
-            watermark.style.display = 'flex'
-          }
         },
       })
 
-      canvas.toBlob((blob) => {
+      const logoBarHeight = 48
+      const cardW = cardCanvas.width
+      const cardH = cardCanvas.height
+      const padding = withGradient ? Math.round(20 * scale) : 0
+      const totalW = cardW + padding * 2
+      const totalH = cardH + padding * 2 + Math.round(logoBarHeight * scale)
+
+      const out = document.createElement('canvas')
+      out.width = totalW
+      out.height = totalH
+      const ctx = out.getContext('2d')!
+
+      if (withGradient) {
+        const grad = ctx.createLinearGradient(0, 0, totalW, totalH)
+        grad.addColorStop(0, '#0f0c29')
+        grad.addColorStop(0.5, '#302b63')
+        grad.addColorStop(1, '#24243e')
+        ctx.fillStyle = grad
+        ctx.fillRect(0, 0, totalW, totalH)
+
+        ctx.save()
+        ctx.shadowColor = 'rgba(0,0,0,0.5)'
+        ctx.shadowBlur = 40 * scale
+        ctx.shadowOffsetY = 10 * scale
+        const r = 14 * scale
+        ctx.beginPath()
+        ctx.moveTo(padding + r, padding)
+        ctx.lineTo(padding + cardW - r, padding)
+        ctx.quadraticCurveTo(padding + cardW, padding, padding + cardW, padding + r)
+        ctx.lineTo(padding + cardW, padding + cardH - r)
+        ctx.quadraticCurveTo(padding + cardW, padding + cardH, padding + cardW - r, padding + cardH)
+        ctx.lineTo(padding + r, padding + cardH)
+        ctx.quadraticCurveTo(padding, padding + cardH, padding, padding + cardH - r)
+        ctx.lineTo(padding, padding + r)
+        ctx.quadraticCurveTo(padding, padding, padding + r, padding)
+        ctx.closePath()
+        ctx.clip()
+        ctx.drawImage(cardCanvas, padding, padding)
+        ctx.restore()
+      } else {
+        ctx.drawImage(cardCanvas, 0, 0)
+      }
+
+      // Logo bar — always below the card, never overlapping cells
+      const barY = padding + cardH + (withGradient ? padding : 0)
+      ctx.fillStyle = withGradient ? 'rgba(0,0,0,0)' : resolvedBg
+      ctx.fillRect(0, barY, totalW, Math.round(logoBarHeight * scale))
+
+      const fontSize = Math.round(12 * scale)
+      ctx.font = `900 ${fontSize}px -apple-system, BlinkMacSystemFont, "Inter", sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.35)'
+      const logoY = barY + Math.round((logoBarHeight / 2) * scale)
+      ctx.fillText('△  DELTALYTIX', totalW / 2, logoY)
+
+      out.toBlob((blob) => {
         if (!blob) { toast.error("Failed to capture screenshot"); return }
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
@@ -200,23 +234,10 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
           />
         </div>
 
-        {/* Persistent branded footer */}
-        <div className="flex items-center justify-center gap-2 py-1.5 px-3 border-t border-border/20 bg-muted/5 flex-shrink-0">
-          <Logo className="w-3 h-3 text-muted-foreground/50" />
-          <span className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
-            Deltalytix
-          </span>
-        </div>
+
       </WidgetCard>
 
-      {/* Watermark overlay — hidden normally, shown only in screenshot clone */}
-      <div
-        id="mini-calendar-watermark"
-        className="hidden absolute bottom-0 left-0 right-0 items-center justify-center gap-2.5 py-3 bg-muted/10 border-t border-border/20"
-      >
-        <Logo className="w-5 h-5 text-foreground/70" />
-        <span className="text-sm font-black uppercase tracking-[0.2em] text-foreground/70">Deltalytix</span>
-      </div>
+
     </div>
   )
 }

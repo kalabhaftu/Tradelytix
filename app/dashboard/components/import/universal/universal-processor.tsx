@@ -4,8 +4,7 @@ import React, { useEffect, useMemo, useCallback } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Trade } from '@/prisma/generated/prisma/browser'
-import { useI18n } from '@/locales/client'
+import type { Trade } from '@prisma/client'
 import { 
   processUniversalCSV, 
   SUPPORTED_PLATFORMS,
@@ -63,8 +62,6 @@ export default function UniversalProcessor({
   processedTrades, 
   setProcessedTrades 
 }: PlatformProcessorProps) {
-  const t = useI18n()
-  
   const [processingResult, setProcessingResult] = React.useState<ProcessingResult | null>(null)
   const [showFieldMapping, setShowFieldMapping] = React.useState(false)
 

@@ -73,14 +73,15 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
 
       const rect = calendarRef.current.getBoundingClientRect()
       const dpr = window.devicePixelRatio || 1
+      const scale = Math.max(dpr, 2)
 
-      // Resolve the background color from CSS variable
       const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim()
       const resolvedBg = bgColor ? `hsl(${bgColor})` : '#0d0d0d'
 
-      const canvas = await html2canvas(calendarRef.current, {
-        backgroundColor: withGradient ? null : resolvedBg,
-        scale: Math.max(dpr, 2),
+      // Capture just the card — no extra padding, no logo inside
+      const cardCanvas = await html2canvas(calendarRef.current, {
+        backgroundColor: resolvedBg,
+        scale,
         logging: false,
         useCORS: true,
         windowWidth: Math.round(rect.width),
@@ -89,30 +90,75 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
           clonedElem.style.width = `${rect.width}px`
           clonedElem.style.height = `${rect.height}px`
           clonedElem.style.overflow = 'hidden'
-
-          if (withGradient) {
-            clonedElem.style.background = 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)'
-            clonedElem.style.padding = '24px'
-            clonedElem.style.borderRadius = '24px'
-          }
-
-          const card = clonedElem.querySelector('[data-widget-card]') as HTMLElement
-          if (card) {
-            card.style.background = resolvedBg
-            if (withGradient) {
-              card.style.boxShadow = '0 25px 50px -12px rgba(0,0,0,0.5)'
-              card.style.borderRadius = '16px'
-            }
-          }
-
-          // Hide screenshot buttons
+          // Hide the screenshot camera button
           clonedElem.querySelectorAll('.screenshot-btn').forEach((el) => {
             (el as HTMLElement).style.display = 'none'
           })
         },
       })
 
-      canvas.toBlob((blob) => {
+      // Logo bar height in logical pixels — same as in the reference
+      const logoBarHeight = 52
+      const cardW = cardCanvas.width
+      const cardH = cardCanvas.height
+      const padding = withGradient ? Math.round(24 * scale) : 0
+      const totalW = cardW + padding * 2
+      const totalH = cardH + padding * 2 + Math.round(logoBarHeight * scale)
+
+      // Compose onto a new canvas
+      const out = document.createElement('canvas')
+      out.width = totalW
+      out.height = totalH
+      const ctx = out.getContext('2d')!
+
+      if (withGradient) {
+        const grad = ctx.createLinearGradient(0, 0, totalW, totalH)
+        grad.addColorStop(0, '#0f0c29')
+        grad.addColorStop(0.5, '#302b63')
+        grad.addColorStop(1, '#24243e')
+        ctx.fillStyle = grad
+        ctx.fillRect(0, 0, totalW, totalH)
+
+        // Draw card with shadow + rounded corners
+        ctx.save()
+        ctx.shadowColor = 'rgba(0,0,0,0.55)'
+        ctx.shadowBlur = 60 * scale
+        ctx.shadowOffsetY = 12 * scale
+        const r = 16 * scale
+        ctx.beginPath()
+        ctx.moveTo(padding + r, padding)
+        ctx.lineTo(padding + cardW - r, padding)
+        ctx.quadraticCurveTo(padding + cardW, padding, padding + cardW, padding + r)
+        ctx.lineTo(padding + cardW, padding + cardH - r)
+        ctx.quadraticCurveTo(padding + cardW, padding + cardH, padding + cardW - r, padding + cardH)
+        ctx.lineTo(padding + r, padding + cardH)
+        ctx.quadraticCurveTo(padding, padding + cardH, padding, padding + cardH - r)
+        ctx.lineTo(padding, padding + r)
+        ctx.quadraticCurveTo(padding, padding, padding + r, padding)
+        ctx.closePath()
+        ctx.clip()
+        ctx.drawImage(cardCanvas, padding, padding)
+        ctx.restore()
+      } else {
+        ctx.drawImage(cardCanvas, 0, 0)
+      }
+
+      // Draw logo bar at the bottom — always outside the card
+      const barY = padding + cardH + (withGradient ? padding : 0)
+      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.0)' : resolvedBg
+      ctx.fillRect(0, barY, totalW, Math.round(logoBarHeight * scale))
+
+      // Logo text
+      const fontSize = Math.round(13 * scale)
+      ctx.font = `900 ${fontSize}px -apple-system, BlinkMacSystemFont, "Inter", sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.35)'
+      ctx.letterSpacing = `${Math.round(3 * scale)}px`
+      const logoY = barY + Math.round((logoBarHeight / 2) * scale)
+      ctx.fillText('△  DELTALYTIX', totalW / 2, logoY)
+
+      out.toBlob((blob) => {
         if (!blob) { toast.error("Failed to capture screenshot"); return }
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')

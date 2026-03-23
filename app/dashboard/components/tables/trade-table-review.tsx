@@ -660,16 +660,16 @@ export function TradeTableReview() {
         </div>
       </div>
 
-      <div className="rounded-2xl sm:rounded-3xl border border-border bg-background shadow-md">
+      <div className="rounded-2xl sm:rounded-3xl border border-border bg-background shadow-md w-full">
         {isMobile ? (
-          <div className="w-full overflow-hidden rounded-2xl sm:rounded-3xl">
+          <div className="overflow-hidden w-full">
             <Table noWrapper className="w-full text-sm table-fixed">
               <TableHeader className="sticky top-0 z-20 bg-background border-b shadow-sm">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-10 px-3 text-[10px] uppercase tracking-wider font-bold text-muted-foreground w-[28%]">Instr.</TableHead>
-                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-center w-[18%]">Side</TableHead>
-                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-right w-[27%]">PnL</TableHead>
-                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-center w-[27%]"></TableHead>
+                  <TableHead className="h-10 px-3 text-[10px] uppercase tracking-wider font-bold text-muted-foreground" style={{ width: '28%' }}>Instr.</TableHead>
+                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-center" style={{ width: '18%' }}>Side</TableHead>
+                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-right" style={{ width: '27%' }}>PnL</TableHead>
+                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-center" style={{ width: '27%' }}></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

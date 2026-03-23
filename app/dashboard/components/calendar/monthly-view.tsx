@@ -329,73 +329,71 @@ export default function MonthlyView({
 
   return (
     <div className="flex h-full w-full overflow-hidden">
-      <div className={cn("flex flex-col flex-1 w-full h-full", isMiniCalendar ? "min-w-[300px]" : "min-w-0 sm:min-w-[500px] lg:min-w-[700px]")}>
-        {/* Main Calendar Grid */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-0">
-          {/* Weekday Headers */}
-          <div className={cn("grid gap-1 md:gap-1.5 px-2 md:px-3 py-1.5 md:py-2 shrink-0", hideWeekends ? "grid-cols-5" : "grid-cols-7")}>
-            {displayWeekdays.map((day) => (
-              <div
-                key={day}
-                className="text-center text-[10px] md:text-[11px] font-semibold text-muted-foreground/80 capitalize"
-              >
-                {day}
-              </div>
-            ))}
+      {/* Main Calendar Grid Container */}
+      <div className={cn("flex flex-col flex-1 h-full min-h-0", isMiniCalendar ? "min-w-[300px]" : "min-w-0")}>
+        {/* Weekday Headers */}
+        <div className={cn("grid gap-1 md:gap-1.5 px-2 md:px-3 py-1.5 md:py-2 shrink-0", hideWeekends ? "grid-cols-5" : "grid-cols-7")}>
+          {displayWeekdays.map((day) => (
+            <div
+              key={day}
+              className="text-center text-[10px] md:text-[11px] font-semibold text-muted-foreground/80 capitalize"
+            >
+              {day}
+            </div>
+          ))}
+        </div>
+
+        {/* Day Grid - flex-1 to fill remaining space, grid-rows set to number of weeks */}
+        <div className={cn("flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 min-h-0", hideWeekends ? "grid-cols-5" : "grid-cols-7")} style={{ gridTemplateRows: `repeat(${weeks.length}, 1fr)` }}>
+          {weeks.map((week, weekIndex) => (
+            <React.Fragment key={weekIndex}>
+              {week.map((date) => {
+                const dateKey = format(date, 'yyyy-MM-dd')
+                const dayData = calendarData[dateKey]
+                const isCurrentMonth = isSameMonth(date, currentDate)
+                const hasNotes = !!notes[dateKey]
+
+                return (
+                  <DayCell
+                    key={date.toISOString()}
+                    date={date}
+                    dayData={dayData}
+                    hasNotes={hasNotes}
+                    isCurrentMonth={isCurrentMonth}
+                    hideWeekends={hideWeekends}
+                    isMiniCalendar={isMiniCalendar}
+                    onClick={() => onSelectDate?.(date)}
+                  />
+                )
+              })}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
+      {/* Weekly Summaries Sidebar — separate from main grid, aligned via matching grid rows */}
+      {!isMiniCalendar && (
+        <div className="hidden lg:flex flex-col w-[110px] xl:w-[125px] border-l border-border/10 shrink-0 h-full">
+          {/* Spacer matches weekday-header height exactly (py-1.5 md:py-2 + text line = ~34px on md) */}
+          <div className="shrink-0 py-1.5 md:py-2">
+            <div className="h-[16px]" /> {/* text-[11px] line height */}
           </div>
 
-          {/* Day Grid - flex-1 to fill remaining space, grid-rows set to number of weeks */}
-          <div className={cn("flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0", hideWeekends ? "grid-cols-5" : "grid-cols-7")} style={{ gridTemplateRows: `repeat(${weeks.length}, 1fr)` }}>
-            {weeks.map((week, weekIndex) => (
-              <React.Fragment key={weekIndex}>
-                {week.map((date) => {
-                  const dateKey = format(date, 'yyyy-MM-dd')
-                  const dayData = calendarData[dateKey]
-                  const isCurrentMonth = isSameMonth(date, currentDate)
-                  const hasNotes = !!notes[dateKey]
-
-                  return (
-                    <DayCell
-                      key={date.toISOString()}
-                      date={date}
-                      dayData={dayData}
-                      hasNotes={hasNotes}
-                      isCurrentMonth={isCurrentMonth}
-                      hideWeekends={hideWeekends}
-                      isMiniCalendar={isMiniCalendar}
-                      onClick={() => onSelectDate?.(date)}
-                    />
-                  )
-                })}
-              </React.Fragment>
+          {/* Week rows — grid to align perfectly with calendar rows */}
+          <div className="flex-1 grid gap-1 md:gap-1.5 p-2 pt-0 pl-1 min-h-0" style={{ gridTemplateRows: `repeat(${weeks.length}, 1fr)` }}>
+            {weeks.map((week, index) => (
+              <WeeklySummary
+                key={index}
+                weekIndex={index}
+                weekDays={week}
+                calendarData={calendarData}
+                currentDate={currentDate}
+                onReviewWeek={onReviewWeek}
+              />
             ))}
           </div>
         </div>
-
-        {/* Weekly Summaries Sidebar — uses same grid rows as the day grid */}
-        {!isMiniCalendar && (
-          <div className="hidden lg:flex flex-col w-[110px] xl:w-[125px] border-l border-border/10 ml-1 shrink-0 h-full">
-            {/* Spacer matches weekday-header height exactly (py-1.5 md:py-2 + text line = ~34px on md) */}
-            <div className="shrink-0 py-1.5 md:py-2">
-              <div className="h-[16px]" /> {/* text-[11px] line height */}
-            </div>
-
-            {/* Week rows — grid to align perfectly with calendar rows */}
-            <div className="flex-1 grid gap-1 md:gap-1.5 p-2 pt-0 pl-1" style={{ gridTemplateRows: `repeat(${weeks.length}, 1fr)` }}>
-              {weeks.map((week, index) => (
-                <WeeklySummary
-                  key={index}
-                  weekIndex={index}
-                  weekDays={week}
-                  calendarData={calendarData}
-                  currentDate={currentDate}
-                  onReviewWeek={onReviewWeek}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   )
 }

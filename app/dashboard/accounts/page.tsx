@@ -584,7 +584,7 @@ export default function AccountsPage() {
 
             {/* Type filter tabs */}
             <Tabs value={filterType} onValueChange={(v) => setFilterType(v as FilterType)} className="w-full sm:w-auto">
-              <TabsList className="h-9 w-full sm:w-auto grid grid-cols-3">
+              <TabsList className="w-full sm:w-auto grid grid-cols-3">
                 <TabsTrigger value="all" className="text-xs px-3">All</TabsTrigger>
                 <TabsTrigger value="live" className="text-xs px-3 gap-1.5">
                   <User  className="h-3 w-3" />
@@ -599,7 +599,7 @@ export default function AccountsPage() {
 
             {/* Status filter */}
             <Tabs value={filterStatus} onValueChange={(v) => setFilterStatus(v as FilterStatus)} className="w-full sm:w-auto">
-              <TabsList className="h-9 w-full sm:w-auto grid grid-cols-3">
+              <TabsList className="w-full sm:w-auto grid grid-cols-3">
                 <TabsTrigger value="all" className="text-xs px-3">Active</TabsTrigger>
                 <TabsTrigger value="failed" className="text-xs px-3">Failed</TabsTrigger>
                 <TabsTrigger value="archived" className="text-xs px-3">Archived</TabsTrigger>

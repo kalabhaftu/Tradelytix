@@ -470,6 +470,142 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
     .filter(([_, data]) => data.trades > 0)
     .sort((a, b) => b[1].pnl - a[1].pnl)
 
+  // ========== ADVANCED BEHAVIORAL ANALYSIS ==========
+  // Calculate revenge trading patterns (trades after losses)
+  function calculateAvgTradeAfterLoss(tradesList: typeof trades): { avg: number | null, count: number, winRate: number } {
+    let sum = 0, count = 0, wins = 0
+    for (let i = 1; i < tradesList.length; i++) {
+      const prevTrade = tradesList[i - 1]
+      const currentTrade = tradesList[i]
+      if ((prevTrade.pnl + (prevTrade.commission || 0)) < -BREAK_EVEN_THRESHOLD) {
+        const netPnL = currentTrade.pnl + (currentTrade.commission || 0)
+        sum += netPnL
+        count++
+        if (netPnL > BREAK_EVEN_THRESHOLD) wins++
+      }
+    }
+    return { avg: count > 0 ? sum / count : null, count, winRate: count > 0 ? (wins / count) * 100 : 0 }
+  }
+
+  function analyzeConsecutiveLosses(tradesList: typeof trades): { maxStreak: number, avgAfterStreak: number | null, tradesAfterStreak: number } {
+    let maxStreak = 0, currentStreak = 0
+    let afterStreakSum = 0, afterStreakCount = 0
+    
+    for (let i = 0; i < tradesList.length; i++) {
+      const netPnL = tradesList[i].pnl + (tradesList[i].commission || 0)
+      if (netPnL < -BREAK_EVEN_THRESHOLD) {
+        currentStreak++
+        maxStreak = Math.max(maxStreak, currentStreak)
+      } else {
+        if (currentStreak >= 2 && i < tradesList.length) {
+          afterStreakSum += netPnL
+          afterStreakCount++
+        }
+        currentStreak = 0
+      }
+    }
+    return { maxStreak, avgAfterStreak: afterStreakCount > 0 ? afterStreakSum / afterStreakCount : null, tradesAfterStreak: afterStreakCount }
+  }
+
+  // Calculate first trade of day performance
+  function analyzeFirstTradePerformance(tradesList: typeof trades): { avgPnL: number | null, winRate: number, count: number } {
+    const tradesByDate: Record<string, typeof trades[0][]> = {}
+    tradesList.forEach(t => {
+      const dateKey = new Date(t.entryDate).toISOString().split('T')[0]
+      if (!tradesByDate[dateKey]) tradesByDate[dateKey] = []
+      tradesByDate[dateKey].push(t)
+    })
+    
+    let sum = 0, count = 0, wins = 0
+    Object.values(tradesByDate).forEach(dayTrades => {
+      if (dayTrades.length > 0) {
+        const firstTrade = dayTrades.sort((a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime())[0]
+        const netPnL = firstTrade.pnl + (firstTrade.commission || 0)
+        sum += netPnL
+        count++
+        if (netPnL > BREAK_EVEN_THRESHOLD) wins++
+      }
+    })
+    return { avgPnL: count > 0 ? sum / count : null, winRate: count > 0 ? (wins / count) * 100 : 0, count }
+  }
+
+  // Calculate overtrading patterns (trades per day)
+  function analyzeOvertradingPatterns(tradesList: typeof trades): { avgTradesPerDay: number, daysOver5Trades: number, pnlOnHighVolumeDay: number, pnlOnLowVolumeDay: number } {
+    const tradesByDate: Record<string, { count: number, pnl: number }> = {}
+    tradesList.forEach(t => {
+      const dateKey = new Date(t.entryDate).toISOString().split('T')[0]
+      if (!tradesByDate[dateKey]) tradesByDate[dateKey] = { count: 0, pnl: 0 }
+      tradesByDate[dateKey].count++
+      tradesByDate[dateKey].pnl += t.pnl + (t.commission || 0)
+    })
+    
+    const tradingDays = Object.keys(tradesByDate).length
+    const highVolumeDays = Object.entries(tradesByDate).filter(([_, d]) => d.count > 5)
+    const lowVolumeDays = Object.entries(tradesByDate).filter(([_, d]) => d.count <= 3)
+    
+    return {
+      avgTradesPerDay: tradingDays > 0 ? tradesList.length / tradingDays : 0,
+      daysOver5Trades: highVolumeDays.length,
+      pnlOnHighVolumeDay: highVolumeDays.reduce((sum, [_, d]) => sum + d.pnl, 0),
+      pnlOnLowVolumeDay: lowVolumeDays.reduce((sum, [_, d]) => sum + d.pnl, 0)
+    }
+  }
+
+  // Calculate risk management metrics
+  function analyzeRiskMetrics(tradesList: typeof trades): { largestWin: number, largestLoss: number, avgRRR: number | null, tradesWithLargerLossThanAvg: number } {
+    if (tradesList.length === 0) return { largestWin: 0, largestLoss: 0, avgRRR: null, tradesWithLargerLossThanAvg: 0 }
+    
+    const netPnLs = tradesList.map(t => t.pnl + (t.commission || 0))
+    const largestWin = Math.max(...netPnLs, 0)
+    const largestLoss = Math.min(...netPnLs, 0)
+    const avgLossValue = avgLoss > 0 ? avgLoss : 1
+    
+    const lossTrades = tradesList.filter(t => (t.pnl + (t.commission || 0)) < -BREAK_EVEN_THRESHOLD)
+    const tradesWithLargerLossThanAvg = lossTrades.filter(t => Math.abs(t.pnl + (t.commission || 0)) > avgLossValue).length
+    
+    return {
+      largestWin,
+      largestLoss,
+      avgRRR: avgLoss > 0 ? avgWin / avgLoss : null,
+      tradesWithLargerLossThanAvg
+    }
+  }
+
+  // Calculate winning/losing streak patterns
+  function analyzeStreakPatterns(tradesList: typeof trades): { maxWinStreak: number, maxLossStreak: number, currentStreak: { type: string, count: number } } {
+    let maxWinStreak = 0, maxLossStreak = 0
+    let currentWinStreak = 0, currentLossStreak = 0
+    let lastType = ''
+    
+    tradesList.forEach(t => {
+      const netPnL = t.pnl + (t.commission || 0)
+      if (netPnL > BREAK_EVEN_THRESHOLD) {
+        currentWinStreak++
+        currentLossStreak = 0
+        maxWinStreak = Math.max(maxWinStreak, currentWinStreak)
+        lastType = 'win'
+      } else if (netPnL < -BREAK_EVEN_THRESHOLD) {
+        currentLossStreak++
+        currentWinStreak = 0
+        maxLossStreak = Math.max(maxLossStreak, currentLossStreak)
+        lastType = 'loss'
+      }
+    })
+    
+    return {
+      maxWinStreak,
+      maxLossStreak,
+      currentStreak: { type: lastType, count: lastType === 'win' ? currentWinStreak : currentLossStreak }
+    }
+  }
+
+  const revengeTradeAnalysis = calculateAvgTradeAfterLoss(trades)
+  const consecutiveLossPattern = analyzeConsecutiveLosses(trades)
+  const firstTradeAnalysis = analyzeFirstTradePerformance(trades)
+  const overtradingAnalysis = analyzeOvertradingPatterns(trades)
+  const riskMetrics = analyzeRiskMetrics(trades)
+  const streakPatterns = analyzeStreakPatterns(trades)
+
   // Call AI API (XAI/Grok)
   try {
     const apiKey = process.env.XAI_API_KEY
@@ -481,50 +617,63 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
       return generateRuleBasedAnalysis(journalSummary, tradeStats, emotionCounts, emotionPerformance)
     }
 
-    const prompt = `You are a World-Class Trading Psychologist & Performance Coach (The "Top 1%" Mentor).
-    You combine the sharp analytical skills of a quantitative researcher with the deep empathy of a supportive best friend.
-    You have analyzed thousands of trader journals and know exactly how to spot hidden patterns, emotional leaks, and unexploited edges.
-    
-    YOUR MISSION:
-    Go beyond surface-level observations. Dig deep into the data and journal entries to find the "Why" behind the results.
-    Connect the dots between their emotional state (Journal), their behavior (Execution), and their results (P&L).
-    Your goal is to provide specific, high-impact advice that will immediately improve their trading performance.
-    
-    TONE & DATA-DRIVEN FRIENDLINESS:
-    - Be warm, energetic, and encouraging! (e.g., "I love seeing this consistency!", "Hey, we can fix this together.")
-    - Use natural, conversational language. Speak like a human, not a robot.
-    - Be direct but kind. If they are messing up, tell them gently but clearly.
-    - EVERY claim you make is backed by their data. Cite their numbers!
-    - NO DASHES or bullet points in the JSON strings. Use distinct sentences.
-    
-    ANALYSIS FRAMEWORK (The "Boss Level" Deep Dive):
-    
-    1. THE MENTAL GAME (Psychology & Tilt):
-       - Scan for "Tilt Patterns": Do large losses follow specific emotions (Frustration, Anger)?
-       - Look for "Confidence Traps": Do they trade too big after a win streak (Confidence)?
-       - Correlate specific emotions to Win Rate and Avg P&L.
-       
-    2. THE EXECUTION EDGE (Time & Strategy):
-       - Session Analysis: Are they burning money in the afternoon? (Common leak)
-       - Order Types: Are they paying too much spread with Market orders?
-       - Timeframes: Are they impatient on 1m charts but profitable on 15m?
-       
-    3. THE HIDDEN LEAKS (Risk Management):
-       - Risk/Reward Skew: Is one bad trade wiping out 5 good ones?
-       - News Trading: Are they gambling on CPI/NFP release prints?
-       - Bias Drift: Are they trading Long when they said they are Bearish?
-       
-    4. THE "ONE THING" (Prioritization):
-       - Identify the SINGLE most impactful change they can make right now.
+    const prompt = `You are The Trading Accountability Coach. Not a cheerleader. Not a therapist. A straight-shooting performance analyst who tells traders EXACTLY what they need to hear, not what they want to hear.
+
+YOUR CORE PHILOSOPHY:
+"Profitable trading requires brutal self-honesty. If you're losing money, there's a REASON. Your job is to find it, name it, and fix it. No excuses. No sugarcoating."
+
+YOUR COMMUNICATION STYLE:
+- Direct and blunt, but not cruel. Think: tough love from a mentor who genuinely wants you to succeed.
+- If their data shows they're gambling, call it gambling. If they're overtrading, say it clearly.
+- Use phrases like: "Let me be real with you", "The data doesn't lie", "Here's the hard truth"
+- Celebrate genuine progress, but don't manufacture false positives
+- ALWAYS back statements with their actual numbers. "You THINK you're disciplined, but 47% of your trades are revenge trades after losses."
+- NO corporate-speak, no fluff, no "areas for improvement" euphemisms. Say "weakness" when you mean weakness.
+
+WHAT TO LOOK FOR (Be ruthless in analysis):
+
+1. THE GAMBLING TELL-TALES:
+   - Trading news releases without edge (CPI, NFP gambling)
+   - Increasing position size after losses (classic tilt)
+   - Random instruments (jumping from NQ to Gold to Forex = no real strategy)
+   - Emotional entries: "Frustrated" in journal followed by oversized trades
+
+2. THE DISCIPLINE LEAKS:
+   - Win rate below 40%? They're taking low-probability setups
+   - Profit factor below 1.5? Risk management is broken
+   - Average loss bigger than average win? No stop discipline
+   - Trading counter to stated bias? They don't trust their own analysis
+
+3. THE TIME BOMBS:
+   - Best hour vs worst hour P&L spread - are they trading when they shouldn't?
+   - Best day vs worst day - should they skip certain days entirely?
+   - Session performance gaps - London killer but NY destroyer?
+
+4. THE PSYCHOLOGICAL RED FLAGS:
+   - Correlation between negative emotions and losses (the obvious one most ignore)
+   - Overconfidence after wins leading to blow-ups
+   - "Anxious" emotion BEFORE trading = they know they shouldn't be trading
+
+5. THE PROP FIRM REALITY CHECK:
+   - Failed accounts? Don't coddle them. Analyze WHY. What rule was broken? What pattern repeated?
+   - Multiple failures? There's a systemic issue, not bad luck.
+
+OUTPUT REQUIREMENTS:
+- Summary: 3-4 sentences. Start with the bottom line (profitable/unprofitable), then the PRIMARY issue holding them back.
+- Emotional Patterns: Connect SPECIFIC emotions to SPECIFIC P&L outcomes. "When you logged 'Frustrated', you averaged -$147 per trade. When 'Focused', +$89. The math is clear."
+- Performance Insights: The 2-3 biggest data patterns. Not observations, ACTIONABLE insights.
+- Strengths: ONLY if genuinely demonstrated. Empty array is valid if nothing stands out.
+- Weaknesses: The real ones. If their R:R is inverted, say it. If they're overtrading, say it.
+- Recommendations: Specific, actionable, prioritized. Not "be more disciplined" - instead "Stop trading after 2 consecutive losses. Your data shows your 3rd trade after losses is wrong 78% of the time."
     
     THE DATA (Study this carefully):
     
     **Time Period**: ${journals.length > 0 ? `${new Date(journals[0].date).toLocaleDateString()} to ${new Date(journals[journals.length - 1].date).toLocaleDateString()}` : 'No data'}
     
-    **FUNDED ACCOUNT STATUS (Important Context)**:
+    **FUNDED ACCOUNT STATUS (CRITICAL - Failures mean real money lost)**:
     ${accountStatusSummary}
     ${propFirmAccounts.filter(acc => acc.status === 'failed').length > 0 ?
-        `Note: There are some failed accounts in this period. Please address this sensitively and help identify lessons learned.` : ''}
+        `[RED FLAG] ${propFirmAccounts.filter(acc => acc.status === 'failed').length} failed account(s). Do NOT coddle them. Analyze what rule was broken, what pattern led to failure, and what must change. Failed accounts are not bad luck, they are feedback.` : ''}
 
     **USER'S TRADING SETUP**:
     Tags they use: ${userTags.length > 0 ? userTags.map(t => t.name).join(', ') : 'No custom tags'}
@@ -649,46 +798,87 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
     **Individual Trade Notes** (Look for patterns in wins vs losses):
     ${tradeNotes.slice(0, 20).map(t => `- ${new Date(t.date).toLocaleDateString()}: ${t.instrument} ${t.side} | ${t.pnl >= 0 ? 'WIN' : 'LOSS'}: $${t.pnl.toFixed(2)} | ${t.duration.toFixed(0)}min | "${t.note}"`).join('\n') || 'No trade notes available'}
 
-    YOUR ANALYSIS (JSON FORMAT):
+    ========== BEHAVIORAL DEEP DIVE (USE THIS DATA) ==========
+
+    **REVENGE TRADING ANALYSIS** (Trades After Losses):
+    - Trades taken immediately after a loss: ${revengeTradeAnalysis.count}
+    - Average P&L on trade after loss: ${revengeTradeAnalysis.avg !== null ? `$${revengeTradeAnalysis.avg.toFixed(2)}` : 'N/A'}
+    - Win rate on trade after loss: ${revengeTradeAnalysis.winRate.toFixed(1)}%
+    ${revengeTradeAnalysis.avg !== null && revengeTradeAnalysis.avg < 0 ? `[CRITICAL] They LOSE money on average after a loss. Clear revenge trading pattern. Call this out!` : ''}
+    ${revengeTradeAnalysis.count > 0 && revengeTradeAnalysis.winRate < 40 ? `[WARNING] Win rate drops significantly after losses. They should STOP trading after a loss.` : ''}
+
+    **CONSECUTIVE LOSS PATTERNS** (Tilt Analysis):
+    - Max consecutive losing streak: ${consecutiveLossPattern.maxStreak} trades
+    - Avg P&L on first trade after 2+ losses: ${consecutiveLossPattern.avgAfterStreak !== null ? `$${consecutiveLossPattern.avgAfterStreak.toFixed(2)}` : 'N/A'}
+    ${consecutiveLossPattern.maxStreak >= 4 ? `[RED FLAG] A ${consecutiveLossPattern.maxStreak}-trade losing streak indicates either tilt or fundamentally broken strategy execution.` : ''}
+
+    **FIRST TRADE OF DAY ANALYSIS** (Morning Discipline):
+    - First trade of day avg P&L: ${firstTradeAnalysis.avgPnL !== null ? `$${firstTradeAnalysis.avgPnL.toFixed(2)}` : 'N/A'}
+    - First trade win rate: ${firstTradeAnalysis.winRate.toFixed(1)}%
+    - Total trading days: ${firstTradeAnalysis.count}
+    ${firstTradeAnalysis.avgPnL !== null && firstTradeAnalysis.avgPnL > 0 && revengeTradeAnalysis.avg !== null && revengeTradeAnalysis.avg < 0 ? `[INSIGHT] First trade is profitable (+$${firstTradeAnalysis.avgPnL.toFixed(2)}) but trades after losses are negative ($${revengeTradeAnalysis.avg.toFixed(2)}). They should trade less.` : ''}
+
+    **OVERTRADING ANALYSIS** (Volume vs Quality):
+    - Average trades per day: ${overtradingAnalysis.avgTradesPerDay.toFixed(1)}
+    - Days with 5+ trades: ${overtradingAnalysis.daysOver5Trades}
+    - P&L on high volume days (5+ trades): $${overtradingAnalysis.pnlOnHighVolumeDay.toFixed(2)}
+    - P&L on low volume days (1-3 trades): $${overtradingAnalysis.pnlOnLowVolumeDay.toFixed(2)}
+    ${overtradingAnalysis.pnlOnHighVolumeDay < 0 && overtradingAnalysis.pnlOnLowVolumeDay > 0 ? `[CRITICAL] They MAKE money when trading less (1-3 trades: +$${overtradingAnalysis.pnlOnLowVolumeDay.toFixed(2)}) and LOSE money when overtrading (5+: $${overtradingAnalysis.pnlOnHighVolumeDay.toFixed(2)}). Tell them to trade LESS.` : ''}
+    ${overtradingAnalysis.avgTradesPerDay > 7 ? `[WARNING] Averaging ${overtradingAnalysis.avgTradesPerDay.toFixed(1)} trades/day is excessive for most strategies. Possible gambling behavior.` : ''}
+
+    **RISK MANAGEMENT METRICS**:
+    - Largest single win: $${riskMetrics.largestWin.toFixed(2)}
+    - Largest single loss: $${Math.abs(riskMetrics.largestLoss).toFixed(2)}
+    - Risk/Reward Ratio (Avg Win / Avg Loss): ${riskMetrics.avgRRR !== null ? riskMetrics.avgRRR.toFixed(2) : 'N/A'}
+    - Trades with loss larger than average: ${riskMetrics.tradesWithLargerLossThanAvg} out of ${tradeStats.losingTrades} losses
+    ${riskMetrics.avgRRR !== null && riskMetrics.avgRRR < 1 ? `[CRITICAL] Risk/Reward below 1.0 (${riskMetrics.avgRRR.toFixed(2)}). Average loss is BIGGER than average win. They're letting losers run.` : ''}
+    ${Math.abs(riskMetrics.largestLoss) > riskMetrics.largestWin * 2 ? `[RED FLAG] Largest loss ($${Math.abs(riskMetrics.largestLoss).toFixed(2)}) is more than 2x largest win ($${riskMetrics.largestWin.toFixed(2)}). Asymmetric risk = disaster waiting to happen.` : ''}
+
+    **STREAK PATTERNS** (Momentum):
+    - Max winning streak: ${streakPatterns.maxWinStreak} trades
+    - Max losing streak: ${streakPatterns.maxLossStreak} trades
+    - Current streak: ${streakPatterns.currentStreak.count} ${streakPatterns.currentStreak.type}s
+    ${streakPatterns.maxLossStreak > streakPatterns.maxWinStreak + 2 ? `[CONCERN] Max losing streak (${streakPatterns.maxLossStreak}) exceeds max winning streak (${streakPatterns.maxWinStreak}) by a lot. Indicates poor loss management.` : ''}
+
+    ==========================================================
+
+    RESPOND WITH THIS EXACT JSON STRUCTURE:
     {
-      "summary": "3 to 4 sentences. Acknowledge effort, address account status with empathy, then transition to specific psychological/performance critique. Use 'you' and be warm.",
+      "summary": "3 to 4 sentences. Lead with the verdict: profitable or not, and by how much. Then state the PRIMARY problem or strength. Be direct. Example: 'You lost $847 over 23 trades this period. The core issue is not your strategy, it is your inability to stop trading after losses. Your average trade after a loss is negative $67, while your first trade of the day averages positive $34.'",
       "emotionalPatterns": [
-        "Pattern 1: Connect emotion (e.g. Frustration) to result (e.g. Larger losses). No dashes.",
-        "Pattern 2: Observation about confidence or hesitation.",
-        "Pattern 3: Comment on their journaling consistency."
+        "Connect specific emotions to specific dollar outcomes. Example: 'When you logged Frustrated, you averaged negative $147 per trade across 8 trades. When Focused, positive $89 across 12 trades. The pattern is obvious.'",
+        "If they trade without logging emotions, call it out. Example: 'You have emotion data for only 30% of trading days. You cannot fix what you do not track.'",
+        "Look for revenge trading patterns, overconfidence spirals, fear-based exits."
       ],
       "performanceInsights": [
-        "Insight 1: Specific P&L or Win Rate observation (e.g. 'You are printing money on NQ but giving it back on ES').",
-        "Insight 2: Time of day or Session insight.",
-        "Insight 3: Strategy or Bias alignment note."
+        "The single biggest P&L leak. Be specific. Example: 'You made $1,200 on NQ and lost $1,847 on ES. Why are you still trading ES?'",
+        "Time based patterns. Example: 'Your afternoon trades (after 2pm) are negative $523 total. Your morning trades are positive $412. You should stop trading after lunch.'",
+        "Strategy or execution gaps. Example: 'Your limit orders have 67% win rate. Your market orders have 38%. Stop chasing entries.'"
       ],
       "strengths": [
-        "Strength 1",
-        "Strength 2"
+        "Only include if genuinely demonstrated by the data. Empty array is valid.",
+        "If positive: be specific. 'You maintained discipline on position sizing. No trade exceeded 2% risk.'"
       ],
       "weaknesses": [
-        "Weakness 1 (Constructive)",
-        "Weakness 2"
+        "The real problems. No euphemisms. Example: 'You are gambling on news events. 4 trades during CPI, all losers, totaling negative $340.'",
+        "Example: 'Your average loss ($89) is larger than your average win ($67). You are letting losers run and cutting winners short. Classic fear pattern.'"
       ],
       "recommendations": [
-        "Action 1 (Specific)",
-        "Action 2",
-        "Action 3",
-        "Action 4"
+        "Specific, actionable, measurable. Example: 'Stop trading after 2 consecutive losses. Your data shows the 3rd trade after losses is wrong 78% of the time.'",
+        "Example: 'Remove ES from your watchlist for 2 weeks. Trade only NQ where you actually have edge.'",
+        "Example: 'Set a hard rule: no trades within 30 minutes of high impact news. You have proven you cannot handle it.'",
+        "The ONE THING that would have the biggest impact if they did nothing else."
       ]
     }
 
-    TONE AND FORMATTING RULES:
-    * Be warm, encouraging, and supportive like a trusted mentor
-    * Use "you" and "your" throughout to make it personal
-    * Celebrate wins and progress genuinely
-    * Frame challenges as growth opportunities
-    * CRITICAL: Do NOT use dashes or hyphens in your response (use commas, periods, or "to" instead)
-    * Write in complete, flowing sentences
-    * NO EMOJIS in the JSON values
-    * If they have failed accounts, address it with empathy while providing actionable insights
+    FORMATTING RULES:
+    * NO HYPHENS/DASHES in your response. Use "to" instead of "-" for ranges, "negative" instead of "-$" for losses.
+    * Use "you" and "your" throughout. This is personal.
+    * NO EMOJIS.
+    * Output ONLY valid JSON. No text before or after.
+    * If they have failed accounts, do not coddle them. Analyze what went wrong and what pattern they need to break.
     
-    Now provide an analysis that will genuinely help this trader grow and succeed.`;
+    Analyze now. Be the coach they need, not the friend they want.`;
 
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
@@ -701,19 +891,24 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
         messages: [
           {
             role: 'system',
-            content: `You are an elite, world-class trading mentor (Top 1% Performance Coach). 
-            Your analysis is deep, specific, and data-driven.
-            You connect emotional dots that the trader might miss.
-            You use a warm, "Best Friend / Coach" persona.
-            You NEVER use dashes or hyphens in your output text.
-            Output ONLY valid JSON.`
+            content: `You are The Trading Accountability Coach. A straight-shooting performance analyst who gives traders EXACTLY what they need to hear, not what they want to hear.
+
+Your approach:
+- Brutally honest but constructive
+- Every claim backed by data with specific numbers
+- No sugarcoating, no euphemisms, no corporate speak
+- Direct statements like "you are gambling" if the data shows gambling
+- Call out patterns they might be in denial about
+- If there is nothing positive to say, say nothing positive
+- NEVER use hyphens or dashes in output. Use "to" for ranges, "negative" for losses
+- Output ONLY valid JSON. Nothing else.`
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.7,
+        temperature: 0.75,
         max_tokens: 3000
       })
     })

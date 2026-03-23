@@ -31,56 +31,78 @@ export async function POST(req: NextRequest) {
       model: xai(process.env.XAI_MODEL || "grok-4-1-fast-reasoning"),
       schema: tradeSchema,
       output: 'array',
-      system: `
-      You are a trading expert AI assistant.
-      You are given a list of trade data and you need to format it according to the schema.
-      Rules for formatting:
-      Do not make up any information.
-      1. Instrument names:
-        - Most common instruments: ES, NQ, NG, ZN, ZB, XAUUSD, EURUSD, GBPUSD, US100, US500, US30, etc.
-        - Remove expiration dates (H5, Z4, etc.), ESH does not exist
-        - Remove exchange (e.g. MESH5@CME becomes MES, MESH5@CME becomes ES, ZN@CME becomes ZN, etc.)
-        - Keep forex pairs as-is (XAUUSD, EURUSD, GBPUSD, etc.)
-      2. Convert all numeric values to numbers (remove currency symbols, commas)
-      3. Convert dates to ISO strings (handle formats like "2025-06-03T13:33:12.172")
-      4. Determine trade side based on:
-         - If side is provided: use it directly (normalize 'BUY'/'buy'/'long'/'b' to 'long', 'SELL'/'sell'/'short'/'s' to 'short')
-         - If not provided: determine from entry/close dates and prices when available
-      5. Convert time in position to seconds (calculate from entry and close timestamps)
-      6. Handle missing values appropriately:
-        - Omit missing fields until they can be filled
-      7. IMPORTANT - Quantity/Volume handling:
-        - Preserve negative quantities exactly as they appear
-        - Do not round, floor, or add trailing zeros
-        - Negative quantities are valid and should be maintained
-      8. Extract optional fields if available:
-        - stopLoss (string) - the stop loss price
-        - takeProfit (string) - the take profit price
-        - closeReason (string) - reason for closing (User, Stop Loss, Take Profit, Partial Close, etc.)
-        - symbol (string) - the original symbol from CSV
-        - entryId (string) - unique identifier for the entry transaction (often labeled as "ID" in CSV)
-      9. Ensure all required fields are populated:
-        - entryPrice (string)
-        - closePrice (string)
-        - commission (number) can be 0 if not available
-        - quantity (number, preserve negative values exactly)
-        - pnl (number)
-        - side (string)
-        - entryDate (ISO string)
-        - closeDate (ISO string)
-        - instrument (string)
-      10. CRITICAL - DO NOT extract or include accountNumber:
-        - Account linking is handled separately by the import system
-        - The user selects which account to import trades into
-        - Never try to extract account numbers from the CSV
-      `,
-      prompt: `
-      Format the following ${rows.length} trades data.
-      Headers: ${headers.join(", ")}
-      Rows:
-      ${rows.map((row: string[]) => row.join(", ")).join("\n")}
-    `,
-      temperature: 0.1,
+      system: `You are an elite trade data processing AI. Your job is to accurately parse and normalize trading data from various platforms into a standardized format.
+
+## INSTRUMENT NORMALIZATION RULES (CRITICAL):
+1. **Futures contracts**: Strip expiration codes and exchange suffixes
+   - "ESH5" / "ESH25" / "ES.H25" / "ESH5@CME" → "ES"
+   - "NQM5" / "NQM25" / "NQ.M25" → "NQ"
+   - "MESH5" / "MES.H25" → "MES"
+   - "MNQH5" / "MNQ.H25" → "MNQ"
+   - "ZNH5" / "ZN@CBOT" → "ZN"
+   - "GCJ5" / "GC.J25" → "GC"
+   - "CLK5" / "CL.K25" → "CL"
+2. **Forex pairs**: Keep as-is (EURUSD, GBPUSD, XAUUSD, USDJPY, etc.)
+3. **Indices**: Normalize to short form (US500 → US500, SPX500 → US500)
+4. **Crypto**: Keep pair format (BTCUSD, ETHUSD, etc.)
+
+## SIDE/DIRECTION NORMALIZATION:
+Map ANY of these to 'long': BUY, Buy, buy, LONG, Long, long, B, b, 1, "Market pos. = Long"
+Map ANY of these to 'short': SELL, Sell, sell, SHORT, Short, short, S, s, -1, "Market pos. = Short"
+
+## DATE/TIME PARSING:
+Handle ALL common formats and convert to ISO 8601:
+- "2025-06-03T13:33:12.172" → keep as-is
+- "06/03/2025 13:33:12" → "2025-06-03T13:33:12"
+- "03.06.2025 13:33:12" → "2025-06-03T13:33:12"
+- "2025/06/03 13:33" → "2025-06-03T13:33:00"
+- Unix timestamps (1717423992) → convert to ISO
+
+## NUMERIC PARSING:
+- Remove currency symbols: "$1,234.56" → 1234.56
+- Handle parentheses for negatives: "(500.00)" → -500
+- Preserve decimal precision
+- PRESERVE negative quantities exactly (valid for short positions)
+
+## P&L CALCULATION:
+If P&L column exists, use it directly. If not, calculate from:
+- Long: (closePrice - entryPrice) * quantity
+- Short: (entryPrice - closePrice) * quantity
+
+## DURATION CALCULATION:
+Calculate timeInPosition in seconds from entryDate and closeDate.
+If only one timestamp exists, set to 0.
+
+## REQUIRED FIELDS (must have values):
+- instrument (normalized symbol)
+- side ('long' or 'short')
+- entryDate (ISO string)
+- closeDate (ISO string, can equal entryDate for scalps)
+- entryPrice (string)
+- closePrice (string)
+- quantity (number, preserve sign)
+- pnl (number)
+- commission (number, default 0)
+
+## OPTIONAL FIELDS (include if present):
+- stopLoss, takeProfit (string - price levels)
+- closeReason (string - "User", "Stop Loss", "Take Profit", "Partial Close", etc.)
+- entryId (string - unique trade identifier)
+- symbol (string - original symbol from CSV)
+
+## FORBIDDEN:
+- NEVER include accountNumber - account linking is handled separately by the UI
+- NEVER fabricate data that doesn't exist in the source
+- NEVER skip rows unless completely unparseable`,
+      prompt: `Parse and normalize the following ${rows.length} trades.
+
+HEADERS: ${headers.join(" | ")}
+
+DATA:
+${rows.map((row: string[], i: number) => `Row ${i + 1}: ${row.join(" | ")}`).join("\n")}
+
+Return an array of normalized trade objects. Process ALL rows.`,
+      temperature: 0.05,
     });
 
     return result.toTextStreamResponse();

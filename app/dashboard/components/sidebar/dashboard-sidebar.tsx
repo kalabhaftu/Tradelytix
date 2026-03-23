@@ -4,15 +4,15 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
   LayoutDashboard,
-  BarChart3,
+  TrendingUp,
   BookOpen,
   Users,
-  Table,
-  List,
+  Table2,
+  Target,
   FlaskConical,
   Settings,
   Database,
-  FileText,
+  BookMarked,
   RefreshCw,
   PanelLeftClose,
 } from 'lucide-react'
@@ -37,17 +37,17 @@ import { useData } from '@/context/data-provider'
 
 const navItems = [
   { id: 'widgets', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-  { id: 'reports', label: 'Reports', icon: BarChart3, href: '/dashboard/reports' },
-  { id: 'table', label: 'Trades', icon: Table, href: '/dashboard/table' },
+  { id: 'reports', label: 'Reports', icon: TrendingUp, href: '/dashboard/reports' },
+  { id: 'table', label: 'Trades', icon: Table2, href: '/dashboard/table' },
   { id: 'journal', label: 'Journal', icon: BookOpen, href: '/dashboard/journal' },
-  { id: 'playbook', label: 'Playbook', icon: List, href: '/dashboard/playbook' },
+  { id: 'playbook', label: 'Playbook', icon: Target, href: '/dashboard/playbook' },
   { id: 'accounts', label: 'Accounts', icon: Users, href: '/dashboard/accounts' },
   { id: 'backtesting', label: 'Backtesting', icon: FlaskConical, href: '/dashboard/backtesting' },
 ]
 
 // Utility items at the bottom
 const utilityItems = [
-  { id: 'docs', label: 'Documentation', icon: FileText, href: '/docs' },
+  { id: 'docs', label: 'Documentation', icon: BookMarked, href: '/docs' },
   { id: 'data', label: 'Data', icon: Database, href: '/dashboard/data' },
   { id: 'settings', label: 'Settings', icon: Settings, href: '/dashboard/settings' },
 ]

@@ -215,12 +215,12 @@ export const WIDGET_GRID_DEFAULTS: Record<string, WidgetGridDefault> = {
   weeklyTracker:          { defaultW: 4, defaultH: 3, minW: 3, minH: 2 },
   sessionAnalysis:        { defaultW: 4, defaultH: 4, minW: 3, minH: 3 },
 
-  // Tables — increased height to match calendar widgets
-  recentTrades: { defaultW: 4, defaultH: 7, minW: 3, minH: 5 },
+  // Tables — 5 rows = ~400px which fits 10 trade rows without scroll by default
+  recentTrades: { defaultW: 4, defaultH: 5, minW: 3, minH: 4 },
 
-  // Calendars — wider, taller, but can be resized down
+  // Calendars — advanced unchanged, mini gets more height for taller cells
   calendarAdvanced: { defaultW: 12, defaultH: 8, minW: 4, minH: 5 },
-  calendarMini:     { defaultW: 8, defaultH: 7, minW: 4, minH: 5 },
+  calendarMini:     { defaultW: 8, defaultH: 8, minW: 4, minH: 6 },
 
   // New charts
   equityCurve:            { defaultW: 8, defaultH: 4, minW: 4, minH: 3 },

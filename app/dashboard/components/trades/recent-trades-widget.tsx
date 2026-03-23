@@ -15,12 +15,12 @@ export default function RecentTradesWidget() {
     return groupTradesByExecution(formattedTrades)
   }, [formattedTrades, groupTradesByExecution])
 
-  // Get last 20 trades (sorted by most recent entry date)
-  // Increased limit to utilize full widget height
+  // All trades sorted newest-first — no hard cap.
+  // The container is overflow-y-auto so the widget height controls how many
+  // are visible; resizing taller reveals more rows without needing a reload.
   const recentTrades = React.useMemo(() => {
     return groupedTrades
       .sort((a: any, b: any) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime())
-      .slice(0, 20)
   }, [groupedTrades])
 
   const formatCurrency = (amount: number) => {

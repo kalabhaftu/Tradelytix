@@ -66,22 +66,22 @@ const DayCell = memo(function DayCell({
       onClick={!isMiniCalendar && onClick ? onClick : undefined}
       className={cn(
         "relative flex flex-col items-center justify-center rounded-[4px] md:rounded-[6px] border transition-all duration-150 select-none group",
-        // Mini calendar uses flex-grow with min-height, advanced calendar uses aspect ratio
+        // Mini calendar: taller cells so they are properly rectangular not square
         isMiniCalendar 
-          ? "min-h-[48px] md:min-h-[56px] lg:min-h-[64px]" 
+          ? "min-h-[68px] sm:min-h-[76px] lg:min-h-[84px]" 
           : "aspect-square md:aspect-auto md:min-h-[100px] cursor-pointer",
 
-        // No trades — dark neutral
-        !hasTrades && isCurrentMonth && "bg-transparent md:bg-[#16181d] border-transparent md:border-[#22252b] hover:border-border/30",
+        // No trades — uses theme tokens so it works in any color scheme
+        !hasTrades && isCurrentMonth && "bg-muted/5 border-border/20 hover:border-border/40",
 
-        // Profit — dark green
-        hasTrades && isProfit && "bg-long/10 md:bg-[#092a1a] border-long/40 md:border-[#14472a] hover:bg-long/20 md:hover:bg-[#0c3823] hover:border-long/50 md:hover:border-[#1b5c37]",
+        // Profit — green tint via CSS token
+        hasTrades && isProfit && "bg-long/10 border-long/30 hover:bg-long/20 hover:border-long/50",
 
-        // Loss — dark red
-        hasTrades && isLoss && "bg-short/10 md:bg-[#3b1212] border-short/40 md:border-[#591c1c] hover:bg-short/20 md:hover:bg-[#4a1717] hover:border-short/50 md:hover:border-[#732424]",
+        // Loss — red tint via CSS token
+        hasTrades && isLoss && "bg-short/10 border-short/30 hover:bg-short/20 hover:border-short/50",
 
-        // Breakeven
-        hasTrades && isBreakEven && "bg-muted/30 md:bg-[#1f2229] border-border/30 md:border-[#2c313a]",
+        // Breakeven — neutral muted tint
+        hasTrades && isBreakEven && "bg-muted/30 border-border/30 hover:bg-muted/40",
 
         // Not current month
         !isCurrentMonth && "opacity-20 pointer-events-none",
@@ -141,7 +141,7 @@ const DayCell = memo(function DayCell({
         {/* Note Icon — top left */}
         {hasNotes && (
           <div className="absolute top-1.5 left-1.5 opacity-70">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-foreground/80">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
@@ -167,7 +167,7 @@ const DayCell = memo(function DayCell({
             <div
               className={cn(
                 "font-bold tracking-tight text-center text-[14px] lg:text-[16px] xl:text-[20px]",
-                isProfit ? "text-[#3ce07e]" : isLoss ? "text-[#ff4c4c]" : "text-white"
+                isProfit ? "text-long" : isLoss ? "text-short" : "text-foreground"
               )}
             >
               {dayData.pnl < 0 ? `-$${Math.abs(dayData.pnl).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : `$${dayData.pnl.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`}
@@ -176,7 +176,7 @@ const DayCell = memo(function DayCell({
 
           {/* Trade Count */}
           {hasTrades && visibleStats.trades && (
-            <span className="font-medium leading-none text-white/80 text-[10px] lg:text-[11px] mt-0.5 xl:mt-1">
+            <span className="font-medium leading-none text-foreground/70 text-[10px] lg:text-[11px] mt-0.5 xl:mt-1">
               {dayData.tradeNumber} trade{dayData.tradeNumber !== 1 ? 's' : ''}
             </span>
           )}
@@ -187,7 +187,7 @@ const DayCell = memo(function DayCell({
               {visibleStats.rMultiple && dayData.dailyRMultiple !== undefined && (
                 <span className={cn(
                   "text-[9px] lg:text-[10px] font-medium opacity-80 whitespace-nowrap",
-                  isProfit ? "text-[#3ce07e]" : isLoss ? "text-[#ff4c4c]" : "text-white"
+                  isProfit ? "text-long" : isLoss ? "text-short" : "text-foreground"
                 )}>
                   {dayData.dailyRMultiple.toFixed(2)}R{visibleStats.winRate ? ',' : ''}
                 </span>
@@ -195,7 +195,7 @@ const DayCell = memo(function DayCell({
               {visibleStats.winRate && (
                 <span className={cn(
                   "text-[9px] lg:text-[10px] font-medium opacity-80 ml-0.5 whitespace-nowrap",
-                  isProfit ? "text-[#3ce07e]" : isLoss ? "text-[#ff4c4c]" : "text-white"
+                  isProfit ? "text-long" : isLoss ? "text-short" : "text-foreground"
                 )}>
                   {winRateValue.toFixed(1)}%
                 </span>
@@ -246,24 +246,22 @@ function WeeklySummary({
   return (
     <div
       className={cn(
-        "flex flex-col items-start justify-center rounded-[8px] border p-2.5 cursor-pointer transition-all hover:brightness-110 group min-h-[70px] xl:min-h-[85px]",
-        stats.tradedDays === 0
-          ? "bg-[#16181d] border-[#22252b]"
-          : "bg-[#16181d] border-[#22252b]"
+        "flex flex-col items-start justify-center rounded-[8px] border p-2.5 cursor-pointer transition-all hover:bg-muted/30 group flex-1",
+        "bg-muted/10 border-border/20"
       )}
       onClick={() => onReviewWeek?.(weekDays[0])}
     >
-      <span className="text-[11px] font-medium text-muted-foreground/80 mb-0.5">
+      <span className="text-[11px] font-medium text-muted-foreground/70 mb-0.5">
         Week {weekIndex + 1}
       </span>
       <span
         className={cn(
           "text-sm md:text-base font-bold tracking-tight",
           stats.tradedDays === 0
-            ? "text-white"
+            ? "text-foreground/60"
             : isPositive
-              ? "text-[#3ce07e]"
-              : "text-[#ff4c4c]",
+              ? "text-long"
+              : "text-short",
         )}
       >
         {stats.tradedDays === 0 ? "$0" : (stats.pnl < 0 ? `-$${Math.abs(stats.pnl).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : `$${stats.pnl.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`)}
@@ -373,22 +371,27 @@ export default function MonthlyView({
           </div>
         </div>
 
-        {/* Weekly Summaries Sidebar */}
+        {/* Weekly Summaries Sidebar — uses same flex layout as the day grid */}
         {!isMiniCalendar && (
-          <div className="hidden lg:flex flex-col gap-1.5 w-[110px] xl:w-[125px] p-2 pl-0.5 border-l border-border/10 ml-1">
-            {/* Spacer to align with weekday header */}
-          <div className="h-[26px] shrink-0" />
+          <div className="hidden lg:flex flex-col w-[110px] xl:w-[125px] border-l border-border/10 ml-1 shrink-0">
+            {/* Spacer matches weekday-header height exactly (py-1.5 md:py-2 + text line = ~34px on md) */}
+            <div className="shrink-0 py-1.5 md:py-2">
+              <div className="h-[16px]" /> {/* text-[11px] line height */}
+            </div>
 
-          {weeks.map((week, index) => (
-            <WeeklySummary
-              key={index}
-              weekIndex={index}
-              weekDays={week}
-              calendarData={calendarData}
-              currentDate={currentDate}
-              onReviewWeek={onReviewWeek}
-            />
-          ))}
+            {/* Week rows — flex-1 so they fill remaining space and align with grid rows */}
+            <div className="flex-1 flex flex-col gap-1 md:gap-1.5 p-2 pt-0 pl-1 min-h-0">
+              {weeks.map((week, index) => (
+                <WeeklySummary
+                  key={index}
+                  weekIndex={index}
+                  weekDays={week}
+                  calendarData={calendarData}
+                  currentDate={currentDate}
+                  onReviewWeek={onReviewWeek}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>

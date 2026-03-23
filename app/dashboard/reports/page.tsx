@@ -283,30 +283,49 @@ export default function ReportsPage() {
 
         setIsExporting(true)
         try {
+            // Read the current background color from the document root so we get
+            // the resolved CSS variable value (not the unparsed string).
+            const bgColor = getComputedStyle(document.documentElement)
+                .getPropertyValue('--background')
+                .trim()
+            // --background is stored as "H S% L%" — wrap in hsl()
+            const resolvedBg = bgColor ? `hsl(${bgColor})` : '#0d0d0d'
+
+            const rect = element.getBoundingClientRect()
+            const dpr = window.devicePixelRatio || 1
+
             const canvas = await html2canvas(element, {
-                scale: 2,
-                backgroundColor: 'hsl(var(--background))',
+                scale: Math.max(dpr, 2),
+                backgroundColor: resolvedBg,
                 useCORS: true,
-                onclone: (clonedDoc) => {
-                    const clonedContent = clonedDoc.getElementById('report-content') as HTMLElement
-                    if (clonedContent) {
-                        clonedContent.style.padding = '40px'
-                        clonedContent.style.background = 'hsl(var(--background))'
-                        clonedContent.style.borderRadius = '0px'
-                    }
+                logging: false,
+                windowWidth: Math.round(rect.width),
+                windowHeight: Math.round(rect.height),
+                onclone: (_clonedDoc: Document, clonedContent: HTMLElement) => {
+                    // Lock rendered dimensions so html2canvas doesn't reflow
+                    clonedContent.style.width = `${rect.width}px`
+                    clonedContent.style.background = resolvedBg
+                    clonedContent.style.borderRadius = '0px'
+                    // Hide interactive elements that should not appear in export
+                    clonedContent.querySelectorAll('.no-export').forEach((el) => {
+                        (el as HTMLElement).style.display = 'none'
+                    })
                 },
-                ignoreElements: (element) => element.classList.contains('no-export')
             })
 
-            const link = document.createElement('a')
-            link.download = `deltalytix-report-${new Date().getTime()}.png`
-            link.href = canvas.toDataURL('image/png')
-            link.click()
-
-            toast.success('Report downloaded successfully!')
-        } catch (error) {
-            console.error('Download failed:', error)
-            toast.error('Failed to download report')
+            canvas.toBlob((blob) => {
+                if (!blob) { toast.error('Export failed'); return }
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.download = `deltalytix-report-${Date.now()}.png`
+                a.href = url
+                a.click()
+                URL.revokeObjectURL(url)
+                toast.success('Report exported successfully!')
+            }, 'image/png')
+        } catch (err) {
+            console.error('[Reports] export error:', err)
+            toast.error('Failed to export report')
         } finally {
             setIsExporting(false)
         }

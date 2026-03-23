@@ -109,16 +109,20 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
       const logoBarHeight = 70
       const cardW = cardCanvas.width
       const cardH = cardCanvas.height
-      // Always use padding to create separation between card and logo
-      const padding = withGradient ? Math.round(32 * scale) : Math.round(16 * scale)
+      // Padding only for gradient (around the entire card+logo unit)
+      const padding = withGradient ? Math.round(32 * scale) : 0
       const totalW = cardW + padding * 2
-      const totalH = cardH + padding + Math.round(logoBarHeight * scale) + padding
+      // Logo bar is INSIDE the card, so total height = card + logo bar + padding (if gradient)
+      const totalH = cardH + Math.round(logoBarHeight * scale) + (withGradient ? padding * 2 : 0)
 
       const out = document.createElement('canvas')
       out.width = totalW
       out.height = totalH
       const ctx = out.getContext('2d')!
 
+      // Combined card height including logo bar
+      const combinedCardH = cardH + Math.round(logoBarHeight * scale)
+      
       if (withGradient) {
         const grad = ctx.createLinearGradient(0, 0, totalW, totalH)
         grad.addColorStop(0, '#0f0c29')
@@ -132,29 +136,35 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         ctx.shadowBlur = 50 * scale
         ctx.shadowOffsetY = 15 * scale
         const r = 20 * scale
+        // Draw rounded rect that includes both card AND logo bar area
         ctx.beginPath()
         ctx.moveTo(padding + r, padding)
         ctx.lineTo(padding + cardW - r, padding)
         ctx.quadraticCurveTo(padding + cardW, padding, padding + cardW, padding + r)
-        ctx.lineTo(padding + cardW, padding + cardH - r)
-        ctx.quadraticCurveTo(padding + cardW, padding + cardH, padding + cardW - r, padding + cardH)
-        ctx.lineTo(padding + r, padding + cardH)
-        ctx.quadraticCurveTo(padding, padding + cardH, padding, padding + cardH - r)
+        ctx.lineTo(padding + cardW, padding + combinedCardH - r)
+        ctx.quadraticCurveTo(padding + cardW, padding + combinedCardH, padding + cardW - r, padding + combinedCardH)
+        ctx.lineTo(padding + r, padding + combinedCardH)
+        ctx.quadraticCurveTo(padding, padding + combinedCardH, padding, padding + combinedCardH - r)
         ctx.lineTo(padding, padding + r)
         ctx.quadraticCurveTo(padding, padding, padding + r, padding)
         ctx.closePath()
+        // Fill the entire area with dark background first
+        ctx.fillStyle = resolvedBg
+        ctx.fill()
         ctx.clip()
+        // Draw the card content
         ctx.drawImage(cardCanvas, padding, padding)
         ctx.restore()
       } else {
-        // For basic: still use padding to create separation
+        // For basic: no padding, logo is attached to card
         ctx.fillStyle = resolvedBg
         ctx.fillRect(0, 0, totalW, totalH)
-        ctx.drawImage(cardCanvas, padding, padding)
+        ctx.drawImage(cardCanvas, 0, 0)
       }
 
-      // Logo bar positioned below the card with consistent spacing
-      const barY = padding + cardH
+      // Logo bar is INSIDE the card area (same dark background)
+      // For gradient: padding + cardH, for basic: just cardH
+      const barY = (withGradient ? padding : 0) + cardH
       const logoYPos = barY + Math.round((logoBarHeight / 2) * scale)
       
       // Draw actual logo image - LARGER size like Tradezella
@@ -165,7 +175,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
       // Draw text - LARGER font
       const fontSize = Math.round(16 * scale)
       ctx.font = `800 ${fontSize}px -apple-system, BlinkMacSystemFont, "Inter", sans-serif`
-      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.5)'
+      ctx.fillStyle = 'rgba(255,255,255,0.5)'
       ctx.textAlign = 'left'
       ctx.textBaseline = 'middle'
       ctx.fillText('DELTALYTIX', logoX + logoSize + Math.round(12 * scale), logoYPos)

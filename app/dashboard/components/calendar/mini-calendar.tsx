@@ -69,19 +69,24 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
         },
       })
 
-      const logoBarHeight = 52
+      // Logo bar height - increased for larger logo
+      const logoBarHeight = 60
       const cardW = cardCanvas.width
       const cardH = cardCanvas.height
+      // Padding only for gradient (around the entire card+logo unit)
       const padding = withGradient ? Math.round(28 * scale) : 0
       const totalW = cardW + padding * 2
-      // Logo bar directly attached under card (no extra padding gap)
-      const totalH = cardH + padding + Math.round(logoBarHeight * scale) + (withGradient ? padding : 0)
+      // Logo bar is INSIDE the card, so total height = card + logo bar + padding (if gradient)
+      const totalH = cardH + Math.round(logoBarHeight * scale) + (withGradient ? padding * 2 : 0)
 
       const out = document.createElement('canvas')
       out.width = totalW
       out.height = totalH
       const ctx = out.getContext('2d')!
 
+      // Combined card height including logo bar
+      const combinedCardH = cardH + Math.round(logoBarHeight * scale)
+      
       if (withGradient) {
         const grad = ctx.createLinearGradient(0, 0, totalW, totalH)
         grad.addColorStop(0, '#0f0c29')
@@ -95,42 +100,49 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
         ctx.shadowBlur = 45 * scale
         ctx.shadowOffsetY = 12 * scale
         const r = 16 * scale
+        // Draw rounded rect that includes both card AND logo bar area
         ctx.beginPath()
         ctx.moveTo(padding + r, padding)
         ctx.lineTo(padding + cardW - r, padding)
         ctx.quadraticCurveTo(padding + cardW, padding, padding + cardW, padding + r)
-        ctx.lineTo(padding + cardW, padding + cardH - r)
-        ctx.quadraticCurveTo(padding + cardW, padding + cardH, padding + cardW - r, padding + cardH)
-        ctx.lineTo(padding + r, padding + cardH)
-        ctx.quadraticCurveTo(padding, padding + cardH, padding, padding + cardH - r)
+        ctx.lineTo(padding + cardW, padding + combinedCardH - r)
+        ctx.quadraticCurveTo(padding + cardW, padding + combinedCardH, padding + cardW - r, padding + combinedCardH)
+        ctx.lineTo(padding + r, padding + combinedCardH)
+        ctx.quadraticCurveTo(padding, padding + combinedCardH, padding, padding + combinedCardH - r)
         ctx.lineTo(padding, padding + r)
         ctx.quadraticCurveTo(padding, padding, padding + r, padding)
         ctx.closePath()
+        // Fill the entire area with dark background first
+        ctx.fillStyle = resolvedBg
+        ctx.fill()
         ctx.clip()
+        // Draw the card content
         ctx.drawImage(cardCanvas, padding, padding)
         ctx.restore()
       } else {
+        // For basic: no padding, logo is attached to card
         ctx.fillStyle = resolvedBg
         ctx.fillRect(0, 0, totalW, totalH)
         ctx.drawImage(cardCanvas, 0, 0)
       }
 
-      // Logo bar directly attached under the card (no gap)
-      const barY = padding + cardH
+      // Logo bar is INSIDE the card area (same dark background)
+      // For gradient: padding + cardH, for basic: just cardH
+      const barY = (withGradient ? padding : 0) + cardH
       const logoYPos = barY + Math.round((logoBarHeight / 2) * scale)
       
-      // Draw actual logo image (scaled down from 512px)
-      const logoSize = Math.round(16 * scale)
-      const logoX = totalW / 2 - Math.round(60 * scale)
+      // Draw actual logo image - LARGER size like Tradezella
+      const logoSize = Math.round(20 * scale)
+      const logoX = totalW / 2 - Math.round(70 * scale)
       ctx.drawImage(logoImg, logoX, logoYPos - logoSize / 2, logoSize, logoSize)
       
-      // Draw text
-      const fontSize = Math.round(11 * scale)
+      // Draw text - LARGER font
+      const fontSize = Math.round(14 * scale)
       ctx.font = `800 ${fontSize}px -apple-system, BlinkMacSystemFont, "Inter", sans-serif`
-      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.35)'
+      ctx.fillStyle = 'rgba(255,255,255,0.5)'
       ctx.textAlign = 'left'
       ctx.textBaseline = 'middle'
-      ctx.fillText('DELTALYTIX', logoX + logoSize + Math.round(8 * scale), logoYPos)
+      ctx.fillText('DELTALYTIX', logoX + logoSize + Math.round(10 * scale), logoYPos)
 
       out.toBlob((blob) => {
         if (!blob) { toast.error("Failed to capture screenshot"); return }

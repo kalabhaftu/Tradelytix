@@ -190,6 +190,11 @@ export default function UniversalProcessor({
     processTrades()
   }, [processTrades])
 
+  const processedTrades = useMemo(() => 
+    (processingResult?.trades as Trade[]) || [], 
+    [processingResult?.trades]
+  )
+
   const totalPnL = useMemo(() => 
     processedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0), 
     [processedTrades]

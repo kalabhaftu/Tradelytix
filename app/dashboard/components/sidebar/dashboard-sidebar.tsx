@@ -163,8 +163,8 @@ export function DashboardSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Footer — Sidebar toggle */}
-      <SidebarFooter className="border-t border-border p-2">
+      {/* Footer — Sidebar toggle - extra pb on mobile to clear bottom nav */}
+      <SidebarFooter className="border-t border-border p-2 pb-20 md:pb-2">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={toggleSidebar} tooltip="Collapse" className="w-full justify-start text-muted-foreground hover:text-foreground">

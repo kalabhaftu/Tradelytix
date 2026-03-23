@@ -1,12 +1,14 @@
 'use client'
 
-import React from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import { WidgetCard } from '../widget-card'
 import { useData } from '@/context/data-provider'
 import { cn, BREAK_EVEN_THRESHOLD } from '@/lib/utils'
 
 export default function RecentTradesWidget() {
   const { formattedTrades } = useData()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [visibleCount, setVisibleCount] = useState(10)
 
   // CRITICAL FIX: Group trades first to handle partial closes correctly
   // This ensures partial closes are shown as single trades, not multiple entries
@@ -15,13 +17,34 @@ export default function RecentTradesWidget() {
     return groupTradesByExecution(formattedTrades)
   }, [formattedTrades, groupTradesByExecution])
 
-  // All trades sorted newest-first — no hard cap.
-  // The container is overflow-y-auto so the widget height controls how many
-  // are visible; resizing taller reveals more rows without needing a reload.
+  // All trades sorted newest-first
   const recentTrades = React.useMemo(() => {
     return groupedTrades
       .sort((a: any, b: any) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime())
   }, [groupedTrades])
+
+  // Calculate how many trades fit in the container height (no scrolling)
+  useEffect(() => {
+    const calculateVisibleTrades = () => {
+      if (!containerRef.current) return
+      const containerHeight = containerRef.current.clientHeight
+      const rowHeight = 40 // approx height per trade row
+      const count = Math.max(1, Math.floor(containerHeight / rowHeight))
+      setVisibleCount(count)
+    }
+
+    calculateVisibleTrades()
+    
+    // Recalculate on resize
+    const resizeObserver = new ResizeObserver(calculateVisibleTrades)
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current)
+    }
+    return () => resizeObserver.disconnect()
+  }, [])
+
+  // Only show trades that fit
+  const displayedTrades = recentTrades.slice(0, visibleCount)
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -51,9 +74,9 @@ export default function RecentTradesWidget() {
           <div className="text-right">P&L</div>
         </div>
 
-        {/* Trades List - scrollable with full height utilization */}
-        <div className="space-y-0.5 flex-1 min-h-0 overflow-y-auto">
-          {recentTrades.length === 0 ? (
+        {/* Trades List - no scroll, shows only trades that fit */}
+        <div ref={containerRef} className="space-y-0.5 flex-1 min-h-0 overflow-hidden">
+          {displayedTrades.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
               <div className="p-3 bg-muted/30 rounded-full mb-1">
                 <svg
@@ -76,7 +99,7 @@ export default function RecentTradesWidget() {
               <p className="text-[10px] text-muted-foreground/50">Trades you take will appear here</p>
             </div>
           ) : (
-            recentTrades.map((trade: any, index: number) => {
+            displayedTrades.map((trade: any, index: number) => {
               const netPnL = (trade.pnl || 0) - (trade.commission || 0)
               const isProfitable = netPnL > BREAK_EVEN_THRESHOLD
               const isLoss = netPnL < -BREAK_EVEN_THRESHOLD

@@ -78,6 +78,15 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
       const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim()
       const resolvedBg = bgColor ? `hsl(${bgColor})` : '#0d0d0d'
 
+      // Load actual logo image
+      const logoImg = new Image()
+      logoImg.crossOrigin = 'anonymous'
+      await new Promise<void>((resolve, reject) => {
+        logoImg.onload = () => resolve()
+        logoImg.onerror = () => reject(new Error('Failed to load logo'))
+        logoImg.src = '/android-chrome-512x512.png'
+      })
+
       // Capture just the card
       const cardCanvas = await html2canvas(calendarRef.current, {
         backgroundColor: resolvedBg,
@@ -101,8 +110,9 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
       const cardW = cardCanvas.width
       const cardH = cardCanvas.height
       const padding = withGradient ? Math.round(32 * scale) : 0
+      // For gradient: only top/left/right padding, logo bar directly under card
       const totalW = cardW + padding * 2
-      const totalH = cardH + padding * 2 + Math.round(logoBarHeight * scale)
+      const totalH = cardH + padding + Math.round(logoBarHeight * scale) + (withGradient ? padding : 0)
 
       const out = document.createElement('canvas')
       out.width = totalW
@@ -142,29 +152,22 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         ctx.drawImage(cardCanvas, 0, 0)
       }
 
-      // Draw logo bar at bottom
-      const barY = padding + cardH + (withGradient ? padding : 0)
-      
-      // Draw the actual logo SVG + text
-      const logoSize = Math.round(16 * scale)
-      const logoX = totalW / 2 - Math.round(70 * scale)
+      // Logo bar directly attached under the card (no gap)
+      const barY = padding + cardH
       const logoYPos = barY + Math.round((logoBarHeight / 2) * scale)
       
-      // Draw logo icon (simplified delta shape)
-      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.35)'
-      ctx.beginPath()
-      ctx.moveTo(logoX + logoSize / 2, logoYPos - logoSize / 2)
-      ctx.lineTo(logoX + logoSize, logoYPos + logoSize / 2)
-      ctx.lineTo(logoX, logoYPos + logoSize / 2)
-      ctx.closePath()
-      ctx.fill()
+      // Draw actual logo image (scaled down from 512px)
+      const logoSize = Math.round(18 * scale)
+      const logoX = totalW / 2 - Math.round(70 * scale)
+      ctx.drawImage(logoImg, logoX, logoYPos - logoSize / 2, logoSize, logoSize)
       
       // Draw text
       const fontSize = Math.round(12 * scale)
       ctx.font = `800 ${fontSize}px -apple-system, BlinkMacSystemFont, "Inter", sans-serif`
+      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.35)'
       ctx.textAlign = 'left'
       ctx.textBaseline = 'middle'
-      ctx.fillText('DELTALYTIX', logoX + logoSize + Math.round(8 * scale), logoYPos)
+      ctx.fillText('DELTALYTIX', logoX + logoSize + Math.round(10 * scale), logoYPos)
 
       out.toBlob((blob) => {
         if (!blob) { toast.error("Failed to capture screenshot"); return }

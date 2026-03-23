@@ -43,6 +43,15 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
       const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim()
       const resolvedBg = bgColor ? `hsl(${bgColor})` : '#0d0d0d'
 
+      // Load actual logo image
+      const logoImg = new Image()
+      logoImg.crossOrigin = 'anonymous'
+      await new Promise<void>((resolve, reject) => {
+        logoImg.onload = () => resolve()
+        logoImg.onerror = () => reject(new Error('Failed to load logo'))
+        logoImg.src = '/android-chrome-512x512.png'
+      })
+
       const cardCanvas = await html2canvas(calendarRef.current, {
         backgroundColor: resolvedBg,
         scale,
@@ -65,7 +74,8 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
       const cardH = cardCanvas.height
       const padding = withGradient ? Math.round(28 * scale) : 0
       const totalW = cardW + padding * 2
-      const totalH = cardH + padding * 2 + Math.round(logoBarHeight * scale)
+      // Logo bar directly attached under card (no extra padding gap)
+      const totalH = cardH + padding + Math.round(logoBarHeight * scale) + (withGradient ? padding : 0)
 
       const out = document.createElement('canvas')
       out.width = totalW
@@ -105,27 +115,22 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
         ctx.drawImage(cardCanvas, 0, 0)
       }
 
-      // Draw logo bar at bottom
-      const barY = padding + cardH + (withGradient ? padding : 0)
-      
-      // Draw logo icon (delta triangle) + text
-      const logoSize = Math.round(14 * scale)
-      const logoX = totalW / 2 - Math.round(60 * scale)
+      // Logo bar directly attached under the card (no gap)
+      const barY = padding + cardH
       const logoYPos = barY + Math.round((logoBarHeight / 2) * scale)
       
-      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.35)'
-      ctx.beginPath()
-      ctx.moveTo(logoX + logoSize / 2, logoYPos - logoSize / 2)
-      ctx.lineTo(logoX + logoSize, logoYPos + logoSize / 2)
-      ctx.lineTo(logoX, logoYPos + logoSize / 2)
-      ctx.closePath()
-      ctx.fill()
+      // Draw actual logo image (scaled down from 512px)
+      const logoSize = Math.round(16 * scale)
+      const logoX = totalW / 2 - Math.round(60 * scale)
+      ctx.drawImage(logoImg, logoX, logoYPos - logoSize / 2, logoSize, logoSize)
       
+      // Draw text
       const fontSize = Math.round(11 * scale)
       ctx.font = `800 ${fontSize}px -apple-system, BlinkMacSystemFont, "Inter", sans-serif`
+      ctx.fillStyle = withGradient ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.35)'
       ctx.textAlign = 'left'
       ctx.textBaseline = 'middle'
-      ctx.fillText('DELTALYTIX', logoX + logoSize + Math.round(7 * scale), logoYPos)
+      ctx.fillText('DELTALYTIX', logoX + logoSize + Math.round(8 * scale), logoYPos)
 
       out.toBlob((blob) => {
         if (!blob) { toast.error("Failed to capture screenshot"); return }

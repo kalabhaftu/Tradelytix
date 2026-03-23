@@ -35,7 +35,7 @@ import {
 } from 'date-fns'
 import { motion } from 'framer-motion'
 import html2canvas from 'html2canvas'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useUserStore } from '@/store/user-store'
 import { DateRange } from '@/components/ui/custom-date-range-picker'
 import { toast } from 'sonner'

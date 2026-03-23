@@ -1,3 +1,4 @@
+import React from 'react'
 import { Trade } from '@prisma/client'
 import type { ComponentType } from 'react'
 import ImportTypeSelection from '../import-type-selection'
@@ -8,15 +9,25 @@ import ColumnMapping from '../column-mapping'
 import { FormatPreview } from '../components/format-preview'
 import MatchTraderProcessor from '../match-trader/match-trader-processor'
 import ExnessProcessor from '../exness/exness-processor'
+import UniversalProcessor from '../universal/universal-processor'
 import ManualTradeForm from '../manual-trade-entry/manual-trade-form'
 import { Step } from '../import-button'
-import { Sparkles, Plus } from 'lucide-react'
+import { Sparkles, Plus, Wand2 } from 'lucide-react'
 
 type StepText = string
 
 export interface ProcessedData {
   headers: string[]
   processedData: string[][]
+}
+
+export interface PlatformProcessorProps {
+  csvData: string[][]
+  headers: string[]
+  processedTrades: Trade[]
+  setProcessedTrades: React.Dispatch<React.SetStateAction<Trade[]>>
+  accountNumber?: string
+  accountNumbers?: string[]
 }
 
 type StepComponent = 
@@ -27,6 +38,7 @@ type StepComponent =
   | typeof ColumnMapping
   | typeof FormatPreview
   | typeof MatchTraderProcessor
+  | typeof UniversalProcessor
   | typeof ManualTradeForm
 
 export interface PlatformConfig {
@@ -141,13 +153,55 @@ export const platforms: PlatformConfig[] = [
     ]
   },
   {
-    platformName: 'csv-ai',
-    type: '',
-    name: 'CSV-AI',
-    description: 'Import trades from any CSV file using AI',
+    platformName: 'universal-csv',
+    type: 'universal',
+    name: 'Universal Import',
+    description: 'Auto-detect and import from any trading platform CSV',
     category: 'Intelligent Import',
     videoUrl: '',
-    details: '',
+    details: 'Supports: Tradezella, Tradovate, NinjaTrader, FTMO, Topstep, Exness, Match Trader, MetaTrader 4/5, cTrader, TradingView, Rithmic, Sierra Chart, Quantower, TradeStation, ThinkOrSwim, Interactive Brokers, and more.',
+    logo: {
+      component: () => <Wand2 className="w-4 h-4" />,
+    },
+    requiresAccountSelection: true,
+    processFile: processStandardCsv,
+    processorComponent: UniversalProcessor,
+    steps: [
+      {
+        id: 'select-import-type',
+        title: 'Select Platform',
+        description: 'Choose the platform you want to import from',
+        component: ImportTypeSelection
+      },
+      {
+        id: 'upload-file',
+        title: 'Upload File',
+        description: 'Upload your CSV file - we\'ll auto-detect the format',
+        component: FileUpload
+      },
+      {
+        id: 'select-account',
+        title: 'Select Account',
+        description: 'Select the account you want to import the trades to',
+        component: AccountSelection
+      },
+      {
+        id: 'preview-trades',
+        title: 'Process Trades',
+        description: 'Review auto-detected trades',
+        component: UniversalProcessor,
+        isLastStep: true
+      }
+    ]
+  },
+  {
+    platformName: 'csv-ai',
+    type: '',
+    name: 'CSV-AI (Manual Mapping)',
+    description: 'Import with manual column mapping using AI assistance',
+    category: 'Intelligent Import',
+    videoUrl: '',
+    details: 'Use this if Universal Import cannot detect your CSV format',
     logo: {
       component: () => <Sparkles className="w-4 h-4" />,
     },

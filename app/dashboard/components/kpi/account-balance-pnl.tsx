@@ -72,29 +72,29 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
           </TooltipProvider>
         </div>
 
-        <div className="flex flex-col gap-0">
-          <div className="text-lg sm:text-xl font-black font-mono text-foreground tracking-tighter kpi-value">
-            {formatCompactCurrency(totalBalance)}
-          </div>
+        <div className="text-lg sm:text-xl font-black font-mono text-foreground tracking-tighter kpi-value">
+          {formatCompactCurrency(totalBalance)}
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px]">
-          <div className="flex items-center gap-1">
-            <span className="text-muted-foreground/50">P&L:</span>
-            <span className={cn(
-              "font-bold font-mono",
-              grossPnl >= 0 ? "text-long" : "text-short"
-            )}>
-              {formatCompactCurrency(grossPnl)}
-            </span>
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px]">
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground/50">P&L:</span>
+              <span className={cn(
+                "font-bold font-mono",
+                grossPnl >= 0 ? "text-long" : "text-short"
+              )}>
+                {formatCompactCurrency(grossPnl)}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground/50">Fees:</span>
+              <span className="font-bold font-mono text-warning">
+                -{formatCompactCurrency(totalCommissions)}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="text-muted-foreground/50">Fees:</span>
-            <span className="font-bold font-mono text-warning">
-              -{formatCompactCurrency(totalCommissions)}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 text-[9px] sm:text-[10px]">
             <span className="text-muted-foreground/50">Net:</span>
             <span className={cn(
               "font-bold font-mono",

@@ -17,50 +17,44 @@ interface TradeWinRateProps {
 }
 
 const TradeWinRate = React.memo(function TradeWinRate({ size }: TradeWinRateProps) {
-  const { winRate, nbWin, nbTrades } = useTradeStatistics()
-
-  // Memoize color calculation
-  const color = React.useMemo(() => {
-    return winRate >= 50
-      ? 'hsl(var(--chart-profit))'
-      : 'hsl(var(--chart-loss))'
-  }, [winRate])
-
+  const { winRate, nbWin, nbLoss, nbBreakeven, nbTrades } = useTradeStatistics()
 
   return (
     <WidgetCard isKpi>
-      <div className="h-full flex items-center justify-between gap-2">
-        <div className="flex flex-col gap-0.5 min-w-0">
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <span className="text-[7px] sm:text-[8px] uppercase font-black tracking-widest text-muted-foreground/60">
-              Trade Win %
-            </span>
-            <TooltipProvider delayDuration={100}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="w-3 h-3 rounded-full bg-muted flex items-center justify-center cursor-help flex-shrink-0">
-                    <Info className="h-3 w-3 text-muted-foreground" />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" sideOffset={5} className="max-w-[220px]">
-                  <p className="text-xs">Percentage of winning trades out of total trades. Excludes break-even trades from calculation.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <span className="text-lg sm:text-xl font-black font-mono text-foreground tracking-tighter kpi-value">
-            {winRate.toFixed(1)}%
+      <div className="h-full flex flex-col justify-between">
+        {/* Header with title and info */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-medium text-muted-foreground">
+            Trade win %
           </span>
+          <TooltipProvider delayDuration={100}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="w-4 h-4 rounded-full border border-border/60 flex items-center justify-center cursor-help">
+                  <Info className="h-2.5 w-2.5 text-muted-foreground/60" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={5} className="max-w-[220px]">
+                <p className="text-xs">Percentage of winning trades out of total trades. Break-even shown separately in gauge.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
-        <div className="flex-shrink-0">
+        {/* Main content: large value + segmented gauge */}
+        <div className="flex items-end justify-between">
+          <span className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            {winRate.toFixed(2)}%
+          </span>
+
+          {/* Segmented gauge showing wins/breakeven/losses */}
           <CircularProgress
             value={winRate}
-            size={40}
-            strokeWidth={4}
-            color={color}
+            size={64}
+            strokeWidth={6}
+            type="segmented-gauge"
+            segments={{ wins: nbWin, breakeven: nbBreakeven, losses: nbLoss }}
             showPercentage={false}
-            className="sm:w-12 sm:h-12"
           />
         </div>
       </div>

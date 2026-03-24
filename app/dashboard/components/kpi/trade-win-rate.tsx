@@ -42,7 +42,7 @@ const TradeWinRate = React.memo(function TradeWinRate({ size }: TradeWinRateProp
         </div>
 
         {/* Main content: large value + segmented gauge */}
-        <div className="flex items-end justify-between">
+        <div className="flex items-center justify-between">
           <span className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             {winRate.toFixed(2)}%
           </span>
@@ -50,8 +50,8 @@ const TradeWinRate = React.memo(function TradeWinRate({ size }: TradeWinRateProp
           {/* Segmented gauge showing wins/breakeven/losses */}
           <CircularProgress
             value={winRate}
-            size={64}
-            strokeWidth={6}
+            size={80}
+            strokeWidth={7}
             type="segmented-gauge"
             segments={{ wins: nbWin, breakeven: nbBreakeven, losses: nbLoss }}
             showPercentage={false}

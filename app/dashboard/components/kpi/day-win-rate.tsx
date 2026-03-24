@@ -61,7 +61,7 @@ const DayWinRate = React.memo(function DayWinRate({ size }: DayWinRateProps) {
         </div>
 
         {/* Main content: large value + segmented gauge */}
-        <div className="flex items-end justify-between">
+        <div className="flex items-center justify-between">
           <span className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             {dayWinRate.toFixed(2)}%
           </span>
@@ -69,8 +69,8 @@ const DayWinRate = React.memo(function DayWinRate({ size }: DayWinRateProps) {
           {/* Segmented gauge showing wins/breakeven/losses days */}
           <CircularProgress
             value={dayWinRate}
-            size={64}
-            strokeWidth={6}
+            size={80}
+            strokeWidth={7}
             type="segmented-gauge"
             segments={{ wins: winningDays, breakeven: breakEvenDays, losses: losingDays }}
             showPercentage={false}

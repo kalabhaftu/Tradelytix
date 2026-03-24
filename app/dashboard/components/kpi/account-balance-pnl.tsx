@@ -5,7 +5,7 @@ import { WidgetCard } from '../widget-card'
 import { useData } from '@/context/data-provider'
 import { useWidgetData } from '@/hooks/use-widget-data'
 import { cn } from '@/lib/utils'
-import { Info, BarChart3 } from "lucide-react"
+import { Info, Wallet } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
@@ -103,7 +103,7 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
 
           {/* Chart icon */}
           <div className="p-2 rounded-lg bg-primary/10">
-            <BarChart3 className="h-5 w-5 text-primary/60" />
+            <Wallet className="h-5 w-5 text-primary/60" />
           </div>
         </div>
       </div>

@@ -23,7 +23,7 @@ export function CircularProgress({
   className,
   showPercentage = true,
   color = 'hsl(var(--primary))',
-  backgroundColor = 'hsl(var(--muted))',
+  backgroundColor = 'hsl(var(--border))',
   type = 'gauge',
   segments,
 }: CircularProgressProps) {

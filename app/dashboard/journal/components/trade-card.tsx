@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Trade } from '@prisma/client'
-import { TrendingUp, TrendingDown, CalendarDays, Clock, Target, DollarSign, MoreVertical, Eye, Pencil, Trash2 as Trash, AlertCircle } from 'lucide-react'
+import { ArrowUpRight, ArrowDownRight, CalendarDays, Clock, Target, DollarSign, MoreVertical, Eye, Pencil, Trash2 as Trash, AlertCircle } from 'lucide-react'
 import { cn, formatCurrency, formatQuantity, formatTradeData, formatPrice, BREAK_EVEN_THRESHOLD, classifyTrade } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -255,7 +255,7 @@ export function TradeCard({ trade, onClick, onEdit, onDelete, onView }: TradeCar
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground mb-1">P&L</p>
             <div className="flex items-center gap-1">
-              {isWin ? <TrendingUp className="h-3 w-3 text-long flex-shrink-0" /> : isLoss ? <TrendingDown className="h-3 w-3 text-short flex-shrink-0" /> : <div className="h-3 w-3 rounded-full border border-muted-foreground flex-shrink-0" />}
+              {isWin ? <ArrowUpRight className="h-3 w-3 text-long flex-shrink-0" /> : isLoss ? <ArrowDownRight className="h-3 w-3 text-short flex-shrink-0" /> : <div className="h-3 w-3 rounded-full border border-muted-foreground flex-shrink-0" />}
               <p className={cn(
                 "font-semibold truncate",
                 isWin ? 'text-long' : isLoss ? 'text-short' : 'text-muted-foreground'

@@ -54,7 +54,7 @@ const ProfitFactor = React.memo(function ProfitFactor({ size }: ProfitFactorProp
         </div>
 
         {/* Main content: large value + bi-color gauge */}
-        <div className="flex items-end justify-between">
+        <div className="flex items-center justify-between">
           <span className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             {profitFactor.toFixed(2)}
           </span>
@@ -62,9 +62,10 @@ const ProfitFactor = React.memo(function ProfitFactor({ size }: ProfitFactorProp
           {/* Bi-color gauge (green/red arc) */}
           <CircularProgress
             value={progressValue}
-            size={64}
-            strokeWidth={6}
+            size={80}
+            strokeWidth={7}
             color={color}
+            backgroundColor="hsl(var(--border))"
             type="gauge"
             showPercentage={false}
           />

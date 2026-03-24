@@ -44,6 +44,16 @@ export default function PerformanceSummaryWidget() {
   const { data: chartData, isLoading: chartLoading } = useWidgetData('equityCurve')
   const { statistics, formattedTrades } = useData()
 
+  // Split gradient offset — green above zero, red below zero
+  const gradientOffset = useMemo(() => {
+    if (!Array.isArray(chartData) || chartData.length === 0) return 1
+    const dataMax = Math.max(...chartData.map((d: any) => d.equity ?? 0))
+    const dataMin = Math.min(...chartData.map((d: any) => d.equity ?? 0))
+    if (dataMax <= 0) return 0
+    if (dataMin >= 0) return 1
+    return dataMax / (dataMax - dataMin)
+  }, [chartData])
+
   const stats = useMemo(() => {
     if (!statistics || !formattedTrades) return null
 
@@ -95,16 +105,6 @@ export default function PerformanceSummaryWidget() {
       </WidgetCard>
     )
   }
-
-  // Split gradient offset — green above zero, red below zero
-  const gradientOffset = useMemo(() => {
-    if (!Array.isArray(chartData) || chartData.length === 0) return 1
-    const dataMax = Math.max(...chartData.map((d: any) => d.equity ?? 0))
-    const dataMin = Math.min(...chartData.map((d: any) => d.equity ?? 0))
-    if (dataMax <= 0) return 0
-    if (dataMin >= 0) return 1
-    return dataMax / (dataMax - dataMin)
-  }, [chartData])
 
   return (
     <WidgetCard title="Performance">

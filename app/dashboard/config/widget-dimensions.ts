@@ -196,7 +196,6 @@ export const WIDGET_GRID_DEFAULTS: Record<string, WidgetGridDefault> = {
   dayWinRate:        { defaultW: 1, defaultH: 1, minW: 1, minH: 1 },
   profitFactor:      { defaultW: 1, defaultH: 1, minW: 1, minH: 1 },
   avgWinLoss:        { defaultW: 1, defaultH: 1, minW: 1, minH: 1 },
-  currentStreak:     { defaultW: 1, defaultH: 1, minW: 1, minH: 1 },
 
   // Charts — 4 cols wide, 4 rows tall (320px)
   netDailyPnL:              { defaultW: 4, defaultH: 4, minW: 3, minH: 3 },
@@ -209,10 +208,7 @@ export const WIDGET_GRID_DEFAULTS: Record<string, WidgetGridDefault> = {
   pnlByStrategy:            { defaultW: 4, defaultH: 4, minW: 3, minH: 3 },
   winRateByStrategy:        { defaultW: 4, defaultH: 4, minW: 3, minH: 3 },
 
-  // Command center / session / overview
-
-  tradingOverview:        { defaultW: 6, defaultH: 4, minW: 4, minH: 3 },
-  weeklyTracker:          { defaultW: 4, defaultH: 3, minW: 3, minH: 2 },
+  // Session analysis
   sessionAnalysis:        { defaultW: 4, defaultH: 4, minW: 3, minH: 3 },
 
   // Tables — 5 rows = ~400px which fits 10 trade rows without scroll by default
@@ -226,6 +222,7 @@ export const WIDGET_GRID_DEFAULTS: Record<string, WidgetGridDefault> = {
   equityCurve:            { defaultW: 8, defaultH: 4, minW: 4, minH: 3 },
   outcomeDistribution:    { defaultW: 4, defaultH: 4, minW: 3, minH: 3 },
   dayOfWeekPerformance:   { defaultW: 6, defaultH: 4, minW: 3, minH: 3 },
+  drawdown:               { defaultW: 4, defaultH: 4, minW: 3, minH: 3 },
 
   // Fallback default
   default: { defaultW: 4, defaultH: 4, minW: 3, minH: 3 },

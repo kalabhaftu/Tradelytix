@@ -134,7 +134,8 @@ export default function DrawdownChart({ size = 'small-long' }: DrawdownChartProp
             tickLine={false}
             axisLine={false}
             width={55}
-            domain={['dataMin', 0]}
+            domain={[(dataMin: number) => Math.floor(dataMin * 1.1), 0]}
+            tickCount={6}
           />
 
           <ReferenceLine

@@ -28,7 +28,6 @@ import {
   calculateTradeDurationPerformance,
   calculateWeekdayPnl,
   calculatePerformanceScoreResult,
-  calculateTradingOverviewKpis,
   calculateCalendarData,
   calculateSessionAnalysis,
 } from '@/lib/dashboard-math'
@@ -269,7 +268,6 @@ export async function GET(request: NextRequest) {
       tradeDurationPerformance: calculateTradeDurationPerformance(trades),
       weekdayPnl: calculateWeekdayPnl(trades),
       performanceScore: calculatePerformanceScoreResult(trades),
-      tradingOverview: calculateTradingOverviewKpis(trades),
       sessionAnalysis: calculateSessionAnalysis(trades),
       calendarData: calculateCalendarData(trades),
       accountBalancePnl: calculateBalanceInfo(filteredAccounts, trades),

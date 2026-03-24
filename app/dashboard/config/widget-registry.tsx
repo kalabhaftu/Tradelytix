@@ -15,10 +15,7 @@ import TradeWinRate from '../components/kpi/trade-win-rate'
 import DayWinRate from '../components/kpi/day-win-rate'
 import ProfitFactor from '../components/kpi/profit-factor'
 import AvgWinLoss from '../components/kpi/avg-win-loss'
-import CurrentStreak from '../components/kpi/trading-overview'
-import GoalsRiskCommandCenter from '../components/kpi/trading-overview'
-import TradingOverview from '../components/kpi/trading-overview'
-import WeeklyTracker from '../components/kpi/weekly-tracker'
+
 import SessionAnalysis from '../components/kpi/session-analysis'
 
 // Chart components
@@ -191,17 +188,6 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetConfig> = {
     kpiRowOnly: true,
     getComponent: ({ size }) => <AvgWinLoss size={size} />,
     getPreview: () => <AvgWinLoss size="kpi" />
-  },
-  currentStreak: {
-    type: 'currentStreak',
-    defaultSize: 'kpi',
-    allowedSizes: ['kpi'],
-    category: 'statistics',
-    description: 'Current winning/losing streaks for both days and trades',
-    previewHeight: 80,
-    kpiRowOnly: true,
-    getComponent: ({ size }) => <CurrentStreak size={size} />,
-    getPreview: () => <CurrentStreak size="kpi" />
   },
   netDailyPnL: {
     type: 'netDailyPnL',
@@ -510,50 +496,6 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetConfig> = {
     )
   },
 
-  tradingOverview: {
-    type: 'tradingOverview',
-    defaultSize: 'large',
-    allowedSizes: ['medium', 'large', 'extra-large'],
-    category: 'statistics',
-    description: 'Trading overview with goals, risk metrics, and streak data',
-    previewHeight: 200,
-    getComponent: ({ size }) => <TradingOverview size={size} />,
-    getPreview: () => (
-      <Card className="w-full h-full">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Trading Overview</CardTitle>
-        </CardHeader>
-        <CardContent className="p-2">
-          <div className="space-y-2">
-            <div className="h-3 w-20 bg-muted-foreground/10 rounded animate-pulse" />
-            <div className="h-6 w-24 bg-muted-foreground/20 rounded animate-pulse" />
-          </div>
-        </CardContent>
-      </Card>
-    )
-  },
-  weeklyTracker: {
-    type: 'weeklyTracker',
-    defaultSize: 'medium',
-    allowedSizes: ['small', 'medium'],
-    category: 'statistics',
-    description: 'Current week P&L, trade count, win rate, and day-by-day heat bar',
-    previewHeight: 150,
-    getComponent: ({ size }) => <WeeklyTracker />,
-    getPreview: () => (
-      <Card className="w-full h-full">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Weekly Tracker</CardTitle>
-        </CardHeader>
-        <CardContent className="p-2">
-          <div className="space-y-2">
-            <div className="h-3 w-20 bg-muted-foreground/10 rounded animate-pulse" />
-            <div className="h-6 w-24 bg-muted-foreground/20 rounded animate-pulse" />
-          </div>
-        </CardContent>
-      </Card>
-    )
-  },
   sessionAnalysis: {
     type: 'sessionAnalysis',
     defaultSize: 'small-long',

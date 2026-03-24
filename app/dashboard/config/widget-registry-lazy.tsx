@@ -15,10 +15,6 @@ const TradeWinRate = lazy(() => import('../components/kpi/trade-win-rate'))
 const DayWinRate = lazy(() => import('../components/kpi/day-win-rate'))
 const ProfitFactor = lazy(() => import('../components/kpi/profit-factor'))
 const AvgWinLoss = lazy(() => import('../components/kpi/avg-win-loss'))
-const CurrentStreak = lazy(() => import('../components/kpi/trading-overview'))
-const TradingOverview = lazy(() => import('../components/kpi/trading-overview'))
-const WeeklyTracker = lazy(() => import('../components/kpi/weekly-tracker'))
-const GoalsRiskCommandCenter = lazy(() => import('../components/kpi/trading-overview')) // redirects to new widget
 const SessionAnalysis = lazy(() => import('../components/kpi/session-analysis'))
 
 // Chart components (lazy loaded)
@@ -268,16 +264,6 @@ export const WIDGET_REGISTRY_LAZY: Record<WidgetType, WidgetConfig> = {
     getComponent: ({ size }) => <LazyWidget Component={AvgWinLoss} size={size} type="avgWinLoss" Preview={CreateKpiPreview('Avg Win/Loss')} />,
     getPreview: () => CreateKpiPreview('Avg Win/Loss')
   },
-  currentStreak: {
-    type: 'currentStreak',
-    defaultSize: 'small',
-    allowedSizes: ['small'],
-    category: 'statistics',
-    description: 'Current winning or losing streak',
-    kpiRowOnly: true,
-    getComponent: ({ size }) => <LazyWidget Component={CurrentStreak} size={size} type="currentStreak" Preview={CreateKpiPreview('Current Streak')} />,
-    getPreview: () => CreateKpiPreview('Current Streak')
-  },
   netDailyPnL: {
     type: 'netDailyPnL',
     defaultSize: 'large',
@@ -367,26 +353,6 @@ export const WIDGET_REGISTRY_LAZY: Record<WidgetType, WidgetConfig> = {
     previewHeight: 250,
     getComponent: ({ size }) => <LazyWidget Component={WinRateByStrategy} size={size} type="winRateByStrategy" Preview={CreateChartPreview('Win Rate by Strategy')} />,
     getPreview: () => CreateChartPreview('Win Rate by Strategy')
-  },
-  tradingOverview: {
-    type: 'tradingOverview',
-    defaultSize: 'large',
-    allowedSizes: ['medium', 'large', 'extra-large'],
-    category: 'statistics',
-    description: 'Trading overview with goals, risk metrics, and streak data',
-    previewHeight: 200,
-    getComponent: ({ size }) => <LazyWidget Component={TradingOverview} size={size} type="tradingOverview" Preview={CreateKpiPreview('Trading Overview')} />,
-    getPreview: () => CreateKpiPreview('Trading Overview')
-  },
-  weeklyTracker: {
-    type: 'weeklyTracker',
-    defaultSize: 'medium',
-    allowedSizes: ['small', 'medium'],
-    category: 'statistics',
-    description: 'Current week P&L, trade count, win rate, and day-by-day heat bar',
-    previewHeight: 150,
-    getComponent: ({ size }) => <LazyWidget Component={WeeklyTracker} size={size} type="weeklyTracker" Preview={CreateKpiPreview('Weekly Tracker')} />,
-    getPreview: () => CreateKpiPreview('Weekly Tracker')
   },
   sessionAnalysis: {
     type: 'sessionAnalysis',

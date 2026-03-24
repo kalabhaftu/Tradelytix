@@ -422,8 +422,8 @@ export default function SettingsPage() {
                     <DropdownMenuItem onClick={() => handleAccentChange('classic')}>
                       <div className="flex items-center gap-2">
                         <div className="flex gap-1">
-                          <div className="w-3 h-3 rounded-full bg-[hsl(160,84%,39%)]" />
-                          <div className="w-3 h-3 rounded-full bg-[hsl(0,84%,60%)]" />
+                          <div className="w-3 h-3 rounded-full bg-long" />
+                          <div className="w-3 h-3 rounded-full bg-short" />
                         </div>
                         Classic
                       </div>
@@ -432,8 +432,8 @@ export default function SettingsPage() {
                     <DropdownMenuItem onClick={() => handleAccentChange('reports')}>
                       <div className="flex items-center gap-2">
                         <div className="flex gap-1">
-                          <div className="w-3 h-3 rounded-full bg-[hsl(123,27%,62%)]" />
-                          <div className="w-3 h-3 rounded-full bg-[hsl(25,70%,45%)]" />
+                          <div className="w-3 h-3 rounded-full bg-[hsl(var(--chart-bullish))]" />
+                          <div className="w-3 h-3 rounded-full bg-[hsl(var(--chart-bearish))]" />
                         </div>
                         Sage & Amber
                       </div>

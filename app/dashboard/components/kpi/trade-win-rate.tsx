@@ -17,7 +17,7 @@ interface TradeWinRateProps {
 }
 
 const TradeWinRate = React.memo(function TradeWinRate({ size }: TradeWinRateProps) {
-  const { winRate, nbWin, nbLoss, nbBreakeven, nbTrades } = useTradeStatistics()
+  const { winRate, nbWin, nbLoss, nbBe: nbBreakeven, nbTrades } = useTradeStatistics()
 
   return (
     <WidgetCard isKpi>

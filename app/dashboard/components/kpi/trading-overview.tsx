@@ -10,8 +10,8 @@ import { Label } from '@/components/ui/label'
 import { useWidgetData } from '@/hooks/use-widget-data'
 import {
   Target,
-  TrendingUp,
-  TrendingDown,
+  ArrowUpRight,
+  ArrowDownRight,
   Flame,
   Snowflake,
   Settings as SettingsIcon,
@@ -201,11 +201,11 @@ export default function TradingOverview({ size = 'large' }: TradingOverviewProps
               </p>
               <div className="flex items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px] text-muted-foreground/60">
                 <span className="flex items-center gap-1">
-                  <TrendingUp className="h-2.5 w-2.5 text-long" />
+                  <ArrowUpRight className="h-2.5 w-2.5 text-long" />
                   Best: {streakData.longestWinStreak}
                 </span>
                 <span className="flex items-center gap-1">
-                  <TrendingDown className="h-2.5 w-2.5 text-short" />
+                  <ArrowDownRight className="h-2.5 w-2.5 text-short" />
                   Worst: {streakData.longestLoseStreak}
                 </span>
               </div>

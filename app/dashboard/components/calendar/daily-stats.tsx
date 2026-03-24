@@ -1,7 +1,7 @@
 "use client"
 
 import React from 'react'
-import { TrendingUp, TrendingDown, Clock, BarChart3 } from "lucide-react"
+import { ArrowUpRight, ArrowDownRight, Clock, BarChart3 } from "lucide-react"
 import { CalendarEntry } from "@/app/dashboard/types/calendar"
 import { groupTradesByExecution } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -142,7 +142,7 @@ export function DailyStats({ dayData, isWeekly = false }: DailyStatsProps) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       <StatCard
-        icon={stats.totalPnL >= 0 ? TrendingUp : TrendingDown}
+        icon={stats.totalPnL >= 0 ? ArrowUpRight : ArrowDownRight}
         label="Net P&L"
         value={formatCurrency(stats.totalPnL)}
         subtext={`${stats.accountCount} ${stats.accountCount > 1 ? "accounts" : "account"}`}
@@ -158,7 +158,7 @@ export function DailyStats({ dayData, isWeekly = false }: DailyStatsProps) {
       />
 
       <StatCard
-        icon={TrendingDown}
+        icon={ArrowDownRight}
         label="Max Drawdown"
         value={`-${formatCurrency(stats.maxDrawdown)}`}
         trend={stats.maxDrawdown > 0 ? 'negative' : 'neutral'}

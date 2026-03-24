@@ -5,7 +5,7 @@ import { WidgetCard } from '../widget-card'
 import { useData } from '@/context/data-provider'
 import { cn } from '@/lib/utils'
 import { startOfWeek, endOfWeek, parseISO, isWithinInterval, subWeeks, format, getDay } from 'date-fns'
-import { Calendar, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Calendar, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react'
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F'] as const
 
@@ -93,7 +93,7 @@ export default function WeeklyTracker() {
                 "text-[10px] font-medium flex items-center gap-0.5",
                 weekData.changePercent > 0 ? "text-long" : "text-short"
               )}>
-                {weekData.changePercent > 0 ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
+                {weekData.changePercent > 0 ? <ArrowUpRight className="h-2.5 w-2.5" /> : <ArrowDownRight className="h-2.5 w-2.5" />}
                 {Math.abs(weekData.changePercent).toFixed(0)}% vs last week
               </span>
             )}

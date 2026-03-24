@@ -66,11 +66,11 @@ const DayCell = memo(function DayCell({
       onClick={!isMiniCalendar && onClick ? onClick : undefined}
       className={cn(
         "relative flex flex-col items-center justify-center rounded-[4px] md:rounded-[6px] border transition-all duration-150 select-none group h-full",
-        // Mini calendar: taller cells so they are more cube-ish, matching reference
+        // Mini calendar: taller cells so they are properly rectangular not square
         // Advanced calendar: cells fill grid space with minimum height
         isMiniCalendar 
-          ? "min-h-[80px] sm:min-h-[88px] lg:min-h-[96px] aspect-[1.1/1]" 
-          : "min-h-[60px] sm:min-h-[72px] md:min-h-[90px] cursor-pointer",
+          ? "min-h-[68px] sm:min-h-[76px] lg:min-h-[84px]" 
+          : "min-h-[48px] sm:min-h-[60px] md:min-h-[80px] cursor-pointer",
 
         // No trades — uses theme tokens so it works in any color scheme
         !hasTrades && isCurrentMonth && "bg-muted/5 border-border/20 hover:border-border/40",
@@ -98,14 +98,9 @@ const DayCell = memo(function DayCell({
         "flex flex-col items-center justify-center w-full h-full relative p-1",
         !isMiniCalendar && "md:hidden"
       )}>
-        {/* Note icon — small sticky-note, white */}
+        {/* Simple Note Dot */}
         {hasNotes && (
-          <div className="absolute top-1 left-1" aria-label="Has notes">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z" />
-              <path d="M15 3v4a2 2 0 0 0 2 2h4" />
-            </svg>
-          </div>
+          <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary" aria-label="Has notes" />
         )}
         
         {/* Centered Date Number for Simple View */}
@@ -144,12 +139,12 @@ const DayCell = memo(function DayCell({
         "hidden flex-col w-full h-full relative p-1.5",
         !isMiniCalendar && "md:flex"
       )}>
-        {/* Note Icon — top left, white sticky-note, bigger */}
+        {/* Note Icon — top left */}
         {hasNotes && (
-          <div className="absolute top-1.5 left-1.5">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-sm">
-              <path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z" />
-              <path d="M15 3v4a2 2 0 0 0 2 2h4" />
+          <div className="absolute top-1.5 left-1.5 opacity-70">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-foreground/80">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
           </div>
         )}
@@ -252,17 +247,17 @@ function WeeklySummary({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-[8px] border p-2 cursor-pointer transition-all hover:bg-muted/30 group h-full min-h-0",
+        "flex flex-col items-start justify-center rounded-[8px] border p-2.5 cursor-pointer transition-all hover:bg-muted/30 group h-full min-h-0",
         "bg-muted/10 border-border/20"
       )}
       onClick={() => onReviewWeek?.(weekDays[0])}
     >
-      <span className="text-[10px] font-semibold text-muted-foreground/60 mb-0.5">
+      <span className="text-[11px] font-medium text-muted-foreground/70 mb-0.5">
         Week {weekIndex + 1}
       </span>
       <span
         className={cn(
-          "text-sm font-bold tracking-tight leading-tight",
+          "text-sm md:text-base font-bold tracking-tight",
           stats.tradedDays === 0
             ? "text-foreground/60"
             : isPositive
@@ -273,7 +268,7 @@ function WeeklySummary({
         {stats.tradedDays === 0 ? "$0" : (stats.pnl < 0 ? `-$${Math.abs(stats.pnl).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : `$${stats.pnl.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`)}
       </span>
       <div className={cn(
-        "text-[8px] font-bold mt-1 px-1.5 py-0.5 rounded",
+        "text-[9px] font-bold mt-1.5 px-1.5 py-0.5 rounded",
         "bg-primary/20 text-primary border border-primary/30"
       )}>
         {stats.tradedDays} day{stats.tradedDays !== 1 ? 's' : ''}
@@ -378,7 +373,7 @@ export default function MonthlyView({
 
       {/* Weekly Summaries Sidebar — separate from main grid, aligned via matching grid rows */}
       {!isMiniCalendar && (
-        <div className="hidden lg:flex flex-col w-[100px] xl:w-[115px] border-l border-border/10 shrink-0 h-full">
+        <div className="hidden lg:flex flex-col w-[110px] xl:w-[125px] border-l border-border/10 shrink-0 h-full">
           {/* Spacer matches weekday-header height exactly (py-1.5 md:py-2 + text line = ~34px on md) */}
           <div className="shrink-0 py-1.5 md:py-2">
             <div className="h-[16px]" /> {/* text-[11px] line height */}

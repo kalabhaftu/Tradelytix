@@ -175,8 +175,8 @@ export async function GET(request: NextRequest) {
       })
     }
     
-    // PERF: Fetch trades (slim select) + accounts in parallel
-    const [rawTrades, accounts] = await Promise.all([
+    // PERF: Fetch trades (slim select) + accounts (both regular and prop firm) in parallel
+    const [rawTrades, regularAccounts, propFirmAccounts] = await Promise.all([
       prisma.trade.findMany({
         where: whereClause,
         orderBy: { entryDate: 'desc' },
@@ -185,9 +185,37 @@ export async function GET(request: NextRequest) {
       }),
       includeStats ? prisma.account.findMany({
         where: { userId: internalUserId },
-        include: { _count: { select: { Trade: true } } }
+        select: { id: true, number: true, startingBalance: true }
+      }) : Promise.resolve([]),
+      includeStats ? prisma.masterAccount.findMany({
+        where: { userId: internalUserId },
+        include: {
+          PhaseAccount: {
+            select: { id: true, phaseId: true, phaseNumber: true, status: true }
+          }
+        }
       }) : Promise.resolve([])
     ])
+    
+    // Combine regular accounts + transform prop firm phases to unified format with startingBalance
+    const accounts = [
+      ...regularAccounts,
+      ...propFirmAccounts.flatMap((master: any) => 
+        (master.PhaseAccount || []).map((phase: any) => ({
+          id: phase.id,
+          number: phase.phaseId,
+          startingBalance: master.accountSize, // Use master account size
+          accountType: 'prop-firm' as const,
+          status: phase.status,
+          currentPhaseDetails: {
+            phaseNumber: phase.phaseNumber,
+            status: phase.status,
+            masterAccountId: master.id,
+            masterAccountName: master.accountName,
+          }
+        }))
+      )
+    ]
     
     // Convert decimals
     let trades = rawTrades.map((trade: any) => ({
@@ -222,6 +250,8 @@ export async function GET(request: NextRequest) {
     const filteredAccounts = accountNumbers.length > 0
       ? accounts.filter((acc: any) => accountNumbers.includes(acc.number) || accountNumbers.includes(acc.id))
       : accounts
+    
+    console.log("[v0] Balance debug - filteredAccounts:", filteredAccounts.map((a: any) => ({ id: a.id, number: a.number, startingBalance: a.startingBalance, accountType: a.accountType })))
 
     // PERF: Compute all widget chart data server-side (trades already in memory)
     // This eliminates 6 separate /api/v1/dashboard/widgets calls

@@ -32,6 +32,7 @@ import EquityCurveWidget from '../components/charts/equity-curve-widget'
 import OutcomeDistributionWidget from '../components/charts/outcome-distribution-widget'
 import DayOfWeekPerformanceWidget from '../components/charts/day-of-week-performance-widget'
 import DrawdownChart from '../components/charts/drawdown-chart'
+import PerformanceSummaryWidget from '../components/charts/performance-summary'
 
 export interface WidgetConfig {
   type: WidgetType
@@ -592,6 +593,30 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetConfig> = {
                 strokeWidth="2"
               />
             </svg>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  },
+  performanceSummary: {
+    type: 'performanceSummary',
+    defaultSize: 'large',
+    allowedSizes: ['medium', 'large', 'extra-large'],
+    category: 'charts',
+    description: 'Performance overview with equity curve, stats, fees & net',
+    previewHeight: 200,
+    getComponent: ({ size }) => <PerformanceSummaryWidget />,
+    getPreview: () => (
+      <Card className="w-full h-full">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Performance</CardTitle>
+        </CardHeader>
+        <CardContent className="p-2">
+          <div className="flex gap-2 h-20">
+            <div className="flex-1 bg-chart-profit/10 rounded" />
+            <div className="w-20 space-y-1">
+              {[1,2,3,4].map(i => <div key={i} className="h-3 bg-muted/30 rounded" />)}
+            </div>
           </div>
         </CardContent>
       </Card>

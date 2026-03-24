@@ -9,6 +9,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -45,6 +55,7 @@ export function TagManager({ isOpen, onClose, onRefresh }: TagManagerProps) {
   const [editingTagId, setEditingTagId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const [editingColor, setEditingColor] = useState('')
+  const [deleteTagTarget, setDeleteTagTarget] = useState<string | null>(null)
 
   const handleCreateTag = async () => {
     if (!newTagName.trim()) {
@@ -96,20 +107,23 @@ export function TagManager({ isOpen, onClose, onRefresh }: TagManagerProps) {
   }
 
   const handleDeleteTag = async (tagId: string) => {
-    if (!confirm('Delete this tag? It will be removed from all trades.')) {
-      return
-    }
+    setDeleteTagTarget(tagId)
+  }
 
+  const handleDeleteTagConfirm = async () => {
+    if (!deleteTagTarget) return
     try {
-      await deleteTag(tagId)
+      await deleteTag(deleteTagTarget)
       toast.success('Tag deleted successfully')
       onRefresh?.()
     } catch (error) {
       toast.error('Failed to delete tag')
     }
+    setDeleteTagTarget(null)
   }
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
@@ -279,5 +293,27 @@ export function TagManager({ isOpen, onClose, onRefresh }: TagManagerProps) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Delete Tag Confirmation Dialog */}
+    <AlertDialog open={!!deleteTagTarget} onOpenChange={(open) => !open && setDeleteTagTarget(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Tag</AlertDialogTitle>
+          <AlertDialogDescription>
+            Delete this tag? It will be removed from all trades. This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDeleteTagConfirm}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }

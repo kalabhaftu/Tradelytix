@@ -76,15 +76,6 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
           <div className="text-lg sm:text-xl font-black font-mono text-foreground tracking-tighter kpi-value">
             {formatCompactCurrency(totalBalance)}
           </div>
-          <div className="flex items-center gap-1 text-[9px] sm:text-[10px]">
-            <span className={cn(
-              "font-bold font-mono",
-              netPnl >= 0 ? "text-long" : "text-short"
-            )}>
-              {netPnl >= 0 ? '+' : ''}{formatCompactCurrency(netPnl)}
-            </span>
-            <span className="text-muted-foreground/40">net P&L</span>
-          </div>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px]">
@@ -101,6 +92,15 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
             <span className="text-muted-foreground/50">Fees:</span>
             <span className="font-bold font-mono text-warning">
               -{formatCompactCurrency(totalCommissions)}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-muted-foreground/50">Net:</span>
+            <span className={cn(
+              "font-bold font-mono",
+              netPnl >= 0 ? "text-long" : "text-short"
+            )}>
+              {formatCompactCurrency(netPnl)}
             </span>
           </div>
         </div>

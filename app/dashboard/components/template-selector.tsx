@@ -44,15 +44,28 @@ export function TemplateSelector() {
     }
   }
 
-  /** Clone the default template into a new editable one */
+  /** Generate a unique template name — appends 1, 2, etc. if taken */
+  const getUniqueName = (baseName: string): string => {
+    const existingNames = new Set(templates.map(t => t.name.toLowerCase()))
+    if (!existingNames.has(baseName.toLowerCase())) return baseName
+    let counter = 1
+    while (existingNames.has(`${baseName}${counter}`.toLowerCase())) counter++
+    return `${baseName}${counter}`
+  }
+
+  /** Clone the current template into a new editable one */
   const handleCloneDefault = async () => {
     if (!activeTemplate) return
+    const suggested = getUniqueName(`${activeTemplate.name} Copy`)
+    const name = prompt('Enter a name for the cloned template:', suggested)
+    if (!name?.trim()) return
+    const finalName = getUniqueName(name.trim())
     try {
-      const cloned = await createTemplate(`${activeTemplate.name} (Copy)`)
+      const cloned = await createTemplate(finalName)
       // Copy the layout from existing active template to the clone
       await updateLayout(cloned.id, activeTemplate.layout)
       await switchTemplate(cloned.id)
-      toast.success('Template cloned — you can now edit it')
+      toast.success(`Template "${finalName}" created — you can now edit it`)
     } catch (e) {
       // error toast handled in context
     }

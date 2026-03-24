@@ -7,7 +7,6 @@ import {
   calculateNetDailyPnl,
   calculateDailyCumulativePnl,
   calculateAccountBalanceChart,
-  calculateTradingOverviewKpis,
   calculateCalendarData,
   calculateSessionAnalysis
 } from '@/lib/dashboard-math'
@@ -70,9 +69,6 @@ export async function GET(request: NextRequest) {
         }
       }
       result = calculateAccountBalanceChart(trades, activeAccounts)
-      break
-    case 'tradingOverview':
-      result = calculateTradingOverviewKpis(trades)
       break
     case 'calendarData':
       result = calculateCalendarData(trades)

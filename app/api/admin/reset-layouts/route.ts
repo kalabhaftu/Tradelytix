@@ -32,9 +32,7 @@ const UPDATED_DEFAULT_LAYOUT = [
   { i: 'performance-score', type: 'performanceScore', size: 'small-long', x: 0, y: 22, w: 4, h: 4 },
   { i: 'trade-duration', type: 'tradeDurationPerformance', size: 'small-long', x: 4, y: 22, w: 4, h: 4 },
   { i: 'session-analysis', type: 'sessionAnalysis', size: 'medium', x: 8, y: 22, w: 4, h: 4 },
-  { i: 'trading-overview', type: 'tradingOverview', size: 'large', x: 0, y: 26, w: 6, h: 4 },
-  { i: 'weekly-tracker', type: 'weeklyTracker', size: 'medium', x: 6, y: 26, w: 6, h: 3 },
-  { i: 'calendar-advanced', type: 'calendarAdvanced', size: 'extra-large', x: 0, y: 30, w: 12, h: 8 },
+  { i: 'calendar-advanced', type: 'calendarAdvanced', size: 'extra-large', x: 0, y: 26, w: 12, h: 8 },
 ]
 
 export async function POST(request: Request) {

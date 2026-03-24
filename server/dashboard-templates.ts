@@ -56,11 +56,8 @@ const DEFAULT_LAYOUT: WidgetLayout[] = [
   { i: 'performance-score', type: 'performanceScore', size: 'small-long', x: 0, y: 22, w: 4, h: 4 },
   { i: 'trade-duration', type: 'tradeDurationPerformance', size: 'small-long', x: 4, y: 22, w: 4, h: 4 },
   { i: 'session-analysis', type: 'sessionAnalysis', size: 'medium', x: 8, y: 22, w: 4, h: 4 },
-  // Row 7: Trading Overview + Weekly Tracker
-  { i: 'trading-overview', type: 'tradingOverview', size: 'large', x: 0, y: 26, w: 6, h: 4 },
-  { i: 'weekly-tracker', type: 'weeklyTracker', size: 'medium', x: 6, y: 26, w: 6, h: 3 },
-  // Row 8: Full Calendar at the bottom (full width)
-  { i: 'calendar-advanced', type: 'calendarAdvanced', size: 'extra-large', x: 0, y: 30, w: 12, h: 8 },
+  // Row 7: Full Calendar at the bottom (full width)
+  { i: 'calendar-advanced', type: 'calendarAdvanced', size: 'extra-large', x: 0, y: 26, w: 12, h: 8 },
 ]
 
 /**

@@ -21,9 +21,9 @@ const ProfitFactor = React.memo(function ProfitFactor({ size }: ProfitFactorProp
 
   // Memoize expensive calculations
   const { progressValue, color } = React.useMemo(() => {
-    // Convert profit factor to percentage for circular progress (capped at 100%)
-    // Values above 1.0 are good, so we'll map 0-2.0 to 0-100%
-    const progress = Math.min((profitFactor / 2.0) * 100, 100)
+    // Convert profit factor to percentage for circular progress
+    // Map 0-3.0 to 0-100% for better visualization
+    const progress = Math.min((profitFactor / 3.0) * 100, 100)
     const colorValue = profitFactor >= 1.0
       ? 'hsl(var(--chart-profit))'
       : 'hsl(var(--chart-loss))'
@@ -31,42 +31,42 @@ const ProfitFactor = React.memo(function ProfitFactor({ size }: ProfitFactorProp
     return { progressValue: progress, color: colorValue }
   }, [profitFactor])
 
-
   return (
     <WidgetCard isKpi>
-      <div className="h-full flex items-center justify-between gap-2">
-        <div className="flex flex-col gap-0.5 min-w-0">
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <span className="text-[7px] sm:text-[8px] uppercase font-black tracking-widest text-muted-foreground/60">
-              Profit factor
-            </span>
-            <TooltipProvider delayDuration={100}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="w-3 h-3 rounded-full bg-muted flex items-center justify-center cursor-help flex-shrink-0">
-                    <Info className="h-3 w-3 text-muted-foreground" />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" sideOffset={5} className="max-w-[220px]">
-                  <p className="text-xs">Total profits divided by total losses. Values above 1.0 indicate profitability. Higher values mean better risk management.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <span className="text-lg sm:text-xl font-black font-mono text-foreground tracking-tighter kpi-value">
-            {profitFactor.toFixed(2)}
+      <div className="h-full flex flex-col justify-between">
+        {/* Header with title and info */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-medium text-muted-foreground">
+            Profit factor
           </span>
+          <TooltipProvider delayDuration={100}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="w-4 h-4 rounded-full border border-border/60 flex items-center justify-center cursor-help">
+                  <Info className="h-2.5 w-2.5 text-muted-foreground/60" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={5} className="max-w-[220px]">
+                <p className="text-xs">Total profits divided by total losses. Values above 1.0 indicate profitability.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
-        <div className="flex-shrink-0">
+        {/* Main content: large value + bi-color gauge */}
+        <div className="flex items-end justify-between">
+          <span className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            {profitFactor.toFixed(2)}
+          </span>
+
+          {/* Bi-color gauge (green/red arc) */}
           <CircularProgress
             value={progressValue}
-            size={40}
-            strokeWidth={4}
+            size={64}
+            strokeWidth={6}
             color={color}
+            type="gauge"
             showPercentage={false}
-            type="circle"
-            className="sm:w-12 sm:h-12"
           />
         </div>
       </div>

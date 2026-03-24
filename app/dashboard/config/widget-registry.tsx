@@ -34,6 +34,7 @@ import WinRateByStrategy from '../components/charts/win-rate-by-strategy'
 import EquityCurveWidget from '../components/charts/equity-curve-widget'
 import OutcomeDistributionWidget from '../components/charts/outcome-distribution-widget'
 import DayOfWeekPerformanceWidget from '../components/charts/day-of-week-performance-widget'
+import DrawdownChart from '../components/charts/drawdown-chart'
 
 export interface WidgetConfig {
   type: WidgetType
@@ -617,6 +618,40 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetConfig> = {
       <Card className="w-full h-full">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Day of Week</CardTitle></CardHeader>
         <CardContent className="p-2"><div className="flex gap-1 items-end h-16">{[40,60,30,80,50].map((h,i)=><div key={i} className="flex-1 bg-chart-1/20 rounded-t" style={{height:`${h}%`}} />)}</div></CardContent>
+      </Card>
+    )
+  },
+  drawdown: {
+    type: 'drawdown',
+    defaultSize: 'small-long',
+    allowedSizes: ['small-long', 'medium', 'large'],
+    category: 'charts',
+    description: 'Drawdown from peak equity over time',
+    previewHeight: 200,
+    getComponent: ({ size }) => <DrawdownChart size={size} />,
+    getPreview: () => (
+      <Card className="w-full h-full">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Drawdown</CardTitle>
+        </CardHeader>
+        <CardContent className="p-2">
+          <div className="h-32 relative">
+            <svg viewBox="0 0 100 100" className="w-full h-full">
+              <defs>
+                <linearGradient id="dd-preview" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--chart-loss))" stopOpacity="0.4" />
+                  <stop offset="95%" stopColor="hsl(var(--chart-loss))" stopOpacity="0.05" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M 0,10 L 15,40 L 25,10 L 35,10 L 45,10 L 55,60 L 65,80 L 75,50 L 85,10 L 100,10 L 100,10 L 0,10 Z"
+                fill="url(#dd-preview)"
+                stroke="hsl(var(--chart-loss))"
+                strokeWidth="2"
+              />
+            </svg>
+          </div>
+        </CardContent>
       </Card>
     )
   },

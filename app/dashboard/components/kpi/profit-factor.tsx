@@ -59,14 +59,14 @@ const ProfitFactor = React.memo(function ProfitFactor({ size }: ProfitFactorProp
             {profitFactor.toFixed(2)}
           </span>
 
-          {/* Bi-color gauge (green/red arc) */}
+          {/* Bi-color full circle (green/red) */}
           <CircularProgress
             value={progressValue}
-            size={80}
-            strokeWidth={7}
+            size={64}
+            strokeWidth={6}
             color={color}
             backgroundColor="hsl(var(--border))"
-            type="gauge"
+            type="circle"
             showPercentage={false}
           />
         </div>

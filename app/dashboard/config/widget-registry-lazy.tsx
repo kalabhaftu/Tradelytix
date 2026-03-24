@@ -31,6 +31,7 @@ const EquityCurveWidget = lazy(() => import('../components/charts/equity-curve-w
 const OutcomeDistributionWidget = lazy(() => import('../components/charts/outcome-distribution-widget'))
 const DayOfWeekPerformanceWidget = lazy(() => import('../components/charts/day-of-week-performance-widget'))
 const DrawdownChart = lazy(() => import('../components/charts/drawdown-chart'))
+const PerformanceSummaryWidget = lazy(() => import('../components/charts/performance-summary'))
 
 
 
@@ -403,6 +404,16 @@ export const WIDGET_REGISTRY_LAZY: Record<WidgetType, WidgetConfig> = {
     previewHeight: 200,
     getComponent: ({ size }) => <LazyWidget Component={DrawdownChart} size={size} type="drawdown" Preview={CreateChartPreview('Drawdown')} />,
     getPreview: () => CreateChartPreview('Drawdown')
+  },
+  performanceSummary: {
+    type: 'performanceSummary',
+    defaultSize: 'large',
+    allowedSizes: ['medium', 'large', 'extra-large'],
+    category: 'charts',
+    description: 'Performance overview with equity curve, stats, fees & net',
+    previewHeight: 200,
+    getComponent: ({ size }) => <LazyWidget Component={PerformanceSummaryWidget} size={size} type="performanceSummary" Preview={CreateChartPreview('Performance')} />,
+    getPreview: () => CreateChartPreview('Performance')
   }
 }
 

@@ -25,6 +25,16 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AccountStatus, PhaseType } from "@/types/prop-firm"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface PayoutData {
   id: string
@@ -60,6 +70,7 @@ export default function AccountPayoutsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [deletingPayoutId, setDeletingPayoutId] = useState<string | null>(null)
+  const [deletePayoutTarget, setDeletePayoutTarget] = useState<string | null>(null)
 
   const accountId = params.id as string
 
@@ -142,14 +153,15 @@ export default function AccountPayoutsPage() {
   }
 
     const handleDeletePayout = async (payoutId: string) => {
-    if (!confirm('Are you sure you want to delete this payout request?')) {
-      return
-    }
+    setDeletePayoutTarget(payoutId)
+  }
 
+  const handleDeletePayoutConfirm = async () => {
+    if (!deletePayoutTarget) return
     try {
-      setDeletingPayoutId(payoutId)
+      setDeletingPayoutId(deletePayoutTarget)
 
-      const response = await fetch(`/api/prop-firm/payouts/${payoutId}`, {
+      const response = await fetch(`/api/prop-firm/payouts/${deletePayoutTarget}`, {
         method: 'DELETE'
       })
 
@@ -157,7 +169,6 @@ export default function AccountPayoutsPage() {
 
       if (data.success) {
         toast.success('Payout request deleted successfully')
-        // Refresh the list
         fetchPayouts()
       } else {
         throw new Error(data.error || 'Failed to delete payout')
@@ -166,6 +177,7 @@ export default function AccountPayoutsPage() {
       toast.error(error instanceof Error ? error.message : 'Failed to delete payout')
     } finally {
       setDeletingPayoutId(null)
+      setDeletePayoutTarget(null)
     }
   }
 
@@ -190,6 +202,7 @@ export default function AccountPayoutsPage() {
   }
 
   return (
+    <>
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -343,5 +356,27 @@ export default function AccountPayoutsPage() {
         </CardContent>
       </Card>
     </div>
+
+    {/* Delete Payout Confirmation Dialog */}
+    <AlertDialog open={!!deletePayoutTarget} onOpenChange={(open) => !open && setDeletePayoutTarget(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Payout Request</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete this payout request? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDeletePayoutConfirm}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }

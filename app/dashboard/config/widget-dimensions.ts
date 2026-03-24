@@ -223,6 +223,7 @@ export const WIDGET_GRID_DEFAULTS: Record<string, WidgetGridDefault> = {
   outcomeDistribution:    { defaultW: 4, defaultH: 4, minW: 3, minH: 3 },
   dayOfWeekPerformance:   { defaultW: 6, defaultH: 4, minW: 3, minH: 3 },
   drawdown:               { defaultW: 4, defaultH: 4, minW: 3, minH: 3 },
+  performanceSummary:     { defaultW: 8, defaultH: 4, minW: 6, minH: 3 },
 
   // Fallback default
   default: { defaultW: 4, defaultH: 4, minW: 3, minH: 3 },

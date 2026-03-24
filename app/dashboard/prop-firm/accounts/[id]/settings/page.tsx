@@ -25,6 +25,16 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AccountStatus, PhaseType } from "@/types/prop-firm"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface AccountData {
   id: string
@@ -67,6 +77,7 @@ export default function AccountSettingsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState('general')
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   
   // Form state
   const [formData, setFormData] = useState({
@@ -191,10 +202,11 @@ export default function AccountSettingsPage() {
   }
 
   const handleDeleteAccount = async () => {
-    if (!confirm('Are you sure you want to delete this account? This action cannot be undone.')) {
-      return
-    }
+    setShowDeleteDialog(true)
+  }
 
+  const handleDeleteAccountConfirm = async () => {
+    setShowDeleteDialog(false)
     try {
       const response = await fetch(`/api/prop-firm/accounts/${accountId}`, {
         method: 'DELETE',
@@ -559,6 +571,27 @@ export default function AccountSettingsPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+    {/* Delete Account Confirmation Dialog */}
+    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Account</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete this account? This will permanently remove all associated data. This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDeleteAccountConfirm}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Delete Account
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </div>
   )
 }

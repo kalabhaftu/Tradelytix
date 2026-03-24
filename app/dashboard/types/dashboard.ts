@@ -21,6 +21,7 @@ export type WidgetType =
   | 'outcomeDistribution'
   | 'dayOfWeekPerformance'
   | 'drawdown'
+  | 'performanceSummary'
 export type WidgetSize = 'tiny' | 'small' | 'small-long' | 'medium' | 'large' | 'extra-large' | 'kpi'
 
 

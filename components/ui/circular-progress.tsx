@@ -11,7 +11,9 @@ interface CircularProgressProps {
   showPercentage?: boolean
   color?: string
   backgroundColor?: string
-  type?: 'circle' | 'gauge' // Add gauge type
+  type?: 'circle' | 'gauge' | 'segmented-gauge'
+  /** For segmented-gauge: breakdown of wins/breakeven/losses */
+  segments?: { wins: number; breakeven: number; losses: number }
 }
 
 export function CircularProgress({
@@ -22,18 +24,43 @@ export function CircularProgress({
   showPercentage = true,
   color = 'hsl(var(--primary))',
   backgroundColor = 'hsl(var(--muted))',
-  type = 'gauge' // Default to gauge
+  type = 'gauge',
+  segments,
 }: CircularProgressProps) {
   const radius = (size - strokeWidth) / 2
-  const isGauge = type === 'gauge'
+  const isGauge = type === 'gauge' || type === 'segmented-gauge'
+  const isSegmented = type === 'segmented-gauge' && segments
 
   // For gauge: semi-circle (180 degrees)
   // For circle: full circle (360 degrees)
   const circumference = isGauge ? radius * Math.PI : radius * 2 * Math.PI
+
+  // For segmented gauge, calculate segment lengths
+  const getSegmentedPaths = () => {
+    if (!segments) return null
+    const total = segments.wins + segments.breakeven + segments.losses
+    if (total === 0) return null
+
+    const winPercent = (segments.wins / total) * 100
+    const bePercent = (segments.breakeven / total) * 100
+    const lossPercent = (segments.losses / total) * 100
+
+    const winLength = (winPercent / 100) * circumference
+    const beLength = (bePercent / 100) * circumference
+    const lossLength = (lossPercent / 100) * circumference
+
+    return { winLength, beLength, lossLength, winPercent, bePercent, lossPercent }
+  }
+
+  const segmentData = getSegmentedPaths()
   const offset = circumference - (value / 100) * circumference
 
+  // Arc path for semi-circle (left to right)
+  const arcPath = `M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`
+  const circlePath = `M ${size / 2} ${strokeWidth / 2} A ${radius} ${radius} 0 1 1 ${size / 2} ${size - strokeWidth / 2} A ${radius} ${radius} 0 1 1 ${size / 2} ${strokeWidth / 2}`
+
   return (
-    <div className={cn('relative inline-flex items-center justify-center', className)}>
+    <div className={cn('relative inline-flex flex-col items-center', className)}>
       <svg
         width={size}
         height={isGauge ? size / 2 + strokeWidth : size}
@@ -42,31 +69,78 @@ export function CircularProgress({
       >
         {/* Background arc/circle */}
         <path
-          d={isGauge
-            ? `M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`
-            : `M ${size / 2} ${strokeWidth / 2} A ${radius} ${radius} 0 1 1 ${size / 2} ${size - strokeWidth / 2} A ${radius} ${radius} 0 1 1 ${size / 2} ${strokeWidth / 2}`
-          }
+          d={isGauge ? arcPath : circlePath}
           stroke={backgroundColor}
           strokeWidth={strokeWidth}
           fill="none"
           strokeLinecap="round"
         />
-        {/* Progress arc/circle */}
-        <path
-          d={isGauge
-            ? `M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`
-            : `M ${size / 2} ${strokeWidth / 2} A ${radius} ${radius} 0 1 1 ${size / 2} ${size - strokeWidth / 2} A ${radius} ${radius} 0 1 1 ${size / 2} ${strokeWidth / 2}`
-          }
-          stroke={color}
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          className="transition-all duration-500 ease-in-out"
-        />
+
+        {isSegmented && segmentData ? (
+          <>
+            {/* Win segment (green) - starts from left */}
+            <path
+              d={arcPath}
+              stroke="hsl(var(--chart-profit))"
+              strokeWidth={strokeWidth}
+              fill="none"
+              strokeDasharray={`${segmentData.winLength} ${circumference}`}
+              strokeDashoffset={0}
+              strokeLinecap="round"
+              className="transition-all duration-500 ease-in-out"
+            />
+            {/* Breakeven segment (gray) - starts after wins */}
+            {segmentData.beLength > 0 && (
+              <path
+                d={arcPath}
+                stroke="hsl(var(--muted-foreground))"
+                strokeWidth={strokeWidth}
+                fill="none"
+                strokeDasharray={`${segmentData.beLength} ${circumference}`}
+                strokeDashoffset={-segmentData.winLength}
+                strokeLinecap="round"
+                className="transition-all duration-500 ease-in-out"
+              />
+            )}
+            {/* Loss segment (red) - starts after wins + breakeven */}
+            <path
+              d={arcPath}
+              stroke="hsl(var(--chart-loss))"
+              strokeWidth={strokeWidth}
+              fill="none"
+              strokeDasharray={`${segmentData.lossLength} ${circumference}`}
+              strokeDashoffset={-(segmentData.winLength + segmentData.beLength)}
+              strokeLinecap="round"
+              className="transition-all duration-500 ease-in-out"
+            />
+          </>
+        ) : (
+          /* Single color progress arc/circle */
+          <path
+            d={isGauge ? arcPath : circlePath}
+            stroke={color}
+            strokeWidth={strokeWidth}
+            fill="none"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            className="transition-all duration-500 ease-in-out"
+          />
+        )}
       </svg>
-      {showPercentage && (
+
+      {/* Segment counts below gauge (TradeZella style) */}
+      {isSegmented && segmentData && segments && (
+        <div className="flex items-center justify-center gap-3 mt-1">
+          <span className="text-xxs font-bold text-profit">{segments.wins}</span>
+          {segments.breakeven > 0 && (
+            <span className="text-xxs font-bold text-muted-foreground">{segments.breakeven}</span>
+          )}
+          <span className="text-xxs font-bold text-loss">{segments.losses}</span>
+        </div>
+      )}
+
+      {showPercentage && !isSegmented && (
         <div className={cn(
           "absolute flex items-center justify-center",
           isGauge ? "bottom-0 left-0 right-0" : "inset-0"

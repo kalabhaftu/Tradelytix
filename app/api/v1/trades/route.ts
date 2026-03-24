@@ -218,6 +218,11 @@ export async function GET(request: NextRequest) {
     const statistics = includeStats ? calculateStatistics(trades, accounts, grouped) : null
     const calendarData = includeCalendar ? formatCalendarData(trades, accounts, timezone, grouped) : null
 
+    // Filter accounts to match selected account numbers (for balance calculation)
+    const filteredAccounts = accountNumbers.length > 0
+      ? accounts.filter((acc: any) => accountNumbers.includes(acc.number) || accountNumbers.includes(acc.id))
+      : accounts
+
     // PERF: Compute all widget chart data server-side (trades already in memory)
     // This eliminates 6 separate /api/v1/dashboard/widgets calls
     const includeWidgets = params.get('includeWidgets') !== 'false'
@@ -227,7 +232,7 @@ export async function GET(request: NextRequest) {
       dailyCumulativePnl: calculateDailyCumulativePnl(trades),
       outcomeDistribution: calculateOutcomeDistribution(trades),
       dayOfWeekPerformance: calculateDayOfWeekPerformance(trades),
-      accountBalanceChart: calculateAccountBalanceChart(trades, accounts),
+      accountBalanceChart: calculateAccountBalanceChart(trades, filteredAccounts),
       pnlByStrategy: calculatePnlByStrategy(trades),
       pnlByInstrument: calculatePnlByInstrument(trades),
       winRateByStrategy: calculateWinRateByStrategy(trades),
@@ -237,7 +242,7 @@ export async function GET(request: NextRequest) {
       tradingOverview: calculateTradingOverviewKpis(trades),
       sessionAnalysis: calculateSessionAnalysis(trades),
       calendarData: calculateCalendarData(trades),
-      accountBalancePnl: calculateBalanceInfo(accounts, trades),
+      accountBalancePnl: calculateBalanceInfo(filteredAccounts, trades),
     } : null
 
     const total = trades.length

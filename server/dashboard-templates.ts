@@ -34,26 +34,27 @@ const DEFAULT_LAYOUT: WidgetLayout[] = [
   { i: 'kpi-3', type: 'dayWinRate', size: 'kpi', x: 2, y: 0, w: 1, h: 1 },
   { i: 'kpi-4', type: 'profitFactor', size: 'kpi', x: 3, y: 0, w: 1, h: 1 },
   { i: 'kpi-5', type: 'avgWinLoss', size: 'kpi', x: 4, y: 0, w: 1, h: 1 },
-  // Row 1: Equity Curve (left), Mini Calendar (right)
+  // Row 1: Equity Curve (2/3) + Drawdown (1/3)
   { i: 'equity-curve', type: 'equityCurve', size: 'large', x: 0, y: 1, w: 8, h: 4 },
-  { i: 'outcome-dist', type: 'outcomeDistribution', size: 'medium', x: 8, y: 1, w: 4, h: 4 },
-  // Row 2: Recent Trades (left) and Mini Calendar (right)
-  { i: 'recent-trades', type: 'recentTrades', size: 'small', x: 0, y: 5, w: 4, h: 5 },
-  { i: 'mini-calendar', type: 'calendarMini', size: 'large', x: 4, y: 5, w: 8, h: 5 },
-  // Row 3: 3 Chart Widgets
+  { i: 'drawdown', type: 'drawdown', size: 'small-long', x: 8, y: 1, w: 4, h: 4 },
+  // Row 2: Mini Calendar (2/3) + Recent Trades (1/3)
+  { i: 'mini-calendar', type: 'calendarMini', size: 'large', x: 0, y: 5, w: 8, h: 5 },
+  { i: 'recent-trades', type: 'recentTrades', size: 'small', x: 8, y: 5, w: 4, h: 5 },
+  // Row 3: Daily P&L charts (3 equal columns)
   { i: 'net-daily-pnl', type: 'netDailyPnL', size: 'small-long', x: 0, y: 10, w: 4, h: 4 },
   { i: 'daily-cumulative-pnl', type: 'dailyCumulativePnL', size: 'small-long', x: 4, y: 10, w: 4, h: 4 },
   { i: 'account-balance', type: 'accountBalanceChart', size: 'small-long', x: 8, y: 10, w: 4, h: 4 },
-  // Row 4: Day of Week + More Charts
-  { i: 'day-of-week', type: 'dayOfWeekPerformance', size: 'medium', x: 0, y: 14, w: 6, h: 4 },
-  { i: 'weekday-pnl', type: 'weekdayPnL', size: 'small-long', x: 6, y: 14, w: 6, h: 4 },
-  // Row 5: Analysis Widgets
-  { i: 'trade-duration', type: 'tradeDurationPerformance', size: 'small-long', x: 0, y: 18, w: 4, h: 4 },
-  { i: 'pnl-by-strategy', type: 'pnlByStrategy', size: 'small-long', x: 4, y: 18, w: 4, h: 4 },
+  // Row 4: Outcome Distribution + Day of Week + Weekday P&L
+  { i: 'outcome-dist', type: 'outcomeDistribution', size: 'medium', x: 0, y: 14, w: 4, h: 4 },
+  { i: 'day-of-week', type: 'dayOfWeekPerformance', size: 'medium', x: 4, y: 14, w: 4, h: 4 },
+  { i: 'weekday-pnl', type: 'weekdayPnL', size: 'small-long', x: 8, y: 14, w: 4, h: 4 },
+  // Row 5: Strategy + Instrument (3 equal columns)
+  { i: 'pnl-by-strategy', type: 'pnlByStrategy', size: 'small-long', x: 0, y: 18, w: 4, h: 4 },
+  { i: 'win-rate-by-strategy', type: 'winRateByStrategy', size: 'small-long', x: 4, y: 18, w: 4, h: 4 },
   { i: 'pnl-by-instrument', type: 'pnlByInstrument', size: 'small-long', x: 8, y: 18, w: 4, h: 4 },
-  // Row 6: Performance/Analysis
+  // Row 6: Performance Score + Trade Duration + Session Analysis
   { i: 'performance-score', type: 'performanceScore', size: 'small-long', x: 0, y: 22, w: 4, h: 4 },
-  { i: 'win-rate-by-strategy', type: 'winRateByStrategy', size: 'small-long', x: 4, y: 22, w: 4, h: 4 },
+  { i: 'trade-duration', type: 'tradeDurationPerformance', size: 'small-long', x: 4, y: 22, w: 4, h: 4 },
   { i: 'session-analysis', type: 'sessionAnalysis', size: 'medium', x: 8, y: 22, w: 4, h: 4 },
   // Row 7: Trading Overview + Weekly Tracker
   { i: 'trading-overview', type: 'tradingOverview', size: 'large', x: 0, y: 26, w: 6, h: 4 },

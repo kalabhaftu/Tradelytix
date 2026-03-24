@@ -34,6 +34,7 @@ const WinRateByStrategy = lazy(() => import('../components/charts/win-rate-by-st
 const EquityCurveWidget = lazy(() => import('../components/charts/equity-curve-widget'))
 const OutcomeDistributionWidget = lazy(() => import('../components/charts/outcome-distribution-widget'))
 const DayOfWeekPerformanceWidget = lazy(() => import('../components/charts/day-of-week-performance-widget'))
+const DrawdownChart = lazy(() => import('../components/charts/drawdown-chart'))
 
 
 
@@ -426,6 +427,16 @@ export const WIDGET_REGISTRY_LAZY: Record<WidgetType, WidgetConfig> = {
     previewHeight: 250,
     getComponent: ({ size }) => <LazyWidget Component={DayOfWeekPerformanceWidget} size={size} type="dayOfWeekPerformance" Preview={CreateChartPreview('Day of Week Performance')} />,
     getPreview: () => CreateChartPreview('Day of Week Performance')
+  },
+  drawdown: {
+    type: 'drawdown',
+    defaultSize: 'small-long',
+    allowedSizes: ['small-long', 'medium', 'large'],
+    category: 'charts',
+    description: 'Drawdown from peak equity over time',
+    previewHeight: 200,
+    getComponent: ({ size }) => <LazyWidget Component={DrawdownChart} size={size} type="drawdown" Preview={CreateChartPreview('Drawdown')} />,
+    getPreview: () => CreateChartPreview('Drawdown')
   }
 }
 

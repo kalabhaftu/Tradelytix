@@ -145,12 +145,10 @@ export function NotificationCenter() {
       const notificationUserId = (change.newRecord?.userId || change.oldRecord?.userId) as string | undefined
       if (notificationUserId === user?.id) {
         if (change.event === 'INSERT' && change.newRecord) {
-          const isRead = change.newRecord.isRead as boolean | undefined
-          if (isRead !== true) {
-            setUnreadCount(prev => prev + 1)
-          }
           if (isOpenRef.current) {
             fetchNotifications()
+          } else {
+            refreshUnreadCount()
           }
         } else if (change.event === 'UPDATE' || change.event === 'DELETE') {
           if (isOpenRef.current) {

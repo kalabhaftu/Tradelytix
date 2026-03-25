@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserId } from '@/server/auth'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { WeeklyExpectation } from '@prisma/client'
 import { randomUUID } from 'crypto'
 
@@ -14,10 +14,11 @@ function normalizeToMonday(date: Date) {
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ review: null }, { status: 401 })
     }
+    const internalUserId = identity.internalUserId
 
     const dateParam = request.nextUrl.searchParams.get('date')
     if (!dateParam) {
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     const review = await prisma.weeklyReview.findUnique({
       where: {
         userId_startDate: {
-          userId,
+          userId: internalUserId,
           startDate: monday
         }
       }
@@ -42,10 +43,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const internalUserId = identity.internalUserId
 
     const body = await request.json()
     const {
@@ -74,7 +76,7 @@ export async function POST(request: NextRequest) {
     const review = await prisma.weeklyReview.upsert({
       where: {
         userId_startDate: {
-          userId,
+          userId: internalUserId,
           startDate: monday
         }
       },
@@ -88,7 +90,7 @@ export async function POST(request: NextRequest) {
       },
       create: {
         id: randomUUID(),
-        userId,
+        userId: internalUserId,
         startDate: monday,
         endDate: new Date(endDate),
         calendarImage,

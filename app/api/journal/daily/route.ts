@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserId } from '@/server/auth'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 
 // GET - Fetch journal entry for a specific date
 export async function GET(request: Request) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const userId = identity.internalUserId
 
     const { searchParams } = new URL(request.url)
     const date = searchParams.get('date')
@@ -38,10 +39,11 @@ export async function GET(request: Request) {
 // POST - Create new journal entry
 export async function POST(request: Request) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const userId = identity.internalUserId
 
     const body = await request.json()
     const { date, note, emotion, accountId } = body

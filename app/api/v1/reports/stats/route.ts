@@ -8,12 +8,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserId } from '@/server/auth'
+import { getResolvedUserIdentity } from '@/server/user-identity'
 import { calculateReportStatistics, type ReportStatsFilters } from '@/lib/statistics/report-statistics'
 import { CacheHeaders } from '@/lib/api-cache-headers'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
-import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   const rateLimitRes = await applyRateLimit(request, apiLimiter)
@@ -21,21 +20,11 @@ export async function POST(request: NextRequest) {
 
   const start = Date.now()
   try {
-    const authUserId = await getUserId()
-
-    // Map auth user ID to internal user ID (Trade.userId uses internal id)
-    const userLookup = await prisma.user.findUnique({
-      where: { auth_user_id: authUserId },
-      select: { id: true },
-    })
-
-    if (!userLookup?.id) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
+    const { internalUserId } = await getResolvedUserIdentity()
 
     const body = await request.json()
     const filters: ReportStatsFilters = {
-      userId: userLookup.id,
+      userId: internalUserId,
       accountId: body.accountId || undefined,
       accountNumbers: body.accountNumbers || undefined,
       dateFrom: body.dateFrom || undefined,

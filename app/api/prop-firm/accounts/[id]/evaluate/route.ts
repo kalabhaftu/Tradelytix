@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserId } from '@/server/auth-utils'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { PhaseEvaluationEngine } from '@/lib/prop-firm/phase-evaluation-engine'
 import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
@@ -15,13 +15,14 @@ interface RouteParams {
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
+    const internalUserId = identity.internalUserId
 
     const { id: masterAccountId } = await params
     // ID is pure masterAccountId (UUID), not composite
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const masterAccount = await prisma.masterAccount.findFirst({
       where: {
         id: masterAccountId,
-        userId,
+        userId: internalUserId,
         status: { not: 'failed' }
       },
       include: {
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       })
       
       // Invalidate cache when account status changes
-      revalidateTag(`accounts-${userId}`)
+      revalidateTag(`accounts-${internalUserId}`)
     }
 
     return NextResponse.json({
@@ -112,13 +113,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
+    const internalUserId = identity.internalUserId
 
     const { id: masterAccountId } = await params
     // ID is pure masterAccountId (UUID), not composite
@@ -127,7 +129,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const masterAccount = await prisma.masterAccount.findFirst({
       where: {
         id: masterAccountId,
-        userId
+        userId: internalUserId
       },
       include: {
         PhaseAccount: {

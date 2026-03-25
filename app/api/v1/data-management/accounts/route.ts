@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserIdSafe } from '@/server/auth'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 
 export async function GET(request: NextRequest) {
@@ -8,36 +8,28 @@ export async function GET(request: NextRequest) {
   if (rateLimitResponse) return rateLimitResponse
 
   try {
-    const authUserId = await getUserIdSafe()
-    if (!authUserId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
-
-    const user = await prisma.user.findUnique({
-      where: { auth_user_id: authUserId },
-      select: { id: true }
-    })
-
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 })
-    }
+    const internalUserId = identity.internalUserId
 
     // 1. Fetch ALL LIVE accounts (unfiltered)
     const liveAccounts = await prisma.account.findMany({
-      where: { userId: user.id },
+      where: { userId: internalUserId },
       orderBy: { createdAt: 'desc' }
     });
 
     // 2. Fetch ALL PROP FIRM accounts (unfiltered)
     const propFirmAccounts = await prisma.masterAccount.findMany({
-      where: { userId: user.id },
+      where: { userId: internalUserId },
       include: { PhaseAccount: { orderBy: { phaseNumber: 'asc' } } }
     });
 
     // 3. Fetch trade counts globally for all user accounts
     const tradeCounts = await prisma.trade.groupBy({
       by: ['accountNumber', 'phaseAccountId'],
-      where: { userId: user.id },
+      where: { userId: internalUserId },
       _count: { id: true }
     })
 

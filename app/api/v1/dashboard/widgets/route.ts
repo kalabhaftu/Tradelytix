@@ -11,7 +11,7 @@ import {
   calculateSessionAnalysis
 } from '@/lib/dashboard-math'
 import { prisma } from '@/lib/prisma'
-import { getUserId } from '@/server/auth'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { calculateBalanceInfo } from '@/lib/utils/balance-calculator'
 
 export async function GET(request: NextRequest) {
@@ -33,6 +33,17 @@ export async function GET(request: NextRequest) {
 
   const data = await tradesResponse.json()
   const trades = data.trades || []
+  let cachedInternalUserId: string | null | undefined
+
+  const getInternalUserId = async () => {
+    if (cachedInternalUserId !== undefined) {
+      return cachedInternalUserId
+    }
+
+    const identity = await getResolvedUserIdentitySafe()
+    cachedInternalUserId = identity?.internalUserId ?? null
+    return cachedInternalUserId
+  }
 
   // Route to the appropriate math function
   let result
@@ -54,19 +65,13 @@ export async function GET(request: NextRequest) {
       break
     case 'accountBalanceChart':
       // Fetch user's active accounts to calculate absolute balance
-      const authUserId = await getUserId()
       let activeAccounts = []
-      if (authUserId) {
-        const userLookup = await prisma.user.findUnique({
-          where: { auth_user_id: authUserId },
-          select: { id: true }
-        })
-        if (userLookup) {
-          activeAccounts = await prisma.account.findMany({
-            where: { userId: userLookup.id, isArchived: false },
-            select: { startingBalance: true }
-          }) as any[]
-        }
+      const internalUserId = await getInternalUserId()
+      if (internalUserId) {
+        activeAccounts = await prisma.account.findMany({
+          where: { userId: internalUserId, isArchived: false },
+          select: { startingBalance: true }
+        }) as any[]
       }
       result = calculateAccountBalanceChart(trades, activeAccounts)
       break
@@ -77,16 +82,12 @@ export async function GET(request: NextRequest) {
       result = calculateSessionAnalysis(trades)
       break
     case 'accountBalancePnl':
-      const userLookupId = await getUserId()
       let userAccounts = []
-      if (userLookupId) {
-        const u = await prisma.user.findUnique({ where: { auth_user_id: userLookupId } })
-        if (u) {
-          // fetch all accounts
-          userAccounts = await prisma.account.findMany({
-            where: { userId: u.id }
-          }) as any[]
-        }
+      const accountOwnerId = await getInternalUserId()
+      if (accountOwnerId) {
+        userAccounts = await prisma.account.findMany({
+          where: { userId: accountOwnerId }
+        }) as any[]
       }
       
       const accountNumbers = request.nextUrl.searchParams.get('accounts')?.split(',').filter(Boolean) || []

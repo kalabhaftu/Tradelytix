@@ -47,8 +47,8 @@ export function QuickAddFAB({ className }: QuickAddFABProps) {
         setIsSubmitting(true)
 
         try {
-            const response = await fetch('/api/trades/quick-add', {
-                method: 'POST',
+            const response = await fetch('/api/v1/trades/quick-add', {
+              method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     instrument: formData.instrument.toUpperCase(),

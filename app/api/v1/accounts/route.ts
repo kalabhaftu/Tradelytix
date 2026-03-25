@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserIdSafe } from '@/server/auth'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { calculateAccountBalance } from '@/lib/utils/balance-calculator'
 import { groupTradesByExecution } from '@/lib/utils'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
@@ -10,19 +10,12 @@ export async function GET(request: NextRequest) {
   if (rateLimitResponse) return rateLimitResponse
 
   try {
-    const authUserId = await getUserIdSafe()
-    if (!authUserId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { auth_user_id: authUserId },
-      select: { id: true }
-    })
-    
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 })
-    }
+    const internalUserId = identity.internalUserId
 
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
@@ -33,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     // 1. Fetch RAW LIVE accounts
     const liveAccounts = await prisma.account.findMany({
-      where: { userId: user.id },
+      where: { userId: internalUserId },
       orderBy: { createdAt: 'desc' },
       include: {
          _count: { select: { Trade: true } }
@@ -42,14 +35,14 @@ export async function GET(request: NextRequest) {
 
     // 2. Fetch RAW PROP FIRM accounts
     const propFirmAccounts = await prisma.masterAccount.findMany({
-      where: { userId: user.id },
+      where: { userId: internalUserId },
       include: { PhaseAccount: { orderBy: { phaseNumber: 'asc' } } }
     });
     
     // We need trade counts per phaseId as well
     const propTradeCounts = await prisma.trade.groupBy({
       by: ['phaseAccountId'],
-      where: { userId: user.id, phaseAccountId: { not: null } },
+      where: { userId: internalUserId, phaseAccountId: { not: null } },
       _count: { id: true }
     })
     const propTradeCountMap = new Map()
@@ -170,7 +163,7 @@ export async function GET(request: NextRequest) {
     
     const relevantTrades = await prisma.trade.findMany({
       where: {
-         userId: user.id,
+         userId: internalUserId,
          OR: [
            { accountNumber: { in: [...liveNumbersToFetch, ...propNumbersToFetch] } },
            { phaseAccountId: { in: propPhaseIdsToFetch } }
@@ -220,13 +213,6 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Calculate Global KPI stats (only counting the requested filter, ignoring pagination to show global totals)
-    const totalCurrentEquity = filtered.reduce((acc, curr) => acc + (curr.startingBalance || 0), 0) + 
-      // Approximate global pnl without fetching 100k trades, wait no, 
-      // The front-end needs total equity based on the raw ones. Actually, let's keep it simple.
-      // We will leave total stats to be loaded efficiently elsewhere or computed minimally.
-      0
-
     return NextResponse.json({ 
        success: true, 
        data: finalAccounts,
@@ -240,6 +226,66 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error('[API] /api/v1/accounts error:', error)
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  const rateLimitResponse = await applyRateLimit(request, apiLimiter)
+  if (rateLimitResponse) return rateLimitResponse
+
+  try {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const internalUserId = identity.internalUserId
+    const body = await request.json()
+    const { name, number, startingBalance, broker } = body
+
+    if (!name || !number || !startingBalance || !broker) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required fields: name, number, startingBalance, broker' },
+        { status: 400 }
+      )
+    }
+
+    const existingAccount = await prisma.account.findFirst({
+      where: {
+        number,
+        userId: internalUserId,
+      }
+    })
+
+    if (existingAccount) {
+      return NextResponse.json(
+        { success: false, error: 'Account number already exists' },
+        { status: 409 }
+      )
+    }
+
+    const account = await prisma.account.create({
+      data: {
+        id: crypto.randomUUID(),
+        number,
+        name,
+        startingBalance: parseFloat(startingBalance),
+        broker,
+        userId: internalUserId
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...account,
+        accountType: 'live',
+        displayName: account.name || account.number
+      }
+    })
+  } catch (error: any) {
+    console.error('[API] /api/v1/accounts POST error:', error)
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }

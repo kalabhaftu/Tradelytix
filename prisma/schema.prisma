@@ -291,7 +291,12 @@ model Trade {
   @@index([userId, accountNumber, id])
   @@index([userId, accountNumber])
   @@index([userId, entryDate(sort: Desc)])
+  @@index([userId, accountId, entryDate(sort: Desc)])
+  @@index([userId, phaseAccountId, entryDate(sort: Desc)])
   @@index([userId, entryId])
+  @@index([userId, modelId, entryDate(sort: Desc)])
+  @@index([userId, ruleBroken, entryDate(sort: Desc)])
+  @@index([userId, outcome, entryDate(sort: Desc)])
   @@index([userId])
   // Composite indexes for server-side filtering (/api/v1/trades)
   @@index([userId, instrument])
@@ -343,6 +348,7 @@ model User {
   lastName               String?
   accountFilterSettings  String?
   goalSettings           Json?
+  aiSettings             Json?
   backtestInputMode      String                   @default("manual")
   accentPack             String                   @default("classic")
   autoAdjustAccountDate  Boolean                  @default(false)
@@ -355,6 +361,7 @@ model User {
   LiveAccountTransaction LiveAccountTransaction[]
   MasterAccount          MasterAccount[]
   Notification           Notification[]
+  ImportJob             ImportJob[]
   TradeTag               TradeTag[]
   TradingModel           TradingModel[]
   WeeklyReview           WeeklyReview[]
@@ -362,6 +369,33 @@ model User {
 
   @@index([auth_user_id])
   @@index([email])
+  @@schema("public")
+}
+
+model ImportJob {
+  id              String          @id @default(cuid())
+  userId          String
+  status          ImportJobStatus @default(queued)
+  stage           String          @default("queued")
+  progress        Int             @default(0)
+  totalItems      Int             @default(0)
+  processedItems  Int             @default(0)
+  importedCount   Int             @default(0)
+  skippedCount    Int             @default(0)
+  fileName        String
+  fileSize        Int
+  fileData        Bytes
+  state           Json?
+  error           String?
+  cancelRequested Boolean         @default(false)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  User            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, status])
   @@schema("public")
 }
 
@@ -531,6 +565,16 @@ enum NotificationType {
   
   // Strategy compliance
   STRATEGY_SESSION_VIOLATION // Trade outside allowed sessions
+
+  @@schema("public")
+}
+
+enum ImportJobStatus {
+  queued
+  processing
+  completed
+  failed
+  cancelled
 
   @@schema("public")
 }

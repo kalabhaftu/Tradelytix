@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+const path = require('path')
 
 // Conditionally load bundle analyzer only if available
 let withBundleAnalyzer = (config) => config
@@ -80,7 +81,7 @@ const nextConfig = {
       config.cache = {
         type: 'filesystem',
         maxMemoryGenerations: 1,
-        cacheDirectory: '.next/cache/webpack',
+        cacheDirectory: path.resolve(__dirname, '.next/cache/webpack'),
       }
     }
 

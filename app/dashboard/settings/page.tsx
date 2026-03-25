@@ -27,6 +27,7 @@ import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Switch } from "@/components/ui/switch"
 import { useTheme } from '@/context/theme-provider'
 import { createClient } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
@@ -41,8 +42,11 @@ import {
   Moon,
   Palette,
   Settings as SettingsIcon,
+  Bot,
   Shield,
   LogOut as SignOut,
+  Sparkles,
+  BellRing,
   Sun,
   Trash2 as Trash,
   User,
@@ -65,6 +69,12 @@ const timezones = [
   'Asia/Shanghai',
   'Australia/Sydney',
 ]
+
+const defaultAiSettings = {
+  weeklyReviewAutomationEnabled: false,
+  autoGenerateInsights: false,
+  includeAiInsightsInNotifications: true,
+}
 
 function SettingRow({
   icon: Icon,
@@ -115,9 +125,11 @@ export default function SettingsPage() {
     firstName: '',
     lastName: '',
     email: user?.email || '',
-    autoAdjustAccountDate: false
+    autoAdjustAccountDate: false,
+    aiSettings: defaultAiSettings,
   })
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
+  const [isUpdatingAiSettings, setIsUpdatingAiSettings] = useState(false)
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
 
 
@@ -149,7 +161,11 @@ export default function SettingsPage() {
             firstName: result.data.firstName || '',
             lastName: result.data.lastName || '',
             email: result.data.email || '',
-            autoAdjustAccountDate: result.data.autoAdjustAccountDate || false
+            autoAdjustAccountDate: result.data.autoAdjustAccountDate || false,
+            aiSettings: {
+              ...defaultAiSettings,
+              ...(result.data.aiSettings || {})
+            }
           })
         }
       } catch (error) {
@@ -204,8 +220,49 @@ export default function SettingsPage() {
 
   const handleAutoAdjustChange = (checked: boolean) => {
     setProfileData(prev => ({ ...prev, autoAdjustAccountDate: checked }))
-    // Automatically trigger update for this setting
-    handleProfileUpdate()
+
+    fetch('/api/auth/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ autoAdjustAccountDate: checked })
+    }).catch(() => {})
+  }
+
+  const handleAiSettingsChange = async (
+    key: keyof typeof defaultAiSettings,
+    checked: boolean
+  ) => {
+    const previous = profileData.aiSettings
+    const next = { ...previous, [key]: checked }
+
+    setProfileData(prev => ({ ...prev, aiSettings: next }))
+    setIsUpdatingAiSettings(true)
+
+    try {
+      const response = await fetch('/api/auth/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aiSettings: { [key]: checked } })
+      })
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update AI preferences')
+      }
+
+      toast.success('AI preferences updated', {
+        description: 'Your AI settings were saved successfully.',
+        duration: 2500
+      })
+    } catch (error) {
+      setProfileData(prev => ({ ...prev, aiSettings: previous }))
+      toast.error('AI settings update failed', {
+        description: error instanceof Error ? error.message : 'Failed to save AI settings.',
+        duration: 3000
+      })
+    } finally {
+      setIsUpdatingAiSettings(false)
+    }
   }
 
   const handleDeleteAccount = async () => {
@@ -522,6 +579,65 @@ export default function SettingsPage() {
                     {profileData.autoAdjustAccountDate ? "Enabled" : "Disabled"}
                   </Button>
                 </div>
+              }
+            />
+          </CardContent>
+        </Card>
+
+        {/* AI Preferences Section */}
+        <Card>
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                <Bot className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <CardTitle className="text-base">AI Preferences</CardTitle>
+                <CardDescription className="text-xs">Control AI-generated insights and automation</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-1">
+            <SettingRow
+              icon={Sparkles}
+              label="Auto-generate insights"
+              description="Allow AI to draft insights from your trading activity"
+              action={
+                <Switch
+                  checked={profileData.aiSettings.autoGenerateInsights}
+                  onCheckedChange={(checked) => handleAiSettingsChange('autoGenerateInsights', checked)}
+                  disabled={isLoadingProfile || isUpdatingAiSettings}
+                />
+              }
+            />
+
+            <Separator />
+
+            <SettingRow
+              icon={BellRing}
+              label="AI insights in notifications"
+              description="Include AI-generated performance summaries in notification feed"
+              action={
+                <Switch
+                  checked={profileData.aiSettings.includeAiInsightsInNotifications}
+                  onCheckedChange={(checked) => handleAiSettingsChange('includeAiInsightsInNotifications', checked)}
+                  disabled={isLoadingProfile || isUpdatingAiSettings}
+                />
+              }
+            />
+
+            <Separator />
+
+            <SettingRow
+              icon={Bot}
+              label="Weekly AI review automation"
+              description="Reserved for future scheduler integration. Off by default."
+              action={
+                <Switch
+                  checked={profileData.aiSettings.weeklyReviewAutomationEnabled}
+                  onCheckedChange={(checked) => handleAiSettingsChange('weeklyReviewAutomationEnabled', checked)}
+                  disabled={isLoadingProfile || isUpdatingAiSettings}
+                />
               }
             />
           </CardContent>

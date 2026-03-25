@@ -340,10 +340,9 @@ export async function deleteTrade(tradeId: string) {
                       can be safely reused (e.g. grouped trade stats, basic streaks, equity) without changing per-page UX.
                     </li>
                     <li>
-                      <code>app/api/dashboard/stats/route.ts</code> is the <strong>canonical source</strong> for dashboard summary
-                      metrics and intentionally keeps some bespoke logic (account filters, prop-firm integration) instead
-                      of forcing everything through the generic module, to preserve existing behavior while still keeping
-                      all heavy work on the server.
+                      <code>app/api/v1/trades/route.ts</code> is the <strong>canonical source</strong> for dashboard summary
+                      metrics and widget data; it keeps bespoke logic (account filters, prop-firm integration) while
+                      preserving server-side aggregation and a single modern API contract.
                     </li>
                   </ul>
                   <p>

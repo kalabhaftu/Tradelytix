@@ -12,7 +12,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowUpDown, Trash2, ChevronLeft, ChevronRight, Pencil, Loader2, X, Filter, TrendingUp, TrendingDown } from "lucide-react"
 import { toast } from "sonner"
 import { deleteTradesByIdsAction } from '@/server/accounts'
-import { useData } from '@/context/data-provider'
 import { TradeEditPanel } from '@/app/dashboard/components/tables/trade-edit-panel'
 import { TradeDetailPanel } from '@/app/dashboard/components/tables/trade-detail-panel'
 import { Badge } from "@/components/ui/badge"
@@ -41,7 +40,6 @@ export default function TradeTable() {
   const user = useUserStore((state: any) => state.user)
   const [currentPage, setCurrentPage] = useState(1)
   const [tradesPerPage, setTradesPerPage] = useState(50)
-  const { updateTrades } = useData()
   const { data: tradesResponse, isLoading: tradesLoading, mutate: refetchTrades } = useSWR(
     user?.id ? `/api/v1/data-management/trades?page=${currentPage}&limit=${tradesPerPage}` : null,
     fetcher,

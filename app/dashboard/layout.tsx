@@ -10,12 +10,14 @@ import { MobileBottomNav } from "@/components/ui/mobile-nav";
 import { QuickAddFAB } from "@/components/quick-add-fab";
 import { CommandPalette } from "@/components/command-palette";
 import { GlobalTradeController } from "./components/global-trade-controller";
+import { getInitBootstrapData } from "@/server/init-bootstrap";
 
-export default function RootLayout({ children }: { children: ReactElement }) {
+export default async function RootLayout({ children }: { children: ReactElement }) {
+  const initialBootstrapData = await getInitBootstrapData()
 
   return (
     <TooltipProvider>
-      <DataProvider>
+      <DataProvider initialBootstrapData={initialBootstrapData}>
         <TagsProvider>
           <TemplateProvider>
             {/* Data syncs via Supabase Realtime - no polling needed */}

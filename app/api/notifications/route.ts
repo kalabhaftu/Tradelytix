@@ -6,29 +6,16 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserId } from '@/server/auth-utils'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
-    const authUserId = await getUserId()
-    if (!authUserId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
-      )
-    }
-
-    // getUserId() returns Supabase auth_user_id, but Notification.userId references User.id
-    const user = await prisma.user.findUnique({
-      where: { auth_user_id: authUserId },
-      select: { id: true }
-    })
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
       )
     }
 
@@ -38,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     const notifications = await prisma.notification.findMany({
       where: {
-        userId: user.id,
+        userId: identity.internalUserId,
         ...(unreadOnly ? { isRead: false } : {})
       },
       orderBy: { createdAt: 'desc' },
@@ -47,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     const unreadCount = await prisma.notification.count({
       where: {
-        userId: user.id,
+        userId: identity.internalUserId,
         isRead: false
       }
     })
@@ -71,32 +58,18 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const authUserId = await getUserId()
-    if (!authUserId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    // getUserId() returns Supabase auth_user_id, but Notification.userId references User.id
-    const user = await prisma.user.findUnique({
-      where: { auth_user_id: authUserId },
-      select: { id: true }
-    })
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
-
     // Mark all as read
     await prisma.notification.updateMany({
       where: {
-        userId: user.id,
+        userId: identity.internalUserId,
         isRead: false
       },
       data: { isRead: true }
@@ -118,30 +91,18 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const authUserId = await getUserId()
-    if (!authUserId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    const user = await prisma.user.findUnique({
-      where: { auth_user_id: authUserId },
-      select: { id: true }
-    })
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
     // Delete all notifications for the user
     await prisma.notification.deleteMany({
       where: {
-        userId: user.id
+        userId: identity.internalUserId
       }
     })
 

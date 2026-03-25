@@ -32,20 +32,18 @@ export function usePaginatedTrades(initialPageSize: number = DEFAULT_PAGE_SIZE):
     setError(null)
 
     try {
-      const response = await fetch(`/api/trades?page=${currentPage}&limit=${limit}`)
+      const offset = (currentPage - 1) * limit
+      const response = await fetch(
+        `/api/v1/trades?pageLimit=${limit}&pageOffset=${offset}&includeStats=false&includeCalendar=false&includeWidgets=false`
+      )
       
       if (!response.ok) {
         throw new Error('Failed to fetch trades')
       }
 
       const data = await response.json()
-      
-      if (data.success) {
-        setTrades(data.data || [])
-        setTotalCount(data.metadata?.count || 0)
-      } else {
-        throw new Error(data.message || 'Failed to fetch trades')
-      }
+      setTrades(data.trades || [])
+      setTotalCount(data.total || 0)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
       setTrades([])

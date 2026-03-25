@@ -26,7 +26,7 @@ import { useSupabaseUpload } from "@/hooks/use-supabase-upload"
 import { getTradingSession } from '@/lib/time-utils'
 import { BREAK_EVEN_THRESHOLD, cn, groupTradesByExecution, type GroupedTrade } from '@/lib/utils'
 import { getWeeklyReview, saveWeeklyReview } from "@/server/weekly-review"
-import { Calendar, BarChart3, CheckCircle2, Loader2, Clock, Image, Percent, Activity, Target, Trash2, TrendingDown, TrendingUp, Upload, XCircle } from "lucide-react"
+import { Calendar, BarChart3, CheckCircle2, Loader2, Clock, Image as ImageIcon, Percent, Activity, Target, Trash2, TrendingDown, TrendingUp, Upload, XCircle } from "lucide-react"
 import { type Trade } from '@prisma/client'
 import imageCompression from 'browser-image-compression'
 import { endOfWeek, format, parseISO, startOfWeek } from "date-fns"
@@ -997,7 +997,7 @@ export function WeeklyModal({
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium flex items-center justify-between">
                       <span className="flex items-center gap-2">
-                        <Image className="h-4 w-4 text-primary" />
+                        <ImageIcon className="h-4 w-4 text-primary" />
                         Economic Calendar Screenshot
                       </span>
                       <div className="flex items-center gap-2">
@@ -1070,7 +1070,7 @@ export function WeeklyModal({
                           className="flex flex-col items-center justify-center text-muted-foreground py-16 cursor-pointer hover:bg-muted/50 transition-colors w-full h-full"
                         >
                           <div className="p-4 rounded-full bg-muted mb-4">
-                            <Image className="h-8 w-8 opacity-50" />
+                            <ImageIcon className="h-8 w-8 opacity-50" />
                           </div>
                           <span className="text-sm font-medium mb-1">Upload weekly calendar screenshot</span>
                           <span className="text-xs opacity-70">Click to browse or drag and drop</span>

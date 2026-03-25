@@ -1,23 +1,18 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
 import { useUserStore } from '@/store/user-store'
 import LoadingOverlay from '../app/dashboard/components/loading-overlay'
 import ImportButton from '../app/dashboard/components/import/import-button'
-import { signOut } from '@/server/auth'
-
-import { redirect } from 'next/navigation'
 import OnboardingModal from './onboarding-modal'
-import { useTradesStore } from '@/store/trades-store'
-
+import { useData } from '@/context/data-provider'
 
 
 export default function Modals() {
   const user = useUserStore((state) => state.user)
   const isLoading = useUserStore((state) => state.isLoading)
-  const trades = useTradesStore((state) => state.trades)
+  const { formattedTrades } = useData()
   const [isTradesDialogOpen, setIsTradesDialogOpen] = useState(false)
   const [showLoadingToast, setShowLoadingToast] = useState(false)
 
@@ -44,11 +39,11 @@ export default function Modals() {
 
   useEffect(() => {
     if (!isLoading) {
-      if (!trades) {
+      if (formattedTrades.length === 0) {
         setIsTradesDialogOpen(true)
       }
     }
-  }, [trades, isLoading])
+  }, [formattedTrades.length, isLoading])
 
 
 

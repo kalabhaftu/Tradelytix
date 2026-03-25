@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserId } from '@/server/auth-utils'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { revalidateTag } from 'next/cache'
@@ -39,26 +39,14 @@ function isFundedPhase(evaluationType: string, phaseNumber: number): boolean {
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    const authUserId = await getUserId()
-    if (!authUserId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
-
-    // getUserId() returns Supabase auth_user_id, but MasterAccount.userId references User.id
-    const user = await prisma.user.findUnique({
-      where: { auth_user_id: authUserId },
-      select: { id: true }
-    })
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      )
-    }
+    const internalUserId = identity.internalUserId
 
     const { id: masterAccountId } = await params
     // NO PARSING NEEDED - phase transition receives pure masterAccountId, not composite ID
@@ -70,7 +58,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const masterAccount = await prisma.masterAccount.findFirst({
       where: {
         id: masterAccountId,
-        userId: user.id,
+        userId: internalUserId,
         status: { not: 'failed' }
       },
       include: {
@@ -165,7 +153,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       : `Phase ${nextPhaseNumber}`
 
     // Invalidate cache so UI updates on refresh
-    revalidateTag(`accounts-${user.id}`)
+    revalidateTag(`accounts-${internalUserId}`)
     // NOTE: Real-time refresh is handled client-side via polling or manual refresh
     // triggerDataRefresh cannot be used here as it's a client-only module
 

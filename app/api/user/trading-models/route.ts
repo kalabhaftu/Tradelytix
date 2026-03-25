@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserId } from '@/server/auth'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { randomUUID } from 'crypto'
@@ -19,10 +19,11 @@ const tradingModelSchema = z.object({
 // GET - List all trading models for user
 export async function GET(request: NextRequest) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const userId = identity.internalUserId
 
     const models = await prisma.tradingModel.findMany({
       where: { userId },
@@ -129,10 +130,11 @@ export async function GET(request: NextRequest) {
 // POST - Create new trading model
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const userId = identity.internalUserId
 
     const body = await request.json()
     const validated = tradingModelSchema.parse(body)

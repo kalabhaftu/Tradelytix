@@ -120,7 +120,7 @@ export function CreateLiveAccountDialog({ open, onOpenChange, onSuccess }: LiveA
         broker: finalBroker
       }
 
-      const response = await fetch('/api/accounts', {
+      const response = await fetch('/api/v1/accounts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

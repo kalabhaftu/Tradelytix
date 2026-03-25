@@ -58,7 +58,7 @@ export default function LiveAccountDetailPage() {
     try {
       setIsLoading(true)
       // Fetch account details with calculated metrics from enhanced endpoint
-      const response = await fetch(`/api/accounts/${accountId}?t=${Date.now()}`, {
+      const response = await fetch(`/api/v1/accounts/${accountId}?t=${Date.now()}`, {
         cache: 'no-store'
       })
       if (!response.ok) {

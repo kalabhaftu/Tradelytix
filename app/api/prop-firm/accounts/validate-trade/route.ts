@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserId } from '@/server/auth-utils'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 
@@ -15,13 +15,14 @@ const ValidateTradeSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
+    const internalUserId = identity.internalUserId
 
     const body = await request.json()
     const { accountNumber } = ValidateTradeSchema.parse(body)
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
         phaseId: accountNumber,
         status: 'active',
         MasterAccount: {
-          userId
+          userId: internalUserId
         }
       },
       include: {
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
     const regularAccount = await prisma.account.findFirst({
       where: {
         number: accountNumber,
-        userId
+        userId: internalUserId
       }
     })
 

@@ -7,19 +7,20 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserId } from '@/server/auth-utils'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { prisma } from '@/lib/prisma'
 import { revalidateTag } from 'next/cache'
 
 export async function DELETE(request: NextRequest) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
+    const internalUserId = identity.internalUserId
 
     // Verify confirmation in request body
     const body = await request.json().catch(() => ({}))
@@ -29,21 +30,6 @@ export async function DELETE(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    // First, get the internal user ID from auth_user_id
-    const user = await prisma.user.findUnique({
-      where: { auth_user_id: userId },
-      select: { id: true }
-    })
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
-    const internalUserId = user.id
 
     // Delete all user data in a transaction
     // Order matters due to foreign key constraints

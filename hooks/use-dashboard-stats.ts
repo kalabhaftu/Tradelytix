@@ -39,7 +39,8 @@ export function useDashboardStats(settings: AccountFilterSettings = DEFAULT_FILT
       params.append('phaseNumber', settings.selectedPhaseNumber.toString())
     }
   }
-  const url = `/api/dashboard/stats${params.toString() ? `?${params.toString()}` : ''}`
+  params.append('includeWidgets', 'true')
+  const url = `/api/v1/trades?${params.toString()}`
   
   // Build stable query key from settings
   const queryKey = [
@@ -56,8 +57,26 @@ export function useDashboardStats(settings: AccountFilterSettings = DEFAULT_FILT
       const response = await fetch(url)
       if (!response.ok) throw new Error('Failed to fetch dashboard stats')
       const result = await response.json()
-      if (!result.success) throw new Error('Dashboard stats returned unsuccessful')
-      return result.data
+      const stats = result.statistics || {}
+      const accountBalance = result.widgets?.accountBalancePnl || {}
+      const chartData = Array.isArray(result.widgets?.netDailyPnl) ? result.widgets.netDailyPnl : []
+
+      return {
+        totalAccounts: Array.isArray(result.widgets?.accountBalanceChart) ? result.widgets.accountBalanceChart.length : 0,
+        totalTrades: stats.nbTrades || result.total || 0,
+        totalEquity: accountBalance.currentBalance || 0,
+        totalPnL: stats.totalPnL || accountBalance.netPnL || 0,
+        winRate: stats.winRate || 0,
+        profitFactor: stats.profitFactor || 0,
+        grossProfits: stats.grossWin || 0,
+        grossLosses: stats.grossLosses || 0,
+        winningTrades: stats.nbWin || 0,
+        losingTrades: stats.nbLoss || 0,
+        breakEvenTrades: stats.nbBe || 0,
+        chartData,
+        isAuthenticated: true,
+        lastUpdated: new Date().toISOString()
+      }
     },
     staleTime: 30 * 1000, // 30s
     gcTime: 5 * 60 * 1000,

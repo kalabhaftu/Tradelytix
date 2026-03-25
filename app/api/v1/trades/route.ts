@@ -12,7 +12,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserId } from '@/server/auth'
+import { getResolvedUserIdentity } from '@/server/user-identity'
 import { convertDecimal } from '@/lib/utils/decimal'
 import { calculateStatistics, formatCalendarData, groupTradesByExecution } from '@/lib/utils'
 import {
@@ -91,19 +91,7 @@ export async function GET(request: NextRequest) {
 
   const start = Date.now()
   try {
-    const authUserId = await getUserId()
-    
-    // Map auth user ID to internal user ID
-    const userLookup = await prisma.user.findUnique({
-      where: { auth_user_id: authUserId },
-      select: { id: true }
-    })
-    
-    if (!userLookup) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-    
-    const internalUserId = userLookup.id
+    const { internalUserId } = await getResolvedUserIdentity()
     const params = request.nextUrl.searchParams
     
     // Parse filter params
@@ -318,6 +306,9 @@ export async function GET(request: NextRequest) {
     logger.error('GET /api/v1/trades failed', { error: error?.message, latencyMs: Date.now() - start }, 'api')
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    if (error.message?.includes('User not found')) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }

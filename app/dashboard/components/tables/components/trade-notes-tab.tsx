@@ -22,17 +22,6 @@ interface TradeNotesTabProps {
     setChartLinks: (links: string[]) => void
 }
 
-const EMPTY_LEXICAL_STATE = {
-    root: {
-        children: [],
-        direction: "ltr",
-        format: "",
-        indent: 0,
-        type: "root",
-        version: 1,
-    },
-}
-
 const EMPTY_PARAGRAPH_NODE = {
     children: [
         {
@@ -52,12 +41,35 @@ const EMPTY_PARAGRAPH_NODE = {
     version: 1,
 }
 
+const EMPTY_LEXICAL_STATE = {
+    root: {
+        children: [{ ...EMPTY_PARAGRAPH_NODE }],
+        direction: "ltr",
+        format: "",
+        indent: 0,
+        type: "root",
+        version: 1,
+    },
+}
+
 function normalizeToLexicalState(value?: string) {
     if (!value || value.trim() === "") return { ...EMPTY_LEXICAL_STATE }
 
     try {
         const parsed = JSON.parse(value)
-        if (parsed?.root && Array.isArray(parsed.root.children)) return parsed
+        if (parsed?.root && Array.isArray(parsed.root.children)) {
+            const children = parsed.root.children.length > 0
+                ? parsed.root.children
+                : [{ ...EMPTY_PARAGRAPH_NODE }]
+
+            return {
+                ...parsed,
+                root: {
+                    ...parsed.root,
+                    children,
+                },
+            }
+        }
     } catch {
         // fall through and wrap plain text
     }
@@ -128,7 +140,7 @@ function insertTemplateIntoNote(currentValue: string | undefined, templateState:
         return JSON.stringify(template)
     }
 
-    const currentChildren = Array.isArray(currentState.root?.children) ? [...currentState.root.children] : []
+    const currentChildren = Array.isArray(currentState.root?.children) ? [...currentState.root.children] : [{ ...EMPTY_PARAGRAPH_NODE }]
     const templateChildren = Array.isArray(template.root?.children) ? [...template.root.children] : []
 
     if (currentChildren.length > 0 && !isEmptyParagraphNode(currentChildren[currentChildren.length - 1])) {

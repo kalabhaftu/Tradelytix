@@ -6,35 +6,21 @@
  * This is NOT for reimporting - it's a human-readable backup.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getUserId } from '@/server/auth-utils'
+import { NextResponse } from 'next/server'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { prisma } from '@/lib/prisma'
 import { format } from 'date-fns'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
-
-    // First, get the internal user ID from auth_user_id
-    const userLookup = await prisma.user.findUnique({
-      where: { auth_user_id: userId },
-      select: { id: true }
-    })
-
-    if (!userLookup) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
-    const internalUserId = userLookup.id
+    const internalUserId = identity.internalUserId
 
     // Fetch all user data in parallel
     const [
@@ -102,7 +88,7 @@ export async function GET(request: NextRequest) {
         backupVersion: '1.0',
         exportedAt: new Date().toISOString(),
         platform: 'Deltalytix',
-        userId: userId,
+        userId: identity.authUserId,
         userEmail: user?.email || 'unknown',
         note: 'This backup is for archival purposes only. It cannot be reimported.'
       },

@@ -3,14 +3,11 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
 import { VisuallyHidden } from '@/components/ui/visually-hidden'
 import { useTags } from '@/context/tags-provider'
 import { useNewsEvents } from '@/hooks/use-news-events'
 import { formatTimeInZone, getKillzoneBadge, getTradingSession } from '@/lib/time-utils'
 import { classifyTrade, cn, formatCurrency, formatNoteContent } from '@/lib/utils'
-
-
 import { useUserStore } from '@/store/user-store'
 import {
   ArrowLeft,
@@ -23,7 +20,7 @@ import {
 import { Trade } from '@prisma/client'
 import Image from 'next/image'
 import Link from 'next/link'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 import { toast } from 'sonner'
@@ -62,7 +59,6 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const pathname = usePathname()
 
   const tradeData = trade as any
   const netPnL = trade.pnl - (trade.commission || 0)
@@ -97,6 +93,23 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
   const tradeTags = Array.isArray(tradeData.tags)
     ? tradeData.tags.filter(Boolean).map((id: string) => tags.find(t => t.id === id)).filter(Boolean)
     : []
+  const tradingModelName = tradeData.TradingModel?.name || tradeData.tradingModel || null
+
+  const selectedRules = (() => {
+    const rawRules = tradeData.selectedRules
+    if (Array.isArray(rawRules)) return rawRules.map((rule: any) => String(rule)).filter(Boolean)
+
+    if (typeof rawRules === 'string') {
+      try {
+        const parsed = JSON.parse(rawRules)
+        if (Array.isArray(parsed)) return parsed.map((rule: any) => String(rule)).filter(Boolean)
+      } catch {
+        return rawRules.split(',').map((rule: string) => rule.trim()).filter(Boolean)
+      }
+    }
+
+    return []
+  })()
 
   // Session & killzone
   const session = trade.entryTime ? getTradingSession(trade.entryTime) : null
@@ -173,6 +186,15 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
               </div>
               {/* Commission, Swap, Duration row */}
               <div className="flex flex-wrap gap-x-6 gap-y-2 mt-4 pt-3 border-t border-border/20 text-xs text-muted-foreground">
+                {tradeData.stopLoss && (
+                  <span>Stop Loss: <span className="font-mono font-semibold text-foreground">{tradeData.stopLoss}</span></span>
+                )}
+                {tradeData.takeProfit && (
+                  <span>Take Profit: <span className="font-mono font-semibold text-foreground">{tradeData.takeProfit}</span></span>
+                )}
+                {tradeData.closeReason && (
+                  <span>Close Reason: <span className="font-semibold text-foreground">{tradeData.closeReason}</span></span>
+                )}
                 {trade.commission != null && trade.commission !== 0 && (
                   <span>Commission: <span className="font-mono font-semibold text-foreground">{formatCurrency(trade.commission)}</span></span>
                 )}
@@ -215,6 +237,12 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
               <section>
                 <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/70 mb-4">Strategy & Tags</h3>
                 <div className="space-y-0">
+                  {tradingModelName && (
+                    <div className="flex justify-between items-center py-2.5 border-b border-border/20">
+                      <span className="text-xs text-muted-foreground">Model</span>
+                      <span className="text-xs font-semibold">{tradingModelName}</span>
+                    </div>
+                  )}
                   {tradeData.marketBias && (
                     <div className="flex justify-between items-center py-2.5 border-b border-border/20">
                       <span className="text-xs text-muted-foreground">Market Bias</span>
@@ -231,6 +259,30 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
                     <div className="flex justify-between items-center py-2.5 border-b border-border/20">
                       <span className="text-xs text-muted-foreground">Execution</span>
                       <span className="text-xs font-semibold capitalize">{tradeData.orderType} Order</span>
+                    </div>
+                  )}
+                  {tradeData.biasTimeframe && (
+                    <div className="flex justify-between items-center py-2.5 border-b border-border/20">
+                      <span className="text-xs text-muted-foreground">Bias TF</span>
+                      <span className="text-xs font-semibold">{tradeData.biasTimeframe}</span>
+                    </div>
+                  )}
+                  {tradeData.narrativeTimeframe && (
+                    <div className="flex justify-between items-center py-2.5 border-b border-border/20">
+                      <span className="text-xs text-muted-foreground">Narrative TF</span>
+                      <span className="text-xs font-semibold">{tradeData.narrativeTimeframe}</span>
+                    </div>
+                  )}
+                  {tradeData.entryTimeframe && (
+                    <div className="flex justify-between items-center py-2.5 border-b border-border/20">
+                      <span className="text-xs text-muted-foreground">Entry TF</span>
+                      <span className="text-xs font-semibold">{tradeData.entryTimeframe}</span>
+                    </div>
+                  )}
+                  {tradeData.structureTimeframe && (
+                    <div className="flex justify-between items-center py-2.5 border-b border-border/20">
+                      <span className="text-xs text-muted-foreground">Structure TF</span>
+                      <span className="text-xs font-semibold">{tradeData.structureTimeframe}</span>
                     </div>
                   )}
                   {tradeData.outcome && (
@@ -260,6 +312,18 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
                             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tag.color }} />
                             {tag.name}
                           </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {selectedRules.length > 0 && (
+                    <div className="py-3 border-t border-border/20">
+                      <span className="text-xs text-muted-foreground block mb-2">Rules Checklist</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedRules.map((rule: string, index: number) => (
+                          <Badge key={`${rule}-${index}`} variant="outline" className="text-[10px] font-medium bg-muted/20 border-border/50">
+                            {rule}
+                          </Badge>
                         ))}
                       </div>
                     </div>

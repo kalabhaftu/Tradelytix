@@ -7,7 +7,7 @@ import { LexicalEditor } from '@/components/ui/editor/lexical-editor'
 import { Button } from '@/components/ui/button'
 import { Pencil, Trash2, Plus, X, Loader2 } from 'lucide-react'
 import { FileDropzone } from '@/components/ui/file-dropzone'
-import { TradeImagesGallery, ImageField } from './trade-images-gallery'
+import { TradeImagesGallery } from './trade-images-gallery'
 
 interface TradeNotesTabProps {
     control: Control<any>
@@ -20,6 +20,128 @@ interface TradeNotesTabProps {
     uploadingField: string | null
     chartLinks: string[]
     setChartLinks: (links: string[]) => void
+}
+
+const EMPTY_LEXICAL_STATE = {
+    root: {
+        children: [],
+        direction: "ltr",
+        format: "",
+        indent: 0,
+        type: "root",
+        version: 1,
+    },
+}
+
+const EMPTY_PARAGRAPH_NODE = {
+    children: [
+        {
+            detail: 0,
+            format: 0,
+            mode: "normal",
+            style: "",
+            text: "",
+            type: "text",
+            version: 1,
+        },
+    ],
+    direction: "ltr",
+    format: "",
+    indent: 0,
+    type: "paragraph",
+    version: 1,
+}
+
+function normalizeToLexicalState(value?: string) {
+    if (!value || value.trim() === "") return { ...EMPTY_LEXICAL_STATE }
+
+    try {
+        const parsed = JSON.parse(value)
+        if (parsed?.root && Array.isArray(parsed.root.children)) return parsed
+    } catch {
+        // fall through and wrap plain text
+    }
+
+    return {
+        root: {
+            children: [
+                {
+                    children: [
+                        {
+                            detail: 0,
+                            format: 0,
+                            mode: "normal",
+                            style: "",
+                            text: value,
+                            type: "text",
+                            version: 1,
+                        },
+                    ],
+                    direction: "ltr",
+                    format: "",
+                    indent: 0,
+                    type: "paragraph",
+                    version: 1,
+                },
+            ],
+            direction: "ltr",
+            format: "",
+            indent: 0,
+            type: "root",
+            version: 1,
+        },
+    }
+}
+
+function hasMeaningfulContent(value?: string) {
+    if (!value) return false
+    const trimmed = value.trim()
+    if (!trimmed || trimmed === '<p></p>') return false
+
+    try {
+        const parsed = normalizeToLexicalState(value)
+        const children = parsed?.root?.children || []
+        if (children.length === 0) return false
+
+        return children.some((node: any) => {
+            const text = Array.isArray(node?.children)
+                ? node.children.map((child: any) => String(child?.text || "")).join("")
+                : ""
+            return text.trim().length > 0
+        })
+    } catch {
+        return true
+    }
+}
+
+function isEmptyParagraphNode(node: any) {
+    if (!node || node.type !== "paragraph" || !Array.isArray(node.children)) return false
+    if (node.children.length === 0) return true
+    return node.children.every((child: any) => String(child?.text || "").trim() === "")
+}
+
+function insertTemplateIntoNote(currentValue: string | undefined, templateState: any) {
+    const currentState = normalizeToLexicalState(currentValue)
+    const template = templateState?.root?.children ? templateState : normalizeToLexicalState(JSON.stringify(templateState))
+
+    if (!hasMeaningfulContent(currentValue)) {
+        return JSON.stringify(template)
+    }
+
+    const currentChildren = Array.isArray(currentState.root?.children) ? [...currentState.root.children] : []
+    const templateChildren = Array.isArray(template.root?.children) ? [...template.root.children] : []
+
+    if (currentChildren.length > 0 && !isEmptyParagraphNode(currentChildren[currentChildren.length - 1])) {
+        currentChildren.push({ ...EMPTY_PARAGRAPH_NODE })
+    }
+
+    return JSON.stringify({
+        ...currentState,
+        root: {
+            ...currentState.root,
+            children: [...currentChildren, ...templateChildren],
+        },
+    })
 }
 
 export function TradeNotesTab({
@@ -54,15 +176,7 @@ export function TradeNotesTab({
                                     size="sm"
                                     className="h-7 text-[10px] uppercase font-bold tracking-tight bg-muted/20 shrink-0"
                                     onClick={() => {
-                                        // Simple check for "empty" state (raw string or empty Lexical JSON)
-                                        const isEmpty = !field.value || 
-                                                       field.value.trim() === '' || 
-                                                       field.value === '<p></p>' ||
-                                                       field.value.includes('"children":[]') ||
-                                                       field.value.includes('"text":""');
-
-                                        if (isEmpty) {
-                                            field.onChange(JSON.stringify({
+                                        field.onChange(insertTemplateIntoNote(field.value, {
                                                 "root": {
                                                     "children": [
                                                         {"children":[{"detail":0,"format":0,"mode":"normal","style":"","text":"Trade Thesis","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"heading","tag":"h3","version":1},
@@ -77,7 +191,6 @@ export function TradeNotesTab({
                                                     "direction":"ltr","format":"","indent":0,"type":"root","version":1
                                                 }
                                             }))
-                                        }
                                     }}
                                 >
                                     Standard Review
@@ -88,9 +201,7 @@ export function TradeNotesTab({
                                     size="sm"
                                     className="h-7 text-[10px] uppercase font-bold tracking-tight bg-muted/20 shrink-0"
                                     onClick={() => {
-                                        const isEmpty = !field.value || field.value.trim() === '' || field.value === '<p></p>' || field.value.includes('"children":[]');
-                                        if (isEmpty) {
-                                            field.onChange(JSON.stringify({
+                                        field.onChange(insertTemplateIntoNote(field.value, {
                                                 "root": {
                                                     "children": [
                                                         {"children":[{"detail":0,"format":1,"mode":"normal","style":"","text":"Emotional State:","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"","text":" Calm / Anxious / Greedy / FOMO","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1},
@@ -101,7 +212,6 @@ export function TradeNotesTab({
                                                     "direction":"ltr","format":"","indent":0,"type":"root","version":1
                                                 }
                                             }))
-                                        }
                                     }}
                                 >
                                     Mental Check-in
@@ -112,9 +222,7 @@ export function TradeNotesTab({
                                     size="sm"
                                     className="h-7 text-[10px] uppercase font-bold tracking-tight bg-muted/20 shrink-0"
                                     onClick={() => {
-                                        const isEmpty = !field.value || field.value.trim() === '' || field.value === '<p></p>' || field.value.includes('"children":[]');
-                                        if (isEmpty) {
-                                            field.onChange(JSON.stringify({
+                                        field.onChange(insertTemplateIntoNote(field.value, {
                                                 "root": {
                                                     "children": [
                                                         {"children":[{"detail":0,"format":1,"mode":"normal","style":"","text":"HTF Bias:","type":"text","version":1},{"detail":0,"format":0,"mode":"normal","style":"","text":" Monthly/Weekly/Daily directional bias.","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1},
@@ -125,7 +233,6 @@ export function TradeNotesTab({
                                                     "direction":"ltr","format":"","indent":0,"type":"root","version":1
                                                 }
                                             }))
-                                        }
                                     }}
                                 >
                                     Technical Breakdown

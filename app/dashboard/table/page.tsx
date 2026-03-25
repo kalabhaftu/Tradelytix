@@ -120,7 +120,7 @@ function TableView() {
         <div className="fixed inset-0 z-50 bg-background">
           <TradeEditPanel
             trade={ensureExtendedTrade(trade as any)}
-            onClose={() => router.replace(`/dashboard/table?view=details&tradeId=${tradeId}`)}
+            onClose={() => router.replace('/dashboard/table')}
             onSave={async (data: any) => {
               await updateTrades([tradeId], data)
             }}

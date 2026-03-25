@@ -858,16 +858,54 @@ export const DataProvider: React.FC<{
 
   const updateTrades = useCallback(async (tradeIds: string[], update: Partial<PrismaTrade>) => {
     if (!user?.id) return
-    const updatedTrades = trades.map(
-      trade =>
-        tradeIds.includes(trade.id) ? {
-          ...trade,
-          ...update
-        } : trade
-    )
+
+    const applyTradePatch = (trade: any) =>
+      tradeIds.includes(trade.id) ? { ...trade, ...update } : trade
+
+    const patchCalendarData = (calendarData: any) => {
+      if (!calendarData || typeof calendarData !== 'object') return calendarData
+
+      const nextCalendarData: Record<string, any> = { ...calendarData }
+
+      Object.keys(nextCalendarData).forEach((key) => {
+        const day = nextCalendarData[key]
+        if (!day || !Array.isArray(day.trades)) return
+        nextCalendarData[key] = {
+          ...day,
+          trades: day.trades.map((trade: any) => applyTradePatch(trade)),
+        }
+      })
+
+      return nextCalendarData
+    }
+
+    const updatedTrades = trades.map((trade) => applyTradePatch(trade))
     setTrades(updatedTrades)
-    await updateTradesAction(tradeIds, update)
-  }, [user?.id, trades, setTrades])
+
+    queryClient.setQueriesData({ queryKey: ['v1', 'trades'] }, (oldData: any) => {
+      if (!oldData || !Array.isArray(oldData.trades)) return oldData
+
+      return {
+        ...oldData,
+        trades: oldData.trades.map((trade: any) => applyTradePatch(trade)),
+        calendarData: patchCalendarData(oldData.calendarData),
+        widgets: oldData.widgets
+          ? {
+              ...oldData.widgets,
+              calendarData: patchCalendarData(oldData.widgets.calendarData),
+            }
+          : oldData.widgets,
+      }
+    })
+
+    try {
+      await updateTradesAction(tradeIds, update)
+      await queryClient.invalidateQueries({ queryKey: ['v1', 'trades'] })
+    } catch (error) {
+      await queryClient.invalidateQueries({ queryKey: ['v1', 'trades'] })
+      throw error
+    }
+  }, [user?.id, trades, setTrades, queryClient])
 
   const groupTrades = useCallback(async (tradeIds: string[]) => {
     if (!user?.id) return

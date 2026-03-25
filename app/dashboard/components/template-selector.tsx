@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useTemplates } from '@/context/template-provider'
 import { useTemplateEditStore } from '@/store/template-edit-store'
 import { Button } from '@/components/ui/button'
@@ -31,39 +31,22 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { LayoutGrid, Check, Plus, Pencil, Trash2, Copy, Lock } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
 export function TemplateSelector() {
   const { templates, activeTemplate, switchTemplate, createTemplate, deleteTemplate, updateLayout } = useTemplates()
   const { isEditMode, enterEditMode } = useTemplateEditStore()
-  const [isCreating, setIsCreating] = useState(false)
-  const [newName, setNewName] = useState('')
+  const [nameDialogOpen, setNameDialogOpen] = useState(false)
+  const [nameDialogMode, setNameDialogMode] = useState<'create' | 'clone'>('create')
+  const [templateName, setTemplateName] = useState('')
 
   // Delete confirmation dialog state
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
-
-  // Clone/rename dialog state
-  const [cloneDialogOpen, setCloneDialogOpen] = useState(false)
-  const [cloneName, setCloneName] = useState('')
 
   const handleSwitch = async (templateId: string) => {
     if (templateId === activeTemplate?.id) return
     try {
       await switchTemplate(templateId)
-    } catch (e) {
-      // error toast handled in context
-    }
-  }
-
-  const handleCreate = async () => {
-    const name = newName.trim()
-    if (!name) return
-    try {
-      const t = await createTemplate(name)
-      await switchTemplate(t.id)
-      setNewName('')
-      setIsCreating(false)
     } catch (e) {
       // error toast handled in context
     }
@@ -78,28 +61,94 @@ export function TemplateSelector() {
     return `${baseName}${counter}`
   }
 
+  const isNameTaken = useCallback((name: string): boolean => {
+    const normalized = name.trim().toLowerCase()
+    if (!normalized) return false
+    return templates.some((template) => template.name.trim().toLowerCase() === normalized)
+  }, [templates])
+
+  const nameTaken = isNameTaken(templateName)
+
+  const suggestedNames = useMemo(() => {
+    if (!nameTaken) return []
+
+    const base = templateName.trim() || (nameDialogMode === 'clone' ? `${activeTemplate?.name || 'Template'} Copy` : 'Template')
+    const suggestions: string[] = []
+    const seen = new Set<string>()
+
+    const tryAdd = (candidate: string) => {
+      const normalized = candidate.trim().toLowerCase()
+      if (!normalized || seen.has(normalized) || isNameTaken(candidate)) return
+      seen.add(normalized)
+      suggestions.push(candidate)
+    }
+
+    // Cleaner first-pass suggestions.
+    tryAdd(`${base}-1`)
+    tryAdd(`${base} copy`)
+    tryAdd(`${base} v2`)
+
+    // Fallbacks if the clean suggestions are also taken.
+    let index = 1
+    while (suggestions.length < 3 && index <= 50) {
+      tryAdd(`${base}-${index}`)
+      tryAdd(`${base} ${index}`)
+      tryAdd(`${base} copy ${index}`)
+      tryAdd(`${base} v${index + 1}`)
+      index += 1
+    }
+
+    return suggestions.slice(0, 3)
+  }, [nameTaken, templateName, nameDialogMode, activeTemplate, isNameTaken])
+
+  const openNameDialog = (mode: 'create' | 'clone') => {
+    setNameDialogMode(mode)
+    if (mode === 'clone' && activeTemplate) {
+      setTemplateName(getUniqueName(`${activeTemplate.name} Copy`))
+    } else {
+      setTemplateName(getUniqueName('New Template'))
+    }
+    setNameDialogOpen(true)
+  }
+
   /** Open clone dialog with suggested name */
   const openCloneDialog = () => {
     if (!activeTemplate) return
-    const suggested = getUniqueName(`${activeTemplate.name} Copy`)
-    setCloneName(suggested)
-    setCloneDialogOpen(true)
+    openNameDialog('clone')
   }
 
-  /** Execute clone after user confirms name */
-  const handleCloneConfirm = async () => {
-    if (!activeTemplate || !cloneName.trim()) return
-    const finalName = getUniqueName(cloneName.trim())
+  /** Open create dialog */
+  const openCreateDialog = () => {
+    openNameDialog('create')
+  }
+
+  /** Execute create/clone after user confirms name */
+  const handleNameDialogConfirm = async () => {
+    const finalName = templateName.trim()
+    if (!finalName) return
+
+    if (isNameTaken(finalName)) {
+      toast.error(`A template named "${finalName}" already exists.`)
+      return
+    }
+
+    if (nameDialogMode === 'clone' && !activeTemplate) return
+
     try {
       const cloned = await createTemplate(finalName)
-      await updateLayout(cloned.id, activeTemplate.layout)
+      if (nameDialogMode === 'clone' && activeTemplate) {
+        await updateLayout(cloned.id, activeTemplate.layout)
+      }
       await switchTemplate(cloned.id)
-      toast.success(`Template "${finalName}" created — you can now edit it`)
+      if (nameDialogMode === 'clone') {
+        toast.success(`Template "${finalName}" created — you can now edit it`)
+      }
     } catch (e) {
-      // error toast handled in context
+      const message = e instanceof Error ? e.message : 'Failed to save template'
+      toast.error(message)
     }
-    setCloneDialogOpen(false)
-    setCloneName('')
+    setNameDialogOpen(false)
+    setTemplateName('')
   }
 
   /** Open delete confirmation dialog */
@@ -189,29 +238,10 @@ export function TemplateSelector() {
           )}
 
           {/* Create new (empty) */}
-          {isCreating ? (
-            <div className="p-2 flex items-center gap-2">
-              <Input
-                autoFocus
-                placeholder="Template name"
-                className="h-7 text-xs"
-                value={newName}
-                onChange={e => setNewName(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') handleCreate()
-                  if (e.key === 'Escape') setIsCreating(false)
-                }}
-              />
-              <Button size="sm" className="h-7 px-2 text-xs" onClick={handleCreate}>
-                Add
-              </Button>
-            </div>
-          ) : (
-            <DropdownMenuItem onClick={() => setIsCreating(true)} className="cursor-pointer">
-              <Plus className="h-3.5 w-3.5 mr-2" />
-              New Template
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem onClick={openCreateDialog} className="cursor-pointer">
+            <Plus className="h-3.5 w-3.5 mr-2" />
+            New Template
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -236,30 +266,53 @@ export function TemplateSelector() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Clone Name Dialog */}
-      <Dialog open={cloneDialogOpen} onOpenChange={setCloneDialogOpen}>
+      {/* Template Name Dialog (used by both Create and Clone) */}
+      <Dialog open={nameDialogOpen} onOpenChange={setNameDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Clone Template</DialogTitle>
+            <DialogTitle>{nameDialogMode === 'clone' ? 'Clone Template' : 'New Template'}</DialogTitle>
             <DialogDescription>
-              Enter a name for the new template. If the name already exists, a unique suffix will be added.
+              {nameDialogMode === 'clone'
+                ? 'Enter a name for the cloned template.'
+                : 'Enter a name for your new template.'}
             </DialogDescription>
           </DialogHeader>
           <Input
             autoFocus
             placeholder="Template name"
-            value={cloneName}
-            onChange={e => setCloneName(e.target.value)}
+            value={templateName}
+            onChange={e => setTemplateName(e.target.value)}
             onKeyDown={e => {
-              if (e.key === 'Enter') handleCloneConfirm()
+              if (e.key === 'Enter') handleNameDialogConfirm()
             }}
           />
+          {nameTaken && (
+            <div className="space-y-2">
+              <p className="text-xs text-destructive">
+                This name is already taken. Try one of these:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {suggestedNames.map((suggestion) => (
+                  <Button
+                    key={suggestion}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setTemplateName(suggestion)}
+                  >
+                    {suggestion}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCloneDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setNameDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCloneConfirm} disabled={!cloneName.trim()}>
-              Clone
+            <Button onClick={handleNameDialogConfirm} disabled={!templateName.trim() || nameTaken}>
+              {nameDialogMode === 'clone' ? 'Clone' : 'Create'}
             </Button>
           </DialogFooter>
         </DialogContent>

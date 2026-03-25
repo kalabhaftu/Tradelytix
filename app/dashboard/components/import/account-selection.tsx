@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { CheckCircle2, Building2, User, AlertCircle, RefreshCw, Target, Clock, AlertTriangle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -203,7 +204,7 @@ export default function AccountSelection({
                 disabled={isLoading}
                 className="mb-4"
               >
-                <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
+                {isLoading ? <Spinner className="mr-2 h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                 {isLoading ? 'Retrying...' : 'Retry'}
               </Button>
             ) : (

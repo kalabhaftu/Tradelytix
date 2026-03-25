@@ -1,5 +1,7 @@
 'use client'
 
+import { Spinner } from '@/components/ui/spinner'
+
 import { useState } from 'react'
 import {
   Dialog,
@@ -105,7 +107,7 @@ export function AdjustDateDialog({
             disabled={isUpdating}
             className="gap-2"
           >
-            {isUpdating && <CircleNotch className="h-4 w-4 animate-spin" />}
+            {isUpdating && <Spinner className="h-4 w-4" />}
             Accept Adjustment
           </Button>
         </DialogFooter>

@@ -1,5 +1,7 @@
 'use client'
 
+import { Spinner } from '@/components/ui/spinner'
+
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
@@ -374,7 +376,7 @@ export function DataManagementCard() {
                   disabled={deleteLoading}
                 >
                   {deleteLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Spinner className="h-4 w-4" />
                   ) : (
                     <>
                       <Trash2 className="h-4 w-4 mr-2" />
@@ -615,7 +617,7 @@ export function DataManagementCard() {
               <Button type="submit" disabled={renameLoading || !newAccountNumber || newAccountNumber === accountToRename}>
                 {renameLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Spinner className="mr-2 h-4 w-4" />
                     Renaming...
                   </>
                 ) : (

@@ -1,5 +1,7 @@
 "use client"
 
+import { Spinner } from '@/components/ui/spinner'
+
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
@@ -234,7 +236,7 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
                         />
                         <Button disabled={isLoading} className="h-11 w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-all">
                             {isLoading && authMethod === 'email' && (
-                                <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                                <Spinner className="mr-2 h-4 w-4" />
                             )}
                             Send Verification Code
                         </Button>
@@ -261,7 +263,7 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
                         className="h-11 bg-background/50 border-input/50 hover:bg-muted/50 transition-all hover:scale-[1.02]"
                     >
                         {isLoading && authMethod === 'google' ? (
-                            <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                            <Spinner className="mr-2 h-4 w-4" />
                         ) : (
                             <Icons.google className="mr-2 h-4 w-4" />
                         )}
@@ -275,7 +277,7 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
                         className="h-11 bg-background/50 border-input/50 hover:bg-muted/50 transition-all hover:scale-[1.02]"
                     >
                         {isLoading && authMethod === 'discord' ? (
-                            <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                            <Spinner className="mr-2 h-4 w-4" />
                         ) : (
                             <Icons.discord className="mr-2 h-4 w-4" />
                         )}
@@ -336,7 +338,7 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
                         >
                             {isLoading || isVerifying ? (
                                 <>
-                                    <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                                    <Spinner className="mr-2 h-4 w-4" />
                                     Verifying...
                                 </>
                             ) : "Verify Code"}

@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Spinner } from "@/components/ui/spinner"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -478,7 +479,7 @@ export default function AccountsPage() {
                       disabled={isRefreshing}
                       className="h-9 w-9"
                     >
-                      <ArrowClockwise className={cn("h-4 w-4", isRefreshing && "animate-spin")}  />
+                      {isRefreshing ? <Spinner className="h-4 w-4" /> : <ArrowClockwise className="h-4 w-4" />}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Refresh accounts</TooltipContent>

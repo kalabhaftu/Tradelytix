@@ -1,5 +1,7 @@
 'use client'
 
+import { Spinner } from '@/components/ui/spinner'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -188,7 +190,7 @@ export function DeleteAllDataDialog({ open, onOpenChange }: DeleteAllDataDialogP
                   >
                     {isDownloadingBackup ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Spinner className="h-4 w-4 mr-2" />
                         Generating backup...
                       </>
                     ) : backupDownloaded ? (
@@ -310,7 +312,7 @@ export function DeleteAllDataDialog({ open, onOpenChange }: DeleteAllDataDialogP
               >
                 {isDeleting ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Spinner className="h-4 w-4 mr-2" />
                     Deleting...
                   </>
                 ) : (

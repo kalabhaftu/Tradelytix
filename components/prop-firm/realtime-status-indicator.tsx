@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import {
   TrendingUp,
   TrendingDown,
@@ -159,7 +160,7 @@ export function RealtimeStatusIndicator({
       <Card className={cn('w-full', className)}>
         <CardContent className="p-6">
           <div className="flex items-center justify-center space-x-2">
-            <RefreshCcw className="h-4 w-4 animate-spin" />
+            <Spinner className="h-4 w-4" />
             <span className="text-sm text-muted-foreground">Loading account status...</span>
           </div>
         </CardContent>
@@ -297,7 +298,7 @@ export function RealtimeStatusIndicator({
               onClick={handleRefresh}
               disabled={isRefreshing}
             >
-              <RefreshCcw className={cn('h-3 w-3 mr-1', isRefreshing && 'animate-spin')} />
+              {isRefreshing ? <Spinner className="mr-1 h-3 w-3" /> : <RefreshCcw className="mr-1 h-3 w-3" />}
               Refresh
             </Button>
           )}

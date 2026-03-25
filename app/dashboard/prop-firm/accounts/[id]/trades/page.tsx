@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   ArrowLeft,
@@ -175,7 +176,7 @@ export default function AccountTradesPage() {
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
-          <RefreshCcw className="h-8 w-8 animate-spin" />
+          <Spinner className="h-8 w-8" />
         </div>
       </div>
     )
@@ -226,7 +227,7 @@ export default function AccountTradesPage() {
             onClick={() => fetchTrades()}
             disabled={isLoading}
           >
-            <RefreshCcw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
+            {isLoading ? <Spinner className="mr-2 h-4 w-4" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
             Refresh
           </Button>
           <Button

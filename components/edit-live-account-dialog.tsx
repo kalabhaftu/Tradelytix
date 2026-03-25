@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Dialog,
   DialogContent,
@@ -17,7 +18,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
-  Save as FloppyDisk,
   User
 } from "lucide-react"
 
@@ -192,7 +192,7 @@ export function EditLiveAccountDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={isSaving}>
-              {isSaving && <FloppyDisk className="mr-2 h-4 w-4 animate-spin" />}
+              {isSaving && <Spinner className="mr-2 h-4 w-4" />}
               Save Changes
             </Button>
           </DialogFooter>

@@ -22,6 +22,7 @@ const CORE_V1_ROUTE_CHECKS: RouteCheck[] = [
   { name: 'stats', path: '/api/v1/reports/stats', method: 'POST', body: {} },
   { name: 'propfirm stats', path: '/api/v1/reports/propfirm', method: 'GET' },
   { name: 'data export', path: '/api/v1/data/export', method: 'POST', body: {} },
+  { name: 'data export options', path: '/api/v1/data/export/options', method: 'GET' },
   { name: 'restore import create job', path: '/api/v1/data/import/jobs', method: 'POST', body: {} },
   { name: 'restore import job detail', path: '/api/v1/data/import/jobs/test-id', method: 'GET' },
   { name: 'restore import job process', path: '/api/v1/data/import/jobs/test-id/process', method: 'POST', body: {} },

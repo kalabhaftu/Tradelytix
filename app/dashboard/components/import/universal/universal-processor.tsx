@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useCallback, useState } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Spinner } from "@/components/ui/spinner"
 import type { Trade } from '@prisma/client'
 import { 
   processUniversalCSV, 
@@ -24,7 +25,6 @@ import {
   Info,
   Sparkles,
   FileSpreadsheet,
-  Loader2,
   Wand2
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -224,7 +224,7 @@ export default function UniversalProcessor({
             </div>
           </>
         ) : (
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <Spinner className="h-8 w-8 text-primary" />
         )}
       </div>
     )

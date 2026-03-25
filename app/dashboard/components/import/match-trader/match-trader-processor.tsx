@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { useUserStore } from '@/store/user-store'
 import { ImportLoading } from '../components/import-loading'
 import { CheckCircle2 } from 'lucide-react'
+import { Spinner } from '@/components/ui/spinner'
 
 interface MatchTraderProcessorProps {
   csvData: string[][]
@@ -179,7 +180,7 @@ const MatchTraderProcessor = ({
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-foreground border-t-transparent rounded-full animate-spin mx-auto" />
+          <Spinner className="mx-auto h-12 w-12 text-foreground" />
           <p className="text-sm text-muted-foreground">Processing your trades...</p>
         </div>
       </div>

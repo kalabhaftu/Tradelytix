@@ -1,5 +1,7 @@
 'use client'
 
+import { Spinner } from '@/components/ui/spinner'
+
 import { CalendarData } from "@/app/dashboard/types/calendar"
 import {
   AlertDialog,
@@ -514,7 +516,7 @@ export function WeeklyModal({
                 </div>
               </div>
               <Button onClick={handleSave} disabled={isSaving || isUploading}>
-                {isSaving || isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isSaving || isUploading ? <Spinner className="mr-2 h-4 w-4" /> : null}
                 Save Review
               </Button>
             </div>

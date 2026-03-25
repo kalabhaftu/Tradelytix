@@ -1,3 +1,5 @@
+import { Spinner } from '@/components/ui/spinner'
+
 
 import React from 'react'
 import Image from 'next/image'
@@ -90,7 +92,7 @@ export function TradeImagesGallery({
                             )}
                             {uploadingField === field && (
                                 <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                                    <Spinner className="h-4 w-4 text-primary" />
                                 </div>
                             )}
                         </div>

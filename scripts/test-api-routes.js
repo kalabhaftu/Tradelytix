@@ -59,6 +59,7 @@ const ROUTES = [
   { path: '/api/v1/reports/stats', method: 'POST', body: {} },
   { path: '/api/v1/reports/propfirm', method: 'GET' },
   { path: '/api/v1/data/export', method: 'POST', body: {} },
+  { path: '/api/v1/data/export/options', method: 'GET' },
   { path: '/api/news-events', method: 'GET' },
 
   // Notifications

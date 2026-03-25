@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { LexicalEditor } from '@/components/ui/editor/lexical-editor'
+import { Spinner } from '@/components/ui/spinner'
 import { Trash2, Save, Check } from 'lucide-react'
 import { cn, cleanContent, formatNoteContent } from '@/lib/utils'
 import {
@@ -102,7 +103,7 @@ export function TradeComment({ tradeIds, comment: initialComment, onCommentChang
               <Label>Trade Comment</Label>
               {isUpdating && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <div className="animate-spin rounded-full h-3 w-3 border-2 border-primary border-t-transparent" />
+                  <Spinner className="h-3 w-3 text-primary" />
                   Saving...
                 </div>
               )}

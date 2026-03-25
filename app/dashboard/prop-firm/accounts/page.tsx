@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { Spinner } from "@/components/ui/spinner"
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +16,7 @@ export default function PropFirmAccountsPage() {
 
   return (
     <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <Spinner className="h-8 w-8 text-primary" />
     </div>
   )
 }

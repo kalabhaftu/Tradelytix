@@ -15,6 +15,8 @@ export default function Modals() {
   const { formattedTrades } = useData()
   const [isTradesDialogOpen, setIsTradesDialogOpen] = useState(false)
   const [showLoadingToast, setShowLoadingToast] = useState(false)
+  const [hasTrades, setHasTrades] = useState<boolean | null>(null)
+  const [isCheckingTrades, setIsCheckingTrades] = useState(false)
 
   // Debounce loading state to prevent flickering
   useEffect(() => {
@@ -37,13 +39,72 @@ export default function Modals() {
     }
   }, [isLoading])
 
+  // Close stale dialog as soon as trades are available
   useEffect(() => {
-    if (!isLoading) {
-      if (formattedTrades.length === 0) {
-        setIsTradesDialogOpen(true)
+    if (formattedTrades.length > 0) {
+      setHasTrades(true)
+      setIsTradesDialogOpen(false)
+    }
+  }, [formattedTrades.length])
+
+  // Verify actual trade existence from canonical unfiltered v1 endpoint
+  useEffect(() => {
+    if (!user?.id || isLoading || user.isFirstConnection) return
+
+    let cancelled = false
+
+    const checkTrades = async () => {
+      setIsCheckingTrades(true)
+      try {
+        const response = await fetch(
+          '/api/v1/trades?limit=1&pageLimit=1&pageOffset=0&includeStats=false&includeCalendar=false&includeWidgets=false',
+          { cache: 'no-store' }
+        )
+
+        if (!response.ok) {
+          throw new Error('Failed to check trade availability')
+        }
+
+        const data = await response.json()
+        const total =
+          typeof data?.total === 'number'
+            ? data.total
+            : Array.isArray(data?.trades)
+              ? data.trades.length
+              : 0
+
+        if (!cancelled) {
+          setHasTrades(total > 0)
+        }
+      } catch (error) {
+        // Keep unknown state on request failure to avoid false "no trades" dialogs
+        if (!cancelled) {
+          setHasTrades(null)
+        }
+      } finally {
+        if (!cancelled) {
+          setIsCheckingTrades(false)
+        }
       }
     }
-  }, [formattedTrades.length, isLoading])
+
+    void checkTrades()
+
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id, user?.isFirstConnection, isLoading])
+
+  // Open only after data checks are complete and we can assert there are no trades
+  useEffect(() => {
+    if (isLoading || isCheckingTrades || user?.isFirstConnection) return
+
+    if (hasTrades === false) {
+      setIsTradesDialogOpen(true)
+    } else if (hasTrades === true) {
+      setIsTradesDialogOpen(false)
+    }
+  }, [hasTrades, isCheckingTrades, isLoading, user?.isFirstConnection])
 
 
 

@@ -1,5 +1,7 @@
 'use client'
 
+import { Spinner } from '@/components/ui/spinner'
+
 import { useState } from 'react'
 import {
   Dialog,
@@ -156,7 +158,7 @@ export function TagManager({ isOpen, onClose, onRefresh }: TagManagerProps) {
                 size="sm"
               >
                 {isCreating ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <Spinner className="h-6 w-6 text-muted-foreground" />
                 ) : (
                   <Plus className="h-4 w-4" />
                 )}
@@ -190,7 +192,7 @@ export function TagManager({ isOpen, onClose, onRefresh }: TagManagerProps) {
             <ScrollArea className="h-[300px] border rounded-lg p-2">
               {isLoading ? (
                 <div className="flex items-center justify-center h-full">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <Spinner className="h-6 w-6 text-muted-foreground" />
                 </div>
               ) : tags.length === 0 ? (
                 <div className="flex items-center justify-center h-full">

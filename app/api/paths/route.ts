@@ -35,6 +35,7 @@ const PATHS = [
   '/api/v1/reports/stats',
   '/api/v1/reports/propfirm',
   '/api/v1/data/export',
+  '/api/v1/data/export/options',
   '/api/news-events',
   '/api/notifications',
   '/api/notifications/[id]',

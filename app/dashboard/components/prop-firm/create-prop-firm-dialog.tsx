@@ -1,5 +1,7 @@
 'use client'
 
+import { Spinner } from '@/components/ui/spinner'
+
 import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -714,7 +716,7 @@ export function CreatePropFirmDialog({ open, onOpenChange, onSuccess }: PropFirm
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <Spinner className="h-4 w-4mr-2" />
                     Creating...
                   </>
                 ) : (

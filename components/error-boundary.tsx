@@ -4,6 +4,7 @@ import React, { Component, ErrorInfo, ReactNode, ReactElement } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Spinner } from '@/components/ui/spinner'
 
 /**
  * Props for ErrorBoundary component
@@ -224,7 +225,7 @@ export function LoadingOrError({
       <>
         {loadingComponent || (
           <div className="flex items-center justify-center p-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <Spinner className="h-8 w-8 text-primary" />
           </div>
         )}
       </>

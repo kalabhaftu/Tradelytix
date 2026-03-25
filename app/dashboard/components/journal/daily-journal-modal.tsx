@@ -1,5 +1,7 @@
 'use client'
 
+import { Spinner } from '@/components/ui/spinner'
+
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import {
@@ -214,7 +216,7 @@ export function DailyJournalModal({
 
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <Spinner className="h-8 w-8 text-muted-foreground" />
             </div>
           ) : (
             <div className="space-y-6">
@@ -326,7 +328,7 @@ export function DailyJournalModal({
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Spinner className="h-4 w-4 mr-2" />
                   Saving...
                 </>
               ) : (
@@ -360,4 +362,3 @@ export function DailyJournalModal({
     </>
   )
 }
-

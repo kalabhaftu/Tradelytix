@@ -1,5 +1,7 @@
 'use client'
 
+import { Spinner } from '@/components/ui/spinner'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from "sonner"
@@ -295,7 +297,7 @@ export function PhaseTransitionDialog({
             >
               {isTransitioning ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <Spinner className="h-4 w-4mr-2" />
                   Transitioning...
                 </>
               ) : (

@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { LexicalEditor } from "@/components/ui/editor/lexical-editor"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import { Spinner } from "@/components/ui/spinner"
 import { BarChart3, BookOpen, PenLine, Save, X } from "lucide-react"
 import { cn, parsePositionTime, formatCurrency, formatNoteContent } from "@/lib/utils"
 import { Trade } from "@prisma/client"
@@ -406,7 +407,7 @@ export function CalendarModal({
                           >
                             {isSaving ? (
                               <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
+                                <Spinner className="h-4 w-4 text-current" />
                                 Saving...
                               </>
                             ) : (

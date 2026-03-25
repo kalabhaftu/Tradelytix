@@ -22,6 +22,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
+import { Spinner } from '@/components/ui/spinner'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { AIAnalysisDialog } from '@/app/dashboard/components/journal/ai-analysis-dialog'
@@ -412,7 +413,7 @@ export function JournalClient() {
             disabled={isRefreshing}
             className="gap-2"
           >
-            <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+            {isRefreshing ? <Spinner className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" />}
             <span className="hidden sm:inline">Refresh</span>
           </Button>
         </div>

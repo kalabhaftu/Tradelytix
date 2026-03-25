@@ -161,7 +161,7 @@ export default function SettingsPage() {
             firstName: result.data.firstName || '',
             lastName: result.data.lastName || '',
             email: result.data.email || '',
-            autoAdjustAccountDate: result.data.autoAdjustAccountDate || false,
+            autoAdjustAccountDate: result.data.autoAdjustAccountDate ?? false,
             aiSettings: {
               ...defaultAiSettings,
               ...(result.data.aiSettings || {})
@@ -218,14 +218,33 @@ export default function SettingsPage() {
     })
   }
 
-  const handleAutoAdjustChange = (checked: boolean) => {
+  const handleAutoAdjustChange = async (checked: boolean) => {
+    const previous = profileData.autoAdjustAccountDate
     setProfileData(prev => ({ ...prev, autoAdjustAccountDate: checked }))
 
-    fetch('/api/auth/profile', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ autoAdjustAccountDate: checked })
-    }).catch(() => {})
+    try {
+      const response = await fetch('/api/auth/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ autoAdjustAccountDate: checked })
+      })
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to save Auto-adjust Account Date preference')
+      }
+
+      setProfileData(prev => ({
+        ...prev,
+        autoAdjustAccountDate: result.data?.autoAdjustAccountDate ?? checked
+      }))
+    } catch (error) {
+      setProfileData(prev => ({ ...prev, autoAdjustAccountDate: previous }))
+      toast.error('Auto-adjust update failed', {
+        description: error instanceof Error ? error.message : 'Failed to save Auto-adjust Account Date preference.',
+        duration: 3000
+      })
+    }
   }
 
   const handleAiSettingsChange = async (

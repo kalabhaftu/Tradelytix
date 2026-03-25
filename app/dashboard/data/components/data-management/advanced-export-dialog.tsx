@@ -1,20 +1,37 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import useSWR from 'swr'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Download, Loader2, Database } from 'lucide-react'
+import { Download, Database } from 'lucide-react'
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { CustomDateRangePicker, DateRange } from "@/components/ui/custom-date-range-picker"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
-import { useData } from '@/context/data-provider'
-import { useAccounts } from '@/hooks/use-accounts'
+import { Spinner } from '@/components/ui/spinner'
+
+type ExportOptionAccount = {
+  id: string
+  number: string
+  name?: string
+  displayName?: string
+}
+
+const fetcher = async (url: string) => {
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error('Failed to load export options')
+  }
+  return response.json()
+}
 
 export function AdvancedExportDialog() {
-  const { formattedTrades } = useData()
-  const { accounts: allAccounts, isLoading: accountsLoading } = useAccounts()
+  const {
+    data: exportOptionsResponse,
+    isLoading: optionsLoading,
+  } = useSWR('/api/v1/data/export/options', fetcher)
   const [isOpen, setIsOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
 
@@ -26,31 +43,29 @@ export function AdvancedExportDialog() {
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined })
   const [isAllTime, setIsAllTime] = useState(true)
 
+  const allAccounts = useMemo<ExportOptionAccount[]>(
+    () => exportOptionsResponse?.data?.accounts ?? [],
+    [exportOptionsResponse?.data?.accounts]
+  )
+  const allInstruments = useMemo<string[]>(
+    () => exportOptionsResponse?.data?.instruments ?? [],
+    [exportOptionsResponse?.data?.instruments]
+  )
+
   // Get unique accounts
   const accountsList = useMemo(() => {
-    if (!allAccounts || accountsLoading) return []
-    return allAccounts.map(account => ({
+    if (!allAccounts || optionsLoading) return []
+    return allAccounts.map((account: ExportOptionAccount) => ({
       id: account.id,
       name: account.displayName || account.name || account.number,
       number: account.number
     }))
-  }, [allAccounts, accountsLoading])
+  }, [allAccounts, optionsLoading])
 
-  // Get instruments from TRADES (filtering by selected accounts)
+  // Get instruments from dedicated export options endpoint (unfiltered full scope)
   const instrumentsList = useMemo(() => {
-    // If specific accounts selected, filter trades first
-    const relevantTrades = (!selectAllAccounts && selectedAccounts.length > 0)
-      ? formattedTrades.filter(t => {
-        const tradeAccount = allAccounts?.find(acc =>
-          acc.number === t.accountNumber || acc.id === t.accountId
-        )
-        return tradeAccount && selectedAccounts.includes(tradeAccount.id)
-      })
-      : formattedTrades
-
-    // Extract unique instruments
-    return Array.from(new Set(relevantTrades.map(t => t.instrument).filter(Boolean))).sort()
-  }, [formattedTrades, selectedAccounts, selectAllAccounts, allAccounts])
+    return allInstruments
+  }, [allInstruments])
 
   // Initialize selections when lists load
   useEffect(() => {
@@ -90,7 +105,7 @@ export function AdvancedExportDialog() {
       setSelectedAccounts([])
       setSelectAllAccounts(false)
     } else {
-      setSelectedAccounts(accountsList.map(a => a.id))
+      setSelectedAccounts(accountsList.map((account) => account.id))
       setSelectAllAccounts(true)
     }
   }
@@ -232,16 +247,16 @@ export function AdvancedExportDialog() {
                     </label>
                   </div>
                   <ScrollArea className="h-[200px] pr-4">
-                    {accountsLoading ? (
+                    {optionsLoading ? (
                       <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        <Spinner className="h-6 w-6 text-muted-foreground" />
                       </div>
                     ) : accountsList.length === 0 ? (
                       <div className="text-center py-8 text-sm text-muted-foreground">
                         No accounts found
                       </div>
                     ) : (
-                      accountsList.map(account => (
+                      accountsList.map((account) => (
                         <div key={account.id} className="flex items-center space-x-2 mb-2">
                           <Checkbox
                             id={`account-${account.id}`}
@@ -285,7 +300,7 @@ export function AdvancedExportDialog() {
                         No instruments available
                       </div>
                     ) : (
-                      instrumentsList.map(instrument => (
+                      instrumentsList.map((instrument) => (
                         <div key={instrument} className="flex items-center space-x-2 mb-2">
                           <Checkbox
                             id={`instrument-${instrument}`}
@@ -316,7 +331,7 @@ export function AdvancedExportDialog() {
             >
               {isExporting ? (
                  <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Spinner className="mr-2 h-4 w-4" />
                   Generating Archive...
                 </>
               ) : (

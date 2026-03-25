@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserId } from '@/server/auth'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { logActivity, getClientIp } from '@/lib/activity-logger'
 
 const DEFAULT_AI_SETTINGS = {
@@ -21,19 +21,17 @@ function normalizeAiSettings(value: unknown) {
 // GET /api/auth/profile - Get user profile information
 export async function GET() {
   try {
-    // Get user ID using the proper auth function
-    let userId: string
-    try {
-      userId = await getUserId()
-    } catch (authError) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       )
     }
+    const internalUserId = identity.internalUserId
 
     const user = await prisma.user.findUnique({
-      where: { auth_user_id: userId },
+      where: { id: internalUserId },
       select: {
         id: true,
         email: true,
@@ -45,7 +43,7 @@ export async function GET() {
         calendarDisplayStats: true,
         showWeeklySummary: true,
         aiSettings: true,
-      } as any
+      }
     })
 
     if (!user) {
@@ -59,7 +57,7 @@ export async function GET() {
       success: true,
       data: {
         ...user,
-        aiSettings: normalizeAiSettings((user as any).aiSettings ?? DEFAULT_AI_SETTINGS)
+        aiSettings: normalizeAiSettings(user.aiSettings ?? DEFAULT_AI_SETTINGS)
       }
     })
 
@@ -74,16 +72,14 @@ export async function GET() {
 // PATCH /api/auth/profile - Update user profile information
 export async function PATCH(request: NextRequest) {
   try {
-    // Get user ID using the proper auth function
-    let userId: string
-    try {
-      userId = await getUserId()
-    } catch (authError) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       )
     }
+    const internalUserId = identity.internalUserId
 
     const body = await request.json()
 
@@ -119,20 +115,20 @@ export async function PATCH(request: NextRequest) {
 
     if (aiSettings !== undefined) {
       const existing = await prisma.user.findUnique({
-        where: { auth_user_id: userId },
-        select: { aiSettings: true } as any
+        where: { id: internalUserId },
+        select: { aiSettings: true }
       })
 
       updateData.aiSettings = normalizeAiSettings({
-        ...((existing as any)?.aiSettings && typeof (existing as any).aiSettings === 'object' ? (existing as any).aiSettings as Record<string, unknown> : {}),
+        ...(existing?.aiSettings && typeof existing.aiSettings === 'object' ? existing.aiSettings as Record<string, unknown> : {}),
         ...(typeof aiSettings === 'object' && aiSettings ? aiSettings : {})
       })
     }
 
     // Update user profile in database
     const updatedUser = await prisma.user.update({
-      where: { auth_user_id: userId },
-      data: updateData as any,
+      where: { id: internalUserId },
+      data: updateData,
       select: {
         id: true,
         email: true,
@@ -144,13 +140,13 @@ export async function PATCH(request: NextRequest) {
         calendarDisplayStats: true,
         showWeeklySummary: true,
         aiSettings: true,
-      } as any
+      }
     })
 
     const activityUserId =
-      typeof (updatedUser as any)?.id === 'string' && (updatedUser as any).id.length > 0
-        ? (updatedUser as any).id
-        : userId
+      typeof updatedUser?.id === 'string' && updatedUser.id.length > 0
+        ? updatedUser.id
+        : internalUserId
 
     logActivity({
       userId: activityUserId,
@@ -164,7 +160,7 @@ export async function PATCH(request: NextRequest) {
       success: true,
       data: {
         ...updatedUser,
-        aiSettings: normalizeAiSettings((updatedUser as any).aiSettings ?? DEFAULT_AI_SETTINGS)
+        aiSettings: normalizeAiSettings(updatedUser.aiSettings ?? DEFAULT_AI_SETTINGS)
       },
       message: 'Profile updated successfully'
     })

@@ -1,5 +1,7 @@
 'use client'
 
+import { Spinner } from '@/components/ui/spinner'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -256,7 +258,7 @@ export function FundedApprovalDialog({
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Spinner className="h-4 w-4 mr-2" />
                     Activating...
                   </>
                 ) : (
@@ -319,7 +321,7 @@ export function FundedApprovalDialog({
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Spinner className="h-4 w-4 mr-2" />
                     Processing...
                   </>
                 ) : (

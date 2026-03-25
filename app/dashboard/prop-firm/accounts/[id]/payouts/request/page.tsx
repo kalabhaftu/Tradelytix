@@ -1,5 +1,7 @@
 'use client'
 
+import { Spinner } from '@/components/ui/spinner'
+
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from "@/context/auth-provider"
@@ -145,7 +147,7 @@ export default function RequestPayoutPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto p-6 flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Spinner className="h-8 w-8 text-muted-foreground" />
       </div>
     )
   }
@@ -284,7 +286,7 @@ export default function RequestPayoutPage() {
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Spinner className="h-4 w-4 mr-2" />
                     Submitting...
                   </>
                 ) : (
@@ -306,4 +308,3 @@ export default function RequestPayoutPage() {
     </div>
   )
 }
-

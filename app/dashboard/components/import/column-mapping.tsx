@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { X, AlertTriangle, Info, RefreshCw, Sparkles } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { experimental_useObject as useObject } from '@ai-sdk/react'
@@ -131,7 +132,7 @@ export default function ColumnMapping({ headers, csvData, mappings, setMappings,
                 onClick={() => submit({ fieldColumns: headers, firstRows: csvData.slice(1, 6) })}
                 className="flex items-center gap-2 bg-warning/10 hover:bg-warning/20 text-warning border-warning/20 transition-colors"
               >
-                <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+                {isLoading ? <Spinner className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" />}
                 Use AI for mapping
               </Button>
             </div>

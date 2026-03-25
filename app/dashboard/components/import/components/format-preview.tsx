@@ -15,9 +15,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, BREAK_EVEN_THRESHOLD } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Play, RotateCcw, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
+import { Play, RotateCcw, CheckCircle2, AlertCircle } from "lucide-react";
 import { parsePositionTime } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Spinner } from "@/components/ui/spinner";
 import {
   ColumnDef,
   flexRender,
@@ -282,7 +283,7 @@ export function FormatPreview({
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             {isProcessing ? (
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <Spinner className="h-4 w-4 text-primary" />
             ) : processedTrades.length === validTrades.length && validTrades.length > 0 ? (
               <CheckCircle2 className="h-4 w-4 text-long" />
             ) : null}
@@ -306,7 +307,7 @@ export function FormatPreview({
               className="gap-2"
             >
               {isProcessing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Spinner className="h-4 w-4" />
               ) : (
                 <Play className="h-4 w-4" />
               )}

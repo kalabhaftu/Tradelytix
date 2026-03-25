@@ -1,3 +1,5 @@
+import { Spinner } from '@/components/ui/spinner'
+
 
 import React from 'react'
 import Image from 'next/image'
@@ -340,7 +342,7 @@ export function TradeNotesTab({
                         )}
                         {uploadingField === 'cardPreviewImage' && (
                             <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                                <Spinner className="h-5 w-5 text-primary" />
                             </div>
                         )}
                     </div>

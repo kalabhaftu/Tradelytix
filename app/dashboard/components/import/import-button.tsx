@@ -1,5 +1,7 @@
 'use client'
 
+import { Spinner } from '@/components/ui/spinner'
+
 import React, { useState, useCallback, useMemo } from 'react'
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
@@ -428,7 +430,7 @@ export default function ImportButton() {
             animate={{ rotate: 360 }}
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
           >
-            <Loader2 className="h-12 w-12 text-primary animate-spin" />
+            <Spinner className="h-12 w-12 text-primary" />
           </motion.div>
           <div className="text-center space-y-2">
             <h3 className="text-lg font-semibold">Saving Trades</h3>
@@ -709,7 +711,7 @@ export default function ImportButton() {
                   >
                     {isSaving ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Spinner className="h-4 w-4" />
                         Saving...
                       </>
                     ) : currentStep?.isLastStep ? (

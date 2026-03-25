@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Spinner } from "@/components/ui/spinner"
 import {
   ArrowLeft,
   RefreshCw,
@@ -138,7 +139,7 @@ export default function PayoutsPage() {
             onClick={fetchPayouts}
             disabled={isLoading}
           >
-            <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
+            {isLoading ? <Spinner className="mr-2 h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             Refresh
           </Button>
         </div>
@@ -158,7 +159,7 @@ export default function PayoutsPage() {
       {/* Payouts List */}
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
-          <RefreshCw className="h-8 w-8 animate-spin" />
+          <Spinner className="h-8 w-8" />
         </div>
       ) : filteredPayouts.length === 0 ? (
         <Card>

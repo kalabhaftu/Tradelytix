@@ -1,5 +1,7 @@
 'use client'
 
+import { Spinner } from '@/components/ui/spinner'
+
 import React from 'react'
 import { Button, type ButtonProps } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -38,7 +40,7 @@ export function PrimaryButton({
       className={cn('min-w-[100px]', className)}
       {...props}
     >
-      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      {loading && <Spinner className="mr-2 h-4 w-4" />}
       {loading ? loadingText : children}
     </Button>
   )
@@ -62,7 +64,7 @@ export function SecondaryButton({
       className={cn('min-w-[80px]', className)}
       {...props}
     >
-      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      {loading && <Spinner className="mr-2 h-4 w-4" />}
       {loading ? loadingText : children}
     </Button>
   )
@@ -86,7 +88,7 @@ export function DestructiveButton({
       className={cn('min-w-[80px]', className)}
       {...props}
     >
-      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      {loading && <Spinner className="mr-2 h-4 w-4" />}
       {loading ? loadingText : children}
     </Button>
   )

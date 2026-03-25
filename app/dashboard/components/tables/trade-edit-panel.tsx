@@ -1,5 +1,7 @@
 'use client'
 
+import { Spinner } from '@/components/ui/spinner'
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -425,7 +427,7 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
           <Button onClick={handleSubmit(onSubmit)} disabled={isSubmitting} className="w-full sm:w-auto h-9 px-5 rounded-xl shadow-lg shadow-primary/10 font-semibold text-xs">
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                <Spinner className="mr-2 h-3.5 w-3.5" />
                 Saving...
               </>
             ) : (

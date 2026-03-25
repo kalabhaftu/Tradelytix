@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Spinner } from "@/components/ui/spinner"
 import { 
   ArrowLeft,
   RefreshCcw,
@@ -229,7 +230,7 @@ export default function AccountPayoutsPage() {
             onClick={fetchPayouts}
             disabled={isLoading}
           >
-            <RefreshCcw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
+            {isLoading ? <Spinner className="mr-2 h-4 w-4" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
             Refresh
           </Button>
           {account.isEligibleForPayout && (
@@ -288,7 +289,7 @@ export default function AccountPayoutsPage() {
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <RefreshCcw className="h-8 w-8 animate-spin text-muted-foreground" />
+              <Spinner className="h-8 w-8 text-muted-foreground" />
             </div>
           ) : payouts.length === 0 ? (
             <div className="text-center py-8">
@@ -342,7 +343,7 @@ export default function AccountPayoutsPage() {
                           disabled={deletingPayoutId === payout.id}
                         >
                           {deletingPayoutId === payout.id ? (
-                            <RefreshCcw className="h-4 w-4 animate-spin" />
+                            <Spinner className="h-4 w-4" />
                           ) : (
                             <Trash2 className="h-4 w-4" />
                           )}

@@ -11,13 +11,14 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Spinner } from '@/components/ui/spinner'
 import {
   clearAllCaches,
   clearAccountCaches,
   getCacheStats
 } from '@/lib/cache-manager'
 import { invalidateAccountsCache } from '@/hooks/use-accounts'
-import { Trash2 as Trash, RefreshCw as ArrowsClockwise, Info, CheckCircle2 as CheckCircle } from "lucide-react"
+import { Trash2 as Trash, Info, CheckCircle2 as CheckCircle } from "lucide-react"
 import { toast } from 'sonner'
 
 export function CacheManagement() {
@@ -165,7 +166,7 @@ export function CacheManagement() {
               disabled={isClearing}
             >
               {isClearing ? (
-                <ArrowsClockwise className="h-4 w-4 animate-spin" />
+                <Spinner className="h-4 w-4" />
               ) : (
                 <Trash className="h-4 w-4" />
               )}
@@ -187,7 +188,7 @@ export function CacheManagement() {
               disabled={isClearing}
             >
               {isClearing ? (
-                <ArrowsClockwise className="h-4 w-4 animate-spin" />
+                <Spinner className="h-4 w-4" />
               ) : (
                 <Trash className="h-4 w-4" />
               )}

@@ -1,5 +1,7 @@
 'use client'
 
+import { Spinner } from '@/components/ui/spinner'
+
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useUserStore } from '@/store/user-store'
@@ -434,7 +436,7 @@ export default function TradeTable() {
               variant="destructive"
               size="sm"
             >
-              {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              {isDeleting ? <Spinner className="mr-2 h-4 w-4" /> : <Trash2 className="mr-2 h-4 w-4" />}
               {isDeleting ? 'Deleting...' : `Delete (${selectedTrades.size})`}
             </Button>
           )}

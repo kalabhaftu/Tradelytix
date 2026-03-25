@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { useTheme } from 'next-themes'
+import { Spinner } from '@/components/ui/spinner'
 
 interface TradeData {
   entryTime: Date
@@ -162,7 +163,7 @@ export function TradingViewAdvancedChart({
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted z-10">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-2"></div>
+            <Spinner className="mx-auto mb-2 h-8 w-8 text-foreground" />
             <p className="text-muted-foreground">Loading advanced chart...</p>
           </div>
         </div>

@@ -1,7 +1,8 @@
 'use client'
 
+import { Spinner } from '@/components/ui/spinner'
+
 import React from 'react'
-import { Loader2 } from "lucide-react"
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -42,7 +43,7 @@ export function LoadingSpinner({ size = 'md', text, className }: LoadingSpinnerP
 
   return (
     <div className={cn('flex items-center justify-center gap-2', className)}>
-      <Loader2 className={cn('animate-spin text-primary', sizeClasses[size])} />
+      <Spinner className={cn('text-primary', sizeClasses[size])} />
       {text && (
         <span className={cn('text-muted-foreground', textSizeClasses[size])}>
           {text}
@@ -68,7 +69,7 @@ export function LoadingOverlay({ text = 'Loading...', position = 'absolute', cla
       className
     )}>
       <div className="flex flex-col items-center gap-3 rounded-lg bg-background p-6 shadow-lg border">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Spinner className="h-8 w-8 text-primary" />
         <p className="text-sm text-muted-foreground">{text}</p>
       </div>
     </div>
@@ -84,7 +85,7 @@ export function LoadingToast({ text = 'Loading...', className }: { text?: string
       'fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-md bg-background px-3 py-2 shadow-lg border',
       className
     )}>
-      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+      <Spinner className="h-4 w-4 text-primary" />
       <p className="text-sm text-muted-foreground">{text}</p>
     </div>
   )
@@ -207,7 +208,7 @@ export function LoadingButton({
       disabled={loading}
       {...props}
     >
-      {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+      {loading && <Spinner className="h-4 w-4" />}
       {loading ? loadingText : children}
     </button>
   )
@@ -220,10 +221,9 @@ export function PageLoading({ text = 'Loading page...', className }: { text?: st
   return (
     <div className={cn('flex min-h-screen items-center justify-center', className)}>
       <div className="flex flex-col items-center gap-4">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <Spinner className="h-12 w-12 text-primary" />
         <p className="text-lg text-muted-foreground">{text}</p>
       </div>
     </div>
   )
 }
-

@@ -8,6 +8,7 @@ import { toast } from "sonner"
 
 import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { UserAuthForm } from "@/components/user-auth-form"
 import { useAuth } from "@/context/auth-provider"
 import { signOut } from "@/server/auth"
@@ -64,7 +65,7 @@ export default function RootPage() {
           animate={{ opacity: 1 }}
           className="flex flex-col items-center gap-4"
         >
-          <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <Spinner className="h-8 w-8 text-primary" />
           <p className="text-muted-foreground animate-pulse">Redirecting to dashboard...</p>
         </motion.div>
       </div>

@@ -1,5 +1,7 @@
 'use client'
 
+import { Spinner } from '@/components/ui/spinner'
+
 import { useState } from 'react'
 import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns'
 import {
@@ -410,7 +412,7 @@ export function AIAnalysisDialog({ isOpen, onClose, accountId }: AIAnalysisDialo
             <Button onClick={handleAnalyze} disabled={isAnalyzing} className="font-medium">
               {isAnalyzing ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Spinner className="h-4 w-4 mr-2" />
                   Auditing Your Trading...
                 </>
               ) : (

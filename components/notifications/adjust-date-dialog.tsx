@@ -40,7 +40,7 @@ export function AdjustDateDialog({
   const handleAdjustDate = async () => {
     try {
       setIsUpdating(true)
-      const response = await fetch(`/api/accounts/${accountId}/adjust-date`, {
+      const response = await fetch(`/api/v1/accounts/${accountId}/adjust-date`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

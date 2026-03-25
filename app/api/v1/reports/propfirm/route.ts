@@ -7,12 +7,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserId } from '@/server/auth'
+import { getResolvedUserIdentity } from '@/server/user-identity'
 import { calculatePropFirmStatistics } from '@/lib/statistics/propfirm-statistics'
 import { CacheHeaders } from '@/lib/api-cache-headers'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
-import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   const rateLimitRes = await applyRateLimit(request, apiLimiter)
@@ -20,18 +19,9 @@ export async function GET(request: NextRequest) {
 
   const start = Date.now()
   try {
-    const authUserId = await getUserId()
+    const { internalUserId } = await getResolvedUserIdentity()
 
-    const userLookup = await prisma.user.findUnique({
-      where: { auth_user_id: authUserId },
-      select: { id: true },
-    })
-
-    if (!userLookup?.id) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    const result = await calculatePropFirmStatistics(userLookup.id)
+    const result = await calculatePropFirmStatistics(internalUserId)
 
     const response = NextResponse.json(result)
     Object.entries(CacheHeaders.privateShort).forEach(([k, v]) => response.headers.set(k, v))

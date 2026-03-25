@@ -38,9 +38,9 @@ export default function ArchitectureDivergencesDocs() {
             </CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground space-y-2">
-            <p><strong className="text-foreground">Decision:</strong> Dashboard stats stay canonical in <code>/api/dashboard/stats</code>, not forced through a generic statistics module.</p>
+            <p><strong className="text-foreground">Decision:</strong> Dashboard stats are canonical in <code>/api/v1/trades</code> with server-side widget aggregation.</p>
             <p><strong className="text-foreground">Reason:</strong> Dashboard has bespoke logic (account filter settings, prop-firm integration). Forcing it through generic helpers risks changing UX/behavior.</p>
-            <p><strong className="text-foreground">Impact:</strong> Reports use <code>report-statistics.ts</code>; dashboard uses its own route with stable behavior.</p>
+            <p><strong className="text-foreground">Impact:</strong> Reports use <code>report-statistics.ts</code>; dashboard uses <code>/api/v1/trades</code> with a stable v1 contract.</p>
           </CardContent>
         </Card>
 

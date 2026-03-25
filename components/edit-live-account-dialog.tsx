@@ -78,7 +78,7 @@ export function EditLiveAccountDialog({
     try {
       setIsSaving(true)
 
-      const response = await fetch(`/api/accounts/${account.id}`, {
+      const response = await fetch(`/api/v1/accounts/${account.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

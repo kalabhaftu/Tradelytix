@@ -50,23 +50,71 @@ interface LexicalEditorProps {
   minHeight?: string
 }
 
-const EMPTY_EDITOR_STATE = JSON.stringify({
-  root: {
-    children: [],
+function createEmptyParagraphNode() {
+  return {
+    children: [
+      {
+        detail: 0,
+        format: 0,
+        mode: 'normal',
+        style: '',
+        text: '',
+        type: 'text',
+        version: 1,
+      },
+    ],
     direction: 'ltr',
     format: '',
     indent: 0,
-    type: 'root',
+    type: 'paragraph',
     version: 1,
-  },
-})
+  }
+}
+
+function createEmptyEditorState() {
+  return {
+    root: {
+      children: [createEmptyParagraphNode()],
+      direction: 'ltr',
+      format: '',
+      indent: 0,
+      type: 'root',
+      version: 1,
+    },
+  }
+}
+
+function sanitizeLexicalState(state: any) {
+  if (!state || typeof state !== 'object') {
+    return createEmptyEditorState()
+  }
+
+  const root = state.root && typeof state.root === 'object' ? state.root : null
+  const children = Array.isArray(root?.children) ? [...root.children] : []
+
+  return {
+    ...state,
+    root: {
+      ...(root || {}),
+      direction: root?.direction || 'ltr',
+      format: root?.format || '',
+      indent: typeof root?.indent === 'number' ? root.indent : 0,
+      type: 'root',
+      version: typeof root?.version === 'number' ? root.version : 1,
+      // Lexical throws error #38 when root is empty.
+      children: children.length > 0 ? children : [createEmptyParagraphNode()],
+    },
+  }
+}
 
 function toLexicalStateString(value?: string): string {
-  if (!value || value.trim() === '') return EMPTY_EDITOR_STATE
+  if (!value || value.trim() === '') {
+    return JSON.stringify(createEmptyEditorState())
+  }
 
   try {
-    JSON.parse(value)
-    return value
+    const parsed = JSON.parse(value)
+    return JSON.stringify(sanitizeLexicalState(parsed))
   } catch {
     // Migrate legacy plain text notes to a safe Lexical paragraph state.
     return JSON.stringify({

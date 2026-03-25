@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserIdSafe } from '@/server/auth'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { prisma } from '@/lib/prisma'
 
 // GET - Get backtest input mode preference
 export async function GET(request: NextRequest) {
   try {
-    const userId = await getUserIdSafe()
+    const identity = await getResolvedUserIdentitySafe()
+    const userId = identity?.internalUserId
 
     if (!userId) {
       return NextResponse.json({ mode: 'manual' }, { status: 200 })
@@ -27,7 +28,8 @@ export async function GET(request: NextRequest) {
 // POST - Update backtest input mode preference
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserIdSafe()
+    const identity = await getResolvedUserIdentitySafe()
+    const userId = identity?.internalUserId
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

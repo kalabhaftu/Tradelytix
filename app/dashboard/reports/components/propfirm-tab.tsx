@@ -1,6 +1,7 @@
 'use client'
 
 import { usePropFirmStats } from '@/hooks/use-propfirm-stats'
+import type { PropFirmSummaryDTO } from '@/lib/statistics/propfirm-statistics'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -174,8 +175,12 @@ function AccountCard({ account }: { account: any }) {
 // MAIN COMPONENT
 // ────────────────────────────────────────────────────────────
 
-export function PropFirmTab() {
-    const { data, isLoading } = usePropFirmStats()
+interface PropFirmTabProps {
+    initialData?: PropFirmSummaryDTO
+}
+
+export function PropFirmTab({ initialData }: PropFirmTabProps) {
+    const { data, isLoading } = usePropFirmStats(initialData)
 
     if (isLoading) {
         return (

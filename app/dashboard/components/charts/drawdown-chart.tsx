@@ -47,7 +47,7 @@ function formatAxisValue(value: number): string {
 
 export default function DrawdownChart({ size = 'small-long' }: DrawdownChartProps) {
   const { data: rawChartData, isLoading } = useWidgetData('dailyCumulativePnl')
-  const chartData = rawChartData || []
+  const chartData = React.useMemo(() => rawChartData ?? [], [rawChartData])
 
   // Compute drawdown from cumulative P&L data
   const drawdownData: DrawdownDataPoint[] = React.useMemo(() => {

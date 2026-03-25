@@ -121,7 +121,7 @@ export function AdvancedExportDialog() {
         to: !isAllTime && dateRange.to ? dateRange.to.toISOString() : undefined
       }
 
-      const response = await fetch('/api/data/export', {
+      const response = await fetch('/api/v1/data/export', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

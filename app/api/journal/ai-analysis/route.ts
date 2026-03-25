@@ -1,27 +1,16 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserId } from '@/server/auth'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { BREAK_EVEN_THRESHOLD, cleanContent } from '@/lib/utils'
 
 // GET - Generate AI analysis of journals and trades
 export async function GET(request: Request) {
   try {
-    const authUserId = await getUserId()
-    if (!authUserId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    // getUserId() returns Supabase auth_user_id, but all data tables use internal user.id
-    const user = await prisma.user.findUnique({
-      where: { auth_user_id: authUserId },
-      select: { id: true }
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    const internalUserId = user.id
+    const internalUserId = identity.internalUserId
 
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
@@ -1049,4 +1038,3 @@ function generateRuleBasedAnalysis(
     recommendations: recommendations.slice(0, 5)
   }
 }
-

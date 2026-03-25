@@ -96,7 +96,7 @@ function formatAxisValue(value: number): string {
 
 export default function NetDailyPnL({ size = 'small-long' }: NetDailyPnLProps) {
   const { data: rawChartData, isLoading } = useWidgetData('netDailyPnl')
-  const chartData = rawChartData || []
+  const chartData = React.useMemo(() => rawChartData ?? [], [rawChartData])
 
   // ---------------------------------------------------------------------------
   // Y-AXIS DOMAIN CALCULATION (PRESERVED - DO NOT MODIFY)

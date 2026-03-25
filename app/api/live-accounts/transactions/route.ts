@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserId } from '@/server/auth'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 
 // GET /api/live-accounts/transactions - Get all transactions for user's accounts
 export async function GET(request: NextRequest) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
+    const userId = identity.internalUserId
 
     // Get all transactions for user's accounts
     const transactions = await prisma.liveAccountTransaction.findMany({

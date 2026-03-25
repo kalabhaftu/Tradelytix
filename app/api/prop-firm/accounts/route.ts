@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserId } from '@/server/auth-utils'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { z } from 'zod'
 import { revalidateTag } from 'next/cache'
 import { validatePhaseId } from '@/lib/validation/phase-id-validator'
@@ -53,28 +53,14 @@ const CreateMasterAccountSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const authUserId = await getUserId()
-    if (!authUserId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
-
-    // getUserId() returns Supabase auth_user_id, but MasterAccount.userId uses internal user.id
-    const user = await prisma.user.findUnique({
-      where: { auth_user_id: authUserId },
-      select: { id: true }
-    })
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
-    const internalUserId = user.id
+    const internalUserId = identity.internalUserId
 
     const body = await request.json()
     const validatedData = CreateMasterAccountSchema.parse(body)
@@ -277,29 +263,17 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const authUserId = await getUserId()
-    if (!authUserId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
-
-    // getUserId() returns Supabase auth_user_id, but MasterAccount.userId uses internal user.id
-    const user = await prisma.user.findUnique({
-      where: { auth_user_id: authUserId },
-      select: { id: true }
-    })
-
-    if (!user) {
-      return NextResponse.json({
-        success: true,
-        data: [] // No user means no accounts
-      })
-    }
+    const internalUserId = identity.internalUserId
 
     const masterAccounts = await prisma.masterAccount.findMany({
-      where: { userId: user.id },
+      where: { userId: internalUserId },
       include: {
         PhaseAccount: {
           orderBy: { phaseNumber: 'asc' }

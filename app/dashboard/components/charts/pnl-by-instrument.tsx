@@ -99,26 +99,6 @@ export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrument
   // ---------------------------------------------------------------------------
   const { data: chartData = [], isLoading } = useWidgetData('pnlByInstrument')
 
-  if (isLoading) {
-    return (
-      <WidgetCard title="P/L by Instrument">
-        <div className="flex items-center justify-center h-full">
-          <div className="animate-pulse w-full h-[200px] bg-muted/20 rounded-xl" />
-        </div>
-      </WidgetCard>
-    )
-  }
-
-  if (chartData.length === 0) {
-    return (
-      <WidgetCard title="P/L by Instrument">
-        <div className="flex items-center justify-center h-full text-muted-foreground/50 text-sm">
-          No trade data available
-        </div>
-      </WidgetCard>
-    )
-  }
-
   // ---------------------------------------------------------------------------
   // Y-AXIS DOMAIN CALCULATION (PRESERVED - DO NOT MODIFY)
   // ---------------------------------------------------------------------------
@@ -160,6 +140,26 @@ export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrument
 
     return { yDomain: domain, yTicks: ticks }
   }, [chartData])
+
+  if (isLoading) {
+    return (
+      <WidgetCard title="P/L by Instrument">
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-pulse w-full h-[200px] bg-muted/20 rounded-xl" />
+        </div>
+      </WidgetCard>
+    )
+  }
+
+  if (chartData.length === 0) {
+    return (
+      <WidgetCard title="P/L by Instrument">
+        <div className="flex items-center justify-center h-full text-muted-foreground/50 text-sm">
+          No trade data available
+        </div>
+      </WidgetCard>
+    )
+  }
 
   // ---------------------------------------------------------------------------
   // SIZE-RESPONSIVE VALUES

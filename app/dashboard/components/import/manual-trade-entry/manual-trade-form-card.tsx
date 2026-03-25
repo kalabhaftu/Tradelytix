@@ -23,7 +23,6 @@ import { Trade } from '@prisma/client'
 import { generateTradeHash } from '@/lib/utils'
 import { calculatePnL, calculateDuration } from '@/lib/utils/trade-calculations'
 import { useUserStore } from '@/store/user-store'
-import { useTradesStore } from '@/store/trades-store'
 import { useRouter } from 'next/navigation'
 import { useAccounts } from '@/hooks/use-accounts'
 
@@ -121,7 +120,6 @@ export default function ManualTradeFormCard({ accountId, accountNumber: propFirm
   
   const user = useUserStore(state => state.user)
   const supabaseUser = useUserStore(state => state.supabaseUser)
-  const trades = useTradesStore(state => state.trades)
   const router = useRouter()
 
   const {

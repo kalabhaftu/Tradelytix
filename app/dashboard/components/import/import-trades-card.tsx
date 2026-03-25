@@ -1,9 +1,8 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
-import { UploadIcon, type UploadIconHandle } from '@/components/animated-icons/upload'
 import { Trade } from '@prisma/client'
 import { linkTradesToCurrentPhase, checkPhaseProgression, checkAccountBreaches } from '@/server/accounts'
 import ImportTypeSelection, { ImportType } from './import-type-selection'
@@ -14,40 +13,11 @@ import { useData } from '@/context/data-provider'
 import ColumnMapping from './column-mapping'
 import { platforms } from './config/platforms-card'
 import { FormatPreview } from './components/format-preview'
-import { cn } from '@/lib/utils'
 import { useUserStore } from '@/store/user-store'
-import { useTradesStore } from '@/store/trades-store'
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useParams } from 'next/navigation'
 
 import { generateTradeHash } from '@/lib/utils'
-
-type ColumnConfig = {
-  [key: string]: {
-    defaultMapping: string[];
-    required: boolean;
-  };
-};
-
-const columnConfig: ColumnConfig = {
-  "instrument": { defaultMapping: ["symbol", "ticker"], required: true },
-  "entryId": { defaultMapping: ["id", "tradeid", "orderid"], required: false },
-  "quantity": { defaultMapping: ["qty", "amount", "volume"], required: true },
-  "entryPrice": { defaultMapping: ["entryprice", "openprice"], required: true },
-  "closePrice": { defaultMapping: ["closeprice", "exitprice"], required: true },
-  "entryDate": { defaultMapping: ["entrydate", "opentime"], required: true },
-  "closeDate": { defaultMapping: ["closedate", "exitdate", "closetime"], required: true },
-  "pnl": { defaultMapping: ["pnl", "profit"], required: true },
-  "timeInPosition": { defaultMapping: ["timeinposition", "duration"], required: false },
-  "side": { defaultMapping: ["side", "direction"], required: false },
-  "commission": { defaultMapping: ["commission", "fee"], required: false },
-  "stopLoss": { defaultMapping: ["stoploss", "sl", "stop"], required: false },
-  "takeProfit": { defaultMapping: ["takeprofit", "tp", "target"], required: false },
-  "closeReason": { defaultMapping: ["closereason", "reason", "exitreason"], required: false },
-  "symbol": { defaultMapping: ["symbol", "ticker", "instrument"], required: false },
-}
 
 export type Step = 
   | 'select-import-type'
@@ -60,6 +30,17 @@ export type Step =
   | 'process-file'
   | 'process-trades'
 
+const ASYNC_IMPORT_THRESHOLD = 500
+
+interface TradeImportJobResponse {
+  id: string
+  status: 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled'
+  progress: number
+  totalItems: number
+  importedCount: number
+  error?: string | null
+}
+
 interface ImportTradesCardProps {
   accountId: string
 }
@@ -67,7 +48,7 @@ interface ImportTradesCardProps {
 export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
   const [step, setStep] = useState<Step>('select-import-type')
   const [importType, setImportType] = useState<ImportType>('')
-  const [files, setFiles] = useState<File[]>([])
+  const [files] = useState<File[]>([])
   const [rawCsvData, setRawCsvData] = useState<string[][]>([])
   const [csvData, setCsvData] = useState<string[][]>([])
   const [headers, setHeaders] = useState<string[]>([])
@@ -77,15 +58,11 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
   const [isSaving, setIsSaving] = useState<boolean>(false)
   const [processedTrades, setProcessedTrades] = useState<Trade[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const uploadIconRef = useRef<UploadIconHandle>(null)
-  const [text, setText] = useState<string>('')
 
   const user = useUserStore(state => state.user)
   const supabaseUser = useUserStore(state => state.supabaseUser)
-  const trades = useTradesStore(state => state.trades)
-  const { refreshTrades, updateTrades } = useData()
+  const { refreshTrades } = useData()
   const router = useRouter()
-  const params = useParams()
 
   const handleSave = async () => {
     // Use either the user from our database or the Supabase user as fallback
@@ -145,39 +122,93 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
               (trade.entryDate || trade.closeDate);
           });
 
-      // Link trades to current active phase instead of direct database save
-      let result
-      try {
-        result = await linkTradesToCurrentPhase(accountId, newTrades)
-      } catch (linkError: any) {
-        
-        // Handle specific error cases with user-friendly messages
-        const errorMessage = linkError?.message || String(linkError)
-        
-        if (errorMessage.includes('No active phase')) {
-          toast.error("No Active Phase", {
-            description: "This account doesn't have an active phase. Please set up account phases first.",
-            duration: 5000,
-          })
-        } else if (errorMessage.includes('not found')) {
-          toast.error("Account Not Found", {
-            description: "The selected account could not be found. Please try again or create the account first.",
-            duration: 5000,
-          })
-        } else if (errorMessage.includes('inactive')) {
-          toast.error("Inactive Phase", {
-            description: "Cannot add trades to an inactive phase. Please activate the phase first.",
-            duration: 5000,
-          })
-        } else {
-          toast.error("Import Failed", {
-            description: errorMessage.length > 100 ? "An error occurred while importing trades. Please try again." : errorMessage,
-            duration: 5000,
-          })
+      // Link trades to target account (async job for larger payloads)
+      let result: { success: boolean; linkedCount: number }
+      const useAsyncJob = newTrades.length >= ASYNC_IMPORT_THRESHOLD
+
+      if (useAsyncJob) {
+        const createJobResponse = await fetch('/api/v1/trades/import/jobs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accountId, trades: newTrades }),
+        })
+        const createJobData = await createJobResponse.json().catch(() => null)
+
+        if (!createJobResponse.ok || !createJobData?.job) {
+          throw new Error(createJobData?.error || 'Failed to create import job')
         }
-        
-        setIsSaving(false)
-        return
+
+        let latestJob = createJobData.job as TradeImportJobResponse
+        const isTerminal = (status: TradeImportJobResponse['status']) =>
+          status === 'completed' || status === 'failed' || status === 'cancelled'
+
+        while (!isTerminal(latestJob.status)) {
+          const processResponse = await fetch(`/api/v1/trades/import/jobs/${latestJob.id}/process`, {
+            method: 'POST',
+          })
+          const processData = await processResponse.json().catch(() => null)
+          if (!processResponse.ok || !processData?.job) {
+            throw new Error(processData?.error || 'Import processing failed')
+          }
+          latestJob = processData.job as TradeImportJobResponse
+          if (!isTerminal(latestJob.status)) {
+            await new Promise((resolve) => setTimeout(resolve, 350))
+          }
+        }
+
+        if (latestJob.status === 'cancelled') {
+          toast.info('Import cancelled', {
+            description: 'The import job was cancelled before completion.',
+            duration: 5000,
+          })
+          setIsSaving(false)
+          return
+        }
+
+        if (latestJob.status === 'failed') {
+          throw new Error(latestJob.error || 'Import failed')
+        }
+
+        result = {
+          success: true,
+          linkedCount: latestJob.importedCount || 0,
+        }
+      } else {
+        try {
+          const syncResult = await linkTradesToCurrentPhase(accountId, newTrades)
+          result = {
+            success: !!syncResult?.success,
+            linkedCount: syncResult?.linkedCount || 0,
+          }
+        } catch (linkError: any) {
+          // Handle specific error cases with user-friendly messages
+          const errorMessage = linkError?.message || String(linkError)
+
+          if (errorMessage.includes('No active phase')) {
+            toast.error("No Active Phase", {
+              description: "This account doesn't have an active phase. Please set up account phases first.",
+              duration: 5000,
+            })
+          } else if (errorMessage.includes('not found')) {
+            toast.error("Account Not Found", {
+              description: "The selected account could not be found. Please try again or create the account first.",
+              duration: 5000,
+            })
+          } else if (errorMessage.includes('inactive')) {
+            toast.error("Inactive Phase", {
+              description: "Cannot add trades to an inactive phase. Please activate the phase first.",
+              duration: 5000,
+            })
+          } else {
+            toast.error("Import Failed", {
+              description: errorMessage.length > 100 ? "An error occurred while importing trades. Please try again." : errorMessage,
+              duration: 5000,
+            })
+          }
+
+          setIsSaving(false)
+          return
+        }
       }
 
       if (!result?.success) {

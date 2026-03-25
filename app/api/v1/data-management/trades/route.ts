@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserIdSafe } from '@/server/auth'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 
 export async function GET(request: NextRequest) {
@@ -8,19 +8,11 @@ export async function GET(request: NextRequest) {
   if (rateLimitResponse) return rateLimitResponse
 
   try {
-    const authUserId = await getUserIdSafe()
-    if (!authUserId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
-
-    const user = await prisma.user.findUnique({
-      where: { auth_user_id: authUserId },
-      select: { id: true }
-    })
-
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 })
-    }
+    const internalUserId = identity.internalUserId
 
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
@@ -32,7 +24,7 @@ export async function GET(request: NextRequest) {
     const [trades, total] = await Promise.all([
       prisma.trade.findMany({
         where: { 
-          userId: user.id,
+          userId: internalUserId,
           // Exclude trades from pending/pending_approval accounts
           OR: [
             { phaseAccountId: null },
@@ -51,7 +43,7 @@ export async function GET(request: NextRequest) {
       }),
       prisma.trade.count({
         where: { 
-          userId: user.id,
+          userId: internalUserId,
           OR: [
             { phaseAccountId: null },
             {

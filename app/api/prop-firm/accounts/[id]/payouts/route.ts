@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserId } from '@/server/auth-utils'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { prisma } from '@/lib/prisma'
 
 interface RouteParams {
@@ -30,20 +30,21 @@ function isFundedPhase(evaluationType: string, phaseNumber: number): boolean {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
+    const internalUserId = identity.internalUserId
 
     const { id: masterAccountId } = await params
     // ID is pure masterAccountId (UUID), not composite
 
     // Get account and calculate eligibility
     const masterAccount = await prisma.masterAccount.findFirst({
-      where: { id: masterAccountId, userId },
+      where: { id: masterAccountId, userId: internalUserId },
       include: {
         PhaseAccount: {
           where: { status: { in: ['active', 'passed', 'archived'] } },

@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserIdSafe } from '@/server/auth'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { prisma } from '@/lib/prisma'
 
 // GET - Fetch all backtests for user
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const userId = await getUserIdSafe()
-
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ 
         backtests: [],
         message: 'No authenticated user' 
       }, { status: 200 })
     }
 
+    const internalUserId = identity.internalUserId
+
     // Fetch all backtests for user
     const backtests = await prisma.backtestTrade.findMany({
-      where: { userId },
+      where: { userId: internalUserId },
       orderBy: { dateExecuted: 'desc' }
     })
 
@@ -32,11 +33,11 @@ export async function GET(request: NextRequest) {
 // POST - Create new backtest
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserIdSafe()
-
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const internalUserId = identity.internalUserId
 
     const body = await request.json()
     const {
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
       data: {
         id: crypto.randomUUID(),
         updatedAt: new Date(),
-        userId,
+        userId: internalUserId,
         pair,
         direction,
         outcome,
@@ -116,11 +117,11 @@ export async function POST(request: NextRequest) {
 // PUT - Update backtest
 export async function PUT(request: NextRequest) {
   try {
-    const userId = await getUserIdSafe()
-
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const internalUserId = identity.internalUserId
 
     const body = await request.json()
     const { id, notes, tags, model, customModel, images, cardPreviewImage } = body
@@ -131,7 +132,7 @@ export async function PUT(request: NextRequest) {
 
     // Verify ownership
     const existingBacktest = await prisma.backtestTrade.findFirst({
-      where: { id, userId }
+      where: { id, userId: internalUserId }
     })
 
     if (!existingBacktest) {
@@ -178,11 +179,11 @@ export async function PUT(request: NextRequest) {
 // DELETE - Delete backtest
 export async function DELETE(request: NextRequest) {
   try {
-    const userId = await getUserIdSafe()
-
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const internalUserId = identity.internalUserId
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
@@ -193,7 +194,7 @@ export async function DELETE(request: NextRequest) {
 
     // Verify ownership and delete
     const backtest = await prisma.backtestTrade.deleteMany({
-      where: { id, userId }
+      where: { id, userId: internalUserId }
     })
 
     if (backtest.count === 0) {

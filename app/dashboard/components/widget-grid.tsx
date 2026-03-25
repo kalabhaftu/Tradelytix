@@ -122,7 +122,10 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
   }, [showWidgetLibrary, showKpiSelector])
 
   // Use current layout if in edit mode, otherwise use active template
-  const layout = isEditMode && currentLayout ? currentLayout : activeTemplate?.layout || []
+  const layout = useMemo(
+    () => (isEditMode && currentLayout ? currentLayout : activeTemplate?.layout ?? []),
+    [isEditMode, currentLayout, activeTemplate?.layout]
+  )
 
   // Separate KPI widgets from other widgets
   const kpiWidgets = useMemo(() => {

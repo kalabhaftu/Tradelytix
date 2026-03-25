@@ -64,7 +64,7 @@ export default function PrismaOptimizationDocs() {
               <li><strong className="text-foreground">server/user-data.ts</strong>: parallel fetch via <code>Promise.all</code>.</li>
               <li><strong className="text-foreground">lib/statistics/report-statistics.ts</strong>: single <code>findMany</code> + parallel models fetch.</li>
               <li><strong className="text-foreground">app/api/v1/trades/route.ts</strong>: single <code>findMany</code> for trades + accounts (no per-trade queries).</li>
-              <li><strong className="text-foreground">app/api/dashboard/stats/route.ts</strong>: parallel queries.</li>
+              <li><strong className="text-foreground">app/api/v1/trades/route.ts</strong>: dashboard summary + widget aggregation in one server pass.</li>
             </ul>
           </CardContent>
         </Card>

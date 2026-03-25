@@ -74,9 +74,9 @@ export default function PerformanceBaselineDocs() {
                     <td className="p-3">Full report aggregation</td>
                   </tr>
                   <tr className="border-t">
-                    <td className="p-3"><code>GET /api/dashboard/stats</code></td>
+                    <td className="p-3"><code>GET /api/v1/trades?includeWidgets=true</code></td>
                     <td className="p-3">&lt; 400ms</td>
-                    <td className="p-3">Dashboard summary metrics</td>
+                    <td className="p-3">Dashboard summary + widget payload</td>
                   </tr>
                 </tbody>
               </table>

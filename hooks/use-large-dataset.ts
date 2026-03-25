@@ -216,7 +216,9 @@ export const useSharedTrades = () => {
   const fetchTrades = useCallback(async (limit: number = pageSize): Promise<Trade[]> => {
     try {
 
-      const response = await fetch(`/api/trades?limit=${limit}&page=1`, {
+      const response = await fetch(
+        `/api/v1/trades?limit=${limit}&includeStats=false&includeCalendar=false&includeWidgets=false`,
+        {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -229,8 +231,8 @@ export const useSharedTrades = () => {
 
       const result = await response.json()
 
-      if (result && result.success && result.data) {
-        const tradesArray = Array.isArray(result.data) ? result.data : []
+      if (result && result.trades) {
+        const tradesArray = Array.isArray(result.trades) ? result.trades : []
         return tradesArray
       }
 

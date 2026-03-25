@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserId } from '@/server/auth'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -20,10 +20,11 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const userId = identity.internalUserId
 
     const body = await request.json()
     const validated = tradingModelSchema.parse(body)
@@ -90,10 +91,11 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const userId = identity.internalUserId
 
     // Verify model belongs to user
     const existing = await prisma.tradingModel.findUnique({

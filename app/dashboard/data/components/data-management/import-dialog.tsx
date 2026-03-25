@@ -1,14 +1,25 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Upload, Loader2, FileArchive, CheckCircle2, AlertCircle, RotateCcw } from 'lucide-react'
+import { Loader2, CheckCircle2, AlertCircle, RotateCcw } from 'lucide-react'
 import { toast } from "sonner"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Progress } from "@/components/ui/progress"
 import { useData } from '@/context/data-provider'
 import { useAccounts } from '@/hooks/use-accounts'
 import { FileDropzone } from '@/components/ui/file-dropzone'
+
+interface ImportJobResponse {
+  id: string
+  status: 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled'
+  stage: string
+  progress: number
+  importedCount: number
+  skippedCount: number
+  error?: string | null
+}
 
 export function ImportDialog() { // Kept name for compatibility
   const { refreshTrades } = useData()
@@ -17,48 +28,78 @@ export function ImportDialog() { // Kept name for compatibility
   const [isImporting, setIsImporting] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [importResults, setImportResults] = useState<any>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      if (!file.name.endsWith('.zip')) {
-        toast.error('Please select a valid Backup ZIP file')
-        return
-      }
-      setSelectedFile(file)
-      setImportResults(null)
-    }
-  }
+  const [importJob, setImportJob] = useState<ImportJobResponse | null>(null)
 
   const handleImport = async () => {
     if (!selectedFile) return
 
     try {
       setIsImporting(true)
-      toast.info('Restoring system data...', {
-        description: 'Please wait while your data is being restored. This may take a minute.',
-        duration: Infinity
+      setImportResults(null)
+      setImportJob(null)
+      toast.info('Restore started', {
+        description: 'Uploading backup and preparing restore job.',
+        duration: 3000
       })
 
       const formData = new FormData()
       formData.append('file', selectedFile)
 
-      const response = await fetch('/api/data/import', {
+      const createJobResponse = await fetch('/api/v1/data/import/jobs', {
         method: 'POST',
         body: formData
       })
 
-      const data = await response.json()
+      const createJobData = await createJobResponse.json()
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Restore failed')
+      if (!createJobResponse.ok) {
+        throw new Error(createJobData.error || 'Failed to create restore job')
       }
 
-      setImportResults(data) // API returns { success: true, imported: N, skipped: M }
+      const createdJob = createJobData.job as ImportJobResponse
+      setImportJob(createdJob)
+
+      const isTerminal = (status: string) =>
+        status === 'completed' || status === 'failed' || status === 'cancelled'
+
+      let latestJob = createdJob
+
+      while (!isTerminal(latestJob.status)) {
+        const processResponse = await fetch(`/api/v1/data/import/jobs/${latestJob.id}/process`, {
+          method: 'POST'
+        })
+
+        const processData = await processResponse.json()
+        if (!processResponse.ok) {
+          throw new Error(processData.error || 'Restore processing failed')
+        }
+
+        latestJob = processData.job as ImportJobResponse
+        setImportJob(latestJob)
+
+        if (!isTerminal(latestJob.status)) {
+          await new Promise(resolve => setTimeout(resolve, 400))
+        }
+      }
+
+      if (latestJob.status === 'cancelled') {
+        toast.info('Restore cancelled', {
+          description: 'Restore job was cancelled before completion.'
+        })
+        return
+      }
+
+      if (latestJob.status === 'failed') {
+        throw new Error(latestJob.error || 'Restore job failed')
+      }
+
+      setImportResults({
+        imported: latestJob.importedCount || 0,
+        skipped: latestJob.skippedCount || 0
+      })
 
       toast.success('System Restore Complete!', {
-        description: `Restored ${data.imported || 0} trades. Skipped ${data.skipped || 0} duplicates.`
+        description: `Restored ${latestJob.importedCount || 0} trades. Skipped ${latestJob.skippedCount || 0} duplicates.`
       })
 
       // Refresh data
@@ -79,18 +120,45 @@ export function ImportDialog() { // Kept name for compatibility
   const handleReset = () => {
     setSelectedFile(null)
     setImportResults(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    setImportJob(null)
   }
 
   const handleClose = () => {
+    if (isImporting) return
     handleReset()
     setIsOpen(false)
   }
 
+  const handleCancelImport = async () => {
+    if (!importJob?.id || !isImporting) return
+
+    try {
+      const response = await fetch(`/api/v1/data/import/jobs/${importJob.id}/cancel`, {
+        method: 'POST'
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to cancel restore job')
+      }
+
+      if (data.job) {
+        setImportJob(data.job as ImportJobResponse)
+      }
+
+      toast.info('Cancelling restore', {
+        description: 'The job is being cancelled. Please wait...'
+      })
+    } catch (error) {
+      toast.error('Cancel Failed', {
+        description: error instanceof Error ? error.message : 'Unable to cancel restore job'
+      })
+    }
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open && isImporting) return
       setIsOpen(open)
       if (!open) handleReset()
     }}>
@@ -140,6 +208,20 @@ export function ImportDialog() { // Kept name for compatibility
                   isLoading={isImporting}
                 />
               </div>
+
+              {isImporting && importJob && (
+                <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">Restore Progress</p>
+                    <p className="text-xs text-muted-foreground uppercase">{importJob.stage}</p>
+                  </div>
+                  <Progress value={Math.max(2, importJob.progress || 0)} />
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Status: {importJob.status}</span>
+                    <span>{importJob.progress || 0}%</span>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
@@ -183,9 +265,15 @@ export function ImportDialog() { // Kept name for compatibility
         {/* Action Buttons */}
         {!importResults && (
           <div className="flex items-center justify-between pt-4 border-t">
-            <Button variant="ghost" onClick={handleClose}>
-              Cancel
-            </Button>
+            {isImporting ? (
+              <Button variant="destructive" onClick={handleCancelImport}>
+                Cancel Restore
+              </Button>
+            ) : (
+              <Button variant="ghost" onClick={handleClose}>
+                Cancel
+              </Button>
+            )}
             <Button
               onClick={handleImport}
               disabled={!selectedFile || isImporting}

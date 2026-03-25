@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserId } from '@/server/auth'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -10,15 +10,15 @@ const goalsSchema = z.object({
 })
 
 // GET - Get user's goal settings
-export async function GET(request: NextRequest) {
+export async function GET() {
     try {
-        const userId = await getUserId()
-        if (!userId) {
+        const identity = await getResolvedUserIdentitySafe()
+        if (!identity) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
         const user = await prisma.user.findUnique({
-            where: { id: userId },
+            where: { id: identity.internalUserId },
             select: { goalSettings: true }
         })
 
@@ -49,8 +49,8 @@ export async function GET(request: NextRequest) {
 // POST - Update user's goal settings
 export async function POST(request: NextRequest) {
     try {
-        const userId = await getUserId()
-        if (!userId) {
+        const identity = await getResolvedUserIdentitySafe()
+        if (!identity) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         const validated = goalsSchema.parse(body)
 
         const user = await prisma.user.update({
-            where: { id: userId },
+            where: { id: identity.internalUserId },
             data: {
                 goalSettings: validated
             },

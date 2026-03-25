@@ -31,21 +31,12 @@ type PrismaDashboardLayout = {
 };
 
 import {
-  getUserData,
   updateIsFirstConnectionAction
 } from '@/server/user-data';
 import {
-  getTradesAction,
-  groupTradesAction,
   revalidateCache,
   saveDashboardLayoutAction,
-  ungroupTradesAction,
-  updateTradesAction
 } from '@/server/database';
-import {
-  WidgetType,
-  WidgetSize,
-} from '@/app/dashboard/types/dashboard';
 import {
   deletePayoutAction,
   deleteAccountAction,
@@ -56,22 +47,22 @@ import { createClient } from '@/lib/supabase';
 import { signOut } from '@/server/auth';
 import { useUserStore } from '@/store/user-store';
 import { useTradesStore } from '@/store/trades-store';
-import {
-  endOfDay,
-  isValid,
-  startOfDay
-} from 'date-fns';
-import { formatInTimeZone } from 'date-fns-tz';
-// filterActiveAccounts and filterTradesFromActiveAccounts removed - not used
 import { useAccountFilterSettings } from '@/hooks/use-account-filter-settings';
 import { AccountFilterSettings } from '@/types/account-filter-settings';
 import { calculateStatistics, formatCalendarData } from '@/lib/utils';
-import { useFilteredTrades, type TradeFilters } from '@/hooks/use-filtered-trades';
-import { useParams, usePathname } from 'next/navigation';
-import { useRouter } from 'next/navigation';
+import { useFilteredTrades } from '@/hooks/use-filtered-trades';
 import { handleServerActionError } from '@/lib/utils/server-action-error-handler';
-import { useDatabaseRealtime } from '@/lib/realtime/database-realtime';
-import { defaultLayouts, defaultLayoutsWithKPI } from '@/lib/dashboard/default-layouts';
+import { useDataProviderRealtime } from '@/hooks/use-data-provider-realtime';
+import {
+  useDataProviderFilterState,
+  type DataProviderDateRange as DateRange,
+  type DataProviderPnlRange as PnlRange,
+  type DataProviderTimeRange as TimeRange,
+  type DataProviderWeekdayFilter as WeekdayFilter,
+  type DataProviderHourFilter as HourFilter,
+} from '@/hooks/use-data-provider-filter-state';
+import { defaultLayouts } from '@/lib/dashboard/default-layouts';
+import { useDataProviderTradeMutations } from '@/hooks/use-data-provider-trade-mutations';
 
 // Types from trades-data.tsx
 type StatisticsProps = {
@@ -107,34 +98,7 @@ type CalendarData = {
   }
 }
 
-interface DateRange {
-  from: Date
-  to: Date
-}
-
 // Removed TickRange - tick details feature has been removed
-
-interface PnlRange {
-  min: number | undefined
-  max: number | undefined
-}
-
-
-// Add new interface for time range
-interface TimeRange {
-  range: string | null
-}
-
-
-// Update WeekdayFilter interface to use numbers
-interface WeekdayFilter {
-  day: number | null
-}
-
-// Add new interface for hour filter
-interface HourFilter {
-  hour: number | null
-}
 
 
 // Update Account type to include payouts and balanceToDate
@@ -250,10 +214,13 @@ const selectionsMatch = (a: string[], b: string[]) => {
 
 export const DataProvider: React.FC<{
   children: React.ReactNode;
-}> = ({ children }) => {
-  const router = useRouter()
-  const pathname = usePathname()
-  const params = useParams();
+  initialBootstrapData?: {
+    isAuthenticated: boolean
+    user: any | null
+    accounts: any[]
+    calendarNotes: Record<string, string>
+  }
+}> = ({ children, initialBootstrapData }) => {
   const isMobile = useIsMobileDetection();
 
   // Get store values
@@ -279,16 +246,24 @@ export const DataProvider: React.FC<{
   // Account filter settings
   const { settings: accountFilterSettings, isLoading: isLoadingAccountFilterSettings, updateSettings: updateAccountFilterSettings } = useAccountFilterSettings()
 
-  // Local states
+  const {
+    instruments,
+    setInstruments,
+    accountNumbers,
+    setAccountNumbers,
+    dateRange,
+    setDateRange,
+    pnlRange,
+    setPnlRange,
+    timeRange,
+    setTimeRange,
+    weekdayFilter,
+    setWeekdayFilter,
+    hourFilter,
+    setHourFilter,
+    tradeFilters,
+  } = useDataProviderFilterState(timezone)
 
-  // Filter states
-  const [instruments, setInstruments] = useState<string[]>([]);
-  const [accountNumbers, setAccountNumbers] = useState<string[]>([]);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-  const [pnlRange, setPnlRange] = useState<PnlRange>({ min: undefined, max: undefined });
-  const [timeRange, setTimeRange] = useState<TimeRange>({ range: null });
-  const [weekdayFilter, setWeekdayFilter] = useState<WeekdayFilter>({ day: null });
-  const [hourFilter, setHourFilter] = useState<HourFilter>({ hour: null });
   const [isFirstConnection, setIsFirstConnection] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -368,6 +343,48 @@ export const DataProvider: React.FC<{
   // Track active data loading to prevent concurrent calls - MOVED TO useRef FOR PERSISTENCE
   const activeLoadPromiseRef = React.useRef<Promise<void> | null>(null)
   const hasLoadedDataRef = React.useRef(false)
+
+  // HYDRATE FROM SERVER BOOTSTRAP (targeted SSR path)
+  useEffect(() => {
+    if (!initialBootstrapData?.isAuthenticated) return
+    if (hasLoadedDataRef.current) return
+
+    hasLoadedDataRef.current = true
+
+    const { user: userData, accounts: rawAccounts, calendarNotes } = initialBootstrapData
+
+    setUser(userData as any)
+    setIsFirstConnection(!!userData?.isFirstConnection)
+    setTrades([])
+
+    const accountsWithBalance = (rawAccounts || []).map((account: any) => ({
+      ...account,
+      balanceToDate: calcBalance(account, [], [], {
+        excludeFailedAccounts: false,
+        includePayouts: true
+      })
+    }))
+
+    setAccounts(accountsWithBalance)
+
+    if (calendarNotes) {
+      try {
+        localStorage.setItem('calendar-notes-cache', JSON.stringify(calendarNotes))
+      } catch {}
+    }
+
+    if (userData?.accountFilterSettings) {
+      try {
+        const hasPendingChanges = localStorage.getItem('settings-pending')
+        if (!hasPendingChanges) {
+          const settings = JSON.parse(userData.accountFilterSettings)
+          localStorage.setItem('settings-cache', JSON.stringify(settings))
+        }
+      } catch {}
+    }
+
+    setIsLoading(false)
+  }, [initialBootstrapData, setAccounts, setIsLoading, setTrades, setUser])
 
   // Load initial data (user + accounts) from /api/v1/init
   const loadData = useCallback(async () => {
@@ -558,75 +575,16 @@ export const DataProvider: React.FC<{
   // ============================================
   const queryClient = useQueryClient()
   
-  // Build filters from current DataProvider state
-  const tradeFilters: TradeFilters = useMemo(() => ({
-    accounts: accountNumbers.length > 0 ? accountNumbers : undefined,
-    dateFrom: dateRange?.from?.toISOString(),
-    dateTo: dateRange?.to?.toISOString(),
-    instruments: instruments.length > 0 ? instruments : undefined,
-    pnlMin: pnlRange.min,
-    pnlMax: pnlRange.max,
-    timeRange: timeRange.range,
-    weekday: weekdayFilter.day,
-    hour: hourFilter.hour,
-    limit: 5000,
-    includeStats: true,
-    includeCalendar: true,
-    timezone: timezone || 'UTC',
-  }), [accountNumbers, dateRange, instruments, pnlRange, timeRange, weekdayFilter, hourFilter, timezone])
-
   // PERF FIX: Enable trades fetch as soon as supabaseUser is available (not after init completes)
   // This breaks the sequential waterfall: init and trades now fetch IN PARALLEL
   const { data: serverTradeData } = useFilteredTrades(tradeFilters, !!supabaseUser?.id)
 
-  // ============================================
-  // REALTIME SUBSCRIPTIONS (Server-push, no polling)
-  // ============================================
-  const lastRealtimeRefreshRef = React.useRef<number>(0)
-  const realtimeRefreshTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
-  
-  // Debounced refresh — invalidates React Query cache instead of full reload
-  const debouncedRefresh = useCallback(() => {
-    const now = Date.now()
-    const timeSinceLastRefresh = now - lastRealtimeRefreshRef.current
-    const cooldown = 800
-    
-    if (timeSinceLastRefresh < cooldown) {
-      if (realtimeRefreshTimeoutRef.current) {
-        clearTimeout(realtimeRefreshTimeoutRef.current)
-      }
-      realtimeRefreshTimeoutRef.current = setTimeout(() => {
-        lastRealtimeRefreshRef.current = Date.now()
-        // Invalidate React Query cache — triggers fresh server fetch
-        queryClient.invalidateQueries({ queryKey: ['v1', 'trades'] })
-        queryClient.invalidateQueries({ queryKey: ['v1', 'reports'] })
-        loadData() // Still reload accounts/user for account balance updates
-      }, cooldown - timeSinceLastRefresh)
-      return
-    }
-    
-    setTimeout(() => {
-      lastRealtimeRefreshRef.current = Date.now()
-      queryClient.invalidateQueries({ queryKey: ['v1', 'trades'] })
-      queryClient.invalidateQueries({ queryKey: ['v1', 'reports'] })
-      loadData()
-    }, 300)
-  }, [loadData, queryClient])
-  
-  useDatabaseRealtime({
+  useDataProviderRealtime({
     userId: user?.id,
     enabled: !!user?.id && !isLoading,
-    onTradeChange: () => debouncedRefresh(),
-    onAccountChange: () => debouncedRefresh()
+    queryClient,
+    reloadBootstrapData: loadData,
   })
-  
-  useEffect(() => {
-    return () => {
-      if (realtimeRefreshTimeoutRef.current) {
-        clearTimeout(realtimeRefreshTimeoutRef.current)
-      }
-    }
-  }, [])
 
   // ============================================
   // SUPABASE KEEP-ALIVE HEARTBEAT
@@ -856,78 +814,12 @@ export const DataProvider: React.FC<{
     await updateIsFirstConnectionAction(isFirstConnection)
   }, [user?.id, setIsFirstConnection])
 
-  const updateTrades = useCallback(async (tradeIds: string[], update: Partial<PrismaTrade>) => {
-    if (!user?.id) return
-
-    const applyTradePatch = (trade: any) =>
-      tradeIds.includes(trade.id) ? { ...trade, ...update } : trade
-
-    const patchCalendarData = (calendarData: any) => {
-      if (!calendarData || typeof calendarData !== 'object') return calendarData
-
-      const nextCalendarData: Record<string, any> = { ...calendarData }
-
-      Object.keys(nextCalendarData).forEach((key) => {
-        const day = nextCalendarData[key]
-        if (!day || !Array.isArray(day.trades)) return
-        nextCalendarData[key] = {
-          ...day,
-          trades: day.trades.map((trade: any) => applyTradePatch(trade)),
-        }
-      })
-
-      return nextCalendarData
-    }
-
-    const updatedTrades = trades.map((trade) => applyTradePatch(trade))
-    setTrades(updatedTrades)
-
-    queryClient.setQueriesData({ queryKey: ['v1', 'trades'] }, (oldData: any) => {
-      if (!oldData || !Array.isArray(oldData.trades)) return oldData
-
-      return {
-        ...oldData,
-        trades: oldData.trades.map((trade: any) => applyTradePatch(trade)),
-        calendarData: patchCalendarData(oldData.calendarData),
-        widgets: oldData.widgets
-          ? {
-              ...oldData.widgets,
-              calendarData: patchCalendarData(oldData.widgets.calendarData),
-            }
-          : oldData.widgets,
-      }
-    })
-
-    try {
-      await updateTradesAction(tradeIds, update)
-      await queryClient.invalidateQueries({ queryKey: ['v1', 'trades'] })
-    } catch (error) {
-      await queryClient.invalidateQueries({ queryKey: ['v1', 'trades'] })
-      throw error
-    }
-  }, [user?.id, trades, setTrades, queryClient])
-
-  const groupTrades = useCallback(async (tradeIds: string[]) => {
-    if (!user?.id) return
-    // CRITICAL FIX: Only update trades that are in the tradeIds array
-    setTrades(trades.map(trade => 
-      tradeIds.includes(trade.id) 
-        ? { ...trade, groupId: tradeIds[0] }
-        : trade
-    ))
-    await groupTradesAction(tradeIds)
-  }, [user?.id, trades, setTrades])
-
-  const ungroupTrades = useCallback(async (tradeIds: string[]) => {
-    if (!user?.id) return
-    // CRITICAL FIX: Only update trades that are in the tradeIds array
-    setTrades(trades.map(trade => 
-      tradeIds.includes(trade.id)
-        ? { ...trade, groupId: null }
-        : trade
-    ))
-    await ungroupTradesAction(tradeIds)
-  }, [user?.id, trades, setTrades])
+  const { updateTrades, groupTrades, ungroupTrades } = useDataProviderTradeMutations({
+    userId: user?.id,
+    trades,
+    setTrades,
+    queryClient,
+  })
 
   const saveDashboardLayout = useCallback(async (layout: PrismaDashboardLayout) => {
     if (!user?.id) return

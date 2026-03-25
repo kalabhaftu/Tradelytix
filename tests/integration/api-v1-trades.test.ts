@@ -5,20 +5,22 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Mock auth and prisma before imports
-vi.mock('@/server/auth', () => ({
-  getUserId: vi.fn().mockResolvedValue('test-auth-user-id'),
+vi.mock('@/server/user-identity', () => ({
+  getResolvedUserIdentity: vi.fn().mockResolvedValue({
+    authUserId: 'test-auth-user-id',
+    internalUserId: 'internal-user-id',
+  }),
 }))
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    user: {
-      findUnique: vi.fn().mockResolvedValue({ id: 'internal-user-id' }),
-    },
     trade: {
       findMany: vi.fn().mockResolvedValue([]),
     },
     account: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
+    masterAccount: {
       findMany: vi.fn().mockResolvedValue([]),
     },
   },
@@ -35,8 +37,8 @@ describe('GET /api/v1/trades', () => {
   })
 
   it('returns 401 when user is not authenticated', async () => {
-    const { getUserId } = await import('@/server/auth')
-    vi.mocked(getUserId).mockRejectedValueOnce(new Error('not authenticated'))
+    const { getResolvedUserIdentity } = await import('@/server/user-identity')
+    vi.mocked(getResolvedUserIdentity).mockRejectedValueOnce(new Error('not authenticated'))
 
     const { GET } = await import('@/app/api/v1/trades/route')
     const request = { nextUrl: new URL('http://localhost/api/v1/trades') } as any
@@ -46,8 +48,8 @@ describe('GET /api/v1/trades', () => {
   })
 
   it('returns 404 when user is not found in database', async () => {
-    const { prisma } = await import('@/lib/prisma')
-    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(null)
+    const { getResolvedUserIdentity } = await import('@/server/user-identity')
+    vi.mocked(getResolvedUserIdentity).mockRejectedValueOnce(new Error('User not found'))
 
     const { GET } = await import('@/app/api/v1/trades/route')
     const request = { nextUrl: new URL('http://localhost/api/v1/trades') } as any
@@ -81,6 +83,7 @@ describe('GET /api/v1/trades', () => {
     vi.mocked(prisma.account.findMany).mockResolvedValueOnce([
       { id: 'a1', number: '123', _count: { Trade: 1 } } as any,
     ])
+    vi.mocked(prisma.masterAccount.findMany).mockResolvedValueOnce([])
 
     const { GET } = await import('@/app/api/v1/trades/route')
     const url = new URL('http://localhost/api/v1/trades')

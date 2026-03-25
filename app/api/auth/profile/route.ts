@@ -3,6 +3,21 @@ import { prisma } from '@/lib/prisma'
 import { getUserId } from '@/server/auth'
 import { logActivity, getClientIp } from '@/lib/activity-logger'
 
+const DEFAULT_AI_SETTINGS = {
+  weeklyReviewAutomationEnabled: false,
+  autoGenerateInsights: false,
+  includeAiInsightsInNotifications: true,
+}
+
+function normalizeAiSettings(value: unknown) {
+  const raw = (value && typeof value === 'object') ? value as Record<string, unknown> : {}
+  return {
+    weeklyReviewAutomationEnabled: !!raw.weeklyReviewAutomationEnabled,
+    autoGenerateInsights: !!raw.autoGenerateInsights,
+    includeAiInsightsInNotifications: raw.includeAiInsightsInNotifications !== false,
+  }
+}
+
 // GET /api/auth/profile - Get user profile information
 export async function GET() {
   try {
@@ -16,7 +31,7 @@ export async function GET() {
         { status: 401 }
       )
     }
-    
+
     const user = await prisma.user.findUnique({
       where: { auth_user_id: userId },
       select: {
@@ -26,9 +41,11 @@ export async function GET() {
         lastName: true,
         accentPack: true,
         theme: true,
+        autoAdjustAccountDate: true,
         calendarDisplayStats: true,
         showWeeklySummary: true,
-      }
+        aiSettings: true,
+      } as any
     })
 
     if (!user) {
@@ -40,7 +57,10 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      data: user
+      data: {
+        ...user,
+        aiSettings: normalizeAiSettings((user as any).aiSettings ?? DEFAULT_AI_SETTINGS)
+      }
     })
 
   } catch (error) {
@@ -67,7 +87,7 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json()
 
-    const { firstName, lastName, accentPack, theme, autoAdjustAccountDate, calendarDisplayStats, showWeeklySummary } = body
+    const { firstName, lastName, accentPack, theme, autoAdjustAccountDate, calendarDisplayStats, showWeeklySummary, aiSettings } = body
 
     // Validate input — only check fields that are actually provided
     if (firstName !== undefined && typeof firstName !== 'string' && firstName !== null) {
@@ -97,10 +117,22 @@ export async function PATCH(request: NextRequest) {
     }
     if (showWeeklySummary !== undefined) updateData.showWeeklySummary = !!showWeeklySummary
 
+    if (aiSettings !== undefined) {
+      const existing = await prisma.user.findUnique({
+        where: { auth_user_id: userId },
+        select: { aiSettings: true } as any
+      })
+
+      updateData.aiSettings = normalizeAiSettings({
+        ...((existing as any)?.aiSettings && typeof (existing as any).aiSettings === 'object' ? (existing as any).aiSettings as Record<string, unknown> : {}),
+        ...(typeof aiSettings === 'object' && aiSettings ? aiSettings : {})
+      })
+    }
+
     // Update user profile in database
     const updatedUser = await prisma.user.update({
       where: { auth_user_id: userId },
-      data: updateData,
+      data: updateData as any,
       select: {
         id: true,
         email: true,
@@ -108,13 +140,20 @@ export async function PATCH(request: NextRequest) {
         lastName: true,
         accentPack: true,
         theme: true,
+        autoAdjustAccountDate: true,
         calendarDisplayStats: true,
         showWeeklySummary: true,
-      }
+        aiSettings: true,
+      } as any
     })
 
+    const activityUserId =
+      typeof (updatedUser as any)?.id === 'string' && (updatedUser as any).id.length > 0
+        ? (updatedUser as any).id
+        : userId
+
     logActivity({
-      userId: updatedUser.id,
+      userId: activityUserId,
       action: 'PROFILE_UPDATED',
       entity: 'Profile',
       metadata: { updatedFields: Object.keys(updateData) },
@@ -123,7 +162,10 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: updatedUser,
+      data: {
+        ...updatedUser,
+        aiSettings: normalizeAiSettings((updatedUser as any).aiSettings ?? DEFAULT_AI_SETTINGS)
+      },
       message: 'Profile updated successfully'
     })
 

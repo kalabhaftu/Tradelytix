@@ -130,7 +130,7 @@ export function DataManagementCard() {
     user?.id ? '/api/v1/data-management/accounts' : null,
     fetcher
   )
-  const allAccounts = accountsResponse?.data || []
+  const allAccounts = useMemo(() => accountsResponse?.data ?? [], [accountsResponse?.data])
 
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [renameLoading, setRenameLoading] = useState(false)
@@ -244,7 +244,7 @@ export function DataManagementCard() {
             endpoint = `/api/prop-firm/accounts/${accountId}`
           } else {
             accountId = account.id
-            endpoint = `/api/accounts/${accountId}`
+            endpoint = `/api/v1/accounts/${accountId}`
           }
 
           if (!uniqueAccountIds.has(accountId)) {

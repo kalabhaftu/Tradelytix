@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
@@ -67,20 +68,20 @@ export default function CookieNotice() {
             <p className="text-sm text-muted-foreground">
               We use only essential cookies for functionality and security. No
               tracking or advertising cookies are used.{" "}
-              <a
+              <Link
                 href="/privacy"
                 className="underline text-primary hover:text-primary/80"
               >
                 Read cookies policies.
-              </a>
+              </Link>
             </p>
             <div className="flex justify-between items-center pt-2">
-              <a
+              <Link
                 href="/privacy"
                 className="text-sm underline hover:text-primary transition"
               >
                 Learn more
-              </a>
+              </Link>
               <Button
                 size="sm"
                 onClick={handleAccept}

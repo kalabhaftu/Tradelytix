@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserId } from '@/server/auth'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { AccountFilterSettings, DEFAULT_FILTER_SETTINGS } from '@/types/account-filter-settings'
 
 // GET /api/settings/account-filters - Get user's account filter settings
 export async function GET(request: NextRequest) {
   try {
-    const authUserId = await getUserId()
-    if (!authUserId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { auth_user_id: authUserId },
+      where: { id: identity.internalUserId },
       select: { accountFilterSettings: true }
     })
     
@@ -58,8 +58,8 @@ export async function GET(request: NextRequest) {
 // POST /api/settings/account-filters - Update user's account filter settings
 export async function POST(request: NextRequest) {
   try {
-    const authUserId = await getUserId()
-    if (!authUserId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     // Save to database - Prisma handles connection timeout
     await prisma.user.update({
-      where: { auth_user_id: authUserId },
+      where: { id: identity.internalUserId },
       data: {
         accountFilterSettings: JSON.stringify(settings)
       }

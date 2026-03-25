@@ -143,7 +143,7 @@ async function handleAPIRequest(request) {
     }
     
     // Return offline response for critical endpoints
-    if (url.pathname.includes('/api/trades')) {
+    if (url.pathname.includes('/api/v1/trades')) {
       return new Response(
         JSON.stringify({ 
           error: 'Offline', 
@@ -260,7 +260,7 @@ async function syncTradeUploads() {
     
     for (const trade of pendingTrades) {
       try {
-        const response = await fetch('/api/trades', {
+        const response = await fetch('/api/v1/trades/quick-add', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -357,7 +357,7 @@ async function cacheTradeData(data) {
     const response = new Response(JSON.stringify(data), {
       headers: { 'Content-Type': 'application/json' }
     })
-    await cache.put('/api/trades/cached', response)
+    await cache.put('/api/v1/trades/cached', response)
   } catch (error) {
   }
 }

@@ -138,23 +138,46 @@ class DataServiceClass {
       params.append('phaseNumber', options.phaseNumber.toString())
     }
 
-    const url = `/api/dashboard/stats${params.toString() ? `?${params.toString()}` : ''}`
+    const url = `/api/v1/trades?${params.toString() ? `${params.toString()}&` : ''}includeWidgets=true`
 
     // Fetch with deduplication
-    const result = await deduplicatedFetch<{ success: boolean; data: DashboardStats }>(
+    const result = await deduplicatedFetch<any>(
       `stats:${params.toString()}`,
       () => fetchWithError(url, { timeout: API_TIMEOUT })
     )
 
-    if (result.ok && result.data?.data) {
+    if (result.ok && result.data) {
+      const apiStats = result.data.statistics || {}
+      const accountBalance = result.data.widgets?.accountBalancePnl || {}
+      const chartData = Array.isArray(result.data.widgets?.netDailyPnl)
+        ? result.data.widgets.netDailyPnl
+        : []
+
+      const normalized: DashboardStats = {
+        totalAccounts: Array.isArray(result.data.widgets?.accountBalanceChart) ? result.data.widgets.accountBalanceChart.length : 0,
+        totalTrades: apiStats.nbTrades || result.data.total || 0,
+        totalEquity: accountBalance.currentBalance || 0,
+        totalPnL: apiStats.totalPnL || accountBalance.netPnL || 0,
+        winRate: apiStats.winRate || 0,
+        profitFactor: apiStats.profitFactor || 0,
+        grossProfits: apiStats.grossWin || 0,
+        grossLosses: apiStats.grossLosses || 0,
+        winningTrades: apiStats.nbWin || 0,
+        losingTrades: apiStats.nbLoss || 0,
+        breakEvenTrades: apiStats.nbBe || 0,
+        chartData,
+        isAuthenticated: true,
+        lastUpdated: new Date().toISOString()
+      }
+
       // Cache the result
-      CacheManager.set(cacheKey, result.data.data, {
+      CacheManager.set(cacheKey, normalized, {
         ttl: CACHE_DURATION_SHORT,
         tags: [CacheTags.STATISTICS, CacheTags.DASHBOARD]
       })
 
       return { 
-        data: result.data.data, 
+        data: normalized, 
         error: null, 
         status: result.status, 
         ok: true 
@@ -191,19 +214,19 @@ class DataServiceClass {
     }
 
     // Use server action via API route
-    const result = await deduplicatedFetch<{ accounts: Account[] }>(
+    const result = await deduplicatedFetch<{ success: boolean; data: Account[] }>(
       cacheKey,
-      () => fetchWithError('/api/accounts', { timeout: API_TIMEOUT })
+      () => fetchWithError('/api/v1/accounts', { timeout: API_TIMEOUT })
     )
 
-    if (result.ok && result.data?.accounts) {
-      CacheManager.set(cacheKey, result.data.accounts, {
+    if (result.ok && result.data?.data) {
+      CacheManager.set(cacheKey, result.data.data, {
         ttl: CACHE_DURATION_MEDIUM,
         tags: [CacheTags.ACCOUNTS]
       })
 
       return {
-        data: result.data.accounts,
+        data: result.data.data,
         error: null,
         status: result.status,
         ok: true
@@ -342,24 +365,48 @@ class DataServiceClass {
   }): Promise<FetchResult<{ trades: any[]; total: number }>> {
     const params = new URLSearchParams()
     
-    if (options?.page) params.append('page', options.page.toString())
-    if (options?.limit) params.append('limit', options.limit.toString())
+    if (options?.page && options?.limit) {
+      params.append('pageLimit', options.limit.toString())
+      params.append('pageOffset', String((options.page - 1) * options.limit))
+    } else if (options?.limit) {
+      params.append('limit', options.limit.toString())
+    }
     if (options?.accountNumbers?.length) {
-      params.append('accountNumbers', options.accountNumbers.join(','))
+      params.append('accounts', options.accountNumbers.join(','))
     }
     if (options?.dateRange?.from) {
-      params.append('from', options.dateRange.from.toISOString())
+      params.append('dateFrom', options.dateRange.from.toISOString())
     }
     if (options?.dateRange?.to) {
-      params.append('to', options.dateRange.to.toISOString())
+      params.append('dateTo', options.dateRange.to.toISOString())
     }
+    params.append('includeStats', 'false')
+    params.append('includeCalendar', 'false')
+    params.append('includeWidgets', 'false')
 
-    const result = await fetchWithError<{ trades: any[]; total: number }>(
-      `/api/trades?${params.toString()}`,
+    const result = await fetchWithError<any>(
+      `/api/v1/trades?${params.toString()}`,
       { timeout: API_TIMEOUT }
     )
 
-    return result
+    if (result.ok && result.data) {
+      return {
+        data: {
+          trades: result.data.trades || [],
+          total: result.data.total || 0
+        },
+        error: null,
+        status: result.status,
+        ok: true
+      }
+    }
+
+    return {
+      data: null,
+      error: result.error,
+      status: result.status,
+      ok: false
+    }
   }
 
   // ===========================================

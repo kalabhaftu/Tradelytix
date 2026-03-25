@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { PropFirmSummaryDTO } from '@/lib/statistics/propfirm-statistics'
 
-export function usePropFirmStats() {
+export function usePropFirmStats(initialData?: PropFirmSummaryDTO) {
   return useQuery<PropFirmSummaryDTO>({
     queryKey: ['propfirm-stats'],
     queryFn: async () => {
@@ -11,6 +11,7 @@ export function usePropFirmStats() {
       if (!res.ok) throw new Error('Failed to fetch prop firm stats')
       return res.json()
     },
+    initialData,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   })

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { VisuallyHidden } from "@/components/ui/visually-hidden"
@@ -19,12 +19,10 @@ import { platforms } from './config/platforms'
 import {
   Trophy,
   CheckCircle2,
-  ArrowUp,
   FileSpreadsheet,
   MapPin,
   Wallet,
   Eye,
-  ChevronRight,
   ArrowLeft,
   Loader2,
   Upload,
@@ -33,34 +31,8 @@ import {
 import { cn } from '@/lib/utils'
 import { useUserStore } from '@/store/user-store'
 import { motion, AnimatePresence } from 'framer-motion'
-import { generateTradeHash } from '@/lib/utils'
 import { PhaseTransitionDialog } from '@/app/dashboard/components/prop-firm/phase-transition-dialog'
 import { Progress } from '@/components/ui/progress'
-
-type ColumnConfig = {
-  [key: string]: {
-    defaultMapping: string[];
-    required: boolean;
-  };
-};
-
-const columnConfig: ColumnConfig = {
-  "instrument": { defaultMapping: ["symbol", "ticker"], required: true },
-  "entryId": { defaultMapping: ["id", "tradeid", "orderid"], required: false },
-  "quantity": { defaultMapping: ["qty", "amount", "volume"], required: true },
-  "entryPrice": { defaultMapping: ["entryprice", "openprice"], required: true },
-  "closePrice": { defaultMapping: ["closeprice", "exitprice"], required: true },
-  "entryDate": { defaultMapping: ["entrydate", "opentime"], required: true },
-  "closeDate": { defaultMapping: ["closedate", "exitdate", "closetime"], required: true },
-  "pnl": { defaultMapping: ["pnl", "profit"], required: true },
-  "timeInPosition": { defaultMapping: ["timeinposition", "duration"], required: false },
-  "side": { defaultMapping: ["side", "direction"], required: false },
-  "commission": { defaultMapping: ["commission", "fee"], required: false },
-  "stopLoss": { defaultMapping: ["stoploss", "sl", "stop"], required: false },
-  "takeProfit": { defaultMapping: ["takeprofit", "tp", "target"], required: false },
-  "closeReason": { defaultMapping: ["closereason", "reason", "exitreason"], required: false },
-  "symbol": { defaultMapping: ["symbol", "ticker", "instrument"], required: false },
-}
 
 export type Step =
   | 'select-import-type'
@@ -72,6 +44,37 @@ export type Step =
   | 'complete'
   | 'process-file'
   | 'process-trades'
+
+const ASYNC_IMPORT_THRESHOLD = 500
+
+interface TradeImportJobMeta {
+  accountType?: 'prop-firm' | 'live'
+  accountName?: string
+  masterAccountId?: string
+  phaseAccountId?: string
+  evaluation?: {
+    isFailed: boolean
+    status?: string
+    message?: string
+    currentPhaseNumber?: number
+    profitTargetProgress?: number
+    currentPnL?: number
+    evaluationType?: string
+    propFirmName?: string
+  }
+}
+
+interface TradeImportJobResponse {
+  id: string
+  status: 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled'
+  stage: string
+  progress: number
+  totalItems: number
+  importedCount: number
+  skippedCount: number
+  error?: string | null
+  meta?: TradeImportJobMeta
+}
 
 // Step icons mapping
 const stepIcons: Record<string, React.ReactNode> = {
@@ -87,7 +90,7 @@ export default function ImportButton() {
   const [isOpen, setIsOpen] = useState<boolean>(false)
   const [step, setStep] = useState<Step>('select-import-type')
   const [importType, setImportType] = useState<ImportType>('')
-  const [files, setFiles] = useState<File[]>([])
+  const [files] = useState<File[]>([])
   const [rawCsvData, setRawCsvData] = useState<string[][]>([])
   const [csvData, setCsvData] = useState<string[][]>([])
   const [headers, setHeaders] = useState<string[]>([])
@@ -183,9 +186,75 @@ export default function ImportButton() {
 
     try {
       setSaveProgress(30)
+      const useAsyncJob = processedTrades.length >= ASYNC_IMPORT_THRESHOLD
+      let result: any
 
-      // Execute save operation
-      const result = await saveAndLinkTrades(selectedAccountId, processedTrades)
+      if (useAsyncJob) {
+        const createJobResponse = await fetch('/api/v1/trades/import/jobs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accountId: selectedAccountId,
+            trades: processedTrades,
+          }),
+        })
+
+        const createJobData = await createJobResponse.json().catch(() => null)
+        if (!createJobResponse.ok || !createJobData?.job) {
+          throw new Error(createJobData?.error || 'Failed to create import job')
+        }
+
+        let latestJob = createJobData.job as TradeImportJobResponse
+        const isTerminal = (status: TradeImportJobResponse['status']) =>
+          status === 'completed' || status === 'failed' || status === 'cancelled'
+
+        while (!isTerminal(latestJob.status)) {
+          const processResponse = await fetch(`/api/v1/trades/import/jobs/${latestJob.id}/process`, {
+            method: 'POST',
+          })
+          const processData = await processResponse.json().catch(() => null)
+
+          if (!processResponse.ok || !processData?.job) {
+            throw new Error(processData?.error || 'Import processing failed')
+          }
+
+          latestJob = processData.job as TradeImportJobResponse
+          setSaveProgress(Math.max(30, Math.min(95, latestJob.progress || 30)))
+
+          if (!isTerminal(latestJob.status)) {
+            await new Promise((resolve) => setTimeout(resolve, 350))
+          }
+        }
+
+        if (latestJob.status === 'cancelled') {
+          toast.info('Import cancelled', {
+            description: 'The import job was cancelled before completion.',
+            duration: 5000,
+          })
+          return
+        }
+
+        if (latestJob.status === 'failed') {
+          throw new Error(latestJob.error || 'Import failed')
+        }
+
+        result = {
+          linkedCount: latestJob.importedCount || 0,
+          totalTrades: latestJob.totalItems || processedTrades.length,
+          isDuplicate: (latestJob.importedCount || 0) === 0,
+          message: (latestJob.importedCount || 0) === 0
+            ? `All ${latestJob.totalItems || processedTrades.length} trades already exist in this account - no new trades to import`
+            : undefined,
+          isPropFirm: latestJob.meta?.accountType === 'prop-firm',
+          masterAccountId: latestJob.meta?.masterAccountId || null,
+          phaseAccountId: latestJob.meta?.phaseAccountId || null,
+          accountName: latestJob.meta?.accountName || 'Account',
+          evaluation: latestJob.meta?.evaluation,
+        }
+      } else {
+        // Fast path for smaller imports keeps current behavior unchanged.
+        result = await saveAndLinkTrades(selectedAccountId, processedTrades)
+      }
 
       setSaveProgress(70)
 

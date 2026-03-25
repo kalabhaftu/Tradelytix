@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserId } from '@/server/auth'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { CacheHeaders } from '@/lib/api-cache-headers'
 
 // GET - Fetch all tags for a user
 export async function GET(request: Request) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const userId = identity.internalUserId
 
     const tags = await prisma.tradeTag.findMany({
       where: { userId },
@@ -30,10 +31,11 @@ export async function GET(request: Request) {
 // POST - Create a new tag
 export async function POST(request: Request) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const userId = identity.internalUserId
 
     const body = await request.json()
     const { name, color } = body

@@ -44,13 +44,21 @@ const ROUTES = [
   { path: '/api/user/data/backup', method: 'GET' },
   { path: '/api/user/goals', method: 'GET' },
 
-  // Dashboard & Stats
-  { path: '/api/dashboard/stats', method: 'GET' },
-
   // V1 API
   { path: '/api/v1/init', method: 'GET' },
+  { path: '/api/v1/accounts', method: 'GET' },
+  { path: '/api/v1/accounts/test-id', method: 'GET' },
+  { path: '/api/v1/accounts/test-id/trades', method: 'GET' },
+  { path: '/api/v1/accounts/test-id/adjust-date', method: 'POST', body: {} },
   { path: '/api/v1/trades', method: 'GET' },
+  { path: '/api/v1/trades/quick-add', method: 'POST', body: {} },
+  { path: '/api/v1/trades/import/jobs', method: 'POST', body: {} },
+  { path: '/api/v1/trades/import/jobs/test-id', method: 'GET' },
+  { path: '/api/v1/trades/import/jobs/test-id/process', method: 'POST', body: {} },
+  { path: '/api/v1/trades/import/jobs/test-id/cancel', method: 'POST', body: {} },
   { path: '/api/v1/reports/stats', method: 'POST', body: {} },
+  { path: '/api/v1/reports/propfirm', method: 'GET' },
+  { path: '/api/v1/data/export', method: 'POST', body: {} },
   { path: '/api/news-events', method: 'GET' },
 
   // Notifications
@@ -69,11 +77,6 @@ const ROUTES = [
   { path: '/api/prop-firm/payouts', method: 'GET' },
   { path: '/api/prop-firm/payouts/test-id', method: 'GET' },
 
-  // Accounts
-  { path: '/api/accounts', method: 'GET' },
-  { path: '/api/accounts/test-id', method: 'GET' },
-  { path: '/api/accounts/test-id/trades', method: 'GET' },
-
   // Live Accounts
   { path: '/api/live-accounts/test-id/transactions', method: 'GET' },
 
@@ -88,12 +91,11 @@ const ROUTES = [
   { path: '/api/calendar/notes', method: 'GET' },
 
   // Data
-  { path: '/api/data/export', method: 'GET' },
+  { path: '/api/v1/data/import/jobs', method: 'POST', body: {} },
+  { path: '/api/v1/data/import/jobs/test-id', method: 'GET' },
+  { path: '/api/v1/data/import/jobs/test-id/process', method: 'POST', body: {} },
+  { path: '/api/v1/data/import/jobs/test-id/cancel', method: 'POST', body: {} },
   // import is POST with FormData - skip or add minimal test
-
-  // Trades
-  { path: '/api/trades', method: 'GET' },
-  { path: '/api/trades/quick-add', method: 'POST', body: {} },
 
   // AI
   { path: '/api/ai/format-trades', method: 'POST', body: { trades: [] } },

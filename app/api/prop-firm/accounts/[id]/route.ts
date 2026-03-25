@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserId } from '@/server/auth-utils'
+import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { BREAK_EVEN_THRESHOLD } from '@/lib/utils'
@@ -41,13 +41,14 @@ const UpdateMasterAccountSchema = z.object({
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
+    const internalUserId = identity.internalUserId
 
     const { id: masterAccountId } = await params
     // ID is pure masterAccountId (UUID), not composite
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       prisma.masterAccount.findFirst({
         where: {
           id: masterAccountId,
-          userId
+          userId: internalUserId
         },
         select: {
           id: true,
@@ -461,13 +462,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
+    const internalUserId = identity.internalUserId
 
     const { id: masterAccountId } = await params
     // ID is pure masterAccountId (UUID), not composite
@@ -478,7 +480,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const existingAccount = await prisma.masterAccount.findFirst({
       where: {
         id: masterAccountId,
-        userId
+        userId: internalUserId
       }
     })
 
@@ -498,7 +500,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // Invalidate caches after archiving/unarchiving to refresh dashboard
     if (typeof updateData.isArchived === 'boolean') {
       const { invalidateUserCaches } = await import('@/server/accounts')
-      await invalidateUserCaches(userId)
+      await invalidateUserCaches(internalUserId)
     }
 
     return NextResponse.json({
@@ -530,13 +532,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const userId = await getUserId()
-    if (!userId) {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
+    const internalUserId = identity.internalUserId
 
     const { id: masterAccountId } = await params
     // ID is pure masterAccountId (UUID), not composite
@@ -545,7 +548,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const existingAccount = await prisma.masterAccount.findFirst({
       where: {
         id: masterAccountId,
-        userId
+        userId: internalUserId
       },
       include: {
         PhaseAccount: {
@@ -612,7 +615,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     // Invalidate all cache tags to ensure fresh data
     const { invalidateUserCaches } = await import('@/server/accounts')
-    await invalidateUserCaches(userId)
+    await invalidateUserCaches(internalUserId)
 
     return NextResponse.json({
       success: true,

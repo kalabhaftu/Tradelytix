@@ -23,6 +23,7 @@ import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/
 // Tables that need realtime updates
 export const REALTIME_TABLES = ['Trade', 'Account', 'MasterAccount', 'PhaseAccount', 'Payout', 'DailyNote', 'Notification'] as const
 export type RealtimeTable = typeof REALTIME_TABLES[number]
+const TABLES_WITH_USER_ID_FILTER = new Set<RealtimeTable>(['Trade', 'Account', 'MasterAccount', 'DailyNote', 'Notification'])
 
 export type ChangeEvent = 'INSERT' | 'UPDATE' | 'DELETE'
 
@@ -124,14 +125,25 @@ class DatabaseRealtimeManager {
       // This is the PROPER way - server monitors DB and pushes changes
       for (const table of tables) {
         try {
+          const shouldFilterByUserId = TABLES_WITH_USER_ID_FILTER.has(table)
+          const postgresChangeConfig: {
+            event: '*'
+            schema: 'public'
+            table: RealtimeTable
+            filter?: string
+          } = {
+            event: '*', // Listen to INSERT, UPDATE, DELETE
+            schema: 'public',
+            table
+          }
+
+          if (shouldFilterByUserId) {
+            postgresChangeConfig.filter = `userId=eq.${userId}`
+          }
+
           channel = channel.on(
             'postgres_changes',
-            {
-              event: '*', // Listen to INSERT, UPDATE, DELETE
-              schema: 'public',
-              table: table,
-              filter: `userId=eq.${userId}` // Only changes for this user
-            },
+            postgresChangeConfig,
             (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
               this.handleChange(table, payload)
             }
@@ -323,7 +335,7 @@ export function useDatabaseRealtime(options: {
     if (change.table === 'Trade' && onTradeChangeRef.current) {
       onTradeChangeRef.current(change)
     }
-    if (['Account', 'MasterAccount', 'PhaseAccount'].includes(change.table) && onAccountChangeRef.current) {
+    if (['Account', 'MasterAccount', 'PhaseAccount', 'Payout'].includes(change.table) && onAccountChangeRef.current) {
       onAccountChangeRef.current(change)
     }
     if (change.table === 'Notification' && onNotificationChangeRef.current) {

@@ -335,15 +335,12 @@ export function JournalClient() {
     try {
       await updateTrades([matchedTrade.id], updatedTrade)
       toast.success('Trade updated successfully')
-      
-      // Close dialog and go back to details
-      router.push(`/dashboard/journal?view=details&tradeId=${matchedTrade.id}`)
 
       await refetch()
     } catch (error) {
       toast.error('Failed to update trade')
     }
-  }, [matchedTrade, updateTrades, refetch, router])
+  }, [matchedTrade, updateTrades, refetch])
 
   const handleClearFilters = useCallback(() => {
     setSearchTerm('')
@@ -376,7 +373,7 @@ export function JournalClient() {
       <div className="w-full h-[calc(100vh-3.5rem)]">
         <TradeEditPanel
           trade={ensureExtendedTrade(matchedTrade as Trade)}
-          onClose={() => router.push(`/dashboard/journal?view=details&tradeId=${matchedTrade.id}`)}
+          onClose={() => router.push('/dashboard/journal')}
           onSave={handleSaveTrade}
         />
       </div>

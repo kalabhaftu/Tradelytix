@@ -28,7 +28,6 @@ import {
   calculateTradeDurationPerformance,
   calculateWeekdayPnl,
   calculatePerformanceScoreResult,
-  calculateCalendarData,
   calculateSessionAnalysis,
 } from '@/lib/dashboard-math'
 import { calculateBalanceInfo } from '@/lib/utils/balance-calculator'
@@ -55,8 +54,30 @@ const TRADE_SELECT = {
   closePrice: true,
   stopLoss: true,
   takeProfit: true,
+  closeReason: true,
   comment: true,
+  cardPreviewImage: true,
+  imageOne: true,
+  imageTwo: true,
+  imageThree: true,
+  imageFour: true,
+  imageFive: true,
+  imageSix: true,
   tags: true,
+  marketBias: true,
+  modelId: true,
+  selectedRules: true,
+  outcome: true,
+  ruleBroken: true,
+  newsDay: true,
+  selectedNews: true,
+  newsTraded: true,
+  biasTimeframe: true,
+  narrativeTimeframe: true,
+  entryTimeframe: true,
+  structureTimeframe: true,
+  orderType: true,
+  chartLinks: true,
   userId: true,
   entryTime: true,
   exitTime: true,
@@ -250,11 +271,13 @@ export async function GET(request: NextRequest) {
       ? accounts.filter((acc: any) => accountNumbers.includes(acc.number) || accountNumbers.includes(acc.id))
       : accounts
     
-    console.log("[v0] Balance debug - filteredAccounts:", filteredAccounts.map((a: any) => ({ id: a.id, number: a.number, startingBalance: a.startingBalance, accountType: a.accountType })))
-
     // PERF: Compute all widget chart data server-side (trades already in memory)
     // This eliminates 6 separate /api/v1/dashboard/widgets calls
     const includeWidgets = params.get('includeWidgets') !== 'false'
+    const widgetCalendarData = includeWidgets
+      ? (calendarData || formatCalendarData(trades as any, accounts as any, timezone, grouped as any))
+      : null
+
     const widgets = includeWidgets ? {
       equityCurve: calculateEquityCurve(trades),
       netDailyPnl: calculateNetDailyPnl(trades),
@@ -269,7 +292,7 @@ export async function GET(request: NextRequest) {
       weekdayPnl: calculateWeekdayPnl(trades),
       performanceScore: calculatePerformanceScoreResult(trades),
       sessionAnalysis: calculateSessionAnalysis(trades),
-      calendarData: calculateCalendarData(trades),
+      calendarData: widgetCalendarData,
       accountBalancePnl: calculateBalanceInfo(filteredAccounts, trades),
     } : null
 

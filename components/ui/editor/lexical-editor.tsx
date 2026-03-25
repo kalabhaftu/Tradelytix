@@ -10,6 +10,7 @@ import { ListPlugin } from '@lexical/react/LexicalListPlugin'
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin'
 import { CheckListPlugin } from '@lexical/react/LexicalCheckListPlugin'
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary'
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 
 import { HeadingNode, QuoteNode } from '@lexical/rich-text'
 import { ListItemNode, ListNode } from '@lexical/list'
@@ -49,26 +50,83 @@ interface LexicalEditorProps {
   minHeight?: string
 }
 
+const EMPTY_EDITOR_STATE = JSON.stringify({
+  root: {
+    children: [],
+    direction: 'ltr',
+    format: '',
+    indent: 0,
+    type: 'root',
+    version: 1,
+  },
+})
+
+function toLexicalStateString(value?: string): string {
+  if (!value || value.trim() === '') return EMPTY_EDITOR_STATE
+
+  try {
+    JSON.parse(value)
+    return value
+  } catch {
+    // Migrate legacy plain text notes to a safe Lexical paragraph state.
+    return JSON.stringify({
+      root: {
+        children: [
+          {
+            children: [
+              {
+                detail: 0,
+                format: 0,
+                mode: 'normal',
+                style: '',
+                text: value,
+                type: 'text',
+                version: 1,
+              },
+            ],
+            direction: 'ltr',
+            format: '',
+            indent: 0,
+            type: 'paragraph',
+            version: 1,
+          },
+        ],
+        direction: 'ltr',
+        format: '',
+        indent: 0,
+        type: 'root',
+        version: 1,
+      },
+    })
+  }
+}
+
+function SyncExternalValuePlugin({ value }: { value?: string }) {
+  const [editor] = useLexicalComposerContext()
+
+  React.useEffect(() => {
+    const normalizedValue = toLexicalStateString(value)
+    const currentValue = JSON.stringify(editor.getEditorState().toJSON())
+    if (currentValue === normalizedValue) return
+
+    try {
+      const parsedState = editor.parseEditorState(normalizedValue)
+      editor.setEditorState(parsedState)
+    } catch (error) {
+      // Ignore malformed payloads and keep current state.
+    }
+  }, [editor, value])
+
+  return null
+}
+
 export function LexicalEditor({
   value,
   onChange,
   placeholder = 'Enter notes...',
   minHeight = '150px'
 }: LexicalEditorProps) {
-  
-  // Resilient initialization: Handle cases where the DB has raw plain text strings 
-  // instead of structured Lexical JSON without crashing.
-  let initialEditorState = null
-  if (value) {
-    try {
-      // Test if it's already valid JSON (Lexical state)
-      JSON.parse(value)
-      initialEditorState = value
-    } catch (e) {
-      // If it's a raw string from before the Lexical migration, format it as a safe basic Lexical paragraph JSON payload.
-      initialEditorState = `{"root":{"children":[{"children":[{"detail":0,"format":0,"mode":"normal","style":"","text":${JSON.stringify(value)},"type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1}],"direction":"ltr","format":"","indent":0,"type":"root","version":1}}`
-    }
-  }
+  const initialEditorState = toLexicalStateString(value)
 
   const initialConfig = {
     namespace: 'DeltalytixEditor',
@@ -118,6 +176,7 @@ export function LexicalEditor({
           <ListPlugin />
           <CheckListPlugin />
           <LinkPlugin />
+          <SyncExternalValuePlugin value={value} />
           <OnChangePlugin onChange={handleChange} />
         </div>
       </LexicalComposer>

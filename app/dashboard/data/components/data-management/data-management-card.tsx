@@ -31,7 +31,6 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -41,6 +40,7 @@ import { ImportDialog } from './import-dialog'
 import { DeleteAllDataDialog } from '@/components/data-management/delete-all-data-dialog'
 import { useUserStore } from '@/store/user-store'
 import { useSearchParams } from 'next/navigation'
+import { EntityListSkeleton } from '@/components/ui/non-dashboard-skeletons'
 
 type AccountWithTrades = {
   id: string
@@ -97,24 +97,6 @@ function getPhaseDisplayLabel(evaluationType: string | undefined, phaseNumber: n
     return 'Funded'
   }
   return `Phase ${phaseNumber}`
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-4">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="border rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-5 w-5 rounded" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-5 w-48" />
-              <Skeleton className="h-4 w-32" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
 }
 
 // Custom fetcher for Data Management
@@ -422,7 +404,7 @@ export function DataManagementCard() {
       />
 
       {/* Loading State */}
-      {accountsLoading && <LoadingSkeleton />}
+      {accountsLoading && <EntityListSkeleton items={3} />}
 
       {/* Select All */}
       {!accountsLoading && accountsWithTrades.length > 0 && (

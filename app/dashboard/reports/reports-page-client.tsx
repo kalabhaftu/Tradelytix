@@ -74,7 +74,6 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Skeleton } from '@/components/ui/skeleton'
 import {
     Tooltip,
     TooltipContent,
@@ -84,6 +83,7 @@ import {
 import { DiverseCharts } from './components/diverse-charts'
 import { PerformanceCard } from './components/performance-card'
 import { PropFirmTab } from './components/propfirm-tab'
+import { StatsGridSkeleton, TablePanelSkeleton } from '@/components/ui/non-dashboard-skeletons'
 
 interface ReportsPageClientProps {
     initialReportData?: ReportStatsResponse | null
@@ -514,10 +514,12 @@ export default function ReportsPageClient({
                 />
 
                 {isLoading ? (
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                            <Skeleton key={i} className="h-28 rounded-lg bg-muted/20" />
-                        ))}
+                    <div className="space-y-6">
+                        <StatsGridSkeleton count={8} />
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <TablePanelSkeleton rows={5} />
+                            <TablePanelSkeleton rows={5} />
+                        </div>
                     </div>
                 ) : !tradingActivity || !psychMetrics || filteredTrades.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 border border-dashed border-border/60 rounded-2xl bg-muted/5">

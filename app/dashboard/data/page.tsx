@@ -3,7 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useEffect, lazy, Suspense, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Skeleton } from "@/components/ui/skeleton"
+import { DataRouteSkeleton, TablePanelSkeleton } from "@/components/ui/non-dashboard-skeletons"
 
 // Force dynamic rendering to avoid static generation issues
 export const dynamic = 'force-dynamic'
@@ -11,16 +11,6 @@ export const dynamic = 'force-dynamic'
 // Lazy load heavy components
 const TradeTable = lazy(() => import("@/app/dashboard/data/components/data-management/trade-table"))
 const DataManagementCard = lazy(() => import("@/app/dashboard/data/components/data-management/data-management-card").then(mod => ({ default: mod.DataManagementCard })))
-
-// Loading skeleton for tables
-function TableSkeleton() {
-  return (
-    <div className="space-y-4">
-      <Skeleton className="h-10 w-full" />
-      <Skeleton className="h-64 w-full" />
-    </div>
-  )
-}
 
 function DashboardContent() {
   const router = useRouter()
@@ -49,12 +39,12 @@ function DashboardContent() {
             <TabsTrigger value="trades">Trades</TabsTrigger>
           </TabsList>
           <TabsContent value="accounts" className="mt-6">
-            <Suspense fallback={<TableSkeleton />}>
+            <Suspense fallback={<TablePanelSkeleton rows={6} />}>
               <DataManagementCard />
             </Suspense>
           </TabsContent>
           <TabsContent value="trades" className="mt-6">
-            <Suspense fallback={<TableSkeleton />}>
+            <Suspense fallback={<TablePanelSkeleton rows={8} />}>
               <TradeTable />
             </Suspense>
           </TabsContent>
@@ -66,8 +56,8 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<TableSkeleton />}>
+    <Suspense fallback={<DataRouteSkeleton />}>
       <DashboardContent />
     </Suspense>
   )
-}
+}

@@ -6,10 +6,10 @@ import { useAuth } from "@/context/auth-provider"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft } from 'lucide-react'
 import ImportTradesCard from '@/app/dashboard/components/import/import-trades-card'
+import { ImportRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
 
 interface AccountData {
   id: string
@@ -67,21 +67,7 @@ export default function NewTradePage() {
   }, [user, accountId, fetchAccount])
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen">
-        <div className="container mx-auto p-6 max-w-7xl">
-          <div className="flex items-center gap-4 mb-6">
-            <Skeleton className="h-9 w-32" />
-            <div>
-              <Skeleton className="h-8 w-48 mb-2" />
-              <Skeleton className="h-4 w-64" />
-            </div>
-          </div>
-          <Skeleton className="h-40 w-full rounded-lg mb-6" />
-          <Skeleton className="h-64 w-full rounded-lg" />
-        </div>
-      </div>
-    )
+    return <ImportRouteSkeleton />
   }
 
   if (!account) {

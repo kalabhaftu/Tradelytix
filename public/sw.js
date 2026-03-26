@@ -1,10 +1,10 @@
 // Deltalytix Service Worker - Optimized for performance
 // Provides offline functionality, caching, and background sync
 
-const CACHE_NAME = 'deltalytix-v1.0.1' // Updated version
-const STATIC_CACHE = 'deltalytix-static-v1.0.1'
-const API_CACHE = 'deltalytix-api-v1.0.1'
-const IMAGE_CACHE = 'deltalytix-images-v1.0.1'
+const CACHE_NAME = 'deltalytix-v1.1.0' // Updated version
+const STATIC_CACHE = 'deltalytix-static-v1.1.0'
+const API_CACHE = 'deltalytix-api-v1.1.0'
+const IMAGE_CACHE = 'deltalytix-images-v1.1.0'
 
 // Minimal files to cache for performance
 const STATIC_FILES = [
@@ -73,6 +73,11 @@ self.addEventListener('fetch', (event) => {
   
   // Skip non-GET requests and chrome-extension requests
   if (request.method !== 'GET' || url.protocol === 'chrome-extension:') {
+    return
+  }
+
+  // Never intercept Next.js static chunks/data. Let browser fetch these directly.
+  if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/_next/data/')) {
     return
   }
 
@@ -393,7 +398,7 @@ async function getCacheStatus() {
 
 // Helper functions
 function isStaticFile(url) {
-  const staticExtensions = ['.css', '.js', '.woff', '.woff2', '.ttf', '.eot']
+  const staticExtensions = ['.woff', '.woff2', '.ttf', '.eot']
   return staticExtensions.some(ext => url.pathname.endsWith(ext))
 }
 

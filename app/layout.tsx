@@ -12,6 +12,7 @@ import { QueryProvider } from "@/lib/query/query-provider";
 import { DeploymentMonitor } from "@/components/deployment-monitor";
 import { ErrorBoundaryWrapper } from "@/components/error-boundary";
 import { SeasonalManager } from "@/app/dashboard/components/seasonal/seasonal-manager";
+import { ServiceWorkerCleanup } from "@/components/service-worker-cleanup";
 import Script from "next/script"
 
 // Font configuration now imported from lib/fonts.ts
@@ -43,7 +44,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable} translate="no" suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} dark`} translate="no" suppressHydrationWarning>
       <head>
         {/* Prevent Google Translate */}
         <meta name="google" content="notranslate" />
@@ -54,21 +55,34 @@ export default async function RootLayout({
           {`
             (function() {
               try {
+                var root = document.documentElement;
+                // Dark-first prepaint to avoid white flash on hard refresh.
+                root.style.colorScheme = 'dark';
+                if (!root.classList.contains('dark')) {
+                  root.classList.add('dark');
+                }
+
                 var saved = localStorage.getItem('theme') || 'dark';
                 var effective = saved;
                 if (saved === 'system') {
                   effective = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
                 }
                 if (effective !== 'light' && effective !== 'dark') effective = 'dark';
-                document.documentElement.classList.remove('light', 'dark');
-                document.documentElement.classList.add(effective);
-                document.documentElement.style.colorScheme = effective;
+                if (effective === 'light') {
+                  root.classList.remove('dark');
+                  root.classList.add('light');
+                  root.style.colorScheme = 'light';
+                } else {
+                  root.classList.remove('light');
+                  root.classList.add('dark');
+                  root.style.colorScheme = 'dark';
+                }
 
                 // Restore accent pack
                 var accent = localStorage.getItem('accentPack') || 'classic';
-                document.documentElement.classList.remove('accent-reports');
+                root.classList.remove('accent-reports');
                 if (accent === 'reports') {
-                  document.documentElement.classList.add('accent-reports');
+                  root.classList.add('accent-reports');
                 }
               } catch (e) {
                 document.documentElement.classList.add('dark');
@@ -197,16 +211,29 @@ export default async function RootLayout({
             html {
               margin: 0;
               padding: 0;
+              background-color: #020817 !important;
+              color-scheme: dark;
               overflow-y: scroll !important;
               overflow-x: hidden !important;
               scrollbar-gutter: stable !important;
               -ms-overflow-style: scrollbar !important;
             }
 
+            html.dark {
+              background-color: #020817 !important;
+              color-scheme: dark;
+            }
+
+            html.light {
+              background-color: #ffffff !important;
+              color-scheme: light;
+            }
+
             body {
               min-height: 100vh !important;
               margin: 0 !important;
               padding: 0 !important;
+              background-color: inherit !important;
               overflow-x: hidden !important;
             }
 
@@ -248,6 +275,7 @@ export default async function RootLayout({
               <ConsoleFilterWrapper>
                 <AuthProvider>
                   <TooltipProvider>
+                    <ServiceWorkerCleanup />
                     <DeploymentMonitor />
                     <CookieNotice />
                     <SafeToaster />

@@ -1,19 +1,94 @@
 import { toast } from 'sonner'
 
+const CHUNK_RETRY_KEY = 'chunk_load_retry_once'
+const CHUNK_RETRY_CLEAR_DELAY_MS = 30000
+
+let globalErrorHandlersAttached = false
+let chunkRecoveryInProgress = false
+let chunkFailureToastShown = false
+
 /**
  * Detects if an error is a Server Action mismatch error
  * This happens when the client has old action IDs after a new deployment
  */
 export function isServerActionMismatchError(error: unknown): boolean {
   if (!error) return false
-  
+
   const errorMessage = error instanceof Error ? error.message : String(error)
-  
+
   return (
     errorMessage.includes('Failed to find Server Action') ||
     errorMessage.includes('This request might be from an older or newer deployment') ||
-    errorMessage.includes('Cannot read properties of undefined') && errorMessage.includes('workers')
+    (errorMessage.includes('Cannot read properties of undefined') && errorMessage.includes('workers'))
   )
+}
+
+/**
+ * Detects chunk loading/runtime asset failures.
+ */
+export function isChunkLoadError(error: unknown): boolean {
+  if (!error) return false
+
+  const errorMessage = error instanceof Error ? error.message : String(error)
+
+  return (
+    errorMessage.includes('ChunkLoadError') ||
+    errorMessage.includes('Loading chunk') ||
+    errorMessage.includes('Failed to fetch dynamically imported module') ||
+    errorMessage.includes('ERR_HTTP2_PING_FAILED') ||
+    errorMessage.includes('timeout') && errorMessage.includes('/_next/static/chunks/')
+  )
+}
+
+function reloadPage() {
+  if (typeof window === 'undefined') return
+  window.location.reload()
+}
+
+function handleChunkRecovery(showToast: boolean): boolean {
+  if (typeof window === 'undefined') return true
+
+  if (chunkRecoveryInProgress) return true
+  chunkRecoveryInProgress = true
+
+  const alreadyRetried = window.sessionStorage.getItem(CHUNK_RETRY_KEY) === '1'
+
+  if (!alreadyRetried) {
+    window.sessionStorage.setItem(CHUNK_RETRY_KEY, '1')
+
+    if (showToast) {
+      toast.info('Connection interrupted. Reloading app…', {
+        duration: 1200,
+        description: 'Retrying failed asset load',
+      })
+    }
+
+    window.setTimeout(() => {
+      reloadPage()
+    }, 800)
+
+    return true
+  }
+
+  // Second failure: stop auto-looping and show explicit action.
+  chunkRecoveryInProgress = false
+
+  if (showToast && !chunkFailureToastShown) {
+    chunkFailureToastShown = true
+    toast.error('Failed to load application assets', {
+      duration: Infinity,
+      description: 'Your network interrupted static chunk loading. Please refresh to retry.',
+      action: {
+        label: 'Refresh',
+        onClick: () => {
+          window.sessionStorage.removeItem(CHUNK_RETRY_KEY)
+          reloadPage()
+        },
+      },
+    })
+  }
+
+  return true
 }
 
 /**
@@ -21,15 +96,8 @@ export function isServerActionMismatchError(error: unknown): boolean {
  */
 export function isDeploymentError(error: unknown): boolean {
   if (!error) return false
-  
-  const errorMessage = error instanceof Error ? error.message : String(error)
-  
-  return (
-    isServerActionMismatchError(error) ||
-    errorMessage.includes('ChunkLoadError') ||
-    errorMessage.includes('Loading chunk') ||
-    errorMessage.includes('Failed to fetch dynamically imported module')
-  )
+
+  return isServerActionMismatchError(error) || isChunkLoadError(error)
 }
 
 /**
@@ -46,8 +114,11 @@ export function handleServerActionError(error: unknown, options?: {
     autoRefresh = true,
     refreshDelay = 2000,
     showToast = true,
-    context = ''
   } = options || {}
+
+  if (isChunkLoadError(error)) {
+    return handleChunkRecovery(showToast)
+  }
 
   if (isServerActionMismatchError(error)) {
     if (showToast) {
@@ -56,9 +127,9 @@ export function handleServerActionError(error: unknown, options?: {
           duration: refreshDelay,
           description: 'A new version was deployed',
         })
-        
+
         setTimeout(() => {
-          window.location.reload()
+          reloadPage()
         }, refreshDelay)
       } else {
         toast.info('App version mismatch detected', {
@@ -66,31 +137,17 @@ export function handleServerActionError(error: unknown, options?: {
           description: 'Please refresh the page to continue',
           action: {
             label: 'Refresh',
-            onClick: () => window.location.reload(),
+            onClick: () => reloadPage(),
           },
         })
       }
     } else if (autoRefresh) {
       // Silent refresh without toast
       setTimeout(() => {
-        window.location.reload()
+        reloadPage()
       }, refreshDelay)
     }
-    
-    return true // Error was handled
-  }
 
-  if (isDeploymentError(error)) {
-    if (showToast) {
-      toast.error('Failed to load resource', {
-        description: 'The app was recently updated. Please refresh the page.',
-        action: {
-          label: 'Refresh',
-          onClick: () => window.location.reload(),
-        },
-      })
-    }
-    
     return true // Error was handled
   }
 
@@ -116,13 +173,13 @@ export function withServerActionErrorHandling<T extends (...args: any[]) => Prom
       return await fn(...args)
     } catch (error) {
       const wasHandled = handleServerActionError(error, options)
-      
+
       if (!wasHandled) {
         // If it wasn't a deployment error, call the custom error handler
         options?.onError?.(error)
         throw error // Re-throw for normal error handling
       }
-      
+
       // Return a rejected promise for deployment errors
       return Promise.reject(error)
     }
@@ -135,6 +192,16 @@ export function withServerActionErrorHandling<T extends (...args: any[]) => Prom
  */
 export function setupGlobalServerActionErrorHandler() {
   if (typeof window === 'undefined') return
+  if (globalErrorHandlersAttached) return
+
+  globalErrorHandlersAttached = true
+
+  // Clear one-time retry guard after stable runtime window.
+  window.setTimeout(() => {
+    window.sessionStorage.removeItem(CHUNK_RETRY_KEY)
+    chunkRecoveryInProgress = false
+    chunkFailureToastShown = false
+  }, CHUNK_RETRY_CLEAR_DELAY_MS)
 
   // Handle unhandled promise rejections (Server Actions often throw these)
   window.addEventListener('unhandledrejection', (event) => {
@@ -162,4 +229,3 @@ export function setupGlobalServerActionErrorHandler() {
     }
   })
 }
-

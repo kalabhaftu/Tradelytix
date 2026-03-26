@@ -20,6 +20,7 @@ import {
 } from "lucide-react"
 import { useRouter } from 'next/navigation'
 import { cn } from "@/lib/utils"
+import { PayoutsRouteSkeleton, TablePanelSkeleton } from "@/components/ui/non-dashboard-skeletons"
 
 interface PayoutData {
   id: string
@@ -114,6 +115,10 @@ export default function PayoutsPage() {
     payout.status.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  if (isLoading && payouts.length === 0) {
+    return <PayoutsRouteSkeleton />
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
@@ -158,9 +163,7 @@ export default function PayoutsPage() {
 
       {/* Payouts List */}
       {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <Spinner className="h-8 w-8" />
-        </div>
+        <TablePanelSkeleton rows={6} />
       ) : filteredPayouts.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center h-64">

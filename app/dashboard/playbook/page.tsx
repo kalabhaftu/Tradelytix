@@ -19,7 +19,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Skeleton } from '@/components/ui/skeleton'
 import { BREAK_EVEN_THRESHOLD, classifyTrade, cn, formatCurrency, formatNoteContent } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { Eye, FileText, MoreVertical, Pencil, Plus, Trash2 as Trash } from 'lucide-react'
@@ -28,6 +27,7 @@ import { toast } from 'sonner'
 import { AddEditModelModal } from './components/add-edit-model-modal'
 import { useTradingModels } from '@/hooks/use-trading-models'
 import { useQueryClient } from '@tanstack/react-query'
+import { CardsGridSkeleton } from '@/components/ui/non-dashboard-skeletons'
 
 interface TradingModel {
   id: string
@@ -224,11 +224,7 @@ export default function PlaybookPage() {
 
         {/* Models Grid */}
         {isLoading ? (
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-48 rounded-xl bg-muted/20" />
-            ))}
-          </div>
+          <CardsGridSkeleton cards={3} />
         ) : models.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 border border-dashed border-border/40 rounded-3xl bg-muted/5">
             <FileText className="h-12 w-12 text-muted-foreground/20 mb-6" />

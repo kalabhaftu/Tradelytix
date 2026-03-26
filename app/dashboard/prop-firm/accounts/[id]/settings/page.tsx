@@ -26,6 +26,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AccountStatus, PhaseType } from "@/types/prop-firm"
+import { SettingsRouteSkeleton } from "@/components/ui/non-dashboard-skeletons"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -234,13 +235,7 @@ export default function AccountSettingsPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <Spinner className="h-8 w-8" />
-        </div>
-      </div>
-    )
+    return <SettingsRouteSkeleton />
   }
 
   if (!account) {

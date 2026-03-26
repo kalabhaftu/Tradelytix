@@ -55,9 +55,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === 'undefined') return
     const effective = resolveEffective(t)
     const root = window.document.documentElement
-    root.classList.remove('light', 'dark')
-    root.classList.add(effective)
-    root.style.colorScheme = effective
+    if (effective === 'light') {
+      root.classList.remove('dark')
+      root.classList.add('light')
+      root.style.colorScheme = 'light'
+    } else {
+      root.classList.remove('light')
+      root.classList.add('dark')
+      root.style.colorScheme = 'dark'
+    }
   }
 
   useEffect(() => {

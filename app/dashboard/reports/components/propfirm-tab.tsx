@@ -3,7 +3,7 @@
 import { usePropFirmStats } from '@/hooks/use-propfirm-stats'
 import type { PropFirmSummaryDTO } from '@/lib/statistics/propfirm-statistics'
 import { cn } from '@/lib/utils'
-import { Skeleton } from '@/components/ui/skeleton'
+import { PropFirmTabRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
 import {
     Trophy,
     AlertTriangle,
@@ -183,16 +183,7 @@ export function PropFirmTab({ initialData }: PropFirmTabProps) {
     const { data, isLoading } = usePropFirmStats(initialData)
 
     if (isLoading) {
-        return (
-            <div className="space-y-6">
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                    {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-20 rounded-xl bg-muted/20" />)}
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-64 rounded-2xl bg-muted/20" />)}
-                </div>
-            </div>
-        )
+        return <PropFirmTabRouteSkeleton />
     }
 
     if (!data || data.accounts.length === 0) {

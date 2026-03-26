@@ -22,6 +22,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { formatQuantity, formatTradeData, BREAK_EVEN_THRESHOLD, ensureExtendedTrade, cn } from '@/lib/utils'
 import { updateTradeAction } from '@/server/trades'
 import { ExtendedTrade } from '@/types/trade-extended'
+import { TablePanelSkeleton } from '@/components/ui/non-dashboard-skeletons'
 
 type SortConfig = {
   key: keyof Trade
@@ -256,6 +257,10 @@ export default function TradeTable() {
     sideFilter !== 'all',
     pnlFilter !== 'all'
   ].filter(Boolean).length
+
+  if (tradesLoading && formattedTrades.length === 0) {
+    return <TablePanelSkeleton rows={8} />
+  }
 
   return (
     <div className="w-full space-y-4">

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
-import { 
+import {
   ArrowLeft,
   RefreshCcw,
   Plus,
@@ -26,6 +26,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AccountStatus, PhaseType } from "@/types/prop-firm"
+import { PayoutsRouteSkeleton, TablePanelSkeleton } from "@/components/ui/non-dashboard-skeletons"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -130,6 +131,10 @@ export default function AccountPayoutsPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, accountId])
+
+  if (isLoading && !account) {
+    return <PayoutsRouteSkeleton />
+  }
 
   if (!account) {
     return (
@@ -288,9 +293,7 @@ export default function AccountPayoutsPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Spinner className="h-8 w-8 text-muted-foreground" />
-            </div>
+            <TablePanelSkeleton rows={5} />
           ) : payouts.length === 0 ? (
             <div className="text-center py-8">
               <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

@@ -23,6 +23,7 @@ import { TransactionDialog } from "@/app/dashboard/components/accounts/transacti
 import { TransactionHistory } from "@/app/dashboard/components/accounts/transaction-history"
 import { useUserStore } from '@/store/user-store'
 import { useDatabaseRealtime } from '@/lib/realtime/database-realtime'
+import { PropFirmDetailRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
 
 interface LiveAccountData {
   id: string
@@ -141,38 +142,7 @@ export default function LiveAccountDetailPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="space-y-6">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              onClick={() => router.push('/dashboard/accounts')}
-              className="p-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <div className="h-8 bg-muted/40 rounded w-64 animate-pulse"></div>
-              <div className="h-4 bg-muted/30 rounded w-32 mt-2 animate-pulse"></div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <Card key={i} className="animate-pulse bg-card/50 border-border/40">
-                <CardHeader>
-                  <div className="h-6 bg-muted/40 rounded w-3/4"></div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-8 bg-muted/30 rounded"></div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
+    return <PropFirmDetailRouteSkeleton />
   }
 
   if (!account) {

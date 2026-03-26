@@ -105,11 +105,6 @@ const nextConfig = {
     return config
   },
 
-  // Ensure proper file generation
-  generateBuildId: async () => {
-    return 'build-' + Date.now()
-  },
-
   // Vercel-specific configuration
   trailingSlash: false,
   pageExtensions: ['tsx', 'ts', 'jsx', 'js'],

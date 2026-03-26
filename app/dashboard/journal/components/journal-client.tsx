@@ -23,8 +23,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
+import { JournalRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
 import { AIAnalysisDialog } from '@/app/dashboard/components/journal/ai-analysis-dialog'
 import {
   DropdownMenu,
@@ -140,75 +140,6 @@ function JournalStats({ statistics }: { statistics: any }) {
           <p className="text-2xl font-bold tracking-tight">{stats.avgDuration}m</p>
         </CardContent>
       </Card>
-    </div>
-  )
-}
-
-// Loading Skeleton
-function JournalSkeleton() {
-  return (
-    <div className="w-full max-w-full py-6 px-4 sm:px-6 space-y-6">
-      {/* Header skeleton */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-64 mt-2" />
-        </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-9 w-24" />
-          <Skeleton className="h-9 w-24" />
-        </div>
-      </div>
-
-      {/* Stats skeleton */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {[...Array(4)].map((_, i) => (
-          <Card key={i}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <Skeleton className="h-3 w-20" />
-                  <Skeleton className="h-6 w-16" />
-                </div>
-                <Skeleton className="h-8 w-8 rounded-lg" />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Filters skeleton */}
-      <div className="flex gap-3">
-        <Skeleton className="h-9 flex-1 max-w-md" />
-        <Skeleton className="h-9 w-24" />
-        <Skeleton className="h-9 w-24" />
-      </div>
-
-      {/* Cards skeleton */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(9)].map((_, i) => (
-          <Card key={i} className="overflow-hidden">
-            <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <Skeleton className="h-6 w-24" />
-                <Skeleton className="h-6 w-16" />
-              </div>
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="aspect-video w-full rounded-md" />
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Skeleton className="h-3 w-12" />
-                  <Skeleton className="h-5 w-20 mt-1" />
-                </div>
-                <div>
-                  <Skeleton className="h-3 w-12" />
-                  <Skeleton className="h-5 w-20 mt-1" />
-                </div>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
     </div>
   )
 }
@@ -353,7 +284,7 @@ export function JournalClient() {
 
   // Show loading skeleton
   if (isLoading && paginatedTrades.length === 0) {
-    return <JournalSkeleton />
+    return <JournalRouteSkeleton />
   }
 
   // If detail or edit view is active, show the panel instead of journal cards

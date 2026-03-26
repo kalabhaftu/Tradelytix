@@ -1,5 +1,6 @@
 import { TagSelector } from '@/app/dashboard/components/tags/tag-selector'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { MARKET_BIAS_OPTIONS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { MarketBias, TradeOutcome } from '@/types/trade-extended'
@@ -128,25 +129,28 @@ export function TradeStrategyTab({
                 {/* Order Type */}
                 <div className="space-y-3">
                     <Label htmlFor="order-type" className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/70">Execution Logic</Label>
-                    <select
-                        id="order-type"
-                        value={orderType || ''}
-                        onChange={(e) => setOrderType(e.target.value || null)}
-                        className="w-full h-11 rounded-xl border border-border/40 bg-muted/10 px-4 py-1 text-xs font-bold uppercase tracking-tighter focus:border-primary/50 focus:ring-0 transition-all cursor-pointer"
+                    <Select
+                        value={orderType || '__none__'}
+                        onValueChange={(value) => setOrderType(value === '__none__' ? null : value)}
                     >
-                        <option value="">UNCATEGORIZED</option>
-                        <option value="market">MARKET ORDER</option>
-                        <option value="limit">LIMIT ORDER</option>
-                    </select>
+                        <SelectTrigger id="order-type" className="w-full h-11 rounded-xl border-border/40 bg-muted/10 text-xs font-bold uppercase tracking-tighter">
+                            <SelectValue placeholder="UNCATEGORIZED" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="__none__">UNCATEGORIZED</SelectItem>
+                            <SelectItem value="market">MARKET ORDER</SelectItem>
+                            <SelectItem value="limit">LIMIT ORDER</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 {/* Trading Model */}
                 <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/70">Trading System (Model)</Label>
-                    <select
-                        value={selectedModelId || ''}
-                        onChange={(e) => {
-                            const modelId = e.target.value || null
+                    <Select
+                        value={selectedModelId || '__none__'}
+                        onValueChange={(value) => {
+                            const modelId = value === '__none__' ? null : value
                             setModelId(modelId)
                             const model = tradingModels.find(m => m.id === modelId)
                             setSelectedModel(model || null)
@@ -154,15 +158,19 @@ export function TradeStrategyTab({
                                 setSelectedRules([])
                             }
                         }}
-                        className="w-full h-11 rounded-xl border border-border/40 bg-muted/10 px-4 py-1 text-xs font-bold uppercase tracking-tighter focus:border-primary/50 focus:ring-0 transition-all cursor-pointer"
                     >
-                        <option value="">NO ACTIVE MODEL</option>
-                        {tradingModels.map((model) => (
-                            <option key={model.id} value={model.id}>
-                                {model.name.toUpperCase()}
-                            </option>
-                        ))}
-                    </select>
+                        <SelectTrigger className="w-full h-11 rounded-xl border-border/40 bg-muted/10 text-xs font-bold uppercase tracking-tighter">
+                            <SelectValue placeholder="NO ACTIVE MODEL" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="__none__">NO ACTIVE MODEL</SelectItem>
+                            {tradingModels.map((model) => (
+                                <SelectItem key={model.id} value={model.id}>
+                                    {model.name.toUpperCase()}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
 

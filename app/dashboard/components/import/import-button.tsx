@@ -5,6 +5,16 @@ import { Spinner } from '@/components/ui/spinner'
 import React, { useState, useCallback, useMemo } from 'react'
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { VisuallyHidden } from "@/components/ui/visually-hidden"
 import { toast } from "sonner"
 // UploadIcon removed
@@ -90,6 +100,7 @@ const stepIcons: Record<string, React.ReactNode> = {
 
 export default function ImportButton() {
   const [isOpen, setIsOpen] = useState<boolean>(false)
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false)
   const [step, setStep] = useState<Step>('select-import-type')
   const [importType, setImportType] = useState<ImportType>('')
   const [files] = useState<File[]>([])
@@ -414,6 +425,36 @@ export default function ImportButton() {
     return false
   }, [isLoading, platform, step, csvData.length, selectedAccountId, processedTrades.length])
 
+  const hasImportProgress = useMemo(() => {
+    return Boolean(
+      importType ||
+      step !== 'select-import-type' ||
+      rawCsvData.length > 0 ||
+      csvData.length > 0 ||
+      headers.length > 0 ||
+      Object.keys(mappings).length > 0 ||
+      accountNumber ||
+      newAccountNumber ||
+      selectedAccountId ||
+      processedTrades.length > 0 ||
+      isLoading ||
+      isSaving
+    )
+  }, [
+    importType,
+    step,
+    rawCsvData.length,
+    csvData.length,
+    headers.length,
+    mappings,
+    accountNumber,
+    newAccountNumber,
+    selectedAccountId,
+    processedTrades.length,
+    isLoading,
+    isSaving,
+  ])
+
   const renderStep = useCallback(() => {
     if (!platform) return null
 
@@ -595,10 +636,23 @@ export default function ImportButton() {
         </Button>
       </motion.div>
 
-      <Dialog open={isOpen} onOpenChange={(open) => {
-        setIsOpen(open)
-        if (!open) resetImportState()
-      }}>
+      <Dialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            setIsOpen(true)
+            return
+          }
+
+          if (hasImportProgress) {
+            setShowCloseConfirm(true)
+            return
+          }
+
+          setIsOpen(false)
+          resetImportState()
+        }}
+      >
         <DialogContent
           className="flex flex-col w-full max-w-[95vw] sm:max-w-4xl h-[85vh] p-0 bg-background border border-border shadow-lg overflow-hidden gap-0 duration-200 sm:rounded-lg rounded-none"
           onOpenAutoFocus={(e) => {
@@ -732,6 +786,30 @@ export default function ImportButton() {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard import progress?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have import progress in this panel (selected file, mappings, or previewed trades). Closing now will reset it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Editing</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                setShowCloseConfirm(false)
+                setIsOpen(false)
+                resetImportState()
+              }}
+            >
+              Discard & Close
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

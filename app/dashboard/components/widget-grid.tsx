@@ -69,12 +69,13 @@ import { useTemplates } from '@/context/template-provider'
 import { useData } from '@/context/data-provider'
 import { useAccounts } from '@/hooks/use-accounts'
 import { cn } from '@/lib/utils'
+import { cloneDefaultTemplateLayout } from '@/lib/dashboard/default-template-layout'
 import type { WidgetLayout } from '@/server/dashboard-templates'
 import type { WidgetType } from '../types/dashboard'
 import WidgetLibraryDialog from './widget-library-dialog'
 import KpiWidgetSelector from './kpi-widget-selector'
 import { EmptyAccountState } from './empty-account-state'
-import { MainDashboardSkeleton } from '@/components/ui/dashboard-skeleton'
+import { TemplateAwareDashboardSkeleton } from '@/components/ui/dashboard-skeleton'
 import { WIDGET_GRID_DEFAULTS } from '../config/widget-dimensions'
 import { toast } from 'sonner'
 
@@ -301,16 +302,32 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
     (!accountFilterSettings?.selectedPhaseAccountIds || accountFilterSettings.selectedPhaseAccountIds.length === 0) &&
     accounts && accounts.length > 0
 
-  if (isLoading || !activeTemplate) {
-    return <MainDashboardSkeleton />
-  }
-
   if (showEmptyState) {
     return <EmptyAccountState />
   }
 
   // Whether the grid has finished its initial width measurement
   const gridReady = gridMounted && containerWidth > 0
+  const shouldShowTemplateSkeleton = isLoading || !activeTemplate || !gridReady
+  const skeletonLayout = layout.length > 0
+    ? layout
+    : ((activeTemplate?.layout?.length ? activeTemplate.layout : cloneDefaultTemplateLayout()) as WidgetLayout[])
+
+  if (shouldShowTemplateSkeleton) {
+    return (
+      <div className={cn('px-2', className)} ref={gridContainerRef}>
+        <TemplateAwareDashboardSkeleton
+          layout={skeletonLayout.map(item => ({
+            i: item.i,
+            x: item.x,
+            y: item.y,
+            w: item.w,
+            h: item.h,
+          }))}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className={cn('space-y-3', className)}>
@@ -374,7 +391,6 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
       {/* Main Grid — react-grid-layout */}
       {/* The ref div MUST always be in the DOM so ResizeObserver can measure width */}
       <div className="px-2" ref={gridContainerRef}>
-        {gridReady ? (
         <Responsive
           width={containerWidth}
           layouts={gridLayouts}
@@ -430,9 +446,6 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
             )
           })}
         </Responsive>
-        ) : (
-          <MainDashboardSkeleton />
-        )}
       </div>
 
       {/* Add new widget button at bottom in edit mode */}

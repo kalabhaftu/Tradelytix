@@ -12,6 +12,7 @@ import {
   type WidgetLayout
 } from '@/server/dashboard-templates'
 import { ensureDefaultTemplate } from '@/server/seed-default-template'
+import { cloneDefaultTemplateLayout } from '@/lib/dashboard/default-template-layout'
 import { toast } from 'sonner'
 
 interface TemplateContextType {
@@ -27,49 +28,30 @@ interface TemplateContextType {
 
 const TemplateContext = createContext<TemplateContextType | null>(null)
 
-// Default layout for instant rendering - synchronized with server/dashboard-templates.ts
-const DEFAULT_LAYOUT: WidgetLayout[] = [
-  // Row 0: KPI Widgets (5 slots)
-  { i: 'kpi-1', type: 'accountBalancePnl', size: 'kpi', x: 0, y: 0, w: 1, h: 1 },
-  { i: 'kpi-2', type: 'tradeWinRate', size: 'kpi', x: 1, y: 0, w: 1, h: 1 },
-  { i: 'kpi-3', type: 'dayWinRate', size: 'kpi', x: 2, y: 0, w: 1, h: 1 },
-  { i: 'kpi-4', type: 'profitFactor', size: 'kpi', x: 3, y: 0, w: 1, h: 1 },
-  { i: 'kpi-5', type: 'avgWinLoss', size: 'kpi', x: 4, y: 0, w: 1, h: 1 },
-  // Row 1: Equity Curve + Outcome Distribution
-  { i: 'equity-curve', type: 'equityCurve', size: 'large', x: 0, y: 1, w: 8, h: 4 },
-  { i: 'outcome-dist', type: 'outcomeDistribution', size: 'medium', x: 8, y: 1, w: 4, h: 4 },
-  // Row 2: Recent Trades + Mini Calendar
-  { i: 'recent-trades', type: 'recentTrades', size: 'small', x: 0, y: 5, w: 4, h: 5 },
-  { i: 'mini-calendar', type: 'calendarMini', size: 'large', x: 4, y: 5, w: 8, h: 5 },
-  // Row 3: Charts
-  { i: 'net-daily-pnl', type: 'netDailyPnL', size: 'small-long', x: 0, y: 10, w: 4, h: 4 },
-  { i: 'daily-cumulative-pnl', type: 'dailyCumulativePnL', size: 'small-long', x: 4, y: 10, w: 4, h: 4 },
-  { i: 'account-balance', type: 'accountBalanceChart', size: 'small-long', x: 8, y: 10, w: 4, h: 4 },
-  // Row 4: Day of Week + Weekday PnL
-  { i: 'day-of-week', type: 'dayOfWeekPerformance', size: 'medium', x: 0, y: 14, w: 6, h: 4 },
-  { i: 'weekday-pnl', type: 'weekdayPnL', size: 'small-long', x: 6, y: 14, w: 6, h: 4 },
-  // Row 5: More Charts
-  { i: 'trade-duration', type: 'tradeDurationPerformance', size: 'small-long', x: 0, y: 18, w: 4, h: 4 },
-  { i: 'pnl-by-strategy', type: 'pnlByStrategy', size: 'small-long', x: 4, y: 18, w: 4, h: 4 },
-  { i: 'pnl-by-instrument', type: 'pnlByInstrument', size: 'small-long', x: 8, y: 18, w: 4, h: 4 },
-  // Row 6: Performance/Analysis
-  { i: 'performance-score', type: 'performanceScore', size: 'small-long', x: 0, y: 22, w: 4, h: 4 },
-  { i: 'win-rate-by-strategy', type: 'winRateByStrategy', size: 'small-long', x: 4, y: 22, w: 4, h: 4 },
-  { i: 'session-analysis', type: 'sessionAnalysis', size: 'medium', x: 8, y: 22, w: 4, h: 4 },
-  // Row 7: Trading Overview + Weekly Tracker
-  { i: 'trading-overview', type: 'tradingOverview', size: 'large', x: 0, y: 26, w: 6, h: 4 },
-  { i: 'weekly-tracker', type: 'weeklyTracker', size: 'medium', x: 6, y: 26, w: 6, h: 3 },
-  // Row 8: Full Calendar
-  { i: 'calendar-advanced', type: 'calendarAdvanced', size: 'extra-large', x: 0, y: 30, w: 12, h: 8 },
-]
+interface TemplateProviderProps {
+  children: React.ReactNode
+  initialActiveTemplate?: DashboardTemplate | null
+}
 
-export function TemplateProvider({ children }: { children: React.ReactNode }) {
-  const [templates, setTemplates] = useState<DashboardTemplate[]>([])
-  const [activeTemplate, setActiveTemplate] = useState<DashboardTemplate | null>(null)
-  const [isLoading, setIsLoading] = useState(true) // Start as true - wait for real template
+const buildFallbackTemplate = (): DashboardTemplate => ({
+  id: 'fallback',
+  userId: 'temp',
+  name: 'Default',
+  isDefault: true,
+  isActive: true,
+  layout: cloneDefaultTemplateLayout() as WidgetLayout[],
+  createdAt: new Date(),
+  updatedAt: new Date(),
+})
+
+export function TemplateProvider({ children, initialActiveTemplate = null }: TemplateProviderProps) {
+  const [templates, setTemplates] = useState<DashboardTemplate[]>(
+    initialActiveTemplate ? [initialActiveTemplate] : []
+  )
+  const [activeTemplate, setActiveTemplate] = useState<DashboardTemplate | null>(initialActiveTemplate)
+  const [isLoading, setIsLoading] = useState(!initialActiveTemplate)
   const hasLoadedRef = useRef(false)
   const isLoadingRef = useRef(false)
-  const [showFallback, setShowFallback] = useState(false)
 
   // Load templates
   const loadTemplates = useCallback(async () => {
@@ -110,32 +92,14 @@ export function TemplateProvider({ children }: { children: React.ReactNode }) {
         setActiveTemplate(newActive)
       } else {
         // Fallback to default layout if something went wrong
-        setActiveTemplate({
-          id: 'fallback',
-          userId: 'temp',
-          name: 'Default',
-          isDefault: true,
-          isActive: true,
-          layout: DEFAULT_LAYOUT,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
+        setActiveTemplate(buildFallbackTemplate())
       }
     } catch (error) {
       // Failed to load templates
       setTimeout(() => toast.error('Failed to load templates'), 0)
 
       // Use fallback on error
-      setActiveTemplate({
-        id: 'fallback',
-        userId: 'temp',
-        name: 'Default',
-        isDefault: true,
-        isActive: true,
-        layout: DEFAULT_LAYOUT,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+      setActiveTemplate(buildFallbackTemplate())
 
       hasLoadedRef.current = false // Allow retry on error
     } finally {

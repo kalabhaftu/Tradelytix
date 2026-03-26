@@ -19,7 +19,7 @@ export default async function RootLayout({ children }: { children: ReactElement 
     <TooltipProvider>
       <DataProvider initialBootstrapData={initialBootstrapData}>
         <TagsProvider>
-          <TemplateProvider>
+          <TemplateProvider initialActiveTemplate={initialBootstrapData.activeTemplateShell}>
             {/* Data syncs via Supabase Realtime - no polling needed */}
             <AutoRefreshProvider>
               <div className="min-h-screen flex flex-col">

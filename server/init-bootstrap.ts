@@ -1,11 +1,24 @@
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
+import { cloneDefaultTemplateLayout } from '@/lib/dashboard/default-template-layout'
+
+interface ActiveTemplateShell {
+  id: string
+  userId: string
+  name: string
+  isDefault: boolean
+  isActive: boolean
+  layout: any[]
+  createdAt: Date
+  updatedAt: Date
+}
 
 export interface InitBootstrapPayload {
   isAuthenticated: boolean
   user: any | null
   accounts: any[]
   calendarNotes: Record<string, string>
+  activeTemplateShell: ActiveTemplateShell | null
 }
 
 export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
@@ -18,6 +31,7 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
         user: null,
         accounts: [],
         calendarNotes: {},
+        activeTemplateShell: null,
       }
     }
 
@@ -45,12 +59,13 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
         user: null,
         accounts: [],
         calendarNotes: {},
+        activeTemplateShell: null,
       }
     }
 
     const internalUserId = userLookup.id
 
-    const [accounts, calendarNotes, propFirmAccounts, tradeCounts] = await Promise.all([
+    const [accounts, calendarNotes, propFirmAccounts, tradeCounts, activeTemplate] = await Promise.all([
       prisma.account.findMany({
         where: { userId: internalUserId },
         include: { _count: { select: { Trade: true } } },
@@ -82,7 +97,24 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
         by: ['accountNumber'],
         where: { userId: internalUserId },
         _count: { id: true }
-      })
+      }),
+
+      prisma.dashboardTemplate.findFirst({
+        where: {
+          userId: internalUserId,
+          isActive: true,
+        },
+        select: {
+          id: true,
+          userId: true,
+          name: true,
+          isDefault: true,
+          isActive: true,
+          layout: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
     ])
 
     const tradeCountMap = new Map(
@@ -156,11 +188,21 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
       }
     })
 
+    const activeTemplateShell: ActiveTemplateShell | null = activeTemplate
+      ? {
+          ...activeTemplate,
+          layout: activeTemplate.isDefault
+            ? cloneDefaultTemplateLayout()
+            : (activeTemplate.layout as any[]),
+        }
+      : null
+
     return {
       isAuthenticated: true,
       user: userLookup,
       accounts: [...processedLiveAccounts, ...processedPropFirmAccounts],
       calendarNotes,
+      activeTemplateShell,
     }
   } catch {
     return {
@@ -168,6 +210,7 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
       user: null,
       accounts: [],
       calendarNotes: {},
+      activeTemplateShell: null,
     }
   }
 }

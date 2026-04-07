@@ -27,6 +27,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
   SidebarProvider,
+  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar'
 import { Logo } from '@/components/logo'
@@ -127,10 +128,13 @@ function AdminSidebarContent() {
 export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full bg-background text-foreground">
         <AdminSidebarContent />
-        <main className="flex-1 overflow-auto">
-          <div className="p-6 max-w-[1400px] mx-auto">
+        <main className="flex-1 flex flex-col min-w-0 overflow-auto">
+          <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur px-4">
+            <SidebarTrigger className="-ml-1" />
+          </header>
+          <div className="flex-1 p-6 md:p-8 max-w-[1600px] mx-auto w-full">
             {children}
           </div>
         </main>

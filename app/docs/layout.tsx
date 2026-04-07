@@ -45,7 +45,21 @@ const navigation = [
     title: 'Resources',
     icon: FileText,
     items: [
-      { title: 'FAQ & Troubleshooting', href: '/docs/faq' },
+      { 
+        title: 'FAQ & Troubleshooting', 
+        href: '/docs/faq',
+        subsections: [
+          { title: 'Is Deltalytix free?', href: '/docs/faq#is-deltalytix-free' },
+          { title: 'What brokers are supported?', href: '/docs/faq#what-brokers-are-supported' },
+          { title: 'Where is my data stored?', href: '/docs/faq#where-is-my-data-stored' },
+          { title: 'My CSV won\'t import', href: '/docs/faq#my-csv-wont-import' },
+          { title: 'Duplicate trades after re-import', href: '/docs/faq#duplicate-trades-after-re-import' },
+          { title: 'Dashboard shows no data', href: '/docs/faq#dashboard-shows-no-data' },
+          { title: 'Widgets not loading', href: '/docs/faq#widgets-not-loading' },
+          { title: 'Can I use email/password login?', href: '/docs/faq#can-i-use-emailpassword-login' },
+          { title: 'How do I delete my account?', href: '/docs/faq#how-do-i-delete-my-account' },
+        ]
+      },
       { title: 'Feedback Guide', href: '/docs/feedback' },
       { title: 'Support the Project', href: '/docs/donate' },
     ],
@@ -69,7 +83,13 @@ const navigation = [
 
 // Build flat list for search
 const allDocPages = navigation.flatMap(section =>
-  section.items.map(item => ({ ...item, section: section.title }))
+  section.items.flatMap(item => {
+    const parent = { ...item, section: section.title }
+    if (item.subsections) {
+      return [parent, ...item.subsections.map(sub => ({ ...sub, section: section.title, parentTitle: item.title }))]
+    }
+    return [parent]
+  })
 )
 
 const fuse = new Fuse(allDocPages, {
@@ -182,7 +202,10 @@ export default function DocsLayout({ children }: { children: ReactNode }) {
                       className="flex items-center justify-between px-3 py-2 text-xs hover:bg-accent transition-colors"
                       onClick={() => setSearchQuery('')}
                     >
-                      <span className="font-medium">{result.title}</span>
+                      <span className="font-medium">
+                        {'parentTitle' in result && (result as any).parentTitle && <span className="text-muted-foreground mr-1">{(result as any).parentTitle} &rsaquo;</span>}
+                        {result.title}
+                      </span>
                       <span className="text-[10px] text-muted-foreground">{result.section}</span>
                     </Link>
                   ))}

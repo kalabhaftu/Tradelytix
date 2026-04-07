@@ -153,16 +153,29 @@ export default function AdminFeedbackPage() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground line-clamp-2">{item.message}</p>
-                      <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                      <div className="flex flex-wrap gap-4 mt-2 text-xs text-muted-foreground">
                         <span>{item.name || item.email || 'Anonymous'}</span>
                         {item.country && (
                           <span className="flex items-center gap-1"><Globe className="h-3 w-3" />{item.country}</span>
                         )}
-                        {item.attachments && Array.isArray(item.attachments) && item.attachments.length > 0 && (
-                          <span className="flex items-center gap-1"><Paperclip className="h-3 w-3" />{item.attachments.length} file(s)</span>
-                        )}
                         <span>{new Date(item.createdAt).toLocaleDateString()}</span>
                       </div>
+                      {item.attachments && Array.isArray(item.attachments) && item.attachments.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {item.attachments.map((file: any, i: number) => (
+                            <a
+                              key={i}
+                              href={file.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2 py-1 bg-muted hover:bg-primary/10 text-muted-foreground hover:text-primary rounded text-[10px] font-medium transition-colors border border-transparent hover:border-primary/20"
+                            >
+                              <Paperclip className="h-3 w-3" />
+                              {file.name || `Attachment ${i + 1}`}
+                            </a>
+                          ))}
+                        </div>
+                      )}
                       {item.Replies?.length > 0 && (
                         <div className="mt-3 pl-3 border-l-2 border-primary/30 space-y-2">
                           {item.Replies.map((reply: any) => (

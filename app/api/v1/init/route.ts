@@ -9,6 +9,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { headers } from 'next/headers'
+import { prisma } from '@/lib/prisma'
 import { getInitBootstrapData } from '@/server/init-bootstrap'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 
@@ -18,6 +20,34 @@ export async function GET(request: NextRequest) {
 
   try {
     const payload = await getInitBootstrapData()
+    
+    // Background Geo Logging
+    if (payload.isAuthenticated && payload.user?.id) {
+      const headerList = await headers()
+      const countryCode = headerList.get('x-vercel-ip-country')
+      const city = headerList.get('x-vercel-ip-city')
+      
+      if (countryCode || city) {
+        // Run completely asynchronously without blocking the payload delivery
+        prisma.userGeoLog.findFirst({
+          where: { userId: payload.user.id },
+          orderBy: { createdAt: 'desc' }
+        }).then(lastLog => {
+          if (!lastLog || lastLog.countryCode !== countryCode || lastLog.city !== city) {
+            return prisma.userGeoLog.create({
+              data: {
+                userId: payload.user.id,
+                countryCode: countryCode || 'XX',
+                country: countryCode || 'Unknown',
+                city: city || 'Unknown',
+                ipAddress: headerList.get('x-forwarded-for') || 'hidden'
+              }
+            }).catch(console.error)
+          }
+        }).catch(console.error)
+      }
+    }
+
     const response = NextResponse.json(payload)
     
     // Cache: private (user-specific), revalidate every 60s

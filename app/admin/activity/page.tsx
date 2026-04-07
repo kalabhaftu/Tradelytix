@@ -61,7 +61,10 @@ export default function AdminActivityPage() {
                         </td>
                         <td className="p-3 text-sm font-medium">{item.action}</td>
                         <td className="p-3 text-sm text-muted-foreground">{item.entity || '—'}</td>
-                        <td className="p-3 text-xs text-muted-foreground font-mono">{item.userId?.slice(0, 12)}...</td>
+                        <td className="p-3 text-xs text-muted-foreground font-mono">
+                          <span className="block font-medium text-foreground">{item.User?.email || item.userId?.slice(0, 8)}</span>
+                          <span className="text-[10px]">{item.userId}</span>
+                        </td>
                         <td className="p-3 text-xs text-muted-foreground max-w-xs truncate">
                           {item.metadata ? JSON.stringify(item.metadata).slice(0, 80) : '—'}
                         </td>

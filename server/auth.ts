@@ -217,6 +217,12 @@ function generateTemporaryPassword(): string {
 interface SupabaseUser {
   id: string;
   email?: string | null;
+  user_metadata?: {
+    full_name?: string;
+    first_name?: string;
+    last_name?: string;
+    name?: string;
+  };
 }
 
 export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) {
@@ -282,12 +288,17 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
 
     // Create new user if no existing user found
     try {
+      const generatedFirstName = user.user_metadata?.first_name || user.user_metadata?.name || user.user_metadata?.full_name?.split(' ')[0] || null
+      const generatedLastName = user.user_metadata?.last_name || (user.user_metadata?.full_name?.includes(' ') ? user.user_metadata.full_name.split(' ').slice(1).join(' ') : null)
+
       const newUser = await safeDbOperation(
         () => prisma.user.create({
           data: {
             auth_user_id: user.id,
             email: user.email || '',
-            id: user.id
+            id: user.id,
+            firstName: generatedFirstName,
+            lastName: generatedLastName
           },
         }),
         null

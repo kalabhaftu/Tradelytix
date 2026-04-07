@@ -5,6 +5,7 @@ import { AdminShell } from './components/admin-shell'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, MessageSquare, AlertTriangle, Activity, TrendingUp, Globe } from 'lucide-react'
 import { Spinner } from '@/components/ui/spinner'
+import { Badge } from '@/components/ui/badge'
 
 interface AdminStats {
   totalUsers: number
@@ -20,6 +21,7 @@ interface AdminStats {
     entity: string
     userId: string
     createdAt: string
+    User?: { email: string | null } | null
   }>
 }
 
@@ -92,15 +94,17 @@ export default function AdminOverviewPage() {
                 ) : (
                   <div className="space-y-2">
                     {stats.recentActivity.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                        <div className="flex items-center gap-3">
-                          <div className="h-2 w-2 rounded-full bg-primary" />
-                          <div>
-                            <p className="text-sm font-medium">{item.action}</p>
-                            <p className="text-xs text-muted-foreground">{item.entity}</p>
+                      <div key={item.id} className="flex items-start justify-between py-3 border-b border-border/50 last:border-0">
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-[10px] uppercase">{item.action}</Badge>
+                            <span className="text-sm font-medium">{item.entity}</span>
                           </div>
+                          <span className="text-xs text-muted-foreground">
+                            by {item.User?.email || item.userId}
+                          </span>
                         </div>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-[11px] text-muted-foreground whitespace-nowrap pt-1">
                           {new Date(item.createdAt).toLocaleString()}
                         </span>
                       </div>

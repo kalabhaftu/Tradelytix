@@ -28,7 +28,14 @@ export async function GET(req: NextRequest) {
         prisma.activityLog.findMany({
           orderBy: { createdAt: 'desc' },
           take: 20,
-          select: { id: true, action: true, entity: true, userId: true, createdAt: true },
+          select: { 
+            id: true, 
+            action: true, 
+            entity: true, 
+            userId: true, 
+            createdAt: true,
+            User: { select: { email: true } }
+          },
         }),
       ])
 

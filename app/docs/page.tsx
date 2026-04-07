@@ -28,7 +28,7 @@ export default function DocsHome() {
           </p>
 
           <div className="flex flex-wrap gap-4 pt-6">
-            <Button asChild size="lg" className="h-12 px-8 font-bold shadow-lg transition-all">
+            <Button asChild size="lg" className="h-12 px-8 font-bold bg-white text-black hover:bg-neutral-200 dark:bg-white dark:text-black shadow-lg transition-all">
               <Link href="/docs/getting-started">
                 Get Started
                 <ArrowRight className="ml-2 h-4 w-4" />

@@ -6,8 +6,10 @@ import { prisma } from '@/lib/prisma'
  * Uses ADMIN_EMAIL env var for identification.
  */
 export async function isAdminUser(): Promise<boolean> {
-  const adminEmail = process.env.ADMIN_EMAIL
-  if (!adminEmail) return false
+  const adminEmailStr = process.env.ADMIN_EMAIL
+  if (!adminEmailStr) return false
+
+  const adminEmails = adminEmailStr.split(',').map(e => e.trim().toLowerCase())
 
   const identity = await getResolvedUserIdentitySafe()
   if (!identity) return false
@@ -17,7 +19,7 @@ export async function isAdminUser(): Promise<boolean> {
     select: { email: true },
   })
 
-  return user?.email === adminEmail
+  return Boolean(user?.email && adminEmails.includes(user.email.toLowerCase()))
 }
 
 /**
@@ -25,8 +27,8 @@ export async function isAdminUser(): Promise<boolean> {
  * Returns the resolved user identity for further use.
  */
 export async function requireAdmin(): Promise<ResolvedUserIdentity> {
-  const adminEmail = process.env.ADMIN_EMAIL
-  if (!adminEmail) {
+  const adminEmailStr = process.env.ADMIN_EMAIL
+  if (!adminEmailStr) {
     throw new Error('ADMIN_EMAIL not configured')
   }
 
@@ -40,7 +42,8 @@ export async function requireAdmin(): Promise<ResolvedUserIdentity> {
     select: { email: true },
   })
 
-  if (user?.email !== adminEmail) {
+  const adminEmails = adminEmailStr.split(',').map(e => e.trim().toLowerCase())
+  if (!user?.email || !adminEmails.includes(user.email.toLowerCase())) {
     throw new Error('Forbidden: Admin access required')
   }
 

@@ -543,7 +543,7 @@ export const DataProvider: React.FC<{
           ('digest' in error && typeof error.digest === 'string' && error.digest.startsWith('NEXT_REDIRECT'))
         )) {
           // Let the redirect proceed - these are handled by Next.js router
-          return;
+          throw error;
         }
 
         // Handle authentication errors

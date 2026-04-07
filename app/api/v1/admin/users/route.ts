@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
           lastName: true,
           isFirstConnection: true,
           timezone: true,
-          _count: { select: { Account: true, Notification: true } },
+          _count: { select: { Account: true, MasterAccount: true, Notification: true } },
         },
       }),
       prisma.user.count({ where }),
@@ -53,9 +53,19 @@ export async function GET(req: NextRequest) {
 
     const geoMap = new Map(geoLogs.map(g => [g.userId, g]))
 
+    // Get registration approximation
+    const userTemplates = await prisma.dashboardTemplate.groupBy({
+      by: ['userId'],
+      where: { userId: { in: userIds } },
+      _min: { createdAt: true },
+    })
+
+    const templateMap = new Map(userTemplates.map(t => [t.userId, t._min.createdAt]))
+
     const enriched = users.map(u => ({
       ...u,
       geo: geoMap.get(u.id) || null,
+      createdAt: templateMap.get(u.id) || null,
     }))
 
     return NextResponse.json({

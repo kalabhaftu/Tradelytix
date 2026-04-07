@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
+        include: { User: { select: { email: true } } }
       }),
       prisma.activityLog.count({ where }),
     ])

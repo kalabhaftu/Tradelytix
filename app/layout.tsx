@@ -269,7 +269,7 @@ export default async function RootLayout({
         </style>
 
       </head>
-      <body className={`${inter.variable} font-sans min-h-screen overflow-x-hidden w-full`}>
+      <body className={`${inter.variable} font-sans min-h-screen overflow-x-clip w-full`}>
         <ErrorBoundaryWrapper showDetails={process.env.NODE_ENV === 'development'}>
           <ThemeProvider>
             <QueryProvider>

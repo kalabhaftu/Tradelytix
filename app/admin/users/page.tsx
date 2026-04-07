@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
 import { Button } from '@/components/ui/button'
 import { Search, ChevronLeft, ChevronRight, MapPin } from 'lucide-react'
+import { formatDistanceToNow } from 'date-fns'
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([])
@@ -90,11 +91,11 @@ export default function AdminUsersPage() {
                             </span>
                           ) : '—'}
                         </td>
-                        <td className="p-3 text-sm">{user._count.Account}</td>
+                        <td className="p-3 text-sm">{user._count.Account + (user._count.MasterAccount || 0)}</td>
                         <td className="p-3">
-                          <Badge variant={user.isFirstConnection ? 'secondary' : 'default'} className="text-[10px]">
-                            {user.isFirstConnection ? 'New' : 'Active'}
-                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {user.createdAt ? `Registered ${formatDistanceToNow(new Date(user.createdAt))} ago` : 'Legacy User'}
+                          </span>
                         </td>
                       </tr>
                     ))}

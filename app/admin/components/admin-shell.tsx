@@ -61,7 +61,7 @@ function AdminSidebarContent() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
-      <SidebarHeader className="h-12 flex items-center justify-center border-b border-border">
+      <SidebarHeader className="h-14 flex items-center justify-center border-b border-border">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>

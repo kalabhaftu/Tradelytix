@@ -220,7 +220,7 @@ export default function DocsLayout({ children }: { children: ReactNode }) {
       <div className="mx-auto w-full max-w-[1440px]">
         <div className="flex-1 md:grid md:grid-cols-[240px_minmax(0,1fr)] lg:grid-cols-[260px_minmax(0,1fr)]">
           {/* Desktop Sidebar */}
-          <aside className="fixed top-12 z-30 hidden h-[calc(100vh-3rem)] w-[240px] lg:w-[260px] shrink-0 overflow-y-auto md:sticky md:block border-r px-4 py-4 scrollbar-none">
+          <aside className="fixed top-12 z-30 hidden h-[calc(100vh-3rem)] w-[240px] lg:w-[260px] shrink-0 overflow-y-auto md:sticky md:block self-start border-r px-4 py-4 scrollbar-none">
             <Sidebar />
           </aside>
 

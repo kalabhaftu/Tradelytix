@@ -2,6 +2,8 @@
 import { createClient, ensureUserInDatabase } from '@/server/auth'
 import { NextResponse } from 'next/server'
 import { logActivity } from '@/lib/activity-logger'
+import { captureUserGeo, extractIP } from '@/server/geolocation'
+import { resolveInternalUserId } from '@/server/user-identity'
 
 // Helper function to determine if we're in local development
 function isLocalDevelopment() {
@@ -62,6 +64,13 @@ export async function GET(request: Request) {
 
         // Fire-and-forget (already non-blocking)
         logActivity({ userId: data.user.id, action: 'USER_LOGIN', entity: 'Auth' })
+
+        // Geo capture — fire-and-forget, never blocks auth
+        const clientIP = extractIP(request.headers)
+        resolveInternalUserId(data.user.id).then(internalId => {
+          if (internalId) captureUserGeo(internalId, clientIP)
+        }).catch(() => {})
+
 
         // Handle identity linking redirect
         if (action === 'link') {

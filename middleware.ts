@@ -2,14 +2,12 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-// Middleware for authentication and routing
-const publicRoutes = ["/", "/not-found", "/api/auth", "/docs", "/privacy"]
-const protectedRoutes = ["/dashboard"]
+const publicRoutes = ["/", "/not-found", "/api/auth", "/docs", "/privacy", "/feedback", "/donate", "/changelog", "/about", "/contact"]
+const protectedRoutes = ["/dashboard", "/admin"]
 
 export default async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname
 
-  // Skip middleware for static assets but handle API routes for auth
   if (
     pathname.startsWith("/_next/") ||
     pathname.includes(".") ||
@@ -23,17 +21,14 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // Check if this is a protected route
   const isProtectedRoute = protectedRoutes.some(route =>
     pathname === route || pathname.startsWith(route + "/")
   )
 
-  // Check if this is a public route
   const isPublicRoute = publicRoutes.some(route =>
     pathname === route || pathname.startsWith(route + "/")
   )
 
-  // Handle authentication logic
   try {
     const cookieStore = await cookies()
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -45,7 +40,7 @@ export default async function middleware(req: NextRequest) {
         authUrl.searchParams.set('error', 'config')
         return NextResponse.redirect(authUrl)
       }
-      return NextResponse.next()
+      return addSecurityHeaders(NextResponse.next())
     }
 
     const supabase = createServerClient(
@@ -69,23 +64,20 @@ export default async function middleware(req: NextRequest) {
       }
     )
 
-    // Get user session
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     const isAuthenticated = !!user && !authError
 
-    // 1. Redirect authenticated users away from specific landing page, BUT allow public routes like /docs
+    // Redirect authenticated users away from landing to dashboard
     if (isAuthenticated && !isProtectedRoute && !isPublicRoute && !pathname.startsWith('/api/auth') && pathname !== '/not-found') {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
-    
-    // Specifically redirect "/" to "/dashboard" for authenticated users
+
     if (isAuthenticated && pathname === "/") {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
 
-    // 2. Redirect unauthenticated users away from protected routes
+    // Redirect unauthenticated users away from protected routes
     if (!isAuthenticated && isProtectedRoute) {
-      // Check if this might be a post-authentication request (to prevent loops during callback)
       const referrer = req.headers.get('referer')
       const url = req.nextUrl
       const isPostAuthRequest = referrer && (
@@ -102,16 +94,17 @@ export default async function middleware(req: NextRequest) {
       }
     }
 
-    // 3. Add user info to headers if authenticated
     const response = NextResponse.next()
+
+    // Set internal headers for API route consumption only (not exposed to client)
     if (isAuthenticated) {
       response.headers.set('x-user-id', user.id)
-      response.headers.set('x-user-authenticated', 'authenticated')
       if (user.email) {
         response.headers.set('x-user-email', user.email)
       }
     }
-    return response
+
+    return addSecurityHeaders(response)
 
   } catch (err) {
     console.error('Middleware error:', err)
@@ -120,21 +113,21 @@ export default async function middleware(req: NextRequest) {
       authUrl.searchParams.set('error', 'exception')
       return NextResponse.redirect(authUrl)
     }
-    return NextResponse.next()
+    return addSecurityHeaders(NextResponse.next())
   }
+}
+
+function addSecurityHeaders(response: NextResponse): NextResponse {
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set('X-XSS-Protection', '1; mode=block')
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  return response
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - api routes
-     * - opengraph-image (Open Graph image generation)
-     * - public files with extensions
-     */
     "/((?!_next/static|_next/image|favicon.ico|api|opengraph-image|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 }

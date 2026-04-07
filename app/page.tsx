@@ -3,6 +3,7 @@
 import { Moon, Sun } from "lucide-react"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -128,6 +129,12 @@ export default function RootPage() {
             {theme === 'dark' ? 'Light' : 'Dark'}
           </Button>
           <div className="flex items-center gap-6">
+            <Link 
+              href="/docs"
+              className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/80 uppercase tracking-[0.2em] font-medium transition-colors flex items-center"
+            >
+              Docs
+            </Link>
             <button 
               onClick={() => router.push('/privacy')}
               className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/80 uppercase tracking-[0.2em] font-medium transition-colors"

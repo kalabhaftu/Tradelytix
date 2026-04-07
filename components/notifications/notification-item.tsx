@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { Notification, NotificationType } from '@prisma/client'
+import { Notification, NotificationType } from '@prisma/client' // Trigger IDE TS cache refresh
 
 interface NotificationItemProps {
   notification: Notification
@@ -50,7 +50,8 @@ const notificationIcons: Record<NotificationType, React.ReactNode> = {
   RISK_MAX_DRAWDOWN_95: <ShieldAlert className="h-4 w-4 text-destructive" />,
   IMPORT_PROCESSING: <Download className="h-4 w-4 text-primary animate-pulse" />,
   IMPORT_COMPLETE: <Download className="h-4 w-4 text-long" />,
-  STRATEGY_SESSION_VIOLATION: <TrendingUp className="h-4 w-4 text-warning" />
+  STRATEGY_SESSION_VIOLATION: <TrendingUp className="h-4 w-4 text-warning" />,
+  FEEDBACK_REPLY: <Bell className="h-4 w-4 text-primary" />
 }
 
 const notificationColors: Record<NotificationType, string> = {
@@ -73,7 +74,8 @@ const notificationColors: Record<NotificationType, string> = {
   RISK_MAX_DRAWDOWN_95: 'border-l-destructive',
   IMPORT_PROCESSING: 'border-l-primary',
   IMPORT_COMPLETE: 'border-l-long',
-  STRATEGY_SESSION_VIOLATION: 'border-l-orange-500'
+  STRATEGY_SESSION_VIOLATION: 'border-l-orange-500',
+  FEEDBACK_REPLY: 'border-l-primary'
 }
 
 export function NotificationItem({

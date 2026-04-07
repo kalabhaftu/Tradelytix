@@ -361,7 +361,9 @@ model User {
   LiveAccountTransaction LiveAccountTransaction[]
   MasterAccount          MasterAccount[]
   Notification           Notification[]
-  ImportJob             ImportJob[]
+  ImportJob              ImportJob[]
+  Feedback               Feedback[]
+  UserGeoLog             UserGeoLog[]
   TradeTag               TradeTag[]
   TradingModel           TradingModel[]
   WeeklyReview           WeeklyReview[]
@@ -552,19 +554,22 @@ enum NotificationType {
   STRATEGY_DEVIATION
   SYSTEM_ANNOUNCEMENT
   TRADE_STATUS
-  
+
   // Granular risk alert types for smart invalidation
   RISK_DAILY_LOSS_80        // Daily loss limit at 80%
   RISK_DAILY_LOSS_95        // Daily loss limit at 95%
   RISK_MAX_DRAWDOWN_80      // Max drawdown at 80%
   RISK_MAX_DRAWDOWN_95      // Max drawdown at 95%
-  
+
   // Import lifecycle tracking
   IMPORT_PROCESSING         // Import in progress
   IMPORT_COMPLETE           // Import finished
-  
+
   // Strategy compliance
   STRATEGY_SESSION_VIOLATION // Trade outside allowed sessions
+
+  // Admin feedback reply
+  FEEDBACK_REPLY            // Admin replied to user feedback
 
   @@schema("public")
 }
@@ -614,5 +619,145 @@ enum TradeOutcome {
   GOOD_LOSS
   BAD_LOSS
 
+  @@schema("public")
+}
+
+// =============================================
+// FEEDBACK SYSTEM
+// =============================================
+
+model Feedback {
+  id          String           @id @default(cuid())
+  userId      String?
+  name        String?
+  email       String?
+  category    FeedbackCategory
+  subject     String
+  message     String
+  attachments Json?            // Array of {url, name, size, type}
+  status      FeedbackStatus   @default(OPEN)
+  ipAddress   String?
+  userAgent   String?
+  country     String?
+  city        String?
+  region      String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  User        User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  Replies     FeedbackReply[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
+  @@schema("public")
+}
+
+model FeedbackReply {
+  id         String   @id @default(cuid())
+  feedbackId String
+  message    String
+  createdAt  DateTime @default(now())
+  Feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+
+  @@index([feedbackId])
+  @@schema("public")
+}
+
+enum FeedbackCategory {
+  BUG_REPORT
+  FEATURE_REQUEST
+  GENERAL
+  OTHER
+
+  @@schema("public")
+}
+
+enum FeedbackStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+
+  @@schema("public")
+}
+
+// =============================================
+// DONATION CONFIGURATION
+// =============================================
+
+model DonationAddress {
+  id        String   @id @default(cuid())
+  token     String   // e.g. "BTC", "ETH", "USDT"
+  network   String   // e.g. "Bitcoin", "ERC-20", "TRC-20"
+  address   String
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@schema("public")
+}
+
+// =============================================
+// ERROR LOGGING
+// =============================================
+
+model ErrorLog {
+  id        String     @id @default(cuid())
+  source    ErrorSource
+  level     ErrorLevel @default(ERROR)
+  message   String
+  stack     String?
+  url       String?
+  userId    String?
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime   @default(now())
+
+  @@index([source])
+  @@index([level])
+  @@index([createdAt])
+  @@index([userId])
+  @@schema("public")
+}
+
+enum ErrorSource {
+  CLIENT
+  SERVER
+  API
+
+  @@schema("public")
+}
+
+enum ErrorLevel {
+  WARNING
+  ERROR
+  CRITICAL
+
+  @@schema("public")
+}
+
+// =============================================
+// USER GEOLOCATION TRACKING
+// =============================================
+
+model UserGeoLog {
+  id          String   @id @default(cuid())
+  userId      String
+  country     String?
+  countryCode String?
+  city        String?
+  region      String?
+  latitude    Float?
+  longitude   Float?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+  User        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([countryCode])
+  @@index([createdAt])
   @@schema("public")
 }

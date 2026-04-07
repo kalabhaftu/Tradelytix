@@ -3,50 +3,68 @@ import { NextRequest, NextResponse } from 'next/server'
 
 // Rate limiters for different endpoint types
 export const apiLimiter = new RateLimiterMemory({
-  points: 100, // Number of requests
-  duration: 60, // Per 60 seconds
+  points: 100,
+  duration: 60,
 })
 
 export const authLimiter = new RateLimiterMemory({
-  points: 10, // More restrictive for auth
+  points: 10,
   duration: 60,
 })
 
 export const aiLimiter = new RateLimiterMemory({
-  points: 20, // AI requests are expensive
+  points: 20,
   duration: 60,
 })
 
 export const importLimiter = new RateLimiterMemory({
-  points: 10, // Data import operations
+  points: 10,
   duration: 60,
 })
 
 export const uploadLimiter = new RateLimiterMemory({
-  points: 30, // Image uploads
+  points: 30,
+  duration: 60,
+})
+
+export const feedbackLimiter = new RateLimiterMemory({
+  points: 5,
+  duration: 60,
+})
+
+export const adminLimiter = new RateLimiterMemory({
+  points: 200,
+  duration: 60,
+})
+
+export const publicLimiter = new RateLimiterMemory({
+  points: 30,
+  duration: 60,
+})
+
+export const errorReportLimiter = new RateLimiterMemory({
+  points: 10,
   duration: 60,
 })
 
 /**
- * Get identifier for rate limiting
- * Uses IP address or user ID if available
+ * Get identifier for rate limiting.
+ * Uses user ID if available, falls back to IP.
  */
 export function getRateLimitIdentifier(req: NextRequest): string {
-  // Try to get user ID from headers (set by middleware)
   const userId = req.headers.get('x-user-id')
   if (userId) {
     return `user:${userId}`
   }
 
-  // Fallback to IP address
   const forwarded = req.headers.get('x-forwarded-for')
   const ip = forwarded ? forwarded.split(',')[0] : req.headers.get('x-real-ip') || 'unknown'
   return `ip:${ip}`
 }
 
 /**
- * Apply rate limiting to a request
- * Returns null if allowed, or a NextResponse with 429 if rate limited
+ * Apply rate limiting to a request.
+ * Returns null if allowed, or a 429 response if rate limited.
  */
 export async function applyRateLimit(
   req: NextRequest,
@@ -56,9 +74,8 @@ export async function applyRateLimit(
 
   try {
     await limiter.consume(identifier)
-    return null // Allowed
+    return null
   } catch (rateLimitError) {
-    // Rate limit exceeded
     return NextResponse.json(
       {
         success: false,
@@ -81,21 +98,17 @@ export async function applyRateLimit(
 }
 
 /**
- * Wrapper for API route handlers with rate limiting
+ * Wrapper for API route handlers with rate limiting.
  */
 export function withRateLimit(
   handler: (req: NextRequest) => Promise<NextResponse>,
   limiter: RateLimiterMemory = apiLimiter
 ) {
   return async (req: NextRequest): Promise<NextResponse> => {
-    // Apply rate limit
     const rateLimitResponse = await applyRateLimit(req, limiter)
     if (rateLimitResponse) {
       return rateLimitResponse
     }
-
-    // If not rate limited, proceed with handler
     return handler(req)
   }
 }
-

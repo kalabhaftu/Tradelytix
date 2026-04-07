@@ -15,6 +15,8 @@ import {
   BookMarked,
   RefreshCw,
   PanelLeftClose,
+  MessageSquare,
+  Heart,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -47,6 +49,8 @@ const navItems = [
 
 // Utility items at the bottom
 const utilityItems = [
+  { id: 'feedback', label: 'Feedback', icon: MessageSquare, href: '/feedback' },
+  { id: 'donate', label: 'Donate', icon: Heart, href: '/donate' },
   { id: 'docs', label: 'Documentation', icon: BookMarked, href: '/docs' },
   { id: 'data', label: 'Data', icon: Database, href: '/dashboard/data' },
   { id: 'settings', label: 'Settings', icon: Settings, href: '/dashboard/settings' },

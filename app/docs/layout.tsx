@@ -1,15 +1,17 @@
 'use client'
 
-import { ReactNode, useState } from 'react'
+import { ReactNode, useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Logo } from '@/components/logo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Home, Search, List, ChevronRight, BookOpenText, Rocket, Code, FileText, Terminal, Database as DatabaseIcon, Zap } from 'lucide-react'
+import { Home, Search, List, ChevronRight, BookOpenText, Rocket, Code, FileText, Terminal, Database as DatabaseIcon, Zap, Heart, MessageSquare, LogIn } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Badge } from '@/components/ui/badge'
+import Fuse from 'fuse.js'
+
 
 const navigation = [
   {
@@ -28,6 +30,24 @@ const navigation = [
       { title: 'Trade Import', href: '/docs/features/importing' },
       { title: 'Dashboard', href: '/docs/features/dashboard' },
       { title: 'Prop Firm Tracking', href: '/docs/features/prop-firm' },
+      { title: 'Journal & Notes', href: '/docs/features/journal' },
+      { title: 'Trade Table', href: '/docs/features/trade-table' },
+      { title: 'Accounts', href: '/docs/features/accounts' },
+      { title: 'Playbook & Models', href: '/docs/features/playbook' },
+      { title: 'Backtesting', href: '/docs/features/backtesting' },
+      { title: 'Widget Customization', href: '/docs/features/widgets' },
+      { title: 'Data Management', href: '/docs/features/data-management' },
+      { title: 'Settings', href: '/docs/features/settings' },
+      { title: 'Keyboard Shortcuts', href: '/docs/features/shortcuts' },
+    ],
+  },
+  {
+    title: 'Resources',
+    icon: FileText,
+    items: [
+      { title: 'FAQ & Troubleshooting', href: '/docs/faq' },
+      { title: 'Feedback Guide', href: '/docs/feedback' },
+      { title: 'Support the Project', href: '/docs/donate' },
     ],
   },
   {
@@ -46,6 +66,17 @@ const navigation = [
     ],
   },
 ]
+
+// Build flat list for search
+const allDocPages = navigation.flatMap(section =>
+  section.items.map(item => ({ ...item, section: section.title }))
+)
+
+const fuse = new Fuse(allDocPages, {
+  keys: ['title', 'section'],
+  threshold: 0.4,
+})
+
 
 function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname()
@@ -87,6 +118,18 @@ function Sidebar({ className }: { className?: string }) {
 export default function DocsLayout({ children }: { children: ReactNode }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  // Check auth status via cookie presence (client-side heuristic)
+  useEffect(() => {
+    const hasSbCookie = document.cookie.split(';').some(c => c.trim().startsWith('sb-'))
+    setIsLoggedIn(hasSbCookie)
+  }, [])
+
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return []
+    return fuse.search(searchQuery).map(r => r.item)
+  }, [searchQuery])
 
   return (
     <div className="min-h-screen bg-background">
@@ -122,20 +165,52 @@ export default function DocsLayout({ children }: { children: ReactNode }) {
             <div className="relative hidden sm:block w-48 lg:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                placeholder="Search..."
+                placeholder="Search docs..."
                 className="pl-9 h-8 text-xs bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary/20"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+              {searchResults.length > 0 && searchQuery && (
+                <div className="absolute top-full mt-1 left-0 right-0 bg-popover border rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                  {searchResults.map((result) => (
+                    <Link
+                      key={result.href}
+                      href={result.href}
+                      className="flex items-center justify-between px-3 py-2 text-xs hover:bg-accent transition-colors"
+                      onClick={() => setSearchQuery('')}
+                    >
+                      <span className="font-medium">{result.title}</span>
+                      <span className="text-[10px] text-muted-foreground">{result.section}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
 
             <Button asChild variant="ghost" size="sm" className="h-8 text-xs">
-              <Link href="/dashboard">
-                <Home className="h-3.5 w-3.5 mr-2" />
-                <span className="hidden sm:inline">Dashboard</span>
+              <Link href="/donate">
+                <Heart className="h-3.5 w-3.5 mr-1" />
+                <span className="hidden lg:inline">Donate</span>
               </Link>
             </Button>
+
+            {isLoggedIn ? (
+              <Button asChild variant="ghost" size="sm" className="h-8 text-xs">
+                <Link href="/dashboard">
+                  <Home className="h-3.5 w-3.5 mr-1" />
+                  <span className="hidden sm:inline">Dashboard</span>
+                </Link>
+              </Button>
+            ) : (
+              <Button asChild size="sm" className="h-8 text-xs">
+                <Link href="/">
+                  <LogIn className="h-3.5 w-3.5 mr-1" />
+                  <span className="hidden sm:inline">Sign In</span>
+                </Link>
+              </Button>
+            )}
           </div>
+
         </div>
       </header>
 

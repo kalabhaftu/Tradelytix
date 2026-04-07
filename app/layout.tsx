@@ -10,6 +10,7 @@ import { ConsoleFilterWrapper } from "@/components/console-filter-wrapper";
 import { ThemeProvider } from "@/context/theme-provider";
 import { QueryProvider } from "@/lib/query/query-provider";
 import { DeploymentMonitor } from "@/components/deployment-monitor";
+import { ClientErrorReporter } from "@/components/error-reporter";
 import { ErrorBoundaryWrapper } from "@/components/error-boundary";
 import { SeasonalManager } from "@/app/dashboard/components/seasonal/seasonal-manager";
 import { ServiceWorkerCleanup } from "@/components/service-worker-cleanup";
@@ -279,6 +280,7 @@ export default async function RootLayout({
                     <DeploymentMonitor />
                     <CookieNotice />
                     <SafeToaster />
+                    <ClientErrorReporter />
                     <SeasonalManager />
                     {children}
                   </TooltipProvider>

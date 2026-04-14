@@ -41,7 +41,7 @@ export default function AdminAnalyticsPage() {
               <CardHeader>
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <Globe className="h-4 w-4" />
-                  Users by Country
+                  Users by Latest Country
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -77,7 +77,7 @@ export default function AdminAnalyticsPage() {
               <CardHeader>
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <BarChart3 className="h-4 w-4" />
-                  Activity Trend (30d)
+                  Registrations (30d)
                 </CardTitle>
               </CardHeader>
               <CardContent>

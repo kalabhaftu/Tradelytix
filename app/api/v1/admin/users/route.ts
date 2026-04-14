@@ -2,6 +2,23 @@ import { NextResponse, NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/server/admin-auth'
 import { applyRateLimit, adminLimiter } from '@/lib/rate-limiter'
+import { formatGeoLocation, normalizeGeoRecord } from '@/lib/geo'
+import { getAuthBackedUserDirectory } from '@/server/admin-user-directory'
+
+function getDisplayName(params: {
+  firstName?: string | null
+  lastName?: string | null
+  userMetadata?: Record<string, any> | null
+}) {
+  const fullName = [params.firstName, params.lastName].filter(Boolean).join(' ').trim()
+  if (fullName) return fullName
+
+  const metadata = params.userMetadata ?? {}
+  return [
+    metadata.first_name,
+    metadata.last_name,
+  ].filter(Boolean).join(' ').trim() || metadata.full_name || metadata.name || null
+}
 
 export async function GET(req: NextRequest) {
   const rl = await applyRateLimit(req, adminLimiter)
@@ -13,64 +30,114 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url)
     const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'))
     const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '50')))
-    const search = url.searchParams.get('search') || ''
+    const search = (url.searchParams.get('search') || '').trim().toLowerCase()
 
-    const where = search
-      ? { OR: [
-          { email: { contains: search, mode: 'insensitive' as const } },
-          { firstName: { contains: search, mode: 'insensitive' as const } },
-          { lastName: { contains: search, mode: 'insensitive' as const } },
-        ]}
-      : {}
+    const directory = await getAuthBackedUserDirectory()
+    const authUserIds = directory.authUsers.map((user) => user.id)
 
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        orderBy: { email: 'asc' },
-        skip: (page - 1) * limit,
-        take: limit,
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          isFirstConnection: true,
-          timezone: true,
-          _count: { select: { Account: true, MasterAccount: true, Notification: true } },
-        },
-      }),
-      prisma.user.count({ where }),
-    ])
+    const dbUsers = authUserIds.length
+      ? await prisma.user.findMany({
+          where: { auth_user_id: { in: authUserIds } },
+          select: {
+            id: true,
+            email: true,
+            auth_user_id: true,
+            firstName: true,
+            lastName: true,
+            _count: { select: { Account: true, MasterAccount: true, Notification: true } },
+          },
+        })
+      : []
 
-    // Get latest geo for each user
-    const userIds = users.map(u => u.id)
-    const geoLogs = await prisma.userGeoLog.findMany({
-      where: { userId: { in: userIds } },
-      orderBy: { createdAt: 'desc' },
-      distinct: ['userId'],
-      select: { userId: true, country: true, countryCode: true, city: true, createdAt: true },
+    const dbUsersByAuthId = new Map(dbUsers.map((user) => [user.auth_user_id, user]))
+    const dbUserIds = dbUsers.map((user) => user.id)
+
+    const geoLogs = dbUserIds.length
+      ? await prisma.userGeoLog.findMany({
+          where: { userId: { in: dbUserIds } },
+          orderBy: { createdAt: 'desc' },
+          select: {
+            userId: true,
+            country: true,
+            countryCode: true,
+            city: true,
+            createdAt: true,
+          },
+        })
+      : []
+
+    const latestGeoByUserId = new Map<string, (typeof geoLogs)[number]>()
+    for (const log of geoLogs) {
+      if (!latestGeoByUserId.has(log.userId)) {
+        latestGeoByUserId.set(log.userId, log)
+      }
+    }
+
+    const liveUsers = directory.authUsers.map((authUser) => {
+      const dbUser = dbUsersByAuthId.get(authUser.id)
+      const geo = dbUser ? normalizeGeoRecord(latestGeoByUserId.get(dbUser.id) ?? null) : null
+      const displayName = getDisplayName({
+        firstName: dbUser?.firstName,
+        lastName: dbUser?.lastName,
+        userMetadata: authUser.user_metadata ?? null,
+      })
+
+      return {
+        id: authUser.id,
+        dbUserId: dbUser?.id ?? null,
+        authUserId: authUser.id,
+        email: authUser.email ?? dbUser?.email ?? '',
+        firstName: dbUser?.firstName ?? authUser.user_metadata?.first_name ?? null,
+        lastName: dbUser?.lastName ?? authUser.user_metadata?.last_name ?? null,
+        displayName,
+        hasDbProfile: Boolean(dbUser),
+        geo,
+        locationLabel: formatGeoLocation(geo),
+        accountCount: dbUser ? dbUser._count.Account + dbUser._count.MasterAccount : 0,
+        notificationCount: dbUser?._count.Notification ?? 0,
+        createdAt: authUser.created_at ?? null,
+        lastSignInAt: authUser.last_sign_in_at ?? null,
+      }
     })
 
-    const geoMap = new Map(geoLogs.map(g => [g.userId, g]))
+    const filteredUsers = liveUsers.filter((user) => {
+      if (!search) return true
 
-    // Get registration approximation
-    const userTemplates = await prisma.dashboardTemplate.groupBy({
-      by: ['userId'],
-      where: { userId: { in: userIds } },
-      _min: { createdAt: true },
+      const haystack = [
+        user.email,
+        user.displayName,
+        user.firstName,
+        user.lastName,
+        user.locationLabel,
+      ].filter(Boolean).join(' ').toLowerCase()
+
+      return haystack.includes(search)
     })
 
-    const templateMap = new Map(userTemplates.map(t => [t.userId, t._min.createdAt]))
+    const paginatedUsers = filteredUsers.slice((page - 1) * limit, page * limit)
 
-    const enriched = users.map(u => ({
-      ...u,
-      geo: geoMap.get(u.id) || null,
-      createdAt: templateMap.get(u.id) || null,
+    const orphanedDbUsers = directory.orphanedDbUsers.map((user) => ({
+      id: user.id,
+      authUserId: user.auth_user_id,
+      email: user.email,
+      displayName: [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || null,
     }))
 
     return NextResponse.json({
       success: true,
-      data: { users: enriched, total, page, limit, totalPages: Math.ceil(total / limit) },
+      data: {
+        users: paginatedUsers,
+        total: filteredUsers.length,
+        page,
+        limit,
+        totalPages: Math.ceil(filteredUsers.length / limit),
+        summary: {
+          liveUsers: liveUsers.length,
+          orphanedDbUsers: orphanedDbUsers.length,
+          authUsersMissingDbRows: directory.authUsersMissingDbRows.length,
+          orphanedDbUserSamples: orphanedDbUsers.slice(0, 5),
+        },
+      },
     })
   } catch (error: any) {
     const status = error.message?.includes('Forbidden') || error.message === 'Unauthorized' ? 403 : 500

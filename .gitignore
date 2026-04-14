@@ -291,4 +291,13 @@ Temporary Items
 temp.txt
 
 .agent/
+
+# Local diagnostics and debug artifacts
+diagnostics/
+.codex-logs/
+.codex-*.log
+build-error.log
+build-output.log
+
+# Local scratch notes
 *.txt

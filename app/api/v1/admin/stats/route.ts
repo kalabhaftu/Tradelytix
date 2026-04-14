@@ -3,6 +3,14 @@ import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/server/admin-auth'
 import { applyRateLimit, adminLimiter } from '@/lib/rate-limiter'
 import { NextRequest } from 'next/server'
+import { getAuthBackedUserDirectory } from '@/server/admin-user-directory'
+
+function isAfter(dateString: string | null | undefined, threshold: Date) {
+  if (!dateString) return false
+
+  const parsed = new Date(dateString)
+  return !Number.isNaN(parsed.getTime()) && parsed >= threshold
+}
 
 export async function GET(req: NextRequest) {
   const rl = await applyRateLimit(req, adminLimiter)
@@ -16,11 +24,9 @@ export async function GET(req: NextRequest) {
     const d30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
     const d24h = new Date(now.getTime() - 24 * 60 * 60 * 1000)
 
-    const [totalUsers, newUsers7d, newUsers30d, totalFeedback, openFeedback, errors24h, errors7d, recentActivity] =
+    const [directory, totalFeedback, openFeedback, errors24h, errors7d, recentActivity] =
       await Promise.all([
-        prisma.user.count(),
-        prisma.user.count({ where: { Account: { some: {} } } }).catch(() => 0),
-        prisma.user.count({ where: { Account: { some: {} } } }).catch(() => 0),
+        getAuthBackedUserDirectory(),
         prisma.feedback.count(),
         prisma.feedback.count({ where: { status: 'OPEN' } }),
         prisma.errorLog.count({ where: { createdAt: { gte: d24h } } }),
@@ -28,23 +34,29 @@ export async function GET(req: NextRequest) {
         prisma.activityLog.findMany({
           orderBy: { createdAt: 'desc' },
           take: 20,
-          select: { 
-            id: true, 
-            action: true, 
-            entity: true, 
-            userId: true, 
+          select: {
+            id: true,
+            action: true,
+            entity: true,
+            userId: true,
+            metadata: true,
             createdAt: true,
-            User: { select: { email: true } }
+            User: { select: { email: true } },
           },
         }),
       ])
 
+    const newUsersLast7d = directory.authUsers.filter((user) => isAfter(user.created_at, d7)).length
+    const newUsersLast30d = directory.authUsers.filter((user) => isAfter(user.created_at, d30)).length
+
     return NextResponse.json({
       success: true,
       data: {
-        totalUsers,
-        newUsersLast7d: newUsers7d,
-        newUsersLast30d: newUsers30d,
+        totalUsers: directory.authUsers.length,
+        newUsersLast7d,
+        newUsersLast30d,
+        orphanedDbUsers: directory.orphanedDbUsers.length,
+        authUsersMissingDbRows: directory.authUsersMissingDbRows.length,
         totalFeedback,
         openFeedback,
         totalErrors24h: errors24h,

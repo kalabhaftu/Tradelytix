@@ -4,30 +4,48 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-// Build optimized database URL with connection pooling
-function buildDatabaseUrl(): string {
-  const baseUrl = process.env.DATABASE_URL || process.env.DIRECT_URL || 'file:./dev.db'
+function resolveBaseDatabaseUrl(): string {
+  const isProduction = process.env.NODE_ENV === 'production'
+  const transactionUrl = process.env.DATABASE_URL
+  const sessionUrl = process.env.DIRECT_URL
 
-  // Skip pooling config for file-based databases
+  if (isProduction) {
+    return transactionUrl || sessionUrl || 'file:./dev.db'
+  }
+
+  return sessionUrl || transactionUrl || 'file:./dev.db'
+}
+
+function isSupabasePoolerUrl(url: URL) {
+  return url.hostname.includes('pooler.supabase.com')
+}
+
+function buildDatabaseUrl(): string {
+  const baseUrl = resolveBaseDatabaseUrl()
+
   if (baseUrl.startsWith('file:')) {
     return baseUrl
   }
 
-  // Parse URL to add/modify connection pool parameters and higher timeouts
   try {
     const url = new URL(baseUrl)
+    const isTransactionPooler = isSupabasePoolerUrl(url) && url.port === '6543'
 
-    // Serverless best practice: connection_limit=1
-    // Each Vercel function invocation creates its own Prisma client.
-    // With limit=5 and 10+ parallel invocations → 50 connections → pool exhaustion.
-    // With limit=1, each function gets 1 connection; pgbouncer handles multiplexing.
-    url.searchParams.set('connection_limit', '1')
-    url.searchParams.set('pool_timeout', '10')
     url.searchParams.set('connect_timeout', '5')
     url.searchParams.set('socket_timeout', '10')
 
-    // Required for Supabase Transaction mode (port 6543) pgbouncer
-    url.searchParams.set('pgbouncer', 'true')
+    if (isTransactionPooler) {
+      // Supabase recommends transaction mode for serverless/edge traffic,
+      // with prepared statements disabled via pgbouncer=true.
+      url.searchParams.set('connection_limit', '1')
+      url.searchParams.set('pool_timeout', '10')
+      url.searchParams.set('pgbouncer', 'true')
+    } else {
+      // Session mode / direct connections should not inherit transaction-pooler flags.
+      url.searchParams.delete('connection_limit')
+      url.searchParams.delete('pool_timeout')
+      url.searchParams.delete('pgbouncer')
+    }
 
     return url.toString()
   } catch {
@@ -35,24 +53,18 @@ function buildDatabaseUrl(): string {
   }
 }
 
-// Enhanced Prisma client configuration with robust connection handling
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
-
-  // Optimized connection configuration
   datasources: {
     db: {
-      url: buildDatabaseUrl()
-    }
+      url: buildDatabaseUrl(),
+    },
   },
-
-  // Enhanced error handling and connection logic
   ...(process.env.NODE_ENV === 'development' && {
     errorFormat: 'pretty',
   }),
 })
 
-// Safe database operations that handle connection failures gracefully
 export const safeDbOperation = async <T>(
   operation: () => Promise<T>,
   fallbackValue?: T
@@ -65,7 +77,6 @@ export const safeDbOperation = async <T>(
   }
 }
 
-// Cleanup connections on process exit (optional in serverless but good for local)
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma
 }

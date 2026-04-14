@@ -35,9 +35,9 @@ export async function POST(req: NextRequest) {
 
     const address = await prisma.donationAddress.create({
       data: {
-        token: body.token,
-        network: body.network,
-        address: body.address,
+        token: body.token.trim(),
+        network: body.network.trim(),
+        address: body.address.trim(),
         isActive: body.isActive ?? true,
         sortOrder: body.sortOrder ?? 0,
       },

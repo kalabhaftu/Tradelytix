@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -86,7 +87,7 @@ export default function DonatePage() {
                       style={{ backgroundColor: `${meta.color}15` }}
                     >
                       {meta.logo ? (
-                        <img
+                        <Image
                           src={meta.logo}
                           alt={meta.name}
                           width={28}

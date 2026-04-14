@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "NODE_OPTIONS='--max-old-space-size=4096' next dev",
+    "dev": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" next dev",
     "dev:network": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev --turbo -H 0.0.0.0",
     "dev:turbo": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev --turbo",
     "dev:fast": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" NEXT_TELEMETRY_DISABLED=1 next dev --turbo",
@@ -11,7 +11,7 @@
     "dev:stable": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev",
     "dev:clean:force": "rimraf .next node_modules/.cache && cross-env NEXT_TELEMETRY_DISABLED=1 next dev --turbo",
     "dev:ultra": "rimraf .next node_modules/.cache && cross-env NODE_OPTIONS=\"--max-old-space-size=12288\" NEXT_TELEMETRY_DISABLED=1 next dev --turbo",
-    "build": "NODE_OPTIONS='--max-old-space-size=4096' next build",
+    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" next build",
     "build:analyze": "cross-env ANALYZE=true next build",
     "start": "next start -H 0.0.0.0",
     "lint": "next lint",
@@ -31,7 +31,9 @@
     "fix-prisma": "node scripts/fix-prisma-studio.js",
     "migrate:images": "tsx scripts/migrate-images-prisma.ts",
     "test:api": "node scripts/test-api-routes.js http://localhost:3000",
-    "backfill:auto-adjust-account-dates": "tsx scripts/backfill-auto-adjust-account-dates.ts"
+    "backfill:auto-adjust-account-dates": "tsx scripts/backfill-auto-adjust-account-dates.ts",
+    "diagnose:data": "tsx scripts/diagnose-data-integrity.ts",
+    "cleanup:orphaned-users": "tsx scripts/cleanup-orphaned-users.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.52",

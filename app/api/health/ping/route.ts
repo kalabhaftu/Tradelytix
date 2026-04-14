@@ -20,6 +20,17 @@ export async function GET() {
       }
     )
   } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      return NextResponse.json(
+        { status: 'degraded', timestamp: new Date().toISOString() },
+        {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+          },
+        }
+      )
+    }
+
     return NextResponse.json(
       { status: 'error', timestamp: new Date().toISOString() },
       { status: 503 }

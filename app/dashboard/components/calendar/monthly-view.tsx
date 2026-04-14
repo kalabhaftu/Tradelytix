@@ -70,7 +70,7 @@ const DayCell = memo(function DayCell({
         // Advanced calendar: cells fill grid space with minimum height
         isMiniCalendar 
           ? "min-h-[68px] sm:min-h-[76px] lg:min-h-[84px]" 
-          : "min-h-[48px] sm:min-h-[60px] md:min-h-[80px] cursor-pointer",
+          : "min-h-0 cursor-pointer",
 
         // No trades — uses theme tokens so it works in any color scheme
         !hasTrades && isCurrentMonth && "bg-muted/5 border-border/20 hover:border-border/40",
@@ -344,7 +344,7 @@ export default function MonthlyView({
         </div>
 
         {/* Day Grid - flex-1 to fill remaining space, grid-rows set to number of weeks */}
-        <div className={cn("flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 min-h-0", hideWeekends ? "grid-cols-5" : "grid-cols-7")} style={{ gridTemplateRows: `repeat(${weeks.length}, 1fr)` }}>
+        <div className={cn("flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 min-h-0", hideWeekends ? "grid-cols-5" : "grid-cols-7")} style={{ gridTemplateRows: `repeat(${weeks.length}, minmax(0, 1fr))` }}>
           {weeks.map((week, weekIndex) => (
             <React.Fragment key={weekIndex}>
               {week.map((date) => {
@@ -380,7 +380,7 @@ export default function MonthlyView({
           </div>
 
           {/* Week rows — grid to align perfectly with calendar rows */}
-          <div className="flex-1 grid gap-1 md:gap-1.5 p-2 pt-0 pl-1 min-h-0" style={{ gridTemplateRows: `repeat(${weeks.length}, 1fr)` }}>
+          <div className="flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 pl-1 md:pl-2 min-h-0" style={{ gridTemplateRows: `repeat(${weeks.length}, minmax(0, 1fr))` }}>
             {weeks.map((week, index) => (
               <WeeklySummary
                 key={index}

@@ -6,6 +6,18 @@ export interface ResolvedUserIdentity {
   internalUserId: string
 }
 
+function isTransientDatabaseError(error: unknown) {
+  if (!(error instanceof Error)) return false
+
+  return [
+    "Can't reach database server",
+    'P1001',
+    'Connection timeout',
+    'ECONNREFUSED',
+    'ENOTFOUND',
+  ].some((message) => error.message.includes(message))
+}
+
 async function resolveInternalUserIdFromAuth(authUserId: string): Promise<string | null> {
   const byAuthId = await prisma.user.findUnique({
     where: { auth_user_id: authUserId },
@@ -46,10 +58,18 @@ export async function getResolvedUserIdentitySafe(): Promise<ResolvedUserIdentit
     return null
   }
 
-  const internalUserId = await resolveInternalUserIdFromAuth(authUserId)
-  if (!internalUserId) {
-    return null
-  }
+  try {
+    const internalUserId = await resolveInternalUserIdFromAuth(authUserId)
+    if (!internalUserId) {
+      return null
+    }
 
-  return { authUserId, internalUserId }
+    return { authUserId, internalUserId }
+  } catch (error) {
+    if (isTransientDatabaseError(error)) {
+      return null
+    }
+
+    throw error
+  }
 }

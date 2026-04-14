@@ -4,6 +4,10 @@
  */
 
 export async function register() {
+  if (process.env.NODE_ENV !== 'production') {
+    return
+  }
+
   // Only run on server
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     await import('./sentry.server.config')
@@ -14,4 +18,3 @@ export async function register() {
     await import('./sentry.edge.config')
   }
 }
-

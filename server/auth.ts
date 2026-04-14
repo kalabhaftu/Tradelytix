@@ -271,6 +271,9 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
       return JSON.parse(JSON.stringify(existingUserByAuthId));
     }
 
+    const generatedFirstName = user.user_metadata?.first_name || user.user_metadata?.name || user.user_metadata?.full_name?.split(' ')[0] || null
+    const generatedLastName = user.user_metadata?.last_name || (user.user_metadata?.full_name?.includes(' ') ? user.user_metadata.full_name.split(' ').slice(1).join(' ') : null)
+
     // If user doesn't exist by auth_user_id, check if email exists
     if (user.email) {
       const existingUserByEmail = await safeDbOperation(
@@ -281,16 +284,42 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
       )
 
       if (existingUserByEmail && existingUserByEmail.auth_user_id !== user.id) {
-        await signOut();
-        throw new Error('This email is already associated with a different authentication method. Please use the original sign-in method or contact support.');
+        const relinkedUser = await safeDbOperation(
+          () => prisma.user.update({
+            where: { email: user.email! },
+            data: {
+              id: user.id,
+              auth_user_id: user.id,
+              email: user.email || existingUserByEmail.email,
+              firstName: existingUserByEmail.firstName ?? generatedFirstName,
+              lastName: existingUserByEmail.lastName ?? generatedLastName,
+            },
+          }),
+          null
+        )
+
+        if (!relinkedUser) {
+          throw new Error('Failed to relink existing user account')
+        }
+
+        logActivity({
+          userId: user.id,
+          action: 'USER_AUTH_RELINKED',
+          entity: 'Auth',
+          entityId: relinkedUser.id,
+          metadata: {
+            previousUserId: existingUserByEmail.id,
+            previousAuthUserId: existingUserByEmail.auth_user_id,
+            email: user.email,
+          },
+        })
+
+        return JSON.parse(JSON.stringify(relinkedUser));
       }
     }
 
     // Create new user if no existing user found
     try {
-      const generatedFirstName = user.user_metadata?.first_name || user.user_metadata?.name || user.user_metadata?.full_name?.split(' ')[0] || null
-      const generatedLastName = user.user_metadata?.last_name || (user.user_metadata?.full_name?.includes(' ') ? user.user_metadata.full_name.split(' ').slice(1).join(' ') : null)
-
       const newUser = await safeDbOperation(
         () => prisma.user.create({
           data: {

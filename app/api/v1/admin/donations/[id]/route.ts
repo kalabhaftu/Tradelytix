@@ -15,9 +15,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const updated = await prisma.donationAddress.update({
       where: { id },
       data: {
-        ...(body.token && { token: body.token }),
-        ...(body.network && { network: body.network }),
-        ...(body.address && { address: body.address }),
+        ...(body.token && { token: body.token.trim() }),
+        ...(body.network && { network: body.network.trim() }),
+        ...(body.address && { address: body.address.trim() }),
         ...(body.isActive !== undefined && { isActive: body.isActive }),
         ...(body.sortOrder !== undefined && { sortOrder: body.sortOrder }),
       },

@@ -13,6 +13,7 @@ import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { getInitBootstrapData } from '@/server/init-bootstrap'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
+import { getCountryLabel, normalizeCityName, normalizeCountryCode } from '@/lib/geo'
 
 export async function GET(request: NextRequest) {
   const rateLimitResponse = await applyRateLimit(request, apiLimiter)
@@ -24,8 +25,9 @@ export async function GET(request: NextRequest) {
     // Background Geo Logging
     if (payload.isAuthenticated && payload.user?.id) {
       const headerList = await headers()
-      const countryCode = headerList.get('x-vercel-ip-country')
-      const city = headerList.get('x-vercel-ip-city')
+      const countryCode = normalizeCountryCode(headerList.get('x-vercel-ip-country'))
+      const city = normalizeCityName(headerList.get('x-vercel-ip-city'))
+      const country = countryCode ? getCountryLabel(undefined, countryCode) : null
       
       if (countryCode || city) {
         // Run completely asynchronously without blocking the payload delivery
@@ -33,13 +35,17 @@ export async function GET(request: NextRequest) {
           where: { userId: payload.user.id },
           orderBy: { createdAt: 'desc' }
         }).then(lastLog => {
-          if (!lastLog || lastLog.countryCode !== countryCode || lastLog.city !== city) {
+          if (
+            !lastLog ||
+            normalizeCountryCode(lastLog.countryCode) !== countryCode ||
+            normalizeCityName(lastLog.city) !== city
+          ) {
             return prisma.userGeoLog.create({
               data: {
                 userId: payload.user.id,
-                countryCode: countryCode || 'XX',
-                country: countryCode || 'Unknown',
-                city: city || 'Unknown',
+                countryCode: countryCode || null,
+                country: country || null,
+                city: city || null,
                 ipAddress: headerList.get('x-forwarded-for') || 'hidden'
               }
             }).catch(console.error)

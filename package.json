@@ -11,7 +11,7 @@
     "dev:stable": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev",
     "dev:clean:force": "rimraf .next node_modules/.cache && cross-env NEXT_TELEMETRY_DISABLED=1 next dev --turbo",
     "dev:ultra": "rimraf .next node_modules/.cache && cross-env NODE_OPTIONS=\"--max-old-space-size=12288\" NEXT_TELEMETRY_DISABLED=1 next dev --turbo",
-    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" next build",
+    "build": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next build",
     "build:analyze": "cross-env ANALYZE=true next build",
     "start": "next start -H 0.0.0.0",
     "lint": "next lint",

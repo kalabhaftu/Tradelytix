@@ -170,7 +170,7 @@ export function TradeCard({ trade, onClick, onEdit, onDelete, onView }: TradeCar
               </h3>
               {hasPartials && (
                 <Badge variant="outline" className="text-[10px] h-4 px-1.5 shrink-0">
-                  {partialCount}x
+                  Partial {partialCount}x
                 </Badge>
               )}
             </div>

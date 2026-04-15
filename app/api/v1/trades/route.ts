@@ -109,6 +109,7 @@ export async function GET(request: NextRequest) {
     const pageOffset = params.get('pageOffset') ? parseInt(params.get('pageOffset')!) : 0
     const includeStats = params.get('includeStats') !== 'false'
     const includeCalendar = params.get('includeCalendar') !== 'false'
+    const groupByExecution = params.get('groupByExecution') === 'true'
     const timezone = params.get('timezone') || 'UTC'
     const search = params.get('search') || ''
     const side = params.get('side') || ''
@@ -249,10 +250,14 @@ export async function GET(request: NextRequest) {
       })
     }
     
-    // PERF: Group trades ONCE, pass to both stats and calendar
-    const grouped = (includeStats || includeCalendar) ? groupTradesByExecution(trades) : undefined
+    // PERF: Group trades ONCE, pass to all grouped consumers
+    const grouped = (includeStats || includeCalendar || groupByExecution)
+      ? groupTradesByExecution(trades)
+      : undefined
     const statistics = includeStats ? calculateStatistics(trades, accounts, grouped) : null
     const calendarData = includeCalendar ? formatCalendarData(trades, accounts, timezone, grouped) : null
+
+    const responseTrades = groupByExecution ? (grouped ?? groupTradesByExecution(trades)) : trades
 
     // Filter accounts to match selected account numbers (for balance calculation)
     const filteredAccounts = accountNumbers.length > 0
@@ -284,10 +289,10 @@ export async function GET(request: NextRequest) {
       accountBalancePnl: calculateBalanceInfo(filteredAccounts, trades),
     } : null
 
-    const total = trades.length
+    const total = responseTrades.length
     const pagedTrades = pageLimit !== null && pageLimit > 0
-      ? trades.slice(Math.max(0, pageOffset), Math.max(0, pageOffset) + pageLimit)
-      : trades
+      ? responseTrades.slice(Math.max(0, pageOffset), Math.max(0, pageOffset) + pageLimit)
+      : responseTrades
     
     const response = NextResponse.json({
       trades: pagedTrades,

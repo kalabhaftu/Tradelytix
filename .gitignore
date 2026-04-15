@@ -291,6 +291,7 @@ Temporary Items
 temp.txt
 
 .agent/
+.kilo/
 
 # Local diagnostics and debug artifacts
 diagnostics/

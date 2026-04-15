@@ -60,6 +60,7 @@ export function useJournal(params: UseJournalParams) {
   // because we are lazy loading! Let's request includeStats=true
   queryParams.append('includeStats', 'true')
   queryParams.append('includeCalendar', 'false')
+  queryParams.append('groupByExecution', 'true')
 
   const url = `/api/v1/trades?${queryParams.toString()}`
 

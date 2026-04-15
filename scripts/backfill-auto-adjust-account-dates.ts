@@ -376,12 +376,37 @@ export async function runBackfillAutoAdjustAccountDates(
   return summary
 }
 
-function parseArgs(argv: string[]): BackfillOptions {
-  let apply = false
+function parseBooleanFlag(value: string | undefined): boolean {
+  if (value === undefined) return false
+  const normalized = value.toLowerCase()
+  return normalized === '' || normalized === '1' || normalized === 'true' || normalized === 'yes'
+}
+
+function parseArgs(argv: string[], env: NodeJS.ProcessEnv = process.env): BackfillOptions {
+  // npm run <script> -- --apply forwards args directly to argv.
+  // npm run <script> --apply can be swallowed by npm and exposed as npm_config_all=true.
+  const lifecycleEvent = env.npm_lifecycle_event ?? ''
+  const implicitApplyFromNpmAll =
+    lifecycleEvent === 'backfill:auto-adjust-account-dates' &&
+    parseBooleanFlag(env.npm_config_all)
+
+  let apply = parseBooleanFlag(env.npm_config_apply) || implicitApplyFromNpmAll
   let userId: string | undefined
+  let sawExplicitDryRun = false
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
+
+    if (arg === 'apply') {
+      apply = true
+      continue
+    }
+
+    if (arg === 'dry-run') {
+      apply = false
+      sawExplicitDryRun = true
+      continue
+    }
 
     if (arg === '--apply') {
       apply = true
@@ -390,6 +415,7 @@ function parseArgs(argv: string[]): BackfillOptions {
 
     if (arg === '--dry-run') {
       apply = false
+      sawExplicitDryRun = true
       continue
     }
 
@@ -406,6 +432,13 @@ function parseArgs(argv: string[]): BackfillOptions {
     throw new Error(`Unknown argument: ${arg}`)
   }
 
+  if (implicitApplyFromNpmAll && !sawExplicitDryRun && !argv.includes('--apply') && !argv.includes('apply')) {
+    console.warn(
+      '[backfill:auto-adjust-account-dates] Interpreting `npm run backfill:auto-adjust-account-dates --apply` as apply mode. ' +
+      'Recommended explicit forms: `npm run backfill:auto-adjust-account-dates -- --apply` or `npm run backfill:auto-adjust-account-dates:apply`.'
+    )
+  }
+
   return { apply, userId }
 }
 
@@ -413,7 +446,7 @@ export async function main(): Promise<void> {
   dotenv.config({ path: path.resolve(process.cwd(), '.env') })
   dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), override: true })
 
-  const options = parseArgs(process.argv.slice(2))
+  const options = parseArgs(process.argv.slice(2), process.env)
 
   console.log(`[backfill:auto-adjust-account-dates] mode=${options.apply ? 'apply' : 'dry-run'} userId=${options.userId ?? 'ALL'}`)
 

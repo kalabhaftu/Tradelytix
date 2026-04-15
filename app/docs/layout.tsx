@@ -337,22 +337,20 @@ export default function DocsLayout({ children }: { children: ReactNode }) {
       </header>
 
       <div className="mx-auto max-w-[1600px] px-4 lg:px-6">
-        <div className="grid min-h-[calc(100vh-3.5rem)] grid-cols-1 gap-8 md:grid-cols-[18rem_minmax(0,1fr)] md:gap-10 lg:grid-cols-[19.5rem_minmax(0,1fr)]">
-          <aside className="hidden md:block">
-            <div className="sticky top-14 h-[calc(100vh-3.5rem)] py-6">
-              <div className="flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-border/70 bg-card/70 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.35)]">
-                <div className="border-b px-5 py-4">
-                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-muted-foreground">
-                    Documentation
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Guides, feature references, and implementation notes.
-                  </p>
-                </div>
+        <div className="grid min-h-[calc(100vh-3.5rem)] grid-cols-1 items-start gap-8 md:grid-cols-[18rem_minmax(0,1fr)] md:gap-10 lg:grid-cols-[19.5rem_minmax(0,1fr)]">
+          <aside className="hidden md:sticky md:top-14 md:block md:h-[calc(100vh-3.5rem)] md:py-6">
+            <div className="flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-border/70 bg-card/70 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.35)]">
+              <div className="border-b px-5 py-4">
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-muted-foreground">
+                  Documentation
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Guides, feature references, and implementation notes.
+                </p>
+              </div>
 
-                <div className="flex-1 overflow-y-auto px-4 py-4">
-                  <DocsNav pathname={pathname} />
-                </div>
+              <div className="flex-1 overflow-y-auto px-4 py-4">
+                <DocsNav pathname={pathname} />
               </div>
             </div>
           </aside>

@@ -32,6 +32,9 @@
     "migrate:images": "tsx scripts/migrate-images-prisma.ts",
     "test:api": "node scripts/test-api-routes.js http://localhost:3000",
     "backfill:auto-adjust-account-dates": "tsx scripts/backfill-auto-adjust-account-dates.ts",
+    "backfill:auto-adjust-account-dates:apply": "tsx scripts/backfill-auto-adjust-account-dates.ts --apply",
+    "backfill:auto-adjust-account-dates--apply": "tsx scripts/backfill-auto-adjust-account-dates.ts --apply",
+    "diagnose:deps": "tsx scripts/diagnose-dependencies.ts",
     "diagnose:data": "tsx scripts/diagnose-data-integrity.ts",
     "cleanup:orphaned-users": "tsx scripts/cleanup-orphaned-users.ts"
   },

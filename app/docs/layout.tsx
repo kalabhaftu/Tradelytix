@@ -1,19 +1,45 @@
 'use client'
 
-import { ReactNode, useState, useMemo, useEffect } from 'react'
+import { ReactNode, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import Fuse from 'fuse.js'
+import {
+  BookOpenText,
+  ChevronRight,
+  Code,
+  FileText,
+  Heart,
+  Home,
+  List,
+  LogIn,
+  Rocket,
+  Search,
+} from 'lucide-react'
+
 import { Logo } from '@/components/logo'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Home, Search, List, ChevronRight, BookOpenText, Rocket, Code, FileText, Terminal, Database as DatabaseIcon, Zap, Heart, MessageSquare, LogIn } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Badge } from '@/components/ui/badge'
-import Fuse from 'fuse.js'
+import { cn } from '@/lib/utils'
 
+type DocsNavItem = {
+  title: string
+  href: string
+  subsections?: Array<{
+    title: string
+    href: string
+  }>
+}
 
-const navigation = [
+type DocsNavSection = {
+  title: string
+  icon: typeof Rocket
+  items: DocsNavItem[]
+}
+
+const docsNavigation: DocsNavSection[] = [
   {
     title: 'Getting Started',
     icon: Rocket,
@@ -45,20 +71,20 @@ const navigation = [
     title: 'Resources',
     icon: FileText,
     items: [
-      { 
-        title: 'FAQ & Troubleshooting', 
+      {
+        title: 'FAQ & Troubleshooting',
         href: '/docs/faq',
         subsections: [
           { title: 'Is Deltalytix free?', href: '/docs/faq#is-deltalytix-free' },
           { title: 'What brokers are supported?', href: '/docs/faq#what-brokers-are-supported' },
           { title: 'Where is my data stored?', href: '/docs/faq#where-is-my-data-stored' },
-          { title: 'My CSV won\'t import', href: '/docs/faq#my-csv-wont-import' },
+          { title: "My CSV won't import", href: '/docs/faq#my-csv-wont-import' },
           { title: 'Duplicate trades after re-import', href: '/docs/faq#duplicate-trades-after-re-import' },
           { title: 'Dashboard shows no data', href: '/docs/faq#dashboard-shows-no-data' },
           { title: 'Widgets not loading', href: '/docs/faq#widgets-not-loading' },
           { title: 'Can I use email/password login?', href: '/docs/faq#can-i-use-emailpassword-login' },
           { title: 'How do I delete my account?', href: '/docs/faq#how-do-i-delete-my-account' },
-        ]
+        ],
       },
       { title: 'Feedback Guide', href: '/docs/feedback' },
       { title: 'Support the Project', href: '/docs/donate' },
@@ -81,240 +107,279 @@ const navigation = [
   },
 ]
 
-// Build flat list for search
-const allDocPages = navigation.flatMap(section =>
-  section.items.flatMap(item => {
-    const parent = { ...item, section: section.title }
-    if (item.subsections) {
-      return [parent, ...item.subsections.map(sub => ({ ...sub, section: section.title, parentTitle: item.title }))]
+const searchablePages = docsNavigation.flatMap((section) =>
+  section.items.flatMap((item) => {
+    const pages = [
+      {
+        title: item.title,
+        href: item.href,
+        section: section.title,
+        parentTitle: null as string | null,
+      },
+    ]
+
+    if (!item.subsections) {
+      return pages
     }
-    return [parent]
+
+    return pages.concat(
+      item.subsections.map((subsection) => ({
+        title: subsection.title,
+        href: subsection.href,
+        section: section.title,
+        parentTitle: item.title,
+      }))
+    )
   })
 )
 
-const fuse = new Fuse(allDocPages, {
-  keys: ['title', 'section'],
-  threshold: 0.6,
+const docsSearch = new Fuse(searchablePages, {
+  keys: ['title', 'section', 'parentTitle'],
+  threshold: 0.34,
   ignoreLocation: true,
-  findAllMatches: true,
-  useExtendedSearch: true,
 })
 
+function normalizeHref(href: string) {
+  return href.split('#')[0]
+}
 
-function Sidebar({ className }: { className?: string }) {
-  const pathname = usePathname()
-
+function DocsNav({
+  pathname,
+  onNavigate,
+}: {
+  pathname: string
+  onNavigate?: () => void
+}) {
   return (
-    <div className={cn("space-y-8", className)}>
-      {navigation.map((section) => (
-        <div key={section.title}>
-          <h4 className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 flex items-center gap-2">
-            <section.icon className="h-3 w-3" />
-            {section.title}
-          </h4>
-          <div className="space-y-0.5">
+    <nav className="space-y-6">
+      {docsNavigation.map((section) => (
+        <section key={section.title} className="space-y-2">
+          <div className="flex items-center gap-2 px-2 text-[10px] font-black uppercase tracking-[0.24em] text-muted-foreground/60">
+            <section.icon className="h-3.5 w-3.5" />
+            <span>{section.title}</span>
+          </div>
+
+          <div className="space-y-1">
             {section.items.map((item) => {
-              const isActive = pathname === item.href
+              const itemPath = normalizeHref(item.href)
+              const itemActive = pathname === itemPath
+
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "group flex items-center rounded-lg px-2 py-1.5 text-xs transition-colors",
-                    isActive
-                      ? "bg-primary/5 text-primary font-semibold"
-                      : "hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+                <div key={item.href} className="space-y-1">
+                  <Link
+                    href={item.href}
+                    onClick={onNavigate}
+                    className={cn(
+                      'group flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition-colors',
+                      itemActive
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
+                    )}
+                  >
+                    <span className="truncate">{item.title}</span>
+                    <ChevronRight
+                      className={cn(
+                        'ml-auto h-3.5 w-3.5 transition-transform',
+                        itemActive ? 'translate-x-0 text-primary-foreground/80' : 'translate-x-0.5 text-muted-foreground/60'
+                      )}
+                    />
+                  </Link>
+
+                  {item.subsections && pathname === itemPath && (
+                    <div className="ml-3 space-y-1 border-l border-border/70 pl-4">
+                      {item.subsections.map((subsection) => (
+                        <Link
+                          key={subsection.href}
+                          href={subsection.href}
+                          onClick={onNavigate}
+                          className="block rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+                        >
+                          {subsection.title}
+                        </Link>
+                      ))}
+                    </div>
                   )}
-                >
-                  {item.title}
-                  {isActive && <div className="ml-auto w-1 h-1 rounded-full bg-primary" />}
-                </Link>
+                </div>
               )
             })}
           </div>
-        </div>
+        </section>
       ))}
-    </div>
+    </nav>
   )
 }
 
 export default function DocsLayout({ children }: { children: ReactNode }) {
+  const pathname = usePathname()
   const [searchQuery, setSearchQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
-  // Check auth status via cookie presence (client-side heuristic)
   useEffect(() => {
-    const hasSbCookie = document.cookie.split(';').some(c => c.trim().startsWith('sb-'))
-    setIsLoggedIn(hasSbCookie)
+    const hasSupabaseCookie = document.cookie.split(';').some((cookie) => cookie.trim().startsWith('sb-'))
+    setIsLoggedIn(hasSupabaseCookie)
   }, [])
 
   const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return []
-    return fuse.search(searchQuery).map(r => r.item)
+    if (!searchQuery.trim()) {
+      return []
+    }
+
+    return docsSearch.search(searchQuery.trim()).slice(0, 8).map((result) => result.item)
   }, [searchQuery])
+
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [pathname])
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
-        <div className="flex h-12 items-center gap-4 px-4 justify-between">
+      <header className="sticky top-0 z-50 border-b bg-background/88 backdrop-blur-xl">
+        <div className="mx-auto flex h-14 max-w-[1600px] items-center justify-between gap-4 px-4 lg:px-6">
           <div className="flex items-center gap-2">
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild className="md:hidden">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl">
                   <List className="h-4 w-4" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-80 pr-0">
-                <div className="pr-6 pt-4">
-                  <Link href="/" className="flex items-center gap-2 mb-6">
-                    <Logo className="w-7 h-7 fill-foreground" />
-                    <span className="font-semibold text-lg">Deltalytix</span>
-                  </Link>
-                  <Sidebar />
+              <SheetContent side="left" className="w-[22rem] border-r bg-background p-0">
+                <div className="flex h-full flex-col">
+                  <div className="border-b px-5 py-4">
+                    <Link href="/" className="flex items-center gap-3">
+                      <Logo className="h-7 w-7" />
+                      <div>
+                        <p className="text-sm font-black tracking-tight">Deltalytix</p>
+                        <p className="text-xs text-muted-foreground">Documentation</p>
+                      </div>
+                    </Link>
+                  </div>
+                  <div className="flex-1 overflow-y-auto px-4 py-4">
+                    <DocsNav pathname={pathname} onNavigate={() => setMobileMenuOpen(false)} />
+                  </div>
                 </div>
               </SheetContent>
             </Sheet>
 
-            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <Logo className="w-6 h-6" />
-              <span className="text-sm font-bold tracking-tight hidden sm:inline">Deltalytix</span>
-              <Badge variant="outline" className="ml-2 h-5 px-1.5 text-[10px] hidden sm:inline-flex uppercase tracking-wider">Docs</Badge>
+            <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
+              <Logo className="h-7 w-7" />
+              <div className="hidden sm:block">
+                <p className="text-sm font-black tracking-tight">Deltalytix</p>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Docs</p>
+              </div>
+              <Badge variant="outline" className="hidden h-6 rounded-full px-2.5 text-[10px] font-bold uppercase tracking-[0.18em] md:inline-flex">
+                Knowledge Base
+              </Badge>
             </Link>
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="relative hidden sm:block w-48 lg:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <div className="relative hidden w-64 lg:block xl:w-80">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search docs..."
-                className="pl-9 h-8 text-xs bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary/20"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search docs, guides, FAQs..."
+                className="h-9 rounded-xl border-border/70 bg-card pl-9 text-xs shadow-none"
               />
-              {searchResults.length > 0 && searchQuery && (
-                <div className="absolute top-full mt-1 left-0 right-0 bg-popover border rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                  {searchResults.map((result) => (
-                    <Link
-                      key={result.href}
-                      href={result.href}
-                      className="flex items-center justify-between px-3 py-2 text-xs hover:bg-accent transition-colors"
-                      onClick={() => setSearchQuery('')}
-                    >
-                      <span className="font-medium">
-                        {'parentTitle' in result && (result as any).parentTitle && <span className="text-muted-foreground mr-1">{(result as any).parentTitle} &rsaquo;</span>}
-                        {result.title}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">{result.section}</span>
-                    </Link>
-                  ))}
+
+              {searchResults.length > 0 && (
+                <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border bg-popover shadow-2xl">
+                  <div className="max-h-[24rem] overflow-y-auto p-2">
+                    {searchResults.map((result) => (
+                      <Link
+                        key={result.href}
+                        href={result.href}
+                        className="flex items-start justify-between gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-accent/60"
+                        onClick={() => setSearchQuery('')}
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold">
+                            {result.parentTitle ? `${result.parentTitle} / ` : ''}
+                            {result.title}
+                          </p>
+                          <p className="truncate text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                            {result.section}
+                          </p>
+                        </div>
+                        <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
-            <Button asChild variant="ghost" size="sm" className="h-8 text-xs">
+            <Button asChild variant="ghost" size="sm" className="h-9 rounded-xl text-xs">
               <Link href="/donate">
-                <Heart className="h-3.5 w-3.5 mr-1" />
+                <Heart className="mr-1.5 h-3.5 w-3.5" />
                 <span className="hidden lg:inline">Donate</span>
               </Link>
             </Button>
 
             {isLoggedIn ? (
-              <Button asChild variant="ghost" size="sm" className="h-8 text-xs">
+              <Button asChild variant="ghost" size="sm" className="h-9 rounded-xl text-xs">
                 <Link href="/dashboard">
-                  <Home className="h-3.5 w-3.5 mr-1" />
+                  <Home className="mr-1.5 h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Dashboard</span>
                 </Link>
               </Button>
             ) : (
-              <Button asChild size="sm" className="h-8 text-xs">
+              <Button asChild size="sm" className="h-9 rounded-xl text-xs">
                 <Link href="/">
-                  <LogIn className="h-3.5 w-3.5 mr-1" />
+                  <LogIn className="mr-1.5 h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Sign In</span>
                 </Link>
               </Button>
             )}
           </div>
-
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-[1440px]">
-        <div className="flex-1 md:grid md:grid-cols-[240px_minmax(0,1fr)] lg:grid-cols-[260px_minmax(0,1fr)]">
-          {/* Desktop Sidebar */}
-          <aside className="fixed top-12 z-30 hidden h-[calc(100vh-3rem)] w-[240px] lg:w-[260px] shrink-0 overflow-y-auto md:sticky md:block self-start border-r px-4 py-4 scrollbar-none">
-            <Sidebar />
+      <div className="mx-auto max-w-[1600px] px-4 lg:px-6">
+        <div className="grid min-h-[calc(100vh-3.5rem)] grid-cols-1 gap-8 md:grid-cols-[18rem_minmax(0,1fr)] md:gap-10 lg:grid-cols-[19.5rem_minmax(0,1fr)]">
+          <aside className="hidden md:block">
+            <div className="sticky top-14 h-[calc(100vh-3.5rem)] py-6">
+              <div className="flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-border/70 bg-card/70 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.35)]">
+                <div className="border-b px-5 py-4">
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-muted-foreground">
+                    Documentation
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Guides, feature references, and implementation notes.
+                  </p>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-4 py-4">
+                  <DocsNav pathname={pathname} />
+                </div>
+              </div>
+            </div>
           </aside>
 
-          {/* Main Content */}
-          <main className="relative px-6 py-8 md:px-8 lg:px-12">
-            <div className="mx-auto w-full min-w-0 max-w-4xl">
-              <div className="prose prose-invert max-w-none
-                prose-headings:scroll-mt-20
-                prose-headings:font-bold
-                prose-h1:text-4xl
-                prose-h1:border-b
-                prose-h1:pb-4
-                prose-h1:mb-8
-                prose-h2:text-3xl
-                prose-h2:mt-12
-                prose-h2:mb-6
-                prose-h2:border-b
-                prose-h2:pb-3
-                prose-h3:text-2xl
-                prose-h3:mt-10
-                prose-h3:mb-4
-                prose-h4:text-xl
-                prose-h4:mt-8
-                prose-h4:mb-3
-                prose-p:text-muted-foreground
-                prose-p:leading-7
-                prose-p:my-4
-                prose-li:text-muted-foreground
-                prose-li:leading-7
-                prose-li:my-2
-                prose-ul:my-6
-                prose-ol:my-6
-                prose-code:bg-accent/50
-                prose-code:border
-                prose-code:px-2
-                prose-code:py-1
-                prose-code:rounded-md
-                prose-code:text-sm
-                prose-code:font-mono
-                prose-code:text-foreground
-                prose-code:before:content-['']
-                prose-code:after:content-['']
-                prose-pre:bg-accent/30
-                prose-pre:border-2
-                prose-pre:border-border
-                prose-pre:rounded-lg
-                prose-pre:p-4
-                prose-pre:my-6
-                prose-pre:overflow-x-auto
-                prose-a:text-primary
-                prose-a:no-underline
-                prose-a:font-medium
-                hover:prose-a:underline
-                prose-strong:text-foreground
-                prose-strong:font-semibold
-                prose-img:rounded-lg
-                prose-img:border
-                prose-img:my-8
-                prose-table:border
-                prose-table:my-8
-                prose-th:bg-accent
-                prose-th:font-semibold
-                prose-th:p-3
-                prose-td:p-3
-                prose-blockquote:border-l-4
-                prose-blockquote:border-primary
-                prose-blockquote:pl-4
-                prose-blockquote:italic
-                prose-blockquote:text-muted-foreground
-                prose-hr:my-12
-                prose-hr:border-border"
+          <main className="min-w-0 py-6 md:py-8 lg:py-10">
+            <div className="mx-auto w-full max-w-5xl rounded-[2rem] border border-border/70 bg-card/40 px-5 py-8 shadow-[0_24px_80px_-42px_rgba(0,0,0,0.45)] backdrop-blur-sm sm:px-7 lg:px-10 lg:py-10">
+              <div
+                className="prose prose-invert max-w-none
+                  prose-headings:scroll-mt-24
+                  prose-headings:font-bold
+                  prose-h1:mb-8 prose-h1:border-b prose-h1:pb-4 prose-h1:text-4xl
+                  prose-h2:mb-6 prose-h2:mt-12 prose-h2:border-b prose-h2:pb-3 prose-h2:text-3xl
+                  prose-h3:mb-4 prose-h3:mt-10 prose-h3:text-2xl
+                  prose-h4:mb-3 prose-h4:mt-8 prose-h4:text-xl
+                  prose-p:my-4 prose-p:leading-7 prose-p:text-muted-foreground
+                  prose-li:my-2 prose-li:leading-7 prose-li:text-muted-foreground
+                  prose-ul:my-6 prose-ol:my-6
+                  prose-code:rounded-md prose-code:border prose-code:bg-accent/50 prose-code:px-2 prose-code:py-1 prose-code:text-sm prose-code:text-foreground prose-code:before:content-[''] prose-code:after:content-['']
+                  prose-pre:my-6 prose-pre:overflow-x-auto prose-pre:rounded-xl prose-pre:border-2 prose-pre:border-border prose-pre:bg-accent/30 prose-pre:p-4
+                  prose-a:font-medium prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+                  prose-strong:text-foreground prose-strong:font-semibold
+                  prose-img:my-8 prose-img:rounded-xl prose-img:border
+                  prose-table:my-8 prose-table:border
+                  prose-th:bg-accent prose-th:p-3 prose-th:font-semibold
+                  prose-td:p-3
+                  prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-muted-foreground
+                  prose-hr:my-12 prose-hr:border-border"
               >
                 {children}
               </div>

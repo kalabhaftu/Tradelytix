@@ -73,9 +73,8 @@ describe('GET/PATCH /api/auth/profile', () => {
       calendarDisplayStats: ['pnl', 'trades'],
       showWeeklySummary: true,
       aiSettings: {
-        weeklyReviewAutomationEnabled: false,
         autoGenerateInsights: false,
-        includeAiInsightsInNotifications: true,
+        includeAiInsightsInNotifications: false,
       },
     }
 

@@ -4,7 +4,6 @@ import { TagsProvider } from "@/context/tags-provider";
 import Modals from "@/components/modals";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ReactElement, Suspense } from "react";
-import { AutoRefreshProvider } from "./components/auto-refresh-provider";
 import { SidebarLayout } from "./components/sidebar-layout";
 import { MobileBottomNav } from "@/components/ui/mobile-nav";
 import { QuickAddFAB } from "@/components/quick-add-fab";
@@ -20,8 +19,6 @@ export default async function RootLayout({ children }: { children: ReactElement 
       <DataProvider initialBootstrapData={initialBootstrapData}>
         <TagsProvider>
           <TemplateProvider initialActiveTemplate={initialBootstrapData.activeTemplateShell}>
-            {/* Data syncs via Supabase Realtime - no polling needed */}
-            <AutoRefreshProvider>
               <div className="min-h-screen flex flex-col">
                 <Suspense fallback={<div className="flex flex-1" />}>
                   <SidebarLayout>
@@ -36,7 +33,6 @@ export default async function RootLayout({ children }: { children: ReactElement 
                   <GlobalTradeController />
                 </Suspense>
               </div>
-            </AutoRefreshProvider>
           </TemplateProvider>
         </TagsProvider>
       </DataProvider>

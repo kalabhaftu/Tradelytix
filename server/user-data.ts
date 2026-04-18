@@ -53,7 +53,6 @@ export async function getUserData(): Promise<{
                 email: true,
                 auth_user_id: true,
                 isFirstConnection: true,
-                thorToken: true,
                 timezone: true,
                 theme: true,
                 firstName: true,

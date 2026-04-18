@@ -340,7 +340,6 @@ model User {
   email                  String                   @unique
   auth_user_id           String                   @unique
   isFirstConnection      Boolean                  @default(true)
-  thorToken              String?
   timezone               String                   @default("America/New_York")
   timeFormat             String                   @default("24h")
   theme                  String                   @default("system")

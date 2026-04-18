@@ -131,6 +131,27 @@ export function AIAnalysisDialog({ isOpen, onClose, accountId }: AIAnalysisDialo
       const data = await response.json()
       setAnalysis(data.analysis)
       toast.success('Analysis complete!')
+
+      // Wire includeAiInsightsInNotifications: create notification with AI summary
+      try {
+        const profileRes = await fetch('/api/auth/profile')
+        const profileData = await profileRes.json()
+        if (profileData.success && profileData.data?.aiSettings?.includeAiInsightsInNotifications) {
+          const summary = data.analysis?.summary || 'AI analysis completed.'
+          await fetch('/api/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'SYSTEM',
+              title: `AI Performance Audit: ${format(dateRange.from, 'MMM d')} – ${format(dateRange.to, 'MMM d')}`,
+              message: summary.slice(0, 500),
+              priority: 'MEDIUM',
+            })
+          })
+        }
+      } catch {
+        // Non-critical — notification creation failure shouldn't block analysis
+      }
     } catch (error) {
       toast.error('Failed to generate AI analysis')
     } finally {

@@ -56,6 +56,45 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function POST(request: NextRequest) {
+  try {
+    const identity = await getResolvedUserIdentitySafe()
+    if (!identity) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const body = await request.json()
+    const { type, title, message, priority } = body
+
+    if (!type || !title || !message) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required fields: type, title, message' },
+        { status: 400 }
+      )
+    }
+
+    const notification = await prisma.notification.create({
+      data: {
+        userId: identity.internalUserId,
+        type,
+        title: String(title).slice(0, 200),
+        message: String(message).slice(0, 1000),
+        priority: priority || 'MEDIUM',
+      }
+    })
+
+    return NextResponse.json({ success: true, data: notification })
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: 'Failed to create notification' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function PATCH(request: NextRequest) {
   try {
     const identity = await getResolvedUserIdentitySafe()

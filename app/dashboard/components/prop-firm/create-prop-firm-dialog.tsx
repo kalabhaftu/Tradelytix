@@ -37,7 +37,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, Building2, AlertCircle, CheckCircle2, PenLine, Check, X } from "lucide-react"
 import { toast } from "sonner"
 import { clearAccountsCache } from "@/hooks/use-accounts"
-import { useRegisterDialog } from "@/app/dashboard/components/auto-refresh-provider"
 
 // Schema for form validation
 const propFirmSchema = z.object({
@@ -86,8 +85,6 @@ export function CreatePropFirmDialog({ open, onOpenChange, onSuccess }: PropFirm
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
   const [isEditingRules, setIsEditingRules] = useState(false)
 
-  // Register dialog to pause auto-refresh while open
-  useRegisterDialog(open)
 
   const {
     register,

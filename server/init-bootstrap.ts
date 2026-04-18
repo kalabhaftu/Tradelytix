@@ -42,7 +42,6 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
         email: true,
         auth_user_id: true,
         isFirstConnection: true,
-        thorToken: true,
         timezone: true,
         theme: true,
         accentPack: true,

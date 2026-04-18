@@ -5,17 +5,15 @@ import { logActivity, getClientIp } from '@/lib/activity-logger'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 const DEFAULT_AI_SETTINGS = {
-  weeklyReviewAutomationEnabled: false,
   autoGenerateInsights: false,
-  includeAiInsightsInNotifications: true,
+  includeAiInsightsInNotifications: false,
 }
 
 function normalizeAiSettings(value: unknown) {
-  const raw = (value && typeof value === 'object') ? value as Record<string, unknown> : {}
+  const raw = typeof value === 'object' && value ? value as Record<string, unknown> : {}
   return {
-    weeklyReviewAutomationEnabled: !!raw.weeklyReviewAutomationEnabled,
     autoGenerateInsights: !!raw.autoGenerateInsights,
-    includeAiInsightsInNotifications: raw.includeAiInsightsInNotifications !== false,
+    includeAiInsightsInNotifications: raw.includeAiInsightsInNotifications !== false ? !!raw.includeAiInsightsInNotifications : false,
   }
 }
 

@@ -213,52 +213,6 @@ export async function createImportNotification(
 }
 
 /**
- * Strategy Deviation: Trade outside allowed sessions/rules
- * Smart invalidation: Groups same deviation type for the day
- * 
- * Example: All "after-hours" trades for today in single notification
- */
-export async function createStrategyDeviation(
-    userId: string,
-    deviationType: 'session_violation' | 'rule_violation',
-    metadata: {
-        tradeId: string
-        tradePair: string
-        expectedSession?: string
-        actualSession?: string
-        ruleViolated?: string
-    }
-) {
-    const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
-
-    let title: string
-    let message: string
-
-    if (deviationType === 'session_violation') {
-        title = 'Strategy Deviation: Session Violation'
-        message = `Trade ${metadata.tradePair} executed outside allowed session. Expected: ${metadata.expectedSession}, Actual: ${metadata.actualSession}`
-    } else {
-        title = 'Strategy Deviation: Rule Violation'
-        message = `Trade ${metadata.tradePair} violated rule: ${metadata.ruleViolated}`
-    }
-
-    return await createOrUpdateNotification(userId, {
-        type: NotificationType.STRATEGY_SESSION_VIOLATION,
-        title,
-        message,
-        priority: NotificationPriority.MEDIUM,
-        actionRequired: false,
-        invalidationKey: `strategy_deviation_${deviationType}_${today}`,
-        data: {
-            deviationType,
-            date: today,
-            ...metadata,
-            occurrences: 1 // This will be incremented in data.occurrences on UPDATE
-        }
-    })
-}
-
-/**
  * System Announcement: Admin-to-user broadcasts
  * No invalidation - each announcement is unique
  */

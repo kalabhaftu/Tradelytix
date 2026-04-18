@@ -27,7 +27,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Building2 as Building } from "lucide-react"
-import { useRegisterDialog } from "@/app/dashboard/components/auto-refresh-provider"
 
 const editAccountSchema = z.object({
   accountName: z.string().min(1, 'Account name is required').max(100, 'Name too long'),
@@ -63,9 +62,7 @@ export function EditPropFirmAccountDialog({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false)
   const [pendingClose, setPendingClose] = useState(false)
-  
-  // Register dialog to pause auto-refresh while open
-  useRegisterDialog(open)
+
 
   const {
     register,

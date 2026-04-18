@@ -73,9 +73,8 @@ const timezones = [
 ]
 
 const defaultAiSettings = {
-  weeklyReviewAutomationEnabled: false,
   autoGenerateInsights: false,
-  includeAiInsightsInNotifications: true,
+  includeAiInsightsInNotifications: false,
 }
 
 function SettingRow({
@@ -718,26 +717,11 @@ export default function SettingsPage() {
             <SettingRow
               icon={BellRing}
               label="AI insights in notifications"
-              description="Include AI-generated performance summaries in notification feed"
+              description="Create a notification with a summary when you run an AI analysis"
               action={
                 <Switch
                   checked={profileData.aiSettings.includeAiInsightsInNotifications}
                   onCheckedChange={(checked) => handleAiSettingsChange('includeAiInsightsInNotifications', checked)}
-                  disabled={isLoadingProfile || isUpdatingAiSettings}
-                />
-              }
-            />
-
-            <Separator />
-
-            <SettingRow
-              icon={Bot}
-              label="Weekly AI review automation"
-              description="Reserved for future scheduler integration. Off by default."
-              action={
-                <Switch
-                  checked={profileData.aiSettings.weeklyReviewAutomationEnabled}
-                  onCheckedChange={(checked) => handleAiSettingsChange('weeklyReviewAutomationEnabled', checked)}
                   disabled={isLoadingProfile || isUpdatingAiSettings}
                 />
               }

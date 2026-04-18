@@ -701,8 +701,8 @@ export default function SettingsPage() {
           <CardContent className="space-y-1">
             <SettingRow
               icon={Sparkles}
-              label="Auto-generate insights"
-              description="Allow AI to draft insights from your trading activity"
+              label="Weekly AI Performance Reviews"
+              description="Get an AI-generated weekly report card every weekend"
               action={
                 <Switch
                   checked={profileData.aiSettings.autoGenerateInsights}

@@ -864,18 +864,42 @@ OUTPUT REQUIREMENTS:
 
     ==========================================================
 
+    ADDITIONAL ANALYSIS DIRECTIVES:
+    
+    6. CONSISTENCY CHECK:
+       - Are they making money consistently or having one big win that masks many losses?
+       - Is their edge real (repeatable) or lucky (one-off)?
+       - Would removing the best trade make them unprofitable? If so, their edge is fragile.
+    
+    7. TRADE DURATION PATTERNS:
+       - Are winning trades held long enough? Or are they cutting winners short out of fear?
+       - Are losing trades cut quickly? Or are they hoping for a reversal (holding losers too long)?
+       - Compare avg duration of wins vs losses. If losses are held longer, that's a huge red flag.
+    
+    8. POSITION SIZING PATTERNS:
+       - Look at largest wins vs largest losses. Asymmetry = ticking time bomb.
+       - Are they sizing up after wins? (overconfidence trap)
+       - Are they sizing up after losses? (martingale/tilt behavior, the fastest way to blow an account)
+    
+    9. DRAWDOWN AWARENESS:
+       - If total P&L went from high to low within the period, calculate the peak-to-trough drawdown.
+       - How quickly (or slowly) did they recover from their worst losing stretch?
+
     RESPOND WITH THIS EXACT JSON STRUCTURE:
     {
-      "summary": "3 to 4 sentences. Lead with the verdict: profitable or not, and by how much. Then state the PRIMARY problem or strength. Be direct. Example: 'You lost $847 over 23 trades this period. The core issue is not your strategy, it is your inability to stop trading after losses. Your average trade after a loss is negative $67, while your first trade of the day averages positive $34.'",
+      "summary": "4 to 5 sentences. Lead with the verdict: profitable or not, and by how much. Then state the PRIMARY problem or strength. Then mention one hidden pattern they likely do not see. Be direct. Example: 'You lost $847 over 23 trades this period. The core issue is not your strategy, it is your inability to stop trading after losses. Your average trade after a loss is negative $67, while your first trade of the day averages positive $34. Remove the revenge trades and you would actually be profitable.'",
       "emotionalPatterns": [
         "Connect specific emotions to specific dollar outcomes. Example: 'When you logged Frustrated, you averaged negative $147 per trade across 8 trades. When Focused, positive $89 across 12 trades. The pattern is obvious.'",
         "If they trade without logging emotions, call it out. Example: 'You have emotion data for only 30% of trading days. You cannot fix what you do not track.'",
-        "Look for revenge trading patterns, overconfidence spirals, fear-based exits."
+        "Look for revenge trading patterns, overconfidence spirals, fear-based exits.",
+        "Look for emotional state TRANSITIONS: does going from Confident to Frustrated in the same day predict blowups?"
       ],
       "performanceInsights": [
         "The single biggest P&L leak. Be specific. Example: 'You made $1,200 on NQ and lost $1,847 on ES. Why are you still trading ES?'",
         "Time based patterns. Example: 'Your afternoon trades (after 2pm) are negative $523 total. Your morning trades are positive $412. You should stop trading after lunch.'",
-        "Strategy or execution gaps. Example: 'Your limit orders have 67% win rate. Your market orders have 38%. Stop chasing entries.'"
+        "Strategy or execution gaps. Example: 'Your limit orders have 67% win rate. Your market orders have 38%. Stop chasing entries.'",
+        "Duration insight: Are they cutting winners too early or holding losers too long? Use the trade duration data.",
+        "Consistency check: Would removing the single biggest win make them unprofitable? If so, say it."
       ],
       "strengths": [
         "Only include if genuinely demonstrated by the data. Empty array is valid.",
@@ -883,14 +907,18 @@ OUTPUT REQUIREMENTS:
       ],
       "weaknesses": [
         "The real problems. No euphemisms. Example: 'You are gambling on news events. 4 trades during CPI, all losers, totaling negative $340.'",
-        "Example: 'Your average loss ($89) is larger than your average win ($67). You are letting losers run and cutting winners short. Classic fear pattern.'"
+        "Example: 'Your average loss ($89) is larger than your average win ($67). You are letting losers run and cutting winners short. Classic fear pattern.'",
+        "Include any consistency or fragility issues."
       ],
       "recommendations": [
         "Specific, actionable, measurable. Example: 'Stop trading after 2 consecutive losses. Your data shows the 3rd trade after losses is wrong 78% of the time.'",
         "Example: 'Remove ES from your watchlist for 2 weeks. Trade only NQ where you actually have edge.'",
         "Example: 'Set a hard rule: no trades within 30 minutes of high impact news. You have proven you cannot handle it.'",
         "The ONE THING that would have the biggest impact if they did nothing else."
-      ]
+      ],
+      "riskGrade": "A letter grade (A through F) for their risk management discipline this period. A = tight stops, consistent sizing, good R:R. F = no stops, random sizing, inverted R:R.",
+      "consistencyScore": "A number from 1 to 10 rating how consistent and repeatable their edge appears. 10 = rock solid. 1 = pure randomness.",
+      "topPriorityFix": "The single most impactful change they could make. Not a list, just ONE concrete sentence. This is the thing that, if they change nothing else, would improve their results the most."
     }
 
     FORMATTING RULES:
@@ -899,8 +927,11 @@ OUTPUT REQUIREMENTS:
     * NO EMOJIS.
     * Output ONLY valid JSON. No text before or after.
     * If they have failed accounts, do not coddle them. Analyze what went wrong and what pattern they need to break.
+    * Every single claim MUST reference a specific number from the data. No vague statements.
+    * If data is insufficient for a section, say so honestly rather than making things up.
     
     Analyze now. Be the coach they need, not the friend they want.`;
+
 
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
@@ -931,7 +962,7 @@ Your approach:
           }
         ],
         temperature: 0.75,
-        max_tokens: 3000
+        max_tokens: 4000
       })
     })
 

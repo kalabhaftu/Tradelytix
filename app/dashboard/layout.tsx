@@ -9,6 +9,7 @@ import { MobileBottomNav } from "@/components/ui/mobile-nav";
 import { QuickAddFAB } from "@/components/quick-add-fab";
 import { CommandPalette } from "@/components/command-palette";
 import { GlobalTradeController } from "./components/global-trade-controller";
+import { WeeklyReviewTrigger } from "@/components/weekly-review-trigger";
 import { getInitBootstrapData } from "@/server/init-bootstrap";
 
 export default async function RootLayout({ children }: { children: ReactElement }) {
@@ -32,6 +33,7 @@ export default async function RootLayout({ children }: { children: ReactElement 
                 <Suspense fallback={null}>
                   <GlobalTradeController />
                 </Suspense>
+                <WeeklyReviewTrigger />
               </div>
           </TemplateProvider>
         </TagsProvider>

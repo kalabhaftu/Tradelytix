@@ -89,6 +89,9 @@ interface AnalysisResult {
   recommendations: string[]
   strengths: string[]
   weaknesses: string[]
+  riskGrade?: string
+  consistencyScore?: number | string
+  topPriorityFix?: string
 }
 
 export function AIAnalysisDialog({ isOpen, onClose, accountId }: AIAnalysisDialogProps) {
@@ -265,6 +268,49 @@ export function AIAnalysisDialog({ isOpen, onClose, accountId }: AIAnalysisDialo
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Risk Grade + Consistency Score + Top Priority */}
+                {(analysis.riskGrade || analysis.consistencyScore || analysis.topPriorityFix) && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {analysis.riskGrade && (
+                      <Card className="border-orange-500/20">
+                        <CardContent className="p-4 text-center">
+                          <p className="text-xs text-muted-foreground mb-1">Risk Management</p>
+                          <p className={cn(
+                            "text-3xl font-bold",
+                            analysis.riskGrade.startsWith('A') ? 'text-long' :
+                            analysis.riskGrade.startsWith('B') ? 'text-green-400' :
+                            analysis.riskGrade.startsWith('C') ? 'text-yellow-400' :
+                            'text-short'
+                          )}>{cleanContent(analysis.riskGrade)}</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                    {analysis.consistencyScore && (
+                      <Card className="border-blue-500/20">
+                        <CardContent className="p-4 text-center">
+                          <p className="text-xs text-muted-foreground mb-1">Consistency</p>
+                          <p className={cn(
+                            "text-3xl font-bold",
+                            Number(analysis.consistencyScore) >= 7 ? 'text-long' :
+                            Number(analysis.consistencyScore) >= 4 ? 'text-yellow-400' :
+                            'text-short'
+                          )}>{analysis.consistencyScore}/10</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                    {analysis.topPriorityFix && (
+                      <Card className="border-primary/20 bg-primary/5 md:col-span-1">
+                        <CardContent className="p-4">
+                          <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                            <Flame className="h-3 w-3" /> #1 Priority
+                          </p>
+                          <p className="text-sm font-medium">{cleanContent(analysis.topPriorityFix)}</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                )}
 
                 {/* Emotional Patterns - Psychology Leaks */}
                 {analysis.emotionalPatterns.length > 0 && (

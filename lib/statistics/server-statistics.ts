@@ -6,13 +6,14 @@
 import { prisma } from '@/lib/prisma'
 import { unstable_cache } from 'next/cache'
 import { calculateAccountBalances } from '@/lib/utils/balance-calculator'
-import { groupTradesByExecution, BREAK_EVEN_THRESHOLD } from '@/lib/utils'
+import { groupTradesByExecution } from '@/lib/utils'
 import { CACHE_DURATION_SHORT } from '@/lib/constants'
 import { 
   calculateProfitFactor, 
   calculateRecoveryFactor, 
   calculateExpectancy 
 } from '@/lib/math/performance-metrics'
+import { calculateWinRate, classifyOutcome, DEFAULT_BREAK_EVEN_THRESHOLD, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 // ===========================================
 // TYPES
@@ -68,7 +69,10 @@ export interface CalculateStatisticsOptions {
 /**
  * Calculate streaks from grouped trades
  */
-function calculateStreaks(groupedTrades: any[]): {
+function calculateStreaks(
+  groupedTrades: any[],
+  breakEvenThreshold: number
+): {
   currentTradeStreak: number
   bestTradeStreak: number
   worstTradeStreak: number
@@ -84,12 +88,13 @@ function calculateStreaks(groupedTrades: any[]): {
   // Calculate trade streaks
   for (let i = 0; i < groupedTrades.length; i++) {
     const trade = groupedTrades[i]
-    const netPnl = Number(trade.pnl || 0) + Number(trade.commission || 0)
+    const netPnl = Number(trade.pnl || 0)
+    const outcome = classifyOutcome(netPnl, breakEvenThreshold)
     
-    if (netPnl > BREAK_EVEN_THRESHOLD) {
+    if (outcome === 'win') {
       tempTradeStreak = tempTradeStreak >= 0 ? tempTradeStreak + 1 : 1
       bestTradeStreak = Math.max(bestTradeStreak, tempTradeStreak)
-    } else if (netPnl < -BREAK_EVEN_THRESHOLD) {
+    } else if (outcome === 'loss') {
       tempTradeStreak = tempTradeStreak <= 0 ? tempTradeStreak - 1 : -1
       worstTradeStreak = Math.min(worstTradeStreak, tempTradeStreak)
     } else {
@@ -124,14 +129,15 @@ function calculateStreaks(groupedTrades: any[]): {
   for (let i = 0; i < sortedDays.length; i++) {
     const dayTrades = tradesByDay[sortedDays[i]]
     const dayPnl = dayTrades.reduce(
-      (sum: number, t: any) => sum + (Number(t.pnl || 0) + Number(t.commission || 0)),
+      (sum: number, t: any) => sum + Number(t.pnl || 0),
       0
     )
+    const dayOutcome = classifyOutcome(dayPnl, breakEvenThreshold)
 
-    if (dayPnl > BREAK_EVEN_THRESHOLD) {
+    if (dayOutcome === 'win') {
       tempDayStreak = tempDayStreak >= 0 ? tempDayStreak + 1 : 1
       bestDayStreak = Math.max(bestDayStreak, tempDayStreak)
-    } else if (dayPnl < -BREAK_EVEN_THRESHOLD) {
+    } else if (dayOutcome === 'loss') {
       tempDayStreak = tempDayStreak <= 0 ? tempDayStreak - 1 : -1
       worstDayStreak = Math.min(worstDayStreak, tempDayStreak)
     }
@@ -184,7 +190,7 @@ async function calculateStatisticsCore(
   }
 
   // Fetch required data in parallel
-  const [accounts, trades, transactions] = await Promise.all([
+  const [accounts, trades, transactions, userSettings] = await Promise.all([
     prisma.account.findMany({
       where: {
         userId,
@@ -224,18 +230,26 @@ async function calculateStatisticsCore(
         accountId: true,
         amount: true
       }
-    })
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { breakEvenThreshold: true },
+    }),
   ])
+
+  const breakEvenThreshold = getBreakEvenThreshold(
+    userSettings?.breakEvenThreshold ?? DEFAULT_BREAK_EVEN_THRESHOLD
+  )
 
   // Group trades by execution for accurate counting
   const groupedTrades = groupTradesByExecution(trades as any[]) as any[]
 
   // Calculate win/loss counts
   const wins = groupedTrades.filter(
-    t => (Number(t.pnl || 0) + Number(t.commission || 0)) > BREAK_EVEN_THRESHOLD
+    t => classifyOutcome(Number(t.pnl || 0), breakEvenThreshold) === 'win'
   )
   const losses = groupedTrades.filter(
-    t => (Number(t.pnl || 0) + Number(t.commission || 0)) < -BREAK_EVEN_THRESHOLD
+    t => classifyOutcome(Number(t.pnl || 0), breakEvenThreshold) === 'loss'
   )
   const breakEvenTradesCount = groupedTrades.length - wins.length - losses.length
 
@@ -243,27 +257,24 @@ async function calculateStatisticsCore(
   const losingTrades = losses.length
 
   // Calculate rates
-  const tradableCount = winningTrades + losingTrades
-  const winRate = tradableCount > 0
-    ? Math.round((winningTrades / tradableCount) * 1000) / 10
-    : 0
+  const winRate = Math.round(calculateWinRate(winningTrades, losingTrades) * 10) / 10
   const lossRate = groupedTrades.length > 0
     ? Math.round((losingTrades / groupedTrades.length) * 1000) / 10
     : 0
 
   // Calculate P&L metrics
   const grossProfits = wins.reduce((sum: number, t: any) => {
-    return sum + (Number(t.pnl || 0) + Number(t.commission || 0))
+    return sum + Number(t.pnl || 0)
   }, 0)
 
   const grossLosses = Math.abs(
     losses.reduce((sum, t) => {
-      return sum + (Number(t.pnl || 0) + Number(t.commission || 0))
+      return sum + Number(t.pnl || 0)
     }, 0)
   )
 
   const totalPnL = groupedTrades.reduce(
-    (sum: number, t: any) => sum + (Number(t.pnl || 0) + Number(t.commission || 0)),
+    (sum: number, t: any) => sum + Number(t.pnl || 0),
     0
   )
 
@@ -277,14 +288,14 @@ async function calculateStatisticsCore(
   // Find biggest win/loss
   const biggestWin = Math.max(
     0,
-    ...groupedTrades.map(t => Number(t.pnl || 0) + Number(t.commission || 0))
+    ...groupedTrades.map(t => Number(t.pnl || 0))
   )
   const biggestLoss = Math.abs(
-    Math.min(0, ...groupedTrades.map(t => Number(t.pnl || 0) + Number(t.commission || 0)))
+    Math.min(0, ...groupedTrades.map(t => Number(t.pnl || 0)))
   )
 
   // Calculate streaks
-  const streaks = calculateStreaks(groupedTrades)
+  const streaks = calculateStreaks(groupedTrades, breakEvenThreshold)
 
   // Calculate position time
   const totalPositionTime = groupedTrades.reduce(
@@ -316,7 +327,7 @@ async function calculateStatisticsCore(
   const dailyPnL = new Map<string, number>()
   recentTrades.forEach(trade => {
     const date = new Date(trade.createdAt).toISOString().split('T')[0]
-    const netPnL = trade.pnl + (trade.commission || 0)
+    const netPnL = Number(trade.pnl || 0)
     dailyPnL.set(date, (dailyPnL.get(date) || 0) + netPnL)
   })
 

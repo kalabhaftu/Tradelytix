@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { useTags } from '@/context/tags-provider'
+import { useData } from '@/context/data-provider'
 import { useNewsEvents } from '@/hooks/use-news-events'
 import { useTradingModels } from '@/hooks/use-trading-models'
 import { uploadService } from '@/lib/upload-service'
@@ -31,6 +32,7 @@ import { TradeNewsTab } from './components/trade-news-tab'
 import { TradeNotesTab } from './components/trade-notes-tab'
 import { TradeStrategyTab } from './components/trade-strategy-tab'
 import { classifyTrade, cn, formatCurrency } from '@/lib/utils'
+import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 interface TradeEditPanelProps {
   trade: ExtendedTrade
@@ -76,6 +78,7 @@ interface LocalTradingModel {
 }
 
 export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) {
+  const { statistics } = useData()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { tradingModels: fetchedModels } = useTradingModels()
   const tradingModels = React.useMemo(
@@ -290,8 +293,9 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
 
   // Trade header info
   const tradeData = trade as any
-  const netPnL = trade.pnl - (trade.commission || 0)
-  const outcome = classifyTrade(netPnL)
+  const threshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
+  const netPnL = trade.pnl || 0
+  const outcome = classifyTrade(netPnL, threshold)
   const isWin = outcome === 'win'
   const isLoss = outcome === 'loss'
   const isLong = trade.side?.toUpperCase() === 'BUY' || trade.side?.toLowerCase() === 'long'

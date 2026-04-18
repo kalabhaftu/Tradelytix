@@ -233,7 +233,7 @@ describe('CSV Import - Partial Closes & Grouping', () => {
     expect(Object.keys(grouped).length).toBe(2)
   })
 
-  it('should calculate net P&L for grouped trades', () => {
+  it('should keep grouped P&L canonical and track commissions separately', () => {
     const partialCloses = [
       { entryId: 'E1', pnl: 100, commission: 2.5 },
       { entryId: 'E1', pnl: 150, commission: 2.5 },
@@ -242,11 +242,11 @@ describe('CSV Import - Partial Closes & Grouping', () => {
     
     const totalPnL = partialCloses.reduce((sum, t) => sum + t.pnl, 0)
     const totalCommission = partialCloses.reduce((sum, t) => sum + t.commission, 0)
-    const netPnL = totalPnL - totalCommission
+    const canonicalNetPnL = totalPnL
     
     expect(totalPnL).toBe(200) // 100 + 150 - 50
     expect(totalCommission).toBe(7.5) // 2.5 * 3
-    expect(netPnL).toBe(192.5) // 200 - 7.5
+    expect(canonicalNetPnL).toBe(200)
   })
 })
 
@@ -282,8 +282,8 @@ describe('CSV Import - Special Characters & Edge Cases', () => {
       commission: 0
     }
     
-    const netPnL = trade.pnl - trade.commission
-    expect(netPnL).toBe(100)
+    const canonicalNetPnL = trade.pnl
+    expect(canonicalNetPnL).toBe(100)
     expect(trade.commission).toBe(0)
   })
 

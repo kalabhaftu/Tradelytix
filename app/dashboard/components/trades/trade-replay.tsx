@@ -1,24 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-    Calendar,
-    Clock,
-    TrendingUp as TrendUp,
-    TrendingDown as TrendDown,
-    Loader2 as CircleNotch,
     AlertCircle as WarningCircle
 } from "lucide-react"
-import { cn, BREAK_EVEN_THRESHOLD } from '@/lib/utils'
-import { format, parseISO } from 'date-fns'
-import { createChart, ColorType, IChartApi, ISeriesApi, Time, CandlestickSeries, createSeriesMarkers } from 'lightweight-charts'
+import { createChart, ColorType, IChartApi, Time, CandlestickSeries, createSeriesMarkers } from 'lightweight-charts'
 import { getMarketData } from '@/app/actions/get-market-data'
-import { CHART_COLORS } from '@/lib/constants'
 import { getTimezoneOffset } from 'date-fns-tz'
-import { Spinner } from '@/components/ui/spinner'
 import { Skeleton } from '@/components/ui/skeleton'
 
 interface TradeReplayProps {
@@ -41,14 +30,8 @@ export default function TradeReplay({ trade, onClose }: TradeReplayProps) {
     const chartRef = useRef<IChartApi | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const hasFetchedRef = useRef<boolean>(false)
-    const lastFetchIdRef = useRef<string>('')
 
     const isLong = trade.side?.toLowerCase() === 'long' || trade.side?.toLowerCase() === 'buy'
-    const isProfit = trade.pnl > BREAK_EVEN_THRESHOLD
-    const isLoss = trade.pnl < -BREAK_EVEN_THRESHOLD
-    const formattedDate = trade.entryDate ? format(parseISO(trade.entryDate), 'MMM d, yyyy') : 'Unknown'
-    const formattedTime = trade.entryDate ? format(parseISO(trade.entryDate), 'h:mm a') : ''
 
     const initChart = useCallback(async (force: boolean = false) => {
         if (!chartContainerRef.current) return
@@ -251,10 +234,7 @@ export default function TradeReplay({ trade, onClose }: TradeReplayProps) {
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                            hasFetchedRef.current = false;
-                            initChart(true);
-                        }}
+                        onClick={() => initChart(true)}
                     >
                         Try Force Refresh
                     </Button>

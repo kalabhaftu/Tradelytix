@@ -31,6 +31,7 @@ import { Switch } from "@/components/ui/switch"
 import { useTheme } from '@/context/theme-provider'
 import { createClient } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
+import { formatBreakevenBand } from '@/lib/metrics/outcome'
 import { signOut } from "@/server/auth"
 import { useUserStore } from '@/store/user-store'
 import {
@@ -51,7 +52,8 @@ import {
   Trash2 as Trash,
   User,
   AlertCircle as WarningCircle,
-  Calendar
+  Calendar,
+  Target
 } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from 'next/link'
@@ -126,8 +128,11 @@ export default function SettingsPage() {
     lastName: '',
     email: user?.email || '',
     autoAdjustAccountDate: false,
+    breakEvenThreshold: 10,
     aiSettings: defaultAiSettings,
   })
+  const [breakEvenDraft, setBreakEvenDraft] = useState('10')
+  const [isUpdatingBreakEven, setIsUpdatingBreakEven] = useState(false)
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
   const [isUpdatingAiSettings, setIsUpdatingAiSettings] = useState(false)
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
@@ -162,11 +167,14 @@ export default function SettingsPage() {
             lastName: result.data.lastName || '',
             email: result.data.email || '',
             autoAdjustAccountDate: result.data.autoAdjustAccountDate ?? false,
+            breakEvenThreshold: typeof result.data.breakEvenThreshold === 'number' ? result.data.breakEvenThreshold : 10,
             aiSettings: {
               ...defaultAiSettings,
               ...(result.data.aiSettings || {})
             }
           })
+          const safeThreshold = typeof result.data.breakEvenThreshold === 'number' ? result.data.breakEvenThreshold : 10
+          setBreakEvenDraft(String(safeThreshold))
         }
       } catch (error) {
       } finally {
@@ -244,6 +252,54 @@ export default function SettingsPage() {
         description: error instanceof Error ? error.message : 'Failed to save Auto-adjust Account Date preference.',
         duration: 3000
       })
+    }
+  }
+
+  const handleBreakEvenThresholdSave = async () => {
+    const parsed = Number.parseFloat(breakEvenDraft)
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      toast.error('Invalid threshold', {
+        description: 'Break-even threshold must be a non-negative number.',
+        duration: 3000
+      })
+      return
+    }
+
+    const normalized = Math.abs(parsed)
+    const previous = profileData.breakEvenThreshold
+    setIsUpdatingBreakEven(true)
+
+    try {
+      const response = await fetch('/api/auth/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ breakEvenThreshold: normalized })
+      })
+
+      const result = await response.json()
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to update break-even threshold')
+      }
+
+      const next = typeof result.data?.breakEvenThreshold === 'number'
+        ? result.data.breakEvenThreshold
+        : normalized
+
+      setProfileData(prev => ({ ...prev, breakEvenThreshold: next }))
+      setBreakEvenDraft(String(next))
+      toast.success('Break-even threshold updated', {
+        description: `Current band: ${formatBreakevenBand(next)}`,
+        duration: 2500
+      })
+    } catch (error) {
+      setProfileData(prev => ({ ...prev, breakEvenThreshold: previous }))
+      setBreakEvenDraft(String(previous))
+      toast.error('Break-even update failed', {
+        description: error instanceof Error ? error.message : 'Failed to save break-even threshold.',
+        duration: 3000
+      })
+    } finally {
+      setIsUpdatingBreakEven(false)
     }
   }
 
@@ -578,6 +634,33 @@ export default function SettingsPage() {
                     </DropdownMenuRadioGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
+              }
+            />
+
+            <Separator />
+
+            <SettingRow
+              icon={Target}
+              label="Break-even threshold"
+              description={`Breakeven band: ${formatBreakevenBand(profileData.breakEvenThreshold)}. Counted as win above +$${profileData.breakEvenThreshold}, loss below -$${profileData.breakEvenThreshold}.`}
+              action={
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={breakEvenDraft}
+                    onChange={(e) => setBreakEvenDraft(e.target.value)}
+                    className="h-8 w-24"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleBreakEvenThresholdSave}
+                    disabled={isUpdatingBreakEven}
+                  >
+                    {isUpdatingBreakEven ? 'Saving...' : 'Save'}
+                  </Button>
+                </div>
               }
             />
 

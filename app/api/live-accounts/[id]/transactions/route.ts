@@ -87,7 +87,7 @@ export async function POST(
 
       const totalPnL = trades.reduce(
         (sum: number, trade: { pnl: number; commission: number }) =>
-          sum + (trade.pnl - trade.commission),
+          sum + trade.pnl,
         0
       )
       const totalTransactions = transactions.reduce(

@@ -33,9 +33,9 @@ export function useJournal(params: UseJournalParams) {
   
   // Win/Loss
   if (filterBy === 'wins') {
-    queryParams.append('pnlMin', '10.01') // BREAK_EVEN_THRESHOLD
+    queryParams.append('outcome', 'win')
   } else if (filterBy === 'losses') {
-    queryParams.append('pnlMax', '-10.01')
+    queryParams.append('outcome', 'loss')
   }
 
   // Buy/Sell

@@ -23,7 +23,7 @@ import {
 import { WidgetCard, ChartTooltip as SharedChartTooltip } from '../widget-card'
 import { useWidgetData } from '@/hooks/use-widget-data'
 import { useUserStore } from "@/store/user-store"
-import { cn, formatCurrency, formatNumber, formatPercent, BREAK_EVEN_THRESHOLD } from "@/lib/utils"
+import { formatNumber } from "@/lib/utils"
 import { WidgetSize } from '@/app/dashboard/types/dashboard'
 import { calculateTotalStartingBalance } from '@/lib/utils/balance-calculator'
 

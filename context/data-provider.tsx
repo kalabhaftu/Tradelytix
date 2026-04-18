@@ -66,6 +66,7 @@ import { useDataProviderTradeMutations } from '@/hooks/use-data-provider-trade-m
 
 // Types from trades-data.tsx
 type StatisticsProps = {
+  breakEvenThreshold: number
   cumulativeFees: number
   cumulativePnl: number
   winningStreak: number

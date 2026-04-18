@@ -24,9 +24,11 @@ import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LexicalEditor } from "@/components/ui/editor/lexical-editor"
 import { useAuth } from "@/context/auth-provider"
+import { useData } from '@/context/data-provider'
 import { useSupabaseUpload } from "@/hooks/use-supabase-upload"
 import { getTradingSession } from '@/lib/time-utils'
-import { BREAK_EVEN_THRESHOLD, cn, groupTradesByExecution, type GroupedTrade } from '@/lib/utils'
+import { cn, groupTradesByExecution, type GroupedTrade } from '@/lib/utils'
+import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { getWeeklyReview, saveWeeklyReview } from "@/server/weekly-review"
 import { Calendar, BarChart3, CheckCircle2, Loader2, Clock, Image as ImageIcon, Percent, Activity, Target, Trash2, TrendingDown, TrendingUp, Upload, XCircle } from "lucide-react"
 import { type Trade } from '@prisma/client'
@@ -92,6 +94,8 @@ export function WeeklyModal({
 }: WeeklyModalProps) {
   const dateLocale = enUS
   const { user } = useAuth()
+  const { statistics } = useData()
+  const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
   const [reviewData, setReviewData] = useState<any>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoadingReview, setIsLoadingReview] = useState(false)
@@ -168,15 +172,26 @@ export function WeeklyModal({
     const longNumber = groupedTrades.filter(trade => (trade as any).side?.toLowerCase() === 'long' || (trade as any).side?.toUpperCase() === 'BUY').length
     const shortNumber = groupedTrades.filter(trade => (trade as any).side?.toLowerCase() === 'short' || (trade as any).side?.toUpperCase() === 'SELL').length
 
-    // Calculate win rate
-    // Calculate win rate
-    const winningTrades = groupedTrades.filter(t => ((t as any).pnl - ((t as any).commission || 0)) > BREAK_EVEN_THRESHOLD).length
-    const losingTrades = groupedTrades.filter(t => ((t as any).pnl - ((t as any).commission || 0)) < -BREAK_EVEN_THRESHOLD).length
+    // Calculate win rate with user-specific break-even threshold
+    const winningTrades = groupedTrades
+      .filter(t => classifyOutcome(Number((t as any).pnl || 0), breakEvenThreshold) === 'win').length
+    const losingTrades = groupedTrades
+      .filter(t => classifyOutcome(Number((t as any).pnl || 0), breakEvenThreshold) === 'loss').length
     const winRate = (winningTrades + losingTrades) > 0 ? (winningTrades / (winningTrades + losingTrades)) * 100 : 0
 
     // Calculate average win/loss
-    const avgWin = winningTrades > 0 ? groupedTrades.filter(t => ((t as any).pnl - ((t as any).commission || 0)) > BREAK_EVEN_THRESHOLD).reduce((sum, t) => sum + ((t as any).pnl - ((t as any).commission || 0)), 0) / winningTrades : 0
-    const avgLoss = losingTrades > 0 ? Math.abs(groupedTrades.filter(t => ((t as any).pnl - ((t as any).commission || 0)) < -BREAK_EVEN_THRESHOLD).reduce((sum, t) => sum + ((t as any).pnl - ((t as any).commission || 0)), 0)) / losingTrades : 0
+    const avgWin = winningTrades > 0
+      ? groupedTrades
+          .filter(t => classifyOutcome(Number((t as any).pnl || 0), breakEvenThreshold) === 'win')
+          .reduce((sum, t) => sum + Number((t as any).pnl || 0), 0) / winningTrades
+      : 0
+    const avgLoss = losingTrades > 0
+      ? Math.abs(
+          groupedTrades
+            .filter(t => classifyOutcome(Number((t as any).pnl || 0), breakEvenThreshold) === 'loss')
+            .reduce((sum, t) => sum + Number((t as any).pnl || 0), 0)
+        ) / losingTrades
+      : 0
 
     return {
       trades: groupedTrades,
@@ -190,7 +205,7 @@ export function WeeklyModal({
       winningTrades,
       losingTrades
     }
-  }, [selectedDate, calendarData])
+  }, [selectedDate, calendarData, breakEvenThreshold])
 
   // Calculate derived stats
   const stats = useMemo(() => {
@@ -203,7 +218,7 @@ export function WeeklyModal({
     weeklyData.trades.forEach((trade: any) => {
       // Day Stats
       const day = format(new Date(trade.entryDate), 'EEEE')
-      const netPnL = trade.pnl - (trade.commission || 0)
+      const netPnL = Number(trade.pnl || 0)
       if (!dayStats[day]) dayStats[day] = { pnl: 0, trades: 0 }
       dayStats[day].pnl += netPnL
       dayStats[day].trades += 1
@@ -213,7 +228,7 @@ export function WeeklyModal({
       if (!pairStats[pair]) pairStats[pair] = { pnl: 0, trades: 0, wins: 0 }
       pairStats[pair].pnl += netPnL
       pairStats[pair].trades += 1
-      if (netPnL > BREAK_EVEN_THRESHOLD) pairStats[pair].wins += 1
+      if (classifyOutcome(netPnL, breakEvenThreshold) === 'win') pairStats[pair].wins += 1
 
       // Session Stats (proper timezone handling)
       const session = getTradingSession(trade.entryDate) || 'Outside Session'
@@ -226,14 +241,14 @@ export function WeeklyModal({
     const sortedPairs = Object.entries(pairStats).sort((a, b) => b[1].pnl - a[1].pnl)
     const sortedSessions = Object.entries(sessionStats).sort((a, b) => b[1].pnl - a[1].pnl)
 
-    // Profit factor (use net P&L after commission for consistency with other stats)
+    // Profit factor (canonical `trade.pnl`)
     const grossProfit = weeklyData.trades
-      .map(t => (t as any).pnl - ((t as any).commission || 0))
-      .filter(netPnl => netPnl > BREAK_EVEN_THRESHOLD)
+      .map(t => Number((t as any).pnl || 0))
+      .filter(netPnl => classifyOutcome(netPnl, breakEvenThreshold) === 'win')
       .reduce((sum, netPnl) => sum + netPnl, 0)
     const grossLoss = Math.abs(weeklyData.trades
-      .map(t => (t as any).pnl - ((t as any).commission || 0))
-      .filter(netPnl => netPnl < -BREAK_EVEN_THRESHOLD)
+      .map(t => Number((t as any).pnl || 0))
+      .filter(netPnl => classifyOutcome(netPnl, breakEvenThreshold) === 'loss')
       .reduce((sum, netPnl) => sum + netPnl, 0))
     const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0
 
@@ -250,7 +265,7 @@ export function WeeklyModal({
       grossProfit,
       grossLoss
     }
-  }, [weeklyData])
+  }, [weeklyData, breakEvenThreshold])
 
   // Chart data for cumulative P&L
   const chartData = useMemo(() => {

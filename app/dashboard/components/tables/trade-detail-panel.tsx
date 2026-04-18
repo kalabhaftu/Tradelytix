@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { VisuallyHidden } from '@/components/ui/visually-hidden'
 import { useTags } from '@/context/tags-provider'
+import { useData } from '@/context/data-provider'
 import { useNewsEvents } from '@/hooks/use-news-events'
 import { formatTimeInZone, getKillzoneBadge, getTradingSession } from '@/lib/time-utils'
 import { classifyTrade, cn, formatCurrency, formatNoteContent } from '@/lib/utils'
@@ -24,6 +25,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 import { toast } from 'sonner'
+import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 interface TradeDetailPanelProps {
   trade: Trade
@@ -52,6 +54,7 @@ async function downloadImage(imageUrl: string, trade: Trade, imageIndex: number)
 }
 
 export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelProps) {
+  const { statistics } = useData()
   const { tags } = useTags()
   const { getNewsById } = useNewsEvents()
   const timezone = useUserStore((state) => state.timezone)
@@ -61,8 +64,9 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
   const searchParams = useSearchParams()
 
   const tradeData = trade as any
-  const netPnL = trade.pnl - (trade.commission || 0)
-  const outcome = classifyTrade(netPnL)
+  const threshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
+  const netPnL = trade.pnl || 0
+  const outcome = classifyTrade(netPnL, threshold)
   const isWin = outcome === 'win'
   const isLoss = outcome === 'loss'
   const isLong = trade.side?.toUpperCase() === 'BUY' || trade.side?.toLowerCase() === 'long'

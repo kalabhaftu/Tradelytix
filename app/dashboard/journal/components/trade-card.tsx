@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Trade } from '@prisma/client'
 import { ArrowUpRight, ArrowDownRight, CalendarDays, Clock, Target, DollarSign, MoreVertical, Eye, Pencil, Trash2 as Trash, AlertCircle } from 'lucide-react'
-import { cn, formatCurrency, formatQuantity, formatTradeData, formatPrice, BREAK_EVEN_THRESHOLD, classifyTrade } from '@/lib/utils'
+import { cn, formatCurrency, formatQuantity, formatTradeData, formatPrice, classifyTrade } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -25,6 +25,7 @@ import {
 import { useTags } from '@/context/tags-provider'
 import { formatTimeInZone } from '@/lib/time-utils'
 import { useUserStore } from '@/store/user-store'
+import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 interface TradeCardProps {
   trade: Trade
@@ -32,15 +33,24 @@ interface TradeCardProps {
   onEdit?: () => void
   onDelete?: () => void
   onView?: () => void
+  breakEvenThreshold?: number
 }
 
-export function TradeCard({ trade, onClick, onEdit, onDelete, onView }: TradeCardProps) {
+export function TradeCard({
+  trade,
+  onClick,
+  onEdit,
+  onDelete,
+  onView,
+  breakEvenThreshold
+}: TradeCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageError, setImageError] = useState(false)
   const { getTagsByIds } = useTags()
   const timezone = useUserStore((state) => state.timezone)
+  const threshold = getBreakEvenThreshold(breakEvenThreshold)
 
-  const outcome = classifyTrade(trade.pnl)
+  const outcome = classifyTrade(trade.pnl, threshold)
   const isWin = outcome === 'win'
   const isLoss = outcome === 'loss'
   const isBreakEven = outcome === 'breakeven'
@@ -52,8 +62,8 @@ export function TradeCard({ trade, onClick, onEdit, onDelete, onView }: TradeCar
 
   // Get status variant based on PnL (matching account card patterns)
   const getStatusVariant = (pnl: number): "default" | "secondary" | "destructive" | "outline" => {
-    if (pnl > BREAK_EVEN_THRESHOLD) return 'default' // WIN
-    if (pnl < -BREAK_EVEN_THRESHOLD) return 'destructive' // LOSS
+    if (pnl > threshold) return 'default' // WIN
+    if (pnl < -threshold) return 'destructive' // LOSS
     return 'outline' // BREAK EVEN
   }
 
@@ -72,7 +82,7 @@ export function TradeCard({ trade, onClick, onEdit, onDelete, onView }: TradeCar
     const takeProfit = takeProfitRaw && parseFloat(takeProfitRaw.toString()) !== 0 ? parseFloat(takeProfitRaw.toString()) : null
 
     const side = trade.side?.toUpperCase()
-    const isWin = trade.pnl > BREAK_EVEN_THRESHOLD
+    const isWin = trade.pnl > threshold
 
     // Check for incomplete data
     const hasIncompleteData = !entryPrice || !closePrice || !stopLoss || !side

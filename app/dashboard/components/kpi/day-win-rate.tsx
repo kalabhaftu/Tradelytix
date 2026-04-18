@@ -4,7 +4,7 @@ import React from 'react'
 import { WidgetCard } from '../widget-card'
 import { CircularProgress } from '@/components/ui/circular-progress'
 import { useData } from '@/context/data-provider'
-import { BREAK_EVEN_THRESHOLD } from '@/lib/utils'
+import { classifyOutcome, formatBreakevenBand, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { Info } from 'lucide-react'
 import {
   Tooltip,
@@ -18,14 +18,19 @@ interface DayWinRateProps {
 }
 
 const DayWinRate = React.memo(function DayWinRate({ size }: DayWinRateProps) {
-  const { calendarData } = useData()
+  const { calendarData, statistics } = useData()
+  const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
 
   // Memoize expensive calculation
-  const { dayWinRate, winningDays, losingDays, breakEvenDays, totalDays } = React.useMemo(() => {
+  const { dayWinRate, winningDays, losingDays, breakEvenDays } = React.useMemo(() => {
     const dayEntries = Object.entries(calendarData)
     const total = dayEntries.length
-    const winning = dayEntries.filter(([_, data]) => data.pnl > BREAK_EVEN_THRESHOLD).length
-    const losing = dayEntries.filter(([_, data]) => data.pnl < -BREAK_EVEN_THRESHOLD).length
+    const winning = dayEntries.filter(
+      ([_, data]) => classifyOutcome(data.pnl, breakEvenThreshold) === 'win'
+    ).length
+    const losing = dayEntries.filter(
+      ([_, data]) => classifyOutcome(data.pnl, breakEvenThreshold) === 'loss'
+    ).length
     const breakEven = total - winning - losing
     const rate = total > 0 ? Math.round((winning / total) * 1000) / 10 : 0
 
@@ -34,9 +39,8 @@ const DayWinRate = React.memo(function DayWinRate({ size }: DayWinRateProps) {
       winningDays: winning,
       losingDays: losing,
       breakEvenDays: breakEven,
-      totalDays: total
     }
-  }, [calendarData])
+  }, [breakEvenThreshold, calendarData])
 
   return (
     <WidgetCard isKpi>
@@ -54,7 +58,9 @@ const DayWinRate = React.memo(function DayWinRate({ size }: DayWinRateProps) {
                 </div>
               </TooltipTrigger>
               <TooltipContent side="bottom" sideOffset={5} className="max-w-[200px]">
-                <p className="text-xs">Percentage of profitable trading days. Shows consistency in daily performance.</p>
+                <p className="text-xs">
+                  Percentage of profitable trading days. Current break-even band: {formatBreakevenBand(breakEvenThreshold)}.
+                </p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

@@ -6,9 +6,11 @@ import { formatInTimeZone } from 'date-fns-tz'
 import { StatisticsProps } from "@/app/dashboard/types/statistics"
 import { Account } from "@/context/data-provider"
 import { ExtendedTrade, MarketBias } from "@/types/trade-extended"
-
-// Threshold for considering a trade break-even (e.g. +/- $5.00)
-export const BREAK_EVEN_THRESHOLD = 10.0;
+import {
+  calculateWinRate as calculateOutcomeWinRate,
+  classifyOutcome,
+  DEFAULT_BREAK_EVEN_THRESHOLD,
+} from '@/lib/metrics/outcome'
 
 // Centralized timezone source
 export const DEFAULT_TIMEZONE = "America/New_York";
@@ -29,25 +31,24 @@ export function ensureExtendedTrade(trade: Trade): ExtendedTrade {
  * Win Rate = (Wins / (Wins + Losses)) * 100
  * Break-even trades are EXCLUDED from both numerator and denominator
  * 
- * @param winCount Number of winning trades (netPnL > BREAK_EVEN_THRESHOLD)
- * @param lossCount Number of losing trades (netPnL < -BREAK_EVEN_THRESHOLD)
+ * @param winCount Number of winning trades (netPnL > threshold)
+ * @param lossCount Number of losing trades (netPnL < -threshold)
  * @returns Win rate as a percentage (0-100)
  */
 export function calculateWinRate(winCount: number, lossCount: number): number {
-  const tradableCount = winCount + lossCount
-  if (tradableCount === 0) return 0
-  return (winCount / tradableCount) * 100
+  return calculateOutcomeWinRate(winCount, lossCount)
 }
 
 /**
  * Classify a trade's outcome based on net PnL
- * @param netPnL The net PnL (pnl - commission) of the trade
+ * @param netPnL The net PnL (canonical realized trade result)
  * @returns 'win' | 'loss' | 'breakeven'
  */
-export function classifyTrade(netPnL: number): 'win' | 'loss' | 'breakeven' {
-  if (netPnL > BREAK_EVEN_THRESHOLD) return 'win'
-  if (netPnL < -BREAK_EVEN_THRESHOLD) return 'loss'
-  return 'breakeven'
+export function classifyTrade(
+  netPnL: number,
+  threshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
+): 'win' | 'loss' | 'breakeven' {
+  return classifyOutcome(netPnL, threshold)
 }
 
 export function cn(...inputs: ClassValue[]) {
@@ -172,8 +173,8 @@ export function formatTradeData(trade: Trade, timezone?: string) {
     pnlFormatted: formatCurrency(trade.pnl || 0),
     commission: trade.commission || 0,
     commissionFormatted: formatCurrency(trade.commission || 0),
-    netPnl: (trade.pnl || 0) - Math.abs(trade.commission || 0),
-    netPnlFormatted: formatCurrency((trade.pnl || 0) - Math.abs(trade.commission || 0)),
+    netPnl: trade.pnl || 0,
+    netPnlFormatted: formatCurrency(trade.pnl || 0),
 
     // Dates and times
     entryDate: trade.entryDate ? new Date(trade.entryDate) : null,
@@ -188,9 +189,9 @@ export function formatTradeData(trade: Trade, timezone?: string) {
     timeInPositionFormatted: parsePositionTime(trade.timeInPosition || 0),
 
     // Trade status helpers
-    isWin: (trade.pnl || 0) - Math.abs(trade.commission || 0) > BREAK_EVEN_THRESHOLD,
-    isLoss: (trade.pnl || 0) - Math.abs(trade.commission || 0) < -BREAK_EVEN_THRESHOLD,
-    isBreakEven: Math.abs((trade.pnl || 0) - Math.abs(trade.commission || 0)) <= BREAK_EVEN_THRESHOLD,
+    isWin: classifyTrade(trade.pnl || 0) === 'win',
+    isLoss: classifyTrade(trade.pnl || 0) === 'loss',
+    isBreakEven: classifyTrade(trade.pnl || 0) === 'breakeven',
     isOpen: !trade.closeDate,
     isClosed: !!trade.closeDate,
 
@@ -384,9 +385,15 @@ export function groupTradesByExecution(trades: Trade[]): GroupedTrade[] {
   return Array.from(groups.values())
 }
 
-export function calculateStatistics(trades: Trade[], accounts: Account[] = [], preGrouped?: GroupedTrade[]): StatisticsProps {
+export function calculateStatistics(
+  trades: Trade[],
+  accounts: Account[] = [],
+  preGrouped?: GroupedTrade[],
+  breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
+): StatisticsProps {
   if (!trades.length) {
     return {
+      breakEvenThreshold,
       cumulativeFees: 0,
       cumulativePnl: 0,
       winningStreak: 0,
@@ -421,6 +428,7 @@ export function calculateStatistics(trades: Trade[], accounts: Account[] = [], p
 
   if (!filteredTrades.length) {
     return {
+      breakEvenThreshold,
       cumulativeFees: 0,
       cumulativePnl: 0,
       winningStreak: 0,
@@ -447,6 +455,7 @@ export function calculateStatistics(trades: Trade[], accounts: Account[] = [], p
   }
 
   const initialStatistics: StatisticsProps = {
+    breakEvenThreshold,
     cumulativeFees: 0,
     cumulativePnl: 0,
     winningStreak: 0,
@@ -492,7 +501,7 @@ export function calculateStatistics(trades: Trade[], accounts: Account[] = [], p
     const commission = Math.abs(Number(trade.commission) || 0);
     const timeInPosition = Number(trade.timeInPosition) || 0;
 
-    const netPnl = pnl - commission;
+    const netPnl = pnl;
 
     acc.nbTrades++;
     acc.cumulativePnl += pnl;
@@ -512,10 +521,11 @@ export function calculateStatistics(trades: Trade[], accounts: Account[] = [], p
     }
 
     // Categorize trades using net P&L and handle winning streak correctly
-    if (Math.abs(netPnl) <= BREAK_EVEN_THRESHOLD) { // Treat small values within threshold as break-even
+    const outcome = classifyTrade(netPnl, breakEvenThreshold)
+    if (outcome === 'breakeven') { // Treat small values within threshold as break-even
       acc.nbBe++;
       currentWinningStreak = 0; // Break-even breaks winning streak
-    } else if (netPnl > BREAK_EVEN_THRESHOLD) {
+    } else if (outcome === 'win') {
       acc.nbWin++;
       acc.grossWin += netPnl;
       currentWinningStreak++;
@@ -532,8 +542,7 @@ export function calculateStatistics(trades: Trade[], accounts: Account[] = [], p
   }, { ...initialStatistics });
 
   // Calculate Win Rate properly
-  const tradableTradesCount = statistics.nbWin + statistics.nbLoss;
-  statistics.winRate = tradableTradesCount > 0 ? (statistics.nbWin / tradableTradesCount) * 100 : 0;
+  statistics.winRate = calculateOutcomeWinRate(statistics.nbWin, statistics.nbLoss)
 
   // Calculate Average Win/Loss
   if (statistics.nbWin > 0) {
@@ -617,7 +626,7 @@ export function formatCalendarData(trades: Trade[], accounts: Account[] = [], ti
       acc[date] = { pnl: 0, tradeNumber: 0, longNumber: 0, shortNumber: 0, trades: [] }
     }
     acc[date].tradeNumber++
-    acc[date].pnl += trade.pnl - Math.abs(trade.commission || 0);
+    acc[date].pnl += trade.pnl || 0;
 
     const isLong = trade.side
       ? (trade.side.toLowerCase() === 'long' || trade.side.toLowerCase() === 'buy' || trade.side.toLowerCase() === 'b')
@@ -644,4 +653,3 @@ export function generateTradeHash(trade: Partial<Trade>): string {
   const hashString = `${trade.userId || ''}-${trade.accountNumber || ''}-${trade.instrument || ''}-${trade.entryDate || ''}-${trade.closeDate || ''}-${trade.quantity || 0}-${trade.entryId || ''}-${trade.timeInPosition || 0}`
   return hashString
 }
-

@@ -3,14 +3,16 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { WidgetCard } from '../widget-card'
 import { useData } from '@/context/data-provider'
-import { cn, BREAK_EVEN_THRESHOLD } from '@/lib/utils'
+import { cn } from '@/lib/utils'
+import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 const ROW_HEIGHT = 36 // Approximate height of each trade row in pixels
 
 export default function RecentTradesWidget() {
-  const { formattedTrades } = useData()
+  const { formattedTrades, statistics } = useData()
   const containerRef = useRef<HTMLDivElement>(null)
   const [visibleRowCount, setVisibleRowCount] = useState(10) // Default fallback
+  const threshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
 
   // CRITICAL FIX: Group trades first to handle partial closes correctly
   // This ensures partial closes are shown as single trades, not multiple entries
@@ -105,9 +107,10 @@ export default function RecentTradesWidget() {
             </div>
           ) : (
             recentTrades.map((trade: any, index: number) => {
-              const netPnL = (trade.pnl || 0) - (trade.commission || 0)
-              const isProfitable = netPnL > BREAK_EVEN_THRESHOLD
-              const isLoss = netPnL < -BREAK_EVEN_THRESHOLD
+              const netPnL = trade.pnl || 0
+              const outcome = classifyOutcome(netPnL, threshold)
+              const isProfitable = outcome === 'win'
+              const isLoss = outcome === 'loss'
 
               return (
                 <div
@@ -142,4 +145,3 @@ export default function RecentTradesWidget() {
     </WidgetCard>
   )
 }
-

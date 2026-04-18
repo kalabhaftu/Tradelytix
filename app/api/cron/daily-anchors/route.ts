@@ -44,8 +44,8 @@ async function createDailyAnchor(phaseAccountId: string, timezone: string, force
 
   // Calculate current equity for anchor
   const totalPnL = phaseAccount.Trade.reduce(
-    (sum: number, trade: { pnl: number; commission: number | null }) =>
-      sum + (trade.pnl - (trade.commission || 0)),
+    (sum: number, trade: { pnl: number }) =>
+      sum + Number(trade.pnl || 0),
     0
   )
   const anchorEquity = phaseAccount.MasterAccount.accountSize + totalPnL

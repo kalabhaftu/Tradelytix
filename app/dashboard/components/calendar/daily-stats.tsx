@@ -83,7 +83,7 @@ export function DailyStats({ dayData, isWeekly = false }: DailyStatsProps) {
     const accountPnL = groupedTrades.reduce((acc, trade) => {
       const grouped = trade as any
       const accountNumber = grouped.accountNumber || 'Unknown'
-      const totalPnL = grouped.pnl - (grouped.commission || 0)
+      const totalPnL = grouped.pnl
       acc[accountNumber] = (acc[accountNumber] || 0) + totalPnL
       return acc
     }, {} as Record<string, number>)
@@ -103,7 +103,7 @@ export function DailyStats({ dayData, isWeekly = false }: DailyStatsProps) {
     let cumulative = 0;
     sortedTrades.forEach(trade => {
       const grouped = trade as any
-      cumulative += grouped.pnl - (grouped.commission || 0);
+      cumulative += grouped.pnl;
       equity.push(cumulative);
     });
 

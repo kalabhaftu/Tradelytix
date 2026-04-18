@@ -14,7 +14,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { convertDecimal } from '@/lib/utils/decimal'
-import { calculateStatistics, formatCalendarData, groupTradesByExecution } from '@/lib/utils'
+import { calculateStatistics, classifyTrade, formatCalendarData, groupTradesByExecution } from '@/lib/utils'
 import {
   calculateDayOfWeekPerformance,
   calculateOutcomeDistribution,
@@ -34,6 +34,7 @@ import { calculateBalanceInfo } from '@/lib/utils/balance-calculator'
 import { CacheHeaders } from '@/lib/api-cache-headers'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
+import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 // PERF: Only select fields the dashboard actually uses (~40% smaller payload)
 const TRADE_SELECT = {
@@ -113,6 +114,7 @@ export async function GET(request: NextRequest) {
     const timezone = params.get('timezone') || 'UTC'
     const search = params.get('search') || ''
     const side = params.get('side') || ''
+    const outcome = params.get('outcome') || ''
     const tagIds = params.get('tags') ? params.get('tags')!.split(',').filter(Boolean) : []
     
     // Build Prisma where clause — ALL filtering server-side
@@ -185,7 +187,7 @@ export async function GET(request: NextRequest) {
     }
     
     // PERF: Fetch trades (slim select) + accounts (both regular and prop firm) in parallel
-    const [rawTrades, regularAccounts, propFirmAccounts] = await Promise.all([
+    const [rawTrades, regularAccounts, propFirmAccounts, userSettings] = await Promise.all([
       prisma.trade.findMany({
         where: whereClause,
         orderBy: { entryDate: 'desc' },
@@ -203,8 +205,14 @@ export async function GET(request: NextRequest) {
             select: { id: true, phaseId: true, phaseNumber: true, status: true }
           }
         }
-      }) : Promise.resolve([])
+      }) : Promise.resolve([]),
+      prisma.user.findUnique({
+        where: { id: internalUserId },
+        select: { breakEvenThreshold: true },
+      })
     ])
+
+    const breakEvenThreshold = getBreakEvenThreshold(userSettings?.breakEvenThreshold)
     
     // Combine regular accounts + transform prop firm phases to unified format with startingBalance
     const accounts = [
@@ -249,12 +257,18 @@ export async function GET(request: NextRequest) {
         return new Date(trade.entryDate).getHours() === hour
       })
     }
+    if (outcome === 'win' || outcome === 'loss' || outcome === 'breakeven') {
+      trades = trades.filter((trade: any) => {
+        const pnl = Number(trade.pnl || 0)
+        return classifyTrade(pnl, breakEvenThreshold) === outcome
+      })
+    }
     
     // PERF: Group trades ONCE, pass to all grouped consumers
     const grouped = (includeStats || includeCalendar || groupByExecution)
       ? groupTradesByExecution(trades)
       : undefined
-    const statistics = includeStats ? calculateStatistics(trades, accounts, grouped) : null
+    const statistics = includeStats ? calculateStatistics(trades, accounts, grouped, breakEvenThreshold) : null
     const calendarData = includeCalendar ? formatCalendarData(trades, accounts, timezone, grouped) : null
 
     const responseTrades = groupByExecution ? (grouped ?? groupTradesByExecution(trades)) : trades
@@ -273,18 +287,18 @@ export async function GET(request: NextRequest) {
 
     const widgets = includeWidgets ? {
       equityCurve: calculateEquityCurve(trades),
-      netDailyPnl: calculateNetDailyPnl(trades),
-      dailyCumulativePnl: calculateDailyCumulativePnl(trades),
-      outcomeDistribution: calculateOutcomeDistribution(trades),
-      dayOfWeekPerformance: calculateDayOfWeekPerformance(trades),
-      accountBalanceChart: calculateAccountBalanceChart(trades, filteredAccounts),
-      pnlByStrategy: calculatePnlByStrategy(trades),
-      pnlByInstrument: calculatePnlByInstrument(trades),
-      winRateByStrategy: calculateWinRateByStrategy(trades),
-      tradeDurationPerformance: calculateTradeDurationPerformance(trades),
-      weekdayPnl: calculateWeekdayPnl(trades),
-      performanceScore: calculatePerformanceScoreResult(trades),
-      sessionAnalysis: calculateSessionAnalysis(trades),
+      netDailyPnl: calculateNetDailyPnl(trades, breakEvenThreshold),
+      dailyCumulativePnl: calculateDailyCumulativePnl(trades, breakEvenThreshold),
+      outcomeDistribution: calculateOutcomeDistribution(trades, breakEvenThreshold),
+      dayOfWeekPerformance: calculateDayOfWeekPerformance(trades, breakEvenThreshold),
+      accountBalanceChart: calculateAccountBalanceChart(trades, filteredAccounts, breakEvenThreshold),
+      pnlByStrategy: calculatePnlByStrategy(trades, breakEvenThreshold),
+      pnlByInstrument: calculatePnlByInstrument(trades, breakEvenThreshold),
+      winRateByStrategy: calculateWinRateByStrategy(trades, breakEvenThreshold),
+      tradeDurationPerformance: calculateTradeDurationPerformance(trades, breakEvenThreshold),
+      weekdayPnl: calculateWeekdayPnl(trades, breakEvenThreshold),
+      performanceScore: calculatePerformanceScoreResult(trades, breakEvenThreshold),
+      sessionAnalysis: calculateSessionAnalysis(trades, breakEvenThreshold),
       calendarData: widgetCalendarData,
       accountBalancePnl: calculateBalanceInfo(filteredAccounts, trades),
     } : null
@@ -298,6 +312,7 @@ export async function GET(request: NextRequest) {
       trades: pagedTrades,
       total,
       page: pageLimit !== null ? { limit: pageLimit, offset: Math.max(0, pageOffset) } : null,
+      breakEvenThreshold,
       statistics,
       calendarData,
       widgets,

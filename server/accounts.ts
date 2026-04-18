@@ -9,6 +9,7 @@ import { convertDecimal } from '@/lib/utils/decimal'
 import { NotificationService } from './services/notification-service'
 import { NotificationType } from '@prisma/client'
 import { logActivity } from '@/lib/activity-logger'
+import { calculateWinRate, classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 /**
  * Helper function to determine if a phase number represents the funded stage
@@ -514,9 +515,7 @@ export async function savePayoutAction(payout: {
       }
     })
 
-    const totalProfit = trades.reduce((sum, trade) => {
-      return sum + (trade.pnl - (trade.commission || 0))
-    }, 0)
+    const totalProfit = trades.reduce((sum, trade) => sum + trade.pnl, 0)
 
     // Get existing payouts to calculate remaining balance
     const existingPayouts = await prisma.payout.findMany({
@@ -1456,9 +1455,7 @@ export async function checkPhaseProgression(accountId: string) {
         select: { pnl: true, commission: true }
       })
 
-      const totalPnl = phaseTrades.reduce((sum, trade) => sum + trade.pnl, 0)
-      const totalCommission = phaseTrades.reduce((sum, trade) => sum + trade.commission, 0)
-      const netProfit = totalPnl - totalCommission
+      const netProfit = phaseTrades.reduce((sum, trade) => sum + trade.pnl, 0)
 
       // Check if profit target is reached (convert percentage to actual amount)
       const profitTargetAmount = (currentPhase.profitTargetPercent / 100) * masterAccount.accountSize
@@ -1493,9 +1490,7 @@ export async function checkPhaseProgression(accountId: string) {
       select: { pnl: true, commission: true }
     })
 
-    const totalPnl = accountTrades.reduce((sum, trade) => sum + trade.pnl, 0)
-    const totalCommission = accountTrades.reduce((sum, trade) => sum + trade.commission, 0)
-    const netProfit = totalPnl - totalCommission
+    const netProfit = accountTrades.reduce((sum, trade) => sum + trade.pnl, 0)
 
     return {
       currentPhase: null,
@@ -1604,6 +1599,12 @@ export async function getAccountHistory(accountId: string) {
       throw new Error('Account not found')
     }
 
+    const userSettings = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { breakEvenThreshold: true }
+    })
+    const breakEvenThreshold = getBreakEvenThreshold(userSettings?.breakEvenThreshold)
+
     // Get all phases with trade counts and statistics
     const phases = await prisma.phaseAccount.findMany({
       where: { masterAccountId: accountId },
@@ -1630,10 +1631,18 @@ export async function getAccountHistory(accountId: string) {
     const totalCommission = phases.reduce((sum, phase) =>
       sum + phase.Trade.reduce((tradeSum, trade) => tradeSum + trade.commission, 0), 0)
 
-    const netProfit = totalPnl - totalCommission
-    // CRITICAL FIX: Use NET P&L (after commission) for win categorization
-    const winningTrades = phases.reduce((sum, phase) =>
-      sum + phase.Trade.filter(trade => (trade.pnl - (trade.commission || 0)) > 0).length, 0)
+    const netProfit = totalPnl
+    const winningTrades = phases.reduce((sum, phase) => (
+      sum + phase.Trade.filter(
+        trade => classifyOutcome(trade.pnl, breakEvenThreshold) === 'win'
+      ).length
+    ), 0)
+    const losingTrades = phases.reduce((sum, phase) => (
+      sum + phase.Trade.filter(
+        trade => classifyOutcome(trade.pnl, breakEvenThreshold) === 'loss'
+      ).length
+    ), 0)
+    const tradableTrades = winningTrades + losingTrades
 
     return {
       account: {
@@ -1641,9 +1650,12 @@ export async function getAccountHistory(accountId: string) {
         name: account.name
       },
       phases: phases.map(phase => {
-        // Calculate win rate excluding break-even trades
-        const phaseWins = phase.Trade?.filter(trade => (trade.pnl - (trade.commission || 0)) > 0).length || 0
-        const phaseLosses = phase.Trade?.filter(trade => (trade.pnl - (trade.commission || 0)) < 0).length || 0
+        const phaseWins = phase.Trade?.filter(
+          trade => classifyOutcome(trade.pnl, breakEvenThreshold) === 'win'
+        ).length || 0
+        const phaseLosses = phase.Trade?.filter(
+          trade => classifyOutcome(trade.pnl, breakEvenThreshold) === 'loss'
+        ).length || 0
         const tradableCount = phaseWins + phaseLosses
 
         return {
@@ -1656,7 +1668,7 @@ export async function getAccountHistory(accountId: string) {
           maxDrawdownPercent: phase.maxDrawdownPercent,
           totalTrades: phase._count.Trade,
           winningTrades: phaseWins,
-          winRate: tradableCount > 0 ? (phaseWins / tradableCount) * 100 : 0,
+          winRate: calculateWinRate(phaseWins, phaseLosses),
           startDate: phase.startDate,
           endDate: phase.endDate
         }
@@ -1667,8 +1679,7 @@ export async function getAccountHistory(accountId: string) {
         totalCommission,
         netProfit,
         winningTrades,
-        // Calculate summary win rate excluding break-even
-        winRate: totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0
+        winRate: tradableTrades > 0 ? calculateWinRate(winningTrades, losingTrades) : 0
       }
     }
 

@@ -1,4 +1,5 @@
-import { groupTradesByExecution, BREAK_EVEN_THRESHOLD } from '@/lib/utils'
+import { groupTradesByExecution } from '@/lib/utils'
+import { classifyOutcome, DEFAULT_BREAK_EVEN_THRESHOLD, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { 
   calculateRSquared, 
   calculatePeakToTroughDrawdown, 
@@ -205,25 +206,27 @@ export interface Trade {
   entryDate: string
 }
 
-export function calculateMetricsFromTrades(trades: Trade[]): ZellaScoreMetrics | null {
+export function calculateMetricsFromTrades(
+  trades: Trade[],
+  breakEvenThresholdInput: number = DEFAULT_BREAK_EVEN_THRESHOLD
+): ZellaScoreMetrics | null {
   if (trades.length === 0) {
     return null
   }
 
   const groupedTrades = groupTradesByExecution(trades as any)
+  const breakEvenThreshold = getBreakEvenThreshold(breakEvenThresholdInput)
 
   const wins = groupedTrades.filter((t: any) => {
-    const netPnL = t.pnl + (t.commission || 0)
-    return netPnL > BREAK_EVEN_THRESHOLD
+    return classifyOutcome(Number(t.pnl || 0), breakEvenThreshold) === 'win'
   })
 
   const losses = groupedTrades.filter((t: any) => {
-    const netPnL = t.pnl + (t.commission || 0)
-    return netPnL < -BREAK_EVEN_THRESHOLD
+    return classifyOutcome(Number(t.pnl || 0), breakEvenThreshold) === 'loss'
   })
 
-  const grossWin = wins.reduce((sum: number, t: any) => sum + (t.pnl + (t.commission || 0)), 0)
-  const grossLoss = Math.abs(losses.reduce((sum: number, t: any) => sum + (t.pnl + (t.commission || 0)), 0))
+  const grossWin = wins.reduce((sum: number, t: any) => sum + Number(t.pnl || 0), 0)
+  const grossLoss = Math.abs(losses.reduce((sum: number, t: any) => sum + Number(t.pnl || 0), 0))
 
   const avgWin = wins.length > 0 ? grossWin / wins.length : 0
   const avgLoss = losses.length > 0 ? grossLoss / losses.length : 0
@@ -236,7 +239,7 @@ export function calculateMetricsFromTrades(trades: Trade[]): ZellaScoreMetrics |
     new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()
   )
 
-  const pnls = sortedTrades.map((t: any) => (t.pnl + (t.commission || 0)))
+  const pnls = sortedTrades.map((t: any) => Number(t.pnl || 0))
   const { maxDrawdown, peak } = calculatePeakToTroughDrawdown(pnls)
   const maxDrawdownPercent = peak > 0 ? (maxDrawdown / peak) * 100 : 0
 

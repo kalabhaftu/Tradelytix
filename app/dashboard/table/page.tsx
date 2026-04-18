@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { TradeDetailPanel } from '../components/tables/trade-detail-panel'
 import { TradeEditPanel } from '../components/tables/trade-edit-panel'
 import { TableRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 // Lazy load the trade table component
 const TradeTableReview = dynamic(
@@ -24,7 +25,8 @@ const TradeTableReview = dynamic(
 function TableView() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { formattedTrades = [], updateTrades } = useData()
+  const { formattedTrades = [], updateTrades, statistics } = useData()
+  const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
 
   const view = searchParams.get('view')
   const tradeId = searchParams.get('tradeId')
@@ -35,7 +37,7 @@ function TableView() {
 
     if (trade) {
       const isLong = trade.side?.toLowerCase() === 'long' || trade.side?.toLowerCase() === 'buy'
-      const outcome = classifyTrade(trade.pnl)
+      const outcome = classifyTrade(trade.pnl, breakEvenThreshold)
       const isProfit = outcome === 'win'
       const isLoss = outcome === 'loss'
 

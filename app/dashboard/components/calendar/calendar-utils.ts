@@ -1,6 +1,6 @@
 
 import { Trade } from "@prisma/client"
-import { BREAK_EVEN_THRESHOLD, classifyTrade } from "@/lib/utils"
+import { calculateWinRate, classifyOutcome, DEFAULT_BREAK_EVEN_THRESHOLD, getBreakEvenThreshold } from "@/lib/metrics/outcome"
 
 export interface DailyStats {
     pnl: number
@@ -44,7 +44,11 @@ export function calculateRMultiple(trade: Trade): number {
 /**
  * Aggregates stats for a day's worth of trades.
  */
-export function calculateDailyStats(trades: Trade[]): DailyStats {
+export function calculateDailyStats(
+    trades: Trade[],
+    thresholdInput: number = DEFAULT_BREAK_EVEN_THRESHOLD
+): DailyStats {
+    const threshold = getBreakEvenThreshold(thresholdInput)
     let pnl = 0
     let tradeCount = 0
     let wins = 0
@@ -52,19 +56,18 @@ export function calculateDailyStats(trades: Trade[]): DailyStats {
     let rMultiple = 0
 
     trades.forEach(t => {
-        const netPnL = (t.pnl || 0) + (Number(t.commission) || 0)
+        const netPnL = Number(t.pnl || 0)
         pnl += netPnL
         tradeCount++
 
-        const outcome = classifyTrade(netPnL)
+        const outcome = classifyOutcome(netPnL, threshold)
         if (outcome === 'win') wins++
         else if (outcome === 'loss') losses++
 
         rMultiple += calculateRMultiple(t)
     })
 
-    const tradableCount = wins + losses
-    const winRate = tradableCount > 0 ? (wins / tradableCount) * 100 : 0
+    const winRate = calculateWinRate(wins, losses)
     const avgRMultiple = tradeCount > 0 ? rMultiple / tradeCount : 0
 
     return {
@@ -72,8 +75,8 @@ export function calculateDailyStats(trades: Trade[]): DailyStats {
         tradeCount,
         winRate,
         rMultiple: avgRMultiple,
-        isProfit: pnl > BREAK_EVEN_THRESHOLD,
-        isLoss: pnl < -BREAK_EVEN_THRESHOLD,
-        isBreakEven: Math.abs(pnl) <= BREAK_EVEN_THRESHOLD
+        isProfit: classifyOutcome(pnl, threshold) === 'win',
+        isLoss: classifyOutcome(pnl, threshold) === 'loss',
+        isBreakEven: classifyOutcome(pnl, threshold) === 'breakeven'
     }
 }

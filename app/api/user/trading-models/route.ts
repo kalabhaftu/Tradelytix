@@ -3,7 +3,7 @@ import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { randomUUID } from 'crypto'
-import { BREAK_EVEN_THRESHOLD } from '@/lib/utils'
+import { calculateWinRate, classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 const ruleSchema = z.object({
   text: z.string(),
@@ -25,19 +25,25 @@ export async function GET(request: NextRequest) {
     }
     const userId = identity.internalUserId
 
-    const models = await prisma.tradingModel.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        Trade: {
-          select: {
-            pnl: true,
-            commission: true,
-            selectedRules: true
+    const [models, userSettings] = await Promise.all([
+      prisma.tradingModel.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          Trade: {
+            select: {
+              pnl: true,
+              selectedRules: true
+            }
           }
         }
-      }
-    })
+      }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { breakEvenThreshold: true }
+      })
+    ])
+    const breakEvenThreshold = getBreakEvenThreshold(userSettings?.breakEvenThreshold)
 
     // Parse rules from JSON to array and calculate stats
     const formattedModels = models.map((model: (typeof models)[number]) => {
@@ -63,12 +69,13 @@ export async function GET(request: NextRequest) {
       let breakEvenCount = 0
 
       trades.forEach((trade: (typeof trades)[number]) => {
-        const netPnL = (trade.pnl || 0) + (trade.commission || 0)
+        const netPnL = Number(trade.pnl || 0)
         totalPnL += netPnL
 
-        if (netPnL > BREAK_EVEN_THRESHOLD) {
+        const outcome = classifyOutcome(netPnL, breakEvenThreshold)
+        if (outcome === 'win') {
           winCount++
-        } else if (netPnL < -BREAK_EVEN_THRESHOLD) {
+        } else if (outcome === 'loss') {
           lossCount++
         } else {
           breakEvenCount++
@@ -86,8 +93,7 @@ export async function GET(request: NextRequest) {
       })
 
       // Calculate win rate (excluding break-even from denominator)
-      const tradableCount = winCount + lossCount
-      const winRate = tradableCount > 0 ? (winCount / tradableCount) * 100 : 0
+      const winRate = calculateWinRate(winCount, lossCount)
 
       // Overall adherence rate
       let totalMet = 0

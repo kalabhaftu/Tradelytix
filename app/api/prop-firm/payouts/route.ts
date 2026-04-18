@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Failed to create payout'
+        error: 'Failed to create payout'
       },
       { status: 500 }
     )

@@ -32,7 +32,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(
       { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Failed to delete payout'
+        error: 'Failed to delete payout'
       },
       { status: 500 }
     )

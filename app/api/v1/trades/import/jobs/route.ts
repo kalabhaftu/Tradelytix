@@ -33,7 +33,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, job }, { status: 201 })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to create trade import job'
-    return NextResponse.json({ success: false, error: message }, { status: 500 })
+    return NextResponse.json({ success: false, error: 'Failed to create trade import job' }, { status: 500 })
   }
 }

@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
         }
 
       } catch (error) {
-        const errorMsg = `Phase ${phase.id} (${phase.MasterAccount.accountName}): ${error instanceof Error ? error.message : 'Unknown error'}`
+        const errorMsg = `Phase ${phase.id} (${phase.MasterAccount.accountName}): evaluation failed`
         errors.push(errorMsg)
       }
     }
@@ -110,7 +110,6 @@ export async function GET(request: NextRequest) {
       {
         success: false,
         error: 'Background evaluation failed',
-        details: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString()
       },
       { status: 500 }
@@ -183,7 +182,6 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: 'Manual evaluation failed',
-        details: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString()
       },
       { status: 500 }

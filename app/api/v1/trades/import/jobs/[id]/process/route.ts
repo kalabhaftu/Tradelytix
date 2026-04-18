@@ -26,7 +26,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true, done: result.done, job: result.job }, { status: result.status })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to process import job'
-    return NextResponse.json({ success: false, error: message }, { status: 500 })
+    return NextResponse.json({ success: false, error: 'Failed to process import job' }, { status: 500 })
   }
 }

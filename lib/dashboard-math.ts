@@ -1,7 +1,7 @@
 import { Trade, Account } from '@prisma/client'
 import { startOfMonth, endOfMonth, parseISO, isWithinInterval, startOfWeek, endOfWeek, format, differenceInDays, getDay } from 'date-fns'
 import { getTradingSession } from '@/lib/time-utils'
-import { classifyTrade, BREAK_EVEN_THRESHOLD } from '@/lib/utils'
+import { calculateWinRate, classifyOutcome, DEFAULT_BREAK_EVEN_THRESHOLD } from '@/lib/metrics/outcome'
 import { CHART_COLORS } from '@/app/dashboard/components/widget-card'
 import { 
   calculateRMultiple, 
@@ -12,8 +12,15 @@ import { calculateTotalStartingBalance } from '@/lib/utils/balance-calculator'
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
+const getTradeNetPnl = (trade: Partial<Trade>) => Number(trade.pnl || 0)
+const isWinningTrade = (pnl: number, threshold: number) => classifyOutcome(pnl, threshold) === 'win'
+const isLosingTrade = (pnl: number, threshold: number) => classifyOutcome(pnl, threshold) === 'loss'
+
 // Generate an aggregated map of daily PnL and trade counts
-function getDailyAggregations(trades: Partial<Trade>[]) {
+function getDailyAggregations(
+  trades: Partial<Trade>[],
+  breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
+) {
   const dailyMap: Record<string, { pnl: number; wins: number; losses: number; shortNumber: number; longNumber: number }> = {}
 
   trades.forEach(trade => {
@@ -24,11 +31,11 @@ function getDailyAggregations(trades: Partial<Trade>[]) {
       dailyMap[dateStr] = { pnl: 0, wins: 0, losses: 0, shortNumber: 0, longNumber: 0 }
     }
 
-    const netPnl = Number(trade.pnl || 0) + Number(trade.commission || 0)
+    const netPnl = getTradeNetPnl(trade)
     dailyMap[dateStr].pnl += netPnl
 
-    if (netPnl > BREAK_EVEN_THRESHOLD) dailyMap[dateStr].wins++
-    else if (netPnl < -BREAK_EVEN_THRESHOLD) dailyMap[dateStr].losses++
+    if (isWinningTrade(netPnl, breakEvenThreshold)) dailyMap[dateStr].wins++
+    else if (isLosingTrade(netPnl, breakEvenThreshold)) dailyMap[dateStr].losses++
 
     if (trade.side === 'SHORT') dailyMap[dateStr].shortNumber++
     if (trade.side === 'LONG') dailyMap[dateStr].longNumber++
@@ -37,7 +44,10 @@ function getDailyAggregations(trades: Partial<Trade>[]) {
   return dailyMap
 }
 
-export function calculateDayOfWeekPerformance(trades: Partial<Trade>[]) {
+export function calculateDayOfWeekPerformance(
+  trades: Partial<Trade>[],
+  breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
+) {
   const dayMap: Record<number, { totalPnl: number; winPnl: number; lossPnl: number; wins: number; losses: number; total: number }> = {}
 
   for (let i = 0; i < 7; i++) {
@@ -47,14 +57,14 @@ export function calculateDayOfWeekPerformance(trades: Partial<Trade>[]) {
   trades.forEach((trade) => {
     if (!trade.entryDate) return
     const dayOfWeek = getDay(new Date(trade.entryDate))
-    const netPnl = Number(trade.pnl || 0) + Number(trade.commission || 0)
+    const netPnl = getTradeNetPnl(trade)
     
     dayMap[dayOfWeek].totalPnl += netPnl
     dayMap[dayOfWeek].total++
-    if (netPnl > BREAK_EVEN_THRESHOLD) {
+    if (isWinningTrade(netPnl, breakEvenThreshold)) {
       dayMap[dayOfWeek].wins++
       dayMap[dayOfWeek].winPnl += netPnl
-    } else if (netPnl < -BREAK_EVEN_THRESHOLD) {
+    } else if (isLosingTrade(netPnl, breakEvenThreshold)) {
       dayMap[dayOfWeek].losses++
       dayMap[dayOfWeek].lossPnl += Math.abs(netPnl)
     }
@@ -73,13 +83,16 @@ export function calculateDayOfWeekPerformance(trades: Partial<Trade>[]) {
     .filter((d) => d.total > 0)
 }
 
-export function calculateOutcomeDistribution(trades: Partial<Trade>[]) {
+export function calculateOutcomeDistribution(
+  trades: Partial<Trade>[],
+  breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
+) {
   let wins = 0, losses = 0, breakeven = 0
 
   trades.forEach((trade) => {
-    const netPnl = Number(trade.pnl || 0) + Number(trade.commission || 0)
-    if (netPnl > BREAK_EVEN_THRESHOLD) wins++
-    else if (netPnl < -BREAK_EVEN_THRESHOLD) losses++
+    const netPnl = getTradeNetPnl(trade)
+    if (isWinningTrade(netPnl, breakEvenThreshold)) wins++
+    else if (isLosingTrade(netPnl, breakEvenThreshold)) losses++
     else breakeven++
   })
 
@@ -100,7 +113,7 @@ export function calculateEquityCurve(trades: Partial<Trade>[]) {
 
   let cumulative = 0
   return sorted.map((trade) => {
-    const netPnl = Number(trade.pnl || 0) + Number(trade.commission || 0)
+    const netPnl = getTradeNetPnl(trade)
     cumulative += netPnl
     return {
       date: format(new Date(trade.entryDate!), 'MMM dd'),
@@ -109,8 +122,11 @@ export function calculateEquityCurve(trades: Partial<Trade>[]) {
   })
 }
 
-export function calculateNetDailyPnl(trades: Partial<Trade>[]) {
-  const dailyMap = getDailyAggregations(trades)
+export function calculateNetDailyPnl(
+  trades: Partial<Trade>[],
+  breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
+) {
+  const dailyMap = getDailyAggregations(trades, breakEvenThreshold)
 
   return Object.entries(dailyMap)
     .map(([date, values]) => ({
@@ -124,8 +140,11 @@ export function calculateNetDailyPnl(trades: Partial<Trade>[]) {
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 }
 
-export function calculateDailyCumulativePnl(trades: Partial<Trade>[]) {
-  const dailyMap = getDailyAggregations(trades)
+export function calculateDailyCumulativePnl(
+  trades: Partial<Trade>[],
+  breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
+) {
+  const dailyMap = getDailyAggregations(trades, breakEvenThreshold)
   let cumulative = 0
 
   return Object.entries(dailyMap)
@@ -141,8 +160,12 @@ export function calculateDailyCumulativePnl(trades: Partial<Trade>[]) {
     })
 }
 
-export function calculateAccountBalanceChart(trades: Partial<Trade>[], activeAccountsData?: any[]) {
-  const dailyMap = getDailyAggregations(trades)
+export function calculateAccountBalanceChart(
+  trades: Partial<Trade>[],
+  activeAccountsData?: any[],
+  breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
+) {
+  const dailyMap = getDailyAggregations(trades, breakEvenThreshold)
   
   // Use calculateTotalStartingBalance for proper prop-firm phase deduplication
   // This prevents double/triple counting when master account has multiple phases
@@ -173,21 +196,24 @@ export function calculateAccountBalanceChart(trades: Partial<Trade>[], activeAcc
 import { groupTradesByExecution } from '@/lib/utils'
 import { calculateZellaScore, calculateMetricsFromTrades } from '@/lib/zella-score'
 
-export function calculatePnlByStrategy(trades: Partial<Trade>[]) {
+export function calculatePnlByStrategy(
+  trades: Partial<Trade>[],
+  breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
+) {
   const groupedTrades = groupTradesByExecution(trades as any)
   const strategyMap: Record<string, { pnl: number; trades: number; wins: number; losses: number; grossWin: number; grossLoss: number }> = {}
 
   groupedTrades.forEach((trade: any) => {
     const strategy = trade.tradingModel || trade.TradingModel?.name || 'No Strategy'
     if (!strategyMap[strategy]) strategyMap[strategy] = { pnl: 0, trades: 0, wins: 0, losses: 0, grossWin: 0, grossLoss: 0 }
-    const netPnl = (trade.pnl || 0) + (trade.commission || 0)
+    const netPnl = getTradeNetPnl(trade)
     strategyMap[strategy].pnl += netPnl
     strategyMap[strategy].trades += 1
 
-    if (netPnl > BREAK_EVEN_THRESHOLD) {
+    if (isWinningTrade(netPnl, breakEvenThreshold)) {
       strategyMap[strategy].wins += 1
       strategyMap[strategy].grossWin += netPnl
-    } else if (netPnl < -BREAK_EVEN_THRESHOLD) {
+    } else if (isLosingTrade(netPnl, breakEvenThreshold)) {
       strategyMap[strategy].losses += 1
       strategyMap[strategy].grossLoss += Math.abs(netPnl)
     }
@@ -201,25 +227,28 @@ export function calculatePnlByStrategy(trades: Partial<Trade>[]) {
       trades: stats.trades,
       wins: stats.wins,
       losses: stats.losses,
-      winRate: tradableCount > 0 ? (stats.wins / tradableCount) * 100 : 0,
+      winRate: calculateWinRate(stats.wins, stats.losses),
       avgPnl: stats.trades > 0 ? stats.pnl / stats.trades : 0,
       profitFactor: stats.grossLoss > 0 ? stats.grossWin / stats.grossLoss : stats.grossWin > 0 ? 999 : 0,
     }
   }).sort((a, b) => b.pnl - a.pnl)
 }
 
-export function calculatePnlByInstrument(trades: Partial<Trade>[]) {
+export function calculatePnlByInstrument(
+  trades: Partial<Trade>[],
+  breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
+) {
   const groupedTrades = groupTradesByExecution(trades as any)
   const instrumentMap: Record<string, { pnl: number; trades: number; wins: number; losses: number }> = {}
 
   groupedTrades.forEach((trade: any) => {
     const instrument = trade.symbol || trade.instrument || 'Unknown'
     if (!instrumentMap[instrument]) instrumentMap[instrument] = { pnl: 0, trades: 0, wins: 0, losses: 0 }
-    const netPnl = (trade.pnl || 0) + (trade.commission || 0)
+    const netPnl = getTradeNetPnl(trade)
     instrumentMap[instrument].pnl += netPnl
     instrumentMap[instrument].trades += 1
-    if (netPnl > BREAK_EVEN_THRESHOLD) instrumentMap[instrument].wins += 1
-    else if (netPnl < -BREAK_EVEN_THRESHOLD) instrumentMap[instrument].losses += 1
+    if (isWinningTrade(netPnl, breakEvenThreshold)) instrumentMap[instrument].wins += 1
+    else if (isLosingTrade(netPnl, breakEvenThreshold)) instrumentMap[instrument].losses += 1
   })
 
   return Object.entries(instrumentMap).map(([instrument, stats]) => ({
@@ -228,23 +257,26 @@ export function calculatePnlByInstrument(trades: Partial<Trade>[]) {
     trades: stats.trades,
     wins: stats.wins,
     losses: stats.losses,
-    winRate: stats.trades > 0 ? (stats.wins / stats.trades) * 100 : 0,
+    winRate: calculateWinRate(stats.wins, stats.losses),
   })).sort((a, b) => b.pnl - a.pnl)
 }
 
-export function calculateWinRateByStrategy(trades: Partial<Trade>[]) {
+export function calculateWinRateByStrategy(
+  trades: Partial<Trade>[],
+  breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
+) {
   const groupedTrades = groupTradesByExecution(trades as any)
   const strategyMap: Record<string, { wins: number; losses: number; grossWin: number; grossLoss: number; allWins: number[] }> = {}
 
   groupedTrades.forEach((trade: any) => {
     const strategy = trade.tradingModel || trade.TradingModel?.name || 'No Strategy'
     if (!strategyMap[strategy]) strategyMap[strategy] = { wins: 0, losses: 0, grossWin: 0, grossLoss: 0, allWins: [] }
-    const netPnl = (trade.pnl || 0) + (trade.commission || 0)
-    if (netPnl > BREAK_EVEN_THRESHOLD) {
+    const netPnl = getTradeNetPnl(trade)
+    if (isWinningTrade(netPnl, breakEvenThreshold)) {
       strategyMap[strategy].wins += 1
       strategyMap[strategy].grossWin += netPnl
       strategyMap[strategy].allWins.push(netPnl)
-    } else if (netPnl < -BREAK_EVEN_THRESHOLD) {
+    } else if (isLosingTrade(netPnl, breakEvenThreshold)) {
       strategyMap[strategy].losses += 1
       strategyMap[strategy].grossLoss += Math.abs(netPnl)
     }
@@ -258,7 +290,7 @@ export function calculateWinRateByStrategy(trades: Partial<Trade>[]) {
     const stdDev = Math.sqrt(variance)
     return {
       strategy,
-      winRate: totalTrades > 0 ? (stats.wins / totalTrades) * 100 : 0,
+      winRate: calculateWinRate(stats.wins, stats.losses),
       totalTrades,
       wins: stats.wins,
       losses: stats.losses,
@@ -283,7 +315,10 @@ function getDurationBucket(minutes: number): string {
   return "4hr+"
 }
 
-export function calculateTradeDurationPerformance(trades: Partial<Trade>[]) {
+export function calculateTradeDurationPerformance(
+  trades: Partial<Trade>[],
+  breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
+) {
   const groupedTrades = groupTradesByExecution(trades as any)
   const durationMap: Record<string, { pnl: number; trades: number; wins: number; losses: number }> = {}
   
@@ -294,12 +329,12 @@ export function calculateTradeDurationPerformance(trades: Partial<Trade>[]) {
     if (trade.entryDate && trade.closeDate) {
       const durationMinutes = calculateDurationMinutes(trade.entryDate.toString(), trade.closeDate.toString())
       const bucket = getDurationBucket(durationMinutes)
-      const netPnL = (trade.pnl || 0) + (trade.commission || 0)
+      const netPnL = getTradeNetPnl(trade)
       durationMap[bucket].pnl += netPnL
       durationMap[bucket].trades++
 
-      if (netPnL > BREAK_EVEN_THRESHOLD) durationMap[bucket].wins++
-      else if (netPnL < -BREAK_EVEN_THRESHOLD) durationMap[bucket].losses++
+      if (isWinningTrade(netPnL, breakEvenThreshold)) durationMap[bucket].wins++
+      else if (isLosingTrade(netPnL, breakEvenThreshold)) durationMap[bucket].losses++
     }
   })
 
@@ -311,13 +346,16 @@ export function calculateTradeDurationPerformance(trades: Partial<Trade>[]) {
       trades: data.trades,
       wins: data.wins,
       losses: data.losses,
-      winRate: data.trades > 0 ? (data.wins / data.trades) * 100 : 0,
+      winRate: calculateWinRate(data.wins, data.losses),
       avgPnl: data.trades > 0 ? data.pnl / data.trades : 0,
     }
   }).filter(item => item.trades > 0)
 }
 
-export function calculateWeekdayPnl(trades: Partial<Trade>[]) {
+export function calculateWeekdayPnl(
+  trades: Partial<Trade>[],
+  breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
+) {
   const groupedTrades = groupTradesByExecution(trades as any)
   const weekdayMap: Record<number, { pnl: number; trades: number; wins: number; losses: number }> = {}
 
@@ -327,11 +365,11 @@ export function calculateWeekdayPnl(trades: Partial<Trade>[]) {
 
     if (dayOfWeek >= 1 && dayOfWeek <= 5) {
       if (!weekdayMap[dayOfWeek]) weekdayMap[dayOfWeek] = { pnl: 0, trades: 0, wins: 0, losses: 0 }
-      const netPnL = (trade.pnl || 0) + (trade.commission || 0)
+      const netPnL = getTradeNetPnl(trade)
       weekdayMap[dayOfWeek].pnl += netPnL
       weekdayMap[dayOfWeek].trades++
-      if (netPnL > BREAK_EVEN_THRESHOLD) weekdayMap[dayOfWeek].wins++
-      else if (netPnL < -BREAK_EVEN_THRESHOLD) weekdayMap[dayOfWeek].losses++
+      if (isWinningTrade(netPnL, breakEvenThreshold)) weekdayMap[dayOfWeek].wins++
+      else if (isLosingTrade(netPnL, breakEvenThreshold)) weekdayMap[dayOfWeek].losses++
     }
   })
 
@@ -353,13 +391,16 @@ export function calculateWeekdayPnl(trades: Partial<Trade>[]) {
       trades: data.trades,
       wins: data.wins,
       losses: data.losses,
-      winRate: data.trades > 0 ? (data.wins / data.trades) * 100 : 0,
+      winRate: calculateWinRate(data.wins, data.losses),
     }
   })
 }
 
-export function calculatePerformanceScoreResult(trades: Partial<Trade>[]) {
-  const metrics = calculateMetricsFromTrades(trades as any)
+export function calculatePerformanceScoreResult(
+  trades: Partial<Trade>[],
+  breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
+) {
+  const metrics = calculateMetricsFromTrades(trades as any, breakEvenThreshold)
   if (!metrics) return { hasData: false }
   
   const scoreResult = calculateZellaScore(metrics)
@@ -377,7 +418,10 @@ export function calculatePerformanceScoreResult(trades: Partial<Trade>[]) {
 
 
 
-export function calculateTradingOverviewKpis(trades: Partial<Trade>[]) {
+export function calculateTradingOverviewKpis(
+  trades: Partial<Trade>[],
+  breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
+) {
   if (!trades?.length) {
     return {
       currentStats: { monthTrades: 0, monthWinRate: 0, weekPnL: 0 },
@@ -402,42 +446,43 @@ export function calculateTradingOverviewKpis(trades: Partial<Trade>[]) {
     return isWithinInterval(new Date(t.entryDate), { start: weekStart, end: weekEnd })
   })
 
-  const monthWins = monthTrades.filter(t => (Number(t.pnl || 0) + Number(t.commission || 0)) > BREAK_EVEN_THRESHOLD).length
-  const weekPnL = weekTrades.reduce((sum, t) => sum + (Number(t.pnl || 0) + Number(t.commission || 0)), 0)
+  const monthWins = monthTrades.filter(t => isWinningTrade(getTradeNetPnl(t), breakEvenThreshold)).length
+  const monthLosses = monthTrades.filter(t => isLosingTrade(getTradeNetPnl(t), breakEvenThreshold)).length
+  const weekPnL = weekTrades.reduce((sum, t) => sum + getTradeNetPnl(t), 0)
 
   const currentStats = { 
     monthTrades: monthTrades.length, 
-    monthWinRate: monthTrades.length > 0 ? (monthWins / monthTrades.length) * 100 : 0, 
+    monthWinRate: calculateWinRate(monthWins, monthLosses),
     weekPnL 
   }
 
   const sortedByTime = [...trades].sort((a, b) => (new Date(a.entryDate || 0).getTime()) - (new Date(b.entryDate || 0).getTime()))
-  const pnls = sortedByTime.map(t => (Number(t.pnl || 0) + Number(t.commission || 0)))
+  const pnls = sortedByTime.map(t => getTradeNetPnl(t))
   
   const { maxDrawdown } = calculatePeakToTroughDrawdown(pnls)
 
-  const losses = trades.filter(t => (Number(t.pnl || 0) + Number(t.commission || 0)) < -BREAK_EVEN_THRESHOLD)
-  const largestLoss = Math.abs(Math.min(...losses.map(t => (Number(t.pnl || 0) + Number(t.commission || 0))), 0))
-  const avgLoss = losses.length > 0 ? losses.reduce((sum, t) => sum + Math.abs(Number(t.pnl || 0) + Number(t.commission || 0)), 0) / losses.length : 0
+  const losses = trades.filter(t => isLosingTrade(getTradeNetPnl(t), breakEvenThreshold))
+  const largestLoss = Math.abs(Math.min(...losses.map(t => getTradeNetPnl(t)), 0))
+  const avgLoss = losses.length > 0 ? losses.reduce((sum, t) => sum + Math.abs(getTradeNetPnl(t)), 0) / losses.length : 0
 
   let lossStreak = 0
   for (let i = sortedByTime.length - 1; i >= 0; i--) {
-    const netPnl = (Number(sortedByTime[i].pnl || 0) + Number(sortedByTime[i].commission || 0))
-    if (netPnl < -BREAK_EVEN_THRESHOLD) lossStreak++
-    else if (netPnl > BREAK_EVEN_THRESHOLD) break
+    const netPnl = getTradeNetPnl(sortedByTime[i])
+    if (isLosingTrade(netPnl, breakEvenThreshold)) lossStreak++
+    else if (isWinningTrade(netPnl, breakEvenThreshold)) break
   }
 
   const riskStats = { maxDrawdown, largestLoss, avgLoss, lossStreak }
 
   const sortedDesc = [...sortedByTime].reverse()
   let currentStreak = 0
-  const firstNetPnl = (Number(sortedDesc[0].pnl || 0) + Number(sortedDesc[0].commission || 0))
-  const isWinning = firstNetPnl > BREAK_EVEN_THRESHOLD
+  const firstNetPnl = getTradeNetPnl(sortedDesc[0])
+  const isWinning = isWinningTrade(firstNetPnl, breakEvenThreshold)
   const wasWin = isWinning
 
   for (const trade of sortedDesc) {
-    const netPnl = (Number(trade.pnl || 0) + Number(trade.commission || 0))
-    if (netPnl > BREAK_EVEN_THRESHOLD === wasWin) currentStreak++
+    const netPnl = getTradeNetPnl(trade)
+    if (isWinningTrade(netPnl, breakEvenThreshold) === wasWin) currentStreak++
     else break
   }
 
@@ -445,7 +490,7 @@ export function calculateTradingOverviewKpis(trades: Partial<Trade>[]) {
   let lastWasWin: boolean | null = null
 
   for (const trade of sortedByTime) {
-    const isWin = (trade.pnl || 0) > 0
+    const isWin = isWinningTrade(getTradeNetPnl(trade), breakEvenThreshold)
     if (lastWasWin === null) { tempStreak = 1; lastWasWin = isWin }
     else if (isWin === lastWasWin) { tempStreak++ }
     else {
@@ -462,7 +507,10 @@ export function calculateTradingOverviewKpis(trades: Partial<Trade>[]) {
   return { currentStats, riskStats, streakData }
 }
 
-export function calculateCalendarData(trades: Partial<Trade>[]) {
+export function calculateCalendarData(
+  trades: Partial<Trade>[],
+  breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
+) {
   const data: Record<string, { 
     pnl: number; 
     tradeNumber: number; 
@@ -491,7 +539,7 @@ export function calculateCalendarData(trades: Partial<Trade>[]) {
       }
     }
 
-    const netPnl = (trade.pnl || 0) + (trade.commission || 0)
+    const netPnl = getTradeNetPnl(trade)
     data[key].pnl += netPnl
     data[key].tradeNumber++
 
@@ -504,15 +552,18 @@ export function calculateCalendarData(trades: Partial<Trade>[]) {
     else data[key].shortNumber++
     
     // Update outcome flags based on daily aggregate
-    data[key].isProfit = data[key].pnl > BREAK_EVEN_THRESHOLD
-    data[key].isLoss = data[key].pnl < -BREAK_EVEN_THRESHOLD
+    data[key].isProfit = isWinningTrade(data[key].pnl, breakEvenThreshold)
+    data[key].isLoss = isLosingTrade(data[key].pnl, breakEvenThreshold)
     data[key].isBreakEven = !data[key].isProfit && !data[key].isLoss
   })
 
   return data
 }
 
-export function calculateSessionAnalysis(trades: Partial<Trade>[]) {
+export function calculateSessionAnalysis(
+  trades: Partial<Trade>[],
+  breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
+) {
   const stats: Record<string, { trades: number; wins: number; pnl: number }> = {
       'New York': { trades: 0, wins: 0, pnl: 0 },
       'London': { trades: 0, wins: 0, pnl: 0 },
@@ -529,7 +580,7 @@ export function calculateSessionAnalysis(trades: Partial<Trade>[]) {
           if (session && stats[session]) {
               stats[session].trades++
               stats[session].pnl += trade.pnl || 0
-              if (classifyTrade(trade.pnl || 0) === 'win') {
+              if (isWinningTrade(trade.pnl || 0, breakEvenThreshold)) {
                   stats[session].wins++
               }
           }

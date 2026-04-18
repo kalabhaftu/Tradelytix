@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { logActivity, getClientIp } from '@/lib/activity-logger'
+import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 const DEFAULT_AI_SETTINGS = {
   weeklyReviewAutomationEnabled: false,
@@ -40,6 +41,7 @@ export async function GET() {
         accentPack: true,
         theme: true,
         autoAdjustAccountDate: true,
+        breakEvenThreshold: true,
         calendarDisplayStats: true,
         showWeeklySummary: true,
         aiSettings: true,
@@ -83,7 +85,17 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json()
 
-    const { firstName, lastName, accentPack, theme, autoAdjustAccountDate, calendarDisplayStats, showWeeklySummary, aiSettings } = body
+    const {
+      firstName,
+      lastName,
+      accentPack,
+      theme,
+      autoAdjustAccountDate,
+      breakEvenThreshold,
+      calendarDisplayStats,
+      showWeeklySummary,
+      aiSettings
+    } = body
 
     // Validate input — only check fields that are actually provided
     if (firstName !== undefined && typeof firstName !== 'string' && firstName !== null) {
@@ -100,6 +112,13 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
+    if (breakEvenThreshold !== undefined && typeof breakEvenThreshold !== 'number') {
+      return NextResponse.json(
+        { error: 'Invalid breakEvenThreshold format' },
+        { status: 400 }
+      )
+    }
+
     // Build update data — only include fields that were sent
     const updateData: Record<string, any> = {}
     if (firstName !== undefined) updateData.firstName = firstName?.trim() || null
@@ -107,6 +126,7 @@ export async function PATCH(request: NextRequest) {
     if (accentPack && typeof accentPack === 'string') updateData.accentPack = accentPack
     if (theme && typeof theme === 'string') updateData.theme = theme
     if (autoAdjustAccountDate !== undefined) updateData.autoAdjustAccountDate = !!autoAdjustAccountDate
+    if (breakEvenThreshold !== undefined) updateData.breakEvenThreshold = getBreakEvenThreshold(breakEvenThreshold)
     if (calendarDisplayStats !== undefined && Array.isArray(calendarDisplayStats)) {
       const allowed = ['pnl', 'trades', 'winRate', 'rMultiple']
       updateData.calendarDisplayStats = calendarDisplayStats.filter((s: string) => allowed.includes(s))
@@ -137,6 +157,7 @@ export async function PATCH(request: NextRequest) {
         accentPack: true,
         theme: true,
         autoAdjustAccountDate: true,
+        breakEvenThreshold: true,
         calendarDisplayStats: true,
         showWeeklySummary: true,
         aiSettings: true,

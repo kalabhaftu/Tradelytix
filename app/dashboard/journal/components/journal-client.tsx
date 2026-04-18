@@ -52,12 +52,13 @@ import { useModalStateStore } from '@/store/modal-state-store'
 import { TradeEditPanel } from '@/app/dashboard/components/tables/trade-edit-panel'
 import { TradeDetailPanel } from '@/app/dashboard/components/tables/trade-detail-panel'
 import { Trade } from '@prisma/client'
-import { groupTradesByExecution, formatCurrency, BREAK_EVEN_THRESHOLD } from '@/lib/utils'
+import { groupTradesByExecution, formatCurrency } from '@/lib/utils'
 import Fuse from 'fuse.js'
 import { getAssetSearchTerms } from '@/lib/asset-aliases'
 import { useTags } from '@/context/tags-provider'
 import { cn, ensureExtendedTrade } from '@/lib/utils'
 import { useJournal } from '@/hooks/use-journal'
+import { formatBreakevenBand, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 const ITEMS_PER_PAGE = 21
 
@@ -68,6 +69,7 @@ function JournalStats({ statistics }: { statistics: any }) {
   // Process the raw numbers safely
   const winRate = typeof statistics.winRate === 'number' ? statistics.winRate : 0;
   const totalPnl = typeof statistics.totalPnL === 'number' ? statistics.totalPnL : (statistics.cumulativePnl || 0);
+  const breakEvenThreshold = getBreakEvenThreshold(statistics.breakEvenThreshold)
 
   // Extract average position time (comes back as "Xh Ym Zs" string)
   const sumSeconds = statistics.totalPositionTime || 0
@@ -108,6 +110,7 @@ function JournalStats({ statistics }: { statistics: any }) {
             )}
           </div>
           <p className="text-2xl font-bold tracking-tight">{stats.winRate.toFixed(1)}%</p>
+          <p className="text-[10px] text-muted-foreground">BE band: {formatBreakevenBand(breakEvenThreshold)}</p>
         </CardContent>
       </Card>
 
@@ -215,6 +218,7 @@ export function JournalClient() {
   }, [tradeIdParam, paginatedTrades, formattedTrades])
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
+  const activeBreakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -401,10 +405,10 @@ export function JournalClient() {
               All Trades
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setFilterBy('wins')}>
-              Wins Only
+              Wins Only ({`> +$${activeBreakEvenThreshold}`})
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setFilterBy('losses')}>
-              Losses Only
+              Losses Only ({`< -$${activeBreakEvenThreshold}`})
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => setFilterBy('buys')}>
@@ -536,6 +540,7 @@ export function JournalClient() {
                     onEdit={() => handleEditTrade(trade)}
                     onView={() => handleViewTrade(trade)}
                     onDelete={() => handleDeleteTrade(trade)}
+                    breakEvenThreshold={activeBreakEvenThreshold}
                   />
                 </motion.div>
               ))}

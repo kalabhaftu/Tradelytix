@@ -350,6 +350,7 @@ model User {
   goalSettings           Json?
   aiSettings             Json?
   backtestInputMode      String                   @default("manual")
+  breakEvenThreshold     Float                    @default(10)
   accentPack             String                   @default("classic")
   autoAdjustAccountDate  Boolean                  @default(false)
   calendarDisplayStats   String[]                 @default(["pnl", "trades"])

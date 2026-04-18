@@ -19,10 +19,12 @@ import { TradeDetailPanel } from '@/app/dashboard/components/tables/trade-detail
 import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
-import { formatQuantity, formatTradeData, BREAK_EVEN_THRESHOLD, ensureExtendedTrade, cn } from '@/lib/utils'
+import { formatQuantity, formatTradeData, ensureExtendedTrade, cn } from '@/lib/utils'
 import { updateTradeAction } from '@/server/trades'
 import { ExtendedTrade } from '@/types/trade-extended'
 import { TablePanelSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { useData } from '@/context/data-provider'
+import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 type SortConfig = {
   key: keyof Trade
@@ -41,6 +43,8 @@ export default function TradeTable() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const user = useUserStore((state: any) => state.user)
+  const { statistics } = useData()
+  const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
   const [currentPage, setCurrentPage] = useState(1)
   const [tradesPerPage, setTradesPerPage] = useState(50)
   const { data: tradesResponse, isLoading: tradesLoading, mutate: refetchTrades } = useSWR(
@@ -114,9 +118,9 @@ export default function TradeTable() {
       list = list.filter(trade => trade.side.toLowerCase() === sideFilter)
     }
     if (pnlFilter === 'wins') {
-      list = list.filter(trade => trade.pnl >= BREAK_EVEN_THRESHOLD)
+      list = list.filter(trade => classifyOutcome(Number(trade.pnl || 0), breakEvenThreshold) === 'win')
     } else if (pnlFilter === 'losses') {
-      list = list.filter(trade => trade.pnl < BREAK_EVEN_THRESHOLD)
+      list = list.filter(trade => classifyOutcome(Number(trade.pnl || 0), breakEvenThreshold) === 'loss')
     }
 
     if (sortConfig.key) {
@@ -133,7 +137,7 @@ export default function TradeTable() {
     }
 
     return list
-  }, [formattedTrades, sortConfig, selectedInstruments, selectedAccounts, sideFilter, pnlFilter])
+  }, [formattedTrades, sortConfig, selectedInstruments, selectedAccounts, sideFilter, pnlFilter, breakEvenThreshold])
 
   const paginatedTrades = filteredAndSortedTrades
 

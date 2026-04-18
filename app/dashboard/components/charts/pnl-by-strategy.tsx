@@ -20,8 +20,10 @@ import {
 } from "@/components/ui/tooltip"
 import { WidgetCard, ChartTooltip as SharedChartTooltip } from '../widget-card'
 import { useWidgetData } from "@/hooks/use-widget-data"
-import { cn, formatNumber, BREAK_EVEN_THRESHOLD } from "@/lib/utils"
+import { formatNumber } from "@/lib/utils"
 import { WidgetSize } from '@/app/dashboard/types/dashboard'
+import { useData } from "@/context/data-provider"
+import { classifyOutcome, getBreakEvenThreshold } from "@/lib/metrics/outcome"
 
 // ============================================================================
 // TYPES
@@ -83,6 +85,8 @@ function formatAxisValue(value: number): string {
 // ============================================================================
 
 export default function PnLByStrategy({ size = 'small-long' }: PnLByStrategyProps) {
+  const { statistics } = useData()
+  const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
   // ---------------------------------------------------------------------------
   // DATA HOOKS (PRESERVED - DO NOT MODIFY)
   // ---------------------------------------------------------------------------
@@ -178,7 +182,13 @@ export default function PnLByStrategy({ size = 'small-long' }: PnLByStrategyProp
                 {chartData.map((entry: any, index: number) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={entry.pnl > BREAK_EVEN_THRESHOLD ? COLORS.profit : entry.pnl < -BREAK_EVEN_THRESHOLD ? COLORS.loss : 'hsl(var(--muted-foreground)/0.4)'}
+                    fill={
+                      classifyOutcome(entry.pnl, breakEvenThreshold) === 'win'
+                        ? COLORS.profit
+                        : classifyOutcome(entry.pnl, breakEvenThreshold) === 'loss'
+                          ? COLORS.loss
+                          : 'hsl(var(--muted-foreground)/0.4)'
+                    }
                   />
                 ))}
               </Bar>

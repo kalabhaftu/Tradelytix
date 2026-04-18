@@ -3,8 +3,6 @@
  * Single source of truth for all mathematical models.
  */
 
-import { BREAK_EVEN_THRESHOLD } from '@/lib/utils'
-
 /**
  * Calculates the R-Multiple using the Pure Price Method.
  * Formula: (Exit - Entry) / (Entry - SL) for Longs

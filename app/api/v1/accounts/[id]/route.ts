@@ -67,8 +67,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const profitLoss = trades.reduce(
       (sum: number, trade: { pnl: number; commission: number | null }) => {
-        const netPnL = trade.pnl - (trade.commission || 0)
-        return sum + netPnL
+        return sum + trade.pnl
       },
       0
     )

@@ -1,4 +1,5 @@
 export interface StatisticsProps {
+  breakEvenThreshold: number;
   cumulativeFees: number;
   cumulativePnl: number;
   winningStreak: number;

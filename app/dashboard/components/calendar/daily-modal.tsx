@@ -262,8 +262,8 @@ export function CalendarModal({
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right">
-                                <span className={cn("font-mono font-bold", (trade.pnl - (trade.commission || 0)) >= 0 ? "text-long" : "text-short")}>
-                                  {formatCurrency(trade.pnl - (trade.commission || 0))}
+                                <span className={cn("font-mono font-bold", Number(trade.pnl || 0) >= 0 ? "text-long" : "text-short")}>
+                                  {formatCurrency(Number(trade.pnl || 0))}
                                 </span>
                               </TableCell>
                               <TableCell className="text-right">

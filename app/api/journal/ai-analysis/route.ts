@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
-import { BREAK_EVEN_THRESHOLD, cleanContent } from '@/lib/utils'
+import { cleanContent } from '@/lib/utils'
+import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 // GET - Generate AI analysis of journals and trades
 export async function GET(request: Request) {
@@ -62,6 +63,12 @@ export async function GET(request: Request) {
     if (accountId) {
       tradesWhere.accountId = accountId
     }
+
+    const userSettings = await prisma.user.findUnique({
+      where: { id: internalUserId },
+      select: { breakEvenThreshold: true }
+    })
+    const breakEvenThreshold = getBreakEvenThreshold(userSettings?.breakEvenThreshold)
 
     const trades = await prisma.trade.findMany({
       where: tradesWhere,
@@ -144,7 +151,15 @@ export async function GET(request: Request) {
     })
 
     // Generate AI analysis
-    const analysis = await generateAnalysis(journals, trades, propFirmAccounts, userTags, tradingModels, weeklyReviews)
+    const analysis = await generateAnalysis(
+      journals,
+      trades,
+      propFirmAccounts,
+      userTags,
+      tradingModels,
+      weeklyReviews,
+      breakEvenThreshold
+    )
 
     return NextResponse.json({ analysis })
   } catch (error) {
@@ -156,7 +171,19 @@ export async function GET(request: Request) {
   }
 }
 
-async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts: any[] = [], userTags: any[] = [], tradingModels: any[] = [], weeklyReviews: any[] = []) {
+async function generateAnalysis(
+  journals: any[],
+  trades: any[],
+  propFirmAccounts: any[] = [],
+  userTags: any[] = [],
+  tradingModels: any[] = [],
+  weeklyReviews: any[] = [],
+  breakEvenThreshold: number = 10
+) {
+  const threshold = getBreakEvenThreshold(breakEvenThreshold)
+  const getNetPnl = (trade: any) => Number(trade.pnl || 0)
+  const getOutcome = (trade: any) => classifyOutcome(getNetPnl(trade), threshold)
+
   // Prepare data for AI
   const journalSummary = journals.map(j => ({
     date: j.date,
@@ -178,7 +205,7 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
     .map(t => ({
       date: t.entryDate,
       note: t.comment,
-      pnl: t.pnl + (t.commission || 0),
+      pnl: getNetPnl(t),
       instrument: t.instrument,
       side: t.side,
       duration: t.closeDate ? (new Date(t.closeDate).getTime() - new Date(t.entryDate).getTime()) / 1000 / 60 : 0 // duration in minutes
@@ -186,18 +213,24 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
 
   const tradeStats = {
     totalTrades: trades.length,
-    winningTrades: trades.filter(t => (t.pnl + (t.commission || 0)) > BREAK_EVEN_THRESHOLD).length,
-    losingTrades: trades.filter(t => (t.pnl + (t.commission || 0)) < -BREAK_EVEN_THRESHOLD).length,
-    breakEvenTrades: trades.filter(t => Math.abs(t.pnl + (t.commission || 0)) <= BREAK_EVEN_THRESHOLD).length,
-    totalPnL: trades.reduce((sum, t) => sum + t.pnl + (t.commission || 0), 0),
-    averagePnL: trades.length > 0 ? trades.reduce((sum, t) => sum + t.pnl + (t.commission || 0), 0) / trades.length : 0,
+    winningTrades: trades.filter(t => getOutcome(t) === 'win').length,
+    losingTrades: trades.filter(t => getOutcome(t) === 'loss').length,
+    breakEvenTrades: trades.filter(t => getOutcome(t) === 'breakeven').length,
+    totalPnL: trades.reduce((sum, t) => sum + getNetPnl(t), 0),
+    averagePnL: trades.length > 0 ? trades.reduce((sum, t) => sum + getNetPnl(t), 0) / trades.length : 0,
     totalCommission: trades.reduce((sum, t) => sum + (t.commission || 0), 0),
     tradesWithNotes: tradeNotes.length
   }
 
   // Calculate profit factor
-  const grossProfit = trades.filter(t => (t.pnl + (t.commission || 0)) > BREAK_EVEN_THRESHOLD).reduce((sum, t) => sum + t.pnl + (t.commission || 0), 0)
-  const grossLoss = Math.abs(trades.filter(t => (t.pnl + (t.commission || 0)) < -BREAK_EVEN_THRESHOLD).reduce((sum, t) => sum + t.pnl + (t.commission || 0), 0))
+  const grossProfit = trades
+    .filter(t => getOutcome(t) === 'win')
+    .reduce((sum, t) => sum + getNetPnl(t), 0)
+  const grossLoss = Math.abs(
+    trades
+      .filter(t => getOutcome(t) === 'loss')
+      .reduce((sum, t) => sum + getNetPnl(t), 0)
+  )
   const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0
 
   // Calculate average win/loss
@@ -207,13 +240,13 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
   // P&L by instrument
   const pnlByInstrument: Record<string, { trades: number, pnl: number, wins: number }> = {}
   trades.forEach(t => {
-    const netPnL = t.pnl + (t.commission || 0)
+    const netPnL = getNetPnl(t)
     if (!pnlByInstrument[t.instrument]) {
       pnlByInstrument[t.instrument] = { trades: 0, pnl: 0, wins: 0 }
     }
     pnlByInstrument[t.instrument].trades++
     pnlByInstrument[t.instrument].pnl += netPnL
-    if (netPnL > BREAK_EVEN_THRESHOLD) pnlByInstrument[t.instrument].wins++
+    if (getOutcome(t) === 'win') pnlByInstrument[t.instrument].wins++
   })
 
   // Sort instruments by P&L
@@ -225,13 +258,13 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
   const pnlByStrategy: Record<string, { trades: number, pnl: number, wins: number }> = {}
   trades.forEach(t => {
     const strategy = (t as any).TradingModel?.name || 'No Strategy'
-    const netPnL = t.pnl + (t.commission || 0)
+    const netPnL = getNetPnl(t)
     if (!pnlByStrategy[strategy]) {
       pnlByStrategy[strategy] = { trades: 0, pnl: 0, wins: 0 }
     }
     pnlByStrategy[strategy].trades++
     pnlByStrategy[strategy].pnl += netPnL
-    if (netPnL > BREAK_EVEN_THRESHOLD) pnlByStrategy[strategy].wins++
+    if (getOutcome(t) === 'win') pnlByStrategy[strategy].wins++
   })
 
   // P&L by weekday
@@ -246,7 +279,7 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
   }
   trades.forEach(t => {
     const dayOfWeek = new Date(t.entryDate).toLocaleDateString('en-US', { weekday: 'long' })
-    const netPnL = t.pnl + (t.commission || 0)
+    const netPnL = getNetPnl(t)
     pnlByWeekday[dayOfWeek].trades++
     pnlByWeekday[dayOfWeek].pnl += netPnL
   })
@@ -255,7 +288,7 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
   const pnlByHour: Record<number, { trades: number, pnl: number }> = {}
   trades.forEach(t => {
     const hour = new Date(t.entryDate).getHours()
-    const netPnL = t.pnl + (t.commission || 0)
+    const netPnL = getNetPnl(t)
     if (!pnlByHour[hour]) {
       pnlByHour[hour] = { trades: 0, pnl: 0 }
     }
@@ -289,7 +322,7 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
 
       emotionPerformance[j.emotion].trades += dayTrades.length
       emotionPerformance[j.emotion].totalPnL += dayTrades.reduce(
-        (sum, t) => sum + t.pnl + (t.commission || 0),
+        (sum, t) => sum + getNetPnl(t),
         0
       )
     }
@@ -308,10 +341,10 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
   trades.forEach(t => {
     if (t.marketBias) {
       tradesWithBias++
-      const netPnL = t.pnl + (t.commission || 0)
+      const netPnL = getNetPnl(t)
       biasPerformance[t.marketBias].trades++
       biasPerformance[t.marketBias].pnl += netPnL
-      if (netPnL > BREAK_EVEN_THRESHOLD) biasPerformance[t.marketBias].wins++
+      if (getOutcome(t) === 'win') biasPerformance[t.marketBias].wins++
 
       // Check if trade direction aligns with bias
       const isLong = t.side?.toUpperCase() === 'BUY' || t.side?.toLowerCase() === 'long'
@@ -334,18 +367,18 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
     noNewsTraded: trades.filter(t => !t.newsDay).length,
   }
 
-  const newsDayPnL = trades.filter(t => t.newsDay).reduce((sum, t) => sum + t.pnl + (t.commission || 0), 0)
-  const noNewsDayPnL = trades.filter(t => !t.newsDay).reduce((sum, t) => sum + t.pnl + (t.commission || 0), 0)
+  const newsDayPnL = trades.filter(t => t.newsDay).reduce((sum, t) => sum + getNetPnl(t), 0)
+  const noNewsDayPnL = trades.filter(t => !t.newsDay).reduce((sum, t) => sum + getNetPnl(t), 0)
 
-  const tradedDuringNewsPnL = trades.filter(t => t.newsDay && t.newsTraded).reduce((sum, t) => sum + t.pnl + (t.commission || 0), 0)
-  const tradedBeforeAfterNewsPnL = trades.filter(t => t.newsDay && !t.newsTraded).reduce((sum, t) => sum + t.pnl + (t.commission || 0), 0)
+  const tradedDuringNewsPnL = trades.filter(t => t.newsDay && t.newsTraded).reduce((sum, t) => sum + getNetPnl(t), 0)
+  const tradedBeforeAfterNewsPnL = trades.filter(t => t.newsDay && !t.newsTraded).reduce((sum, t) => sum + getNetPnl(t), 0)
 
-  const newsDayWins = trades.filter(t => t.newsDay && (t.pnl + (t.commission || 0)) > BREAK_EVEN_THRESHOLD).length
-  const newsDayLosses = trades.filter(t => t.newsDay && (t.pnl + (t.commission || 0)) < -BREAK_EVEN_THRESHOLD).length
+  const newsDayWins = trades.filter(t => t.newsDay && getOutcome(t) === 'win').length
+  const newsDayLosses = trades.filter(t => t.newsDay && getOutcome(t) === 'loss').length
   const newsDayWinRate = newsTradesStats.totalNewsDays > 0 ? (newsDayWins / newsTradesStats.totalNewsDays) * 100 : 0
 
-  const noNewsDayWins = trades.filter(t => !t.newsDay && (t.pnl + (t.commission || 0)) > BREAK_EVEN_THRESHOLD).length
-  const noNewsDayLosses = trades.filter(t => !t.newsDay && (t.pnl + (t.commission || 0)) < -BREAK_EVEN_THRESHOLD).length
+  const noNewsDayWins = trades.filter(t => !t.newsDay && getOutcome(t) === 'win').length
+  const noNewsDayLosses = trades.filter(t => !t.newsDay && getOutcome(t) === 'loss').length
   const noNewsDayWinRate = newsTradesStats.noNewsTraded > 0 ? (noNewsDayWins / newsTradesStats.noNewsTraded) * 100 : 0
 
   // Extract specific news events that were traded
@@ -353,14 +386,14 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
   trades.forEach(t => {
     if (t.newsDay && t.selectedNews) {
       const newsIds = t.selectedNews.split(',').filter(Boolean)
-      const netPnL = t.pnl + (t.commission || 0)
+      const netPnL = getNetPnl(t)
       newsIds.forEach((newsId: string) => {
         if (!newsEventsTrade[newsId]) {
           newsEventsTrade[newsId] = { trades: 0, pnl: 0, wins: 0, tradedDuring: 0 }
         }
         newsEventsTrade[newsId].trades++
         newsEventsTrade[newsId].pnl += netPnL
-        if (netPnL > BREAK_EVEN_THRESHOLD) newsEventsTrade[newsId].wins++
+        if (getOutcome(t) === 'win') newsEventsTrade[newsId].wins++
         if (t.newsTraded) newsEventsTrade[newsId].tradedDuring++
       })
     }
@@ -393,8 +426,8 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
 
   // Count usage by timeframe type (entry is most important)
   trades.forEach(t => {
-    const netPnL = t.pnl + (t.commission || 0)
-    const isWin = netPnL > BREAK_EVEN_THRESHOLD
+    const netPnL = getNetPnl(t)
+    const isWin = getOutcome(t) === 'win'
 
     // Count entry timeframe (primary indicator)
     if ((t as any).entryTimeframe && timeframeStats[(t as any).entryTimeframe]) {
@@ -417,8 +450,8 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
 
   trades.forEach(t => {
     if ((t as any).orderType) {
-      const netPnL = t.pnl + (t.commission || 0)
-      const isWin = netPnL > BREAK_EVEN_THRESHOLD
+      const netPnL = getNetPnl(t)
+      const isWin = getOutcome(t) === 'win'
       const orderType = (t as any).orderType
 
       if (orderTypeStats[orderType]) {
@@ -441,8 +474,8 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
     if ((t as any).entryTime) {
       const session = getTradingSession((t as any).entryTime)
       if (session) {
-        const netPnL = t.pnl + (t.commission || 0)
-        const isWin = netPnL > BREAK_EVEN_THRESHOLD
+        const netPnL = getNetPnl(t)
+        const isWin = getOutcome(t) === 'win'
 
         if (!sessionStats[session]) {
           sessionStats[session] = { trades: 0, pnl: 0, wins: 0 }
@@ -466,11 +499,11 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
     for (let i = 1; i < tradesList.length; i++) {
       const prevTrade = tradesList[i - 1]
       const currentTrade = tradesList[i]
-      if ((prevTrade.pnl + (prevTrade.commission || 0)) < -BREAK_EVEN_THRESHOLD) {
-        const netPnL = currentTrade.pnl + (currentTrade.commission || 0)
+      if (getOutcome(prevTrade) === 'loss') {
+        const netPnL = getNetPnl(currentTrade)
         sum += netPnL
         count++
-        if (netPnL > BREAK_EVEN_THRESHOLD) wins++
+        if (getOutcome(currentTrade) === 'win') wins++
       }
     }
     return { avg: count > 0 ? sum / count : null, count, winRate: count > 0 ? (wins / count) * 100 : 0 }
@@ -481,8 +514,8 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
     let afterStreakSum = 0, afterStreakCount = 0
     
     for (let i = 0; i < tradesList.length; i++) {
-      const netPnL = tradesList[i].pnl + (tradesList[i].commission || 0)
-      if (netPnL < -BREAK_EVEN_THRESHOLD) {
+      const netPnL = getNetPnl(tradesList[i])
+      if (getOutcome(tradesList[i]) === 'loss') {
         currentStreak++
         maxStreak = Math.max(maxStreak, currentStreak)
       } else {
@@ -509,10 +542,10 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
     Object.values(tradesByDate).forEach(dayTrades => {
       if (dayTrades.length > 0) {
         const firstTrade = dayTrades.sort((a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime())[0]
-        const netPnL = firstTrade.pnl + (firstTrade.commission || 0)
+        const netPnL = getNetPnl(firstTrade)
         sum += netPnL
         count++
-        if (netPnL > BREAK_EVEN_THRESHOLD) wins++
+        if (getOutcome(firstTrade) === 'win') wins++
       }
     })
     return { avgPnL: count > 0 ? sum / count : null, winRate: count > 0 ? (wins / count) * 100 : 0, count }
@@ -525,7 +558,7 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
       const dateKey = new Date(t.entryDate).toISOString().split('T')[0]
       if (!tradesByDate[dateKey]) tradesByDate[dateKey] = { count: 0, pnl: 0 }
       tradesByDate[dateKey].count++
-      tradesByDate[dateKey].pnl += t.pnl + (t.commission || 0)
+      tradesByDate[dateKey].pnl += getNetPnl(t)
     })
     
     const tradingDays = Object.keys(tradesByDate).length
@@ -544,13 +577,13 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
   function analyzeRiskMetrics(tradesList: typeof trades): { largestWin: number, largestLoss: number, avgRRR: number | null, tradesWithLargerLossThanAvg: number } {
     if (tradesList.length === 0) return { largestWin: 0, largestLoss: 0, avgRRR: null, tradesWithLargerLossThanAvg: 0 }
     
-    const netPnLs = tradesList.map(t => t.pnl + (t.commission || 0))
+    const netPnLs = tradesList.map(t => getNetPnl(t))
     const largestWin = Math.max(...netPnLs, 0)
     const largestLoss = Math.min(...netPnLs, 0)
     const avgLossValue = avgLoss > 0 ? avgLoss : 1
     
-    const lossTrades = tradesList.filter(t => (t.pnl + (t.commission || 0)) < -BREAK_EVEN_THRESHOLD)
-    const tradesWithLargerLossThanAvg = lossTrades.filter(t => Math.abs(t.pnl + (t.commission || 0)) > avgLossValue).length
+    const lossTrades = tradesList.filter(t => getOutcome(t) === 'loss')
+    const tradesWithLargerLossThanAvg = lossTrades.filter(t => Math.abs(getNetPnl(t)) > avgLossValue).length
     
     return {
       largestWin,
@@ -567,13 +600,13 @@ async function generateAnalysis(journals: any[], trades: any[], propFirmAccounts
     let lastType = ''
     
     tradesList.forEach(t => {
-      const netPnL = t.pnl + (t.commission || 0)
-      if (netPnL > BREAK_EVEN_THRESHOLD) {
+      const outcome = getOutcome(t)
+      if (outcome === 'win') {
         currentWinStreak++
         currentLossStreak = 0
         maxWinStreak = Math.max(maxWinStreak, currentWinStreak)
         lastType = 'win'
-      } else if (netPnL < -BREAK_EVEN_THRESHOLD) {
+      } else if (outcome === 'loss') {
         currentLossStreak++
         currentWinStreak = 0
         maxLossStreak = Math.max(maxLossStreak, currentLossStreak)

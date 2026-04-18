@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, DollarSign, Clock, Calendar, CheckCircle2, XCircle, Trophy } from "lucide-react"
-import { cn, formatCurrency, formatPercent, BREAK_EVEN_THRESHOLD } from "@/lib/utils"
+import { cn, formatCurrency, formatPercent } from "@/lib/utils"
+import { useData } from '@/context/data-provider'
+import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 interface PhaseData {
   id: string
@@ -30,6 +32,8 @@ interface PhaseAccordionSectionProps {
 
 export function PhaseAccordionSection({ phase, accountSize, isExpanded = false }: PhaseAccordionSectionProps) {
   const [isOpen, setIsOpen] = useState(isExpanded)
+  const { statistics } = useData()
+  const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount)
@@ -82,8 +86,8 @@ export function PhaseAccordionSection({ phase, accountSize, isExpanded = false }
   const totalPnL = phase.trades?.reduce((sum, t) => sum + (t.pnl || 0), 0) || 0
 
   // CRITICAL FIX: Use net P&L and exclude break-even trades
-  const winningTrades = phase.trades?.filter(t => ((t.pnl || 0) - (t.commission || 0)) > BREAK_EVEN_THRESHOLD).length || 0
-  const losingTrades = phase.trades?.filter(t => ((t.pnl || 0) - (t.commission || 0)) < -BREAK_EVEN_THRESHOLD).length || 0
+  const winningTrades = phase.trades?.filter(t => classifyOutcome(Number(t.pnl || 0), breakEvenThreshold) === 'win').length || 0
+  const losingTrades = phase.trades?.filter(t => classifyOutcome(Number(t.pnl || 0), breakEvenThreshold) === 'loss').length || 0
   const tradableCount = winningTrades + losingTrades
   const winRate = tradableCount > 0 ? (winningTrades / tradableCount) * 100 : 0
   const currentBalance = accountSize + totalPnL

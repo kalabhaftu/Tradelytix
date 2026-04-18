@@ -15,6 +15,7 @@ import { prisma } from '@/lib/prisma'
 import { classifyTrade } from '@/lib/utils'
 import { getTradingSession } from '@/lib/time-utils'
 import { groupTradesByExecution } from '@/lib/utils'
+import { DEFAULT_BREAK_EVEN_THRESHOLD, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { 
   calculateRMultiple, 
   calculateRSquared, 
@@ -128,6 +129,7 @@ export async function calculateReportStatistics(
   filters: ReportStatsFilters
 ): Promise<ReportStatsResponse> {
   const { userId, accountNumbers, dateFrom, dateTo, accountId } = filters
+  const requestedOutcome = filters.outcome && filters.outcome !== 'all' ? filters.outcome : null
 
   // Build Prisma where clause — all filtering done server-side
   const whereClause: any = { userId }
@@ -159,16 +161,8 @@ export async function calculateReportStatistics(
     ]
   }
 
-  if (filters.outcome && filters.outcome !== 'all') {
-    if (filters.outcome === 'WIN') {
-      // PnL-based: positive net PnL
-      whereClause.pnl = { gt: 0 }
-    } else if (filters.outcome === 'LOSS') {
-      // PnL-based: negative net PnL
-      whereClause.pnl = { lt: 0 }
-    } else {
-      whereClause.outcome = filters.outcome
-    }
+  if (requestedOutcome && !['WIN', 'LOSS', 'BREAKEVEN'].includes(requestedOutcome)) {
+    whereClause.outcome = requestedOutcome
   }
 
   if (filters.strategy && filters.strategy !== 'all') {
@@ -185,7 +179,7 @@ export async function calculateReportStatistics(
 
   // Fetch trades with fields needed for computations + spreadsheet display
   // Fetch filter options separately to ensure they are always populated regardless of current filters
-  const [rawTrades, tradingModels, allPossibleSymbols] = await Promise.all([
+  const [rawTrades, tradingModels, allPossibleSymbols, userSettings] = await Promise.all([
     prisma.trade.findMany({
       where: whereClause,
       select: {
@@ -229,7 +223,12 @@ export async function calculateReportStatistics(
       },
       select: { symbol: true, instrument: true },
     }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { breakEvenThreshold: true },
+    }),
   ])
+  const breakEvenThreshold = getBreakEvenThreshold(userSettings?.breakEvenThreshold)
 
   // Extract unique symbols from the separate query for filter options
   // Extract unique symbols from the separate query for filter options
@@ -244,13 +243,20 @@ export async function calculateReportStatistics(
   const trades = groupTradesByExecution(rawTrades as any[]) as any[]
 
   // Session filter (needs to be done post-query since it's derived from entryDate)
-  const filteredTrades = filters.session && filters.session !== 'all'
+  const sessionFilteredTrades = filters.session && filters.session !== 'all'
     ? trades.filter(trade => {
       if (!trade.entryDate) return false
       const session = getTradingSession(new Date(trade.entryDate))
       return session === filters.session
     })
     : trades
+  const filteredTrades = requestedOutcome === 'WIN'
+    ? sessionFilteredTrades.filter(t => classifyTrade(Number(t.pnl || 0), breakEvenThreshold) === 'win')
+    : requestedOutcome === 'LOSS'
+      ? sessionFilteredTrades.filter(t => classifyTrade(Number(t.pnl || 0), breakEvenThreshold) === 'loss')
+      : requestedOutcome === 'BREAKEVEN'
+        ? sessionFilteredTrades.filter(t => classifyTrade(Number(t.pnl || 0), breakEvenThreshold) === 'breakeven')
+        : sessionFilteredTrades
 
   if (filteredTrades.length === 0) {
     return {
@@ -266,7 +272,7 @@ export async function calculateReportStatistics(
   }
 
   // Single-pass computation for all metrics
-  const result = computeAllMetrics(filteredTrades, dateFrom, dateTo)
+  const result = computeAllMetrics(filteredTrades, dateFrom, dateTo, breakEvenThreshold)
 
   return {
     ...result,
@@ -308,7 +314,8 @@ function buildFilterOptions(symbols: string[], strategies: Array<{ id: string; n
 function computeAllMetrics(
   trades: any[],
   dateFrom?: string,
-  dateTo?: string
+  dateTo?: string,
+  breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
 ): Omit<ReportStatsResponse, 'filterOptions' | 'filteredTrades'> {
   const sorted = [...trades].sort((a, b) => {
     const dateA = a.entryDate ? new Date(a.entryDate).getTime() : 0
@@ -377,8 +384,8 @@ function computeAllMetrics(
 
   // Single pass through all trades
   for (const trade of sorted) {
-    const netPnL = (trade.pnl || 0) + (trade.commission || 0)
-    const outcome = classifyTrade(netPnL)
+    const netPnL = Number(trade.pnl || 0)
+    const outcome = classifyTrade(netPnL, breakEvenThreshold)
 
     // Cumulative PnL + Drawdown
     cumulativePnL += netPnL

@@ -24,12 +24,14 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { LexicalEditor } from '@/components/ui/editor/lexical-editor'
-import { EmotionPicker, EmotionType, getEmotionIcon } from './emotion-picker'
+import { EmotionPicker, EmotionType } from './emotion-picker'
 import { toast } from 'sonner'
-import { Loader2, BookOpen, Save, X } from 'lucide-react'
-import { cn, BREAK_EVEN_THRESHOLD } from '@/lib/utils'
+import { BookOpen, Save, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { useData } from '@/context/data-provider'
+import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 interface Trade {
   id: string
@@ -65,6 +67,7 @@ export function DailyJournalModal({
   existingJournal,
   trades = []
 }: DailyJournalModalProps) {
+  const { statistics } = useData()
   const [note, setNote] = useState('')
   const [emotion, setEmotion] = useState<EmotionType | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -195,11 +198,14 @@ export function DailyJournalModal({
   if (!selectedDate) return null
 
   const formattedDate = format(selectedDate, 'EEEE, MMMM d, yyyy')
+  const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
   const totalPnL = trades.reduce((sum, trade) => sum + trade.pnl, 0)
-  const winningTrades = trades.filter(t => t.pnl > BREAK_EVEN_THRESHOLD).length
-  const losingTrades = trades.filter(t => t.pnl < -BREAK_EVEN_THRESHOLD).length
-  const selectedEmotionData = getEmotionIcon(emotion)
-
+  const winningTrades = trades.filter(
+    t => classifyOutcome(t.pnl, breakEvenThreshold) === 'win'
+  ).length
+  const losingTrades = trades.filter(
+    t => classifyOutcome(t.pnl, breakEvenThreshold) === 'loss'
+  ).length
   return (
     <>
       <Dialog open={isOpen && !showConfirmClose} onOpenChange={handleClose}>

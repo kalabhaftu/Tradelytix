@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from "@/context/auth-provider"
+import { useData } from '@/context/data-provider'
 import { toast } from "sonner"
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePropFirmRealtime } from "@/hooks/use-prop-firm-realtime"
@@ -31,10 +32,11 @@ import {
   Check,
   X
 } from "lucide-react"
-import { cn, BREAK_EVEN_THRESHOLD } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import { AccountStatus } from "@/types/prop-firm"
 import { AccountNotFoundError, ConnectionError } from "@/components/prop-firm/account-error-boundary"
 import { HistoryTab } from "./components/history-tab"
+import { calculateWinRate, classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 import { DetailPageSkeleton } from "./components/detail-skeleton"
 import { MetricCard } from "./components/metric-card"
@@ -65,6 +67,7 @@ export default function AccountDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { user } = useAuth()
+  const { statistics } = useData()
   const [activeTab, setActiveTab] = useState('overview')
   const [accountData, setAccountData] = useState<any>(null)
   const [isEditingName, setIsEditingName] = useState(false)
@@ -76,6 +79,7 @@ export default function AccountDetailPage() {
   const hasFetchedDataRef = useRef(false)
 
   const accountId = params.id as string
+  const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
 
   const {
     account: realtimeAccount,
@@ -219,20 +223,23 @@ export default function AccountDetailPage() {
   const stats = useMemo(() => {
     if (!tradesData.length) return null
 
-    const wins = tradesData.filter(t => (t.pnl || 0) > BREAK_EVEN_THRESHOLD)
-    const losses = tradesData.filter(t => (t.pnl || 0) < -BREAK_EVEN_THRESHOLD)
+    const wins = tradesData.filter(
+      t => classifyOutcome((t.pnl || 0), breakEvenThreshold) === 'win'
+    )
+    const losses = tradesData.filter(
+      t => classifyOutcome((t.pnl || 0), breakEvenThreshold) === 'loss'
+    )
     const totalPnl = tradesData.reduce((sum, t) => sum + (t.pnl || 0), 0)
-    const tradableCount = wins.length + losses.length
 
     return {
       totalTrades: tradesData.length,
-      winRate: tradableCount > 0 ? Math.round((wins.length / tradableCount) * 100) : 0,
+      winRate: Math.round(calculateWinRate(wins.length, losses.length)),
       totalPnl,
       avgTrade: tradesData.length > 0 ? totalPnl / tradesData.length : 0,
       wins: wins.length,
       losses: losses.length
     }
-  }, [tradesData])
+  }, [breakEvenThreshold, tradesData])
 
   // Handlers
   const handleRefresh = async () => {
@@ -532,10 +539,13 @@ export default function AccountDetailPage() {
                           t.phase?.id === phase.id || t.phaseAccountId === phase.id
                         )
                         const phasePnL = phaseTrades.reduce((sum: number, t: any) => sum + (t.pnl || 0), 0)
-                        const wins = phaseTrades.filter((t: any) => (t.pnl || 0) > BREAK_EVEN_THRESHOLD).length
-                        const losses = phaseTrades.filter((t: any) => (t.pnl || 0) < -BREAK_EVEN_THRESHOLD).length
-                        const tradable = wins + losses
-                        const winRate = tradable > 0 ? Math.round((wins / tradable) * 100) : 0
+                        const wins = phaseTrades.filter(
+                          (t: any) => classifyOutcome((t.pnl || 0), breakEvenThreshold) === 'win'
+                        ).length
+                        const losses = phaseTrades.filter(
+                          (t: any) => classifyOutcome((t.pnl || 0), breakEvenThreshold) === 'loss'
+                        ).length
+                        const winRate = Math.round(calculateWinRate(wins, losses))
 
                         return (
                           <div key={phase.id} className="p-4 border rounded-lg">
@@ -775,9 +785,12 @@ export default function AccountDetailPage() {
                     t.phase?.id === phase.id || t.phaseAccountId === phase.id
                   )
                   const totalPnL = phaseTrades.reduce((sum: number, t: any) => sum + (t.pnl || 0), 0)
-                  const wins = phaseTrades.filter((t: any) => (t.pnl || 0) > BREAK_EVEN_THRESHOLD).length
-                  const losses = phaseTrades.filter((t: any) => (t.pnl || 0) < -BREAK_EVEN_THRESHOLD).length
-                  const tradable = wins + losses
+                  const wins = phaseTrades.filter(
+                    (t: any) => classifyOutcome((t.pnl || 0), breakEvenThreshold) === 'win'
+                  ).length
+                  const losses = phaseTrades.filter(
+                    (t: any) => classifyOutcome((t.pnl || 0), breakEvenThreshold) === 'loss'
+                  ).length
 
                   return {
                     id: phase.id,
@@ -788,7 +801,7 @@ export default function AccountDetailPage() {
                     endDate: phase.endDate,
                     totalTrades: phaseTrades.length,
                     totalPnL,
-                    winRate: tradable > 0 ? (wins / tradable) * 100 : 0,
+                    winRate: calculateWinRate(wins, losses),
                     profitTargetPercent: phase.profitTargetPercent,
                     profitProgress: phase.profitTargetPercent > 0
                       ? Math.min((totalPnL / ((phase.profitTargetPercent / 100) * account.startingBalance)) * 100, 100)

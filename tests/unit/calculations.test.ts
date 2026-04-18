@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { calculateStatistics, groupTradesByExecution } from '@/lib/utils'
 import { calculateMetricsFromTrades } from '@/lib/zella-score'
+import { classifyOutcome } from '@/lib/metrics/outcome'
 import type { Trade } from '@prisma/client'
 
 // Helper to create mock trades
@@ -77,18 +78,19 @@ describe('Financial Calculations - Profit Factor', () => {
     expect(stats.profitFactor).toBe(0)
   })
 
-  it('should calculate profit factor net of commissions', () => {
+  it('should calculate profit factor from canonical trade.pnl values', () => {
     const trades = [
-      createMockTrade({ pnl: 100, commission: 20 }), // Net: 80
-      createMockTrade({ pnl: 200, commission: 30 }), // Net: 170
-      createMockTrade({ pnl: -100, commission: 10 }), // Net: -110
+      createMockTrade({ pnl: 100, commission: 20 }),
+      createMockTrade({ pnl: 200, commission: 30 }),
+      createMockTrade({ pnl: -100, commission: 10 }),
     ]
 
-    // Gross profits: 250 (80 + 170)
-    // Gross losses: 110
-    // Profit Factor: 250 / 110 ≈ 2.27
+    // Canonical model: trade.pnl is already the realized result used for outcomes/metrics.
+    // Gross profits: 300
+    // Gross losses: 100
+    // Profit Factor: 300 / 100 = 3
     const stats = calculateStatistics(trades, [])
-    expect(stats.profitFactor).toBeCloseTo(2.27, 2)
+    expect(stats.profitFactor).toBeCloseTo(3.0, 2)
   })
 })
 
@@ -118,17 +120,17 @@ describe('Financial Calculations - Win Rate', () => {
     expect(stats.winRate).toBe(50)
   })
 
-  it('should calculate win rate net of commissions', () => {
+  it('should calculate win rate from canonical trade.pnl values', () => {
     const trades = [
-      createMockTrade({ pnl: 100, commission: 50 }), // Net: 50 (Win)
-      createMockTrade({ pnl: 30, commission: 30 }), // Net: 0 (Break-even, excluded)
-      createMockTrade({ pnl: -50, commission: 10 }), // Net: -60 (Loss)
-      createMockTrade({ pnl: 200, commission: 50 }), // Net: 150 (Win)
+      createMockTrade({ pnl: 100, commission: 50 }),
+      createMockTrade({ pnl: 30, commission: 30 }),
+      createMockTrade({ pnl: -50, commission: 10 }),
+      createMockTrade({ pnl: 200, commission: 50 }),
     ]
 
-    // 2 wins out of 3 tradable trades = 66.67%
+    // With threshold ±10: 3 wins (100, 30, 200), 1 loss (-50) => 75%
     const stats = calculateStatistics(trades, [])
-    expect(stats.winRate).toBeCloseTo(66.67, 2)
+    expect(stats.winRate).toBeCloseTo(75, 2)
   })
 
   it('should handle 100% win rate', () => {
@@ -169,18 +171,18 @@ describe('Financial Calculations - Average Win/Loss', () => {
     expect(stats.averageLoss).toBe(150)
   })
 
-  it('should calculate average win/loss net of commissions', () => {
+  it('should calculate average win/loss from canonical trade.pnl values', () => {
     const trades = [
-      createMockTrade({ pnl: 200, commission: 50 }), // Net: 150 (Win)
-      createMockTrade({ pnl: 400, commission: 100 }), // Net: 300 (Win)
-      createMockTrade({ pnl: -100, commission: 20 }), // Net: -120 (Loss)
+      createMockTrade({ pnl: 200, commission: 50 }),
+      createMockTrade({ pnl: 400, commission: 100 }),
+      createMockTrade({ pnl: -100, commission: 20 }),
     ]
 
-    // Avg Win: (150 + 300) / 2 = 225
-    // Avg Loss: 120
+    // Avg Win: (200 + 400) / 2 = 300
+    // Avg Loss: 100
     const stats = calculateStatistics(trades, [])
-    expect(stats.averageWin).toBe(225)
-    expect(stats.averageLoss).toBe(120)
+    expect(stats.averageWin).toBe(300)
+    expect(stats.averageLoss).toBe(100)
   })
 
   it('should handle trades with only wins', () => {
@@ -219,16 +221,16 @@ describe('Financial Calculations - Net P&L', () => {
     expect(stats.totalPnL).toBe(400)
   })
 
-  it('should calculate net P&L after commissions', () => {
+  it('should keep total P&L equal to canonical trade.pnl sum', () => {
     const trades = [
-      createMockTrade({ pnl: 200, commission: 20 }), // Net: 180
-      createMockTrade({ pnl: -100, commission: 10 }), // Net: -110
-      createMockTrade({ pnl: 300, commission: 30 }), // Net: 270
+      createMockTrade({ pnl: 200, commission: 20 }),
+      createMockTrade({ pnl: -100, commission: 10 }),
+      createMockTrade({ pnl: 300, commission: 30 }),
     ]
 
-    // Total: 180 - 110 + 270 = 340
+    // Total: 200 - 100 + 300 = 400
     const stats = calculateStatistics(trades, [])
-    expect(stats.totalPnL).toBe(340)
+    expect(stats.totalPnL).toBe(400)
   })
 
   it('should handle negative total P&L', () => {
@@ -273,6 +275,59 @@ describe('Financial Calculations - Trade Grouping (Partial Closes)', () => {
     // Win rate: 50%
     const stats = calculateStatistics(trades, [])
     expect(stats.winRate).toBe(50)
+  })
+
+  it('should preserve pnl totals while collapsing MatchTrader-style partial closes', () => {
+    const trades = [
+      createMockTrade({ entryId: 'W8176704479557188', pnl: 99.2 }),
+      createMockTrade({ entryId: 'W8176704479552664', pnl: 45.13 }),
+      createMockTrade({ entryId: 'W8176704479552664', pnl: 31.08 }),
+      createMockTrade({ entryId: 'W8176704479552664', pnl: 26.57 }),
+      createMockTrade({ entryId: 'W8176704479552664', pnl: 56.91 }),
+      createMockTrade({ entryId: 'W8176704479517941', pnl: -11.56 }),
+      createMockTrade({ entryId: 'W8176704479475945', pnl: -69.94 }),
+      createMockTrade({ entryId: 'W8176704479430648', pnl: 18.15 }),
+      createMockTrade({ entryId: 'W8176704479430648', pnl: 22.78 }),
+      createMockTrade({ entryId: 'W8176704479430648', pnl: 69.9 }),
+      createMockTrade({ entryId: 'W8176704479307794', pnl: -35.94 }),
+      createMockTrade({ entryId: 'W8176704479304931', pnl: -10.56 }),
+      createMockTrade({ entryId: 'W8176704479303950', pnl: -57.6 }),
+      createMockTrade({ entryId: 'W8176704479184871', pnl: -24.34 }),
+      createMockTrade({ entryId: 'W817670447989380', pnl: -44.0 }),
+      createMockTrade({ entryId: 'W817670447942815', pnl: -47.26 }),
+      createMockTrade({ entryId: 'W555751920417166', pnl: 58.74 }),
+      createMockTrade({ entryId: 'W6441026807866066', pnl: -41.92 }),
+      createMockTrade({ entryId: 'W6441026807863474', pnl: -8.35 }),
+    ]
+
+    const grouped = groupTradesByExecution(trades)
+    expect(grouped.length).toBe(14)
+
+    const rawTotal = Math.round(trades.reduce((sum, trade) => sum + Number(trade.pnl || 0), 0) * 100) / 100
+    const groupedTotal = Math.round(grouped.reduce((sum, trade) => sum + Number(trade.pnl || 0), 0) * 100) / 100
+    expect(rawTotal).toBe(76.99)
+    expect(groupedTotal).toBe(76.99)
+
+    const groupedOutcomeCounts = grouped.reduce(
+      (acc, trade) => {
+        const outcome = classifyOutcome(Number(trade.pnl || 0), 10)
+        if (outcome === 'win') acc.win += 1
+        else if (outcome === 'loss') acc.loss += 1
+        else acc.breakeven += 1
+        return acc
+      },
+      { win: 0, loss: 0, breakeven: 0 }
+    )
+
+    expect(groupedOutcomeCounts).toEqual({
+      win: 4,
+      loss: 9,
+      breakeven: 1,
+    })
+
+    const partialGroup = grouped.find(trade => trade.entryId === 'W8176704479552664')
+    expect(partialGroup?.partialTrades.length).toBe(4)
+    expect(Math.round(Number(partialGroup?.pnl || 0) * 100) / 100).toBe(159.69)
   })
 })
 
@@ -353,14 +408,14 @@ describe('Financial Calculations - Decimal Precision', () => {
     expect(stats.totalPnL).toBeCloseTo(77.778, 3)
   })
 
-  it('should handle commission with decimal precision', () => {
+  it('should preserve pnl precision regardless of commission field', () => {
     const trades = [
-      createMockTrade({ pnl: 100.50, commission: 2.25 }), // Net: 98.25
-      createMockTrade({ pnl: -50.75, commission: 1.50 }), // Net: -52.25
+      createMockTrade({ pnl: 100.50, commission: 2.25 }),
+      createMockTrade({ pnl: -50.75, commission: 1.50 }),
     ]
 
     const stats = calculateStatistics(trades, [])
-    expect(stats.totalPnL).toBeCloseTo(46.00, 2)
+    expect(stats.totalPnL).toBeCloseTo(49.75, 2)
   })
 })
 

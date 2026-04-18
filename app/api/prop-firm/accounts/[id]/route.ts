@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { BREAK_EVEN_THRESHOLD } from '@/lib/utils'
+import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // ID is pure masterAccountId (UUID), not composite
 
     // PERFORMANCE OPTIMIZATION: Use parallel queries and database aggregations
-    const [masterAccount, phases, tradeStats] = await Promise.all([
+    const [masterAccount, phases, tradeStats, userSettings] = await Promise.all([
       // 1. Get master account basic info (no nested relations)
       prisma.masterAccount.findFirst({
         where: {
@@ -95,8 +95,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         },
         _sum: {
           pnl: true,
-          commission: true
         }
+      }),
+      prisma.user.findUnique({
+        where: { id: internalUserId },
+        select: { breakEvenThreshold: true },
       })
     ])
 
@@ -106,6 +109,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         { status: 404 }
       )
     }
+    const breakEvenThreshold = getBreakEvenThreshold(userSettings?.breakEvenThreshold)
 
     // Get the current active phase
     const currentPhase = phases.find(
@@ -119,8 +123,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const totalTrades = tradeStats.reduce((sum: number, stat: any) => sum + stat._count.id, 0)
     const totalPnL = tradeStats.reduce((sum: number, stat: any) => {
       const pnl = stat._sum.pnl || 0
-      const commission = stat._sum.commission || 0
-      return sum + (pnl + commission)
+      return sum + pnl
     }, 0)
 
     // FIXED: Get trades ONLY for the current active phase (not all phases)
@@ -154,13 +157,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { groupTradesByExecution } = await import('@/lib/utils')
     const groupedTrades = groupTradesByExecution(currentPhaseTradesFull as any)
 
-    // Create minimal version for response (after grouping)
-    const currentPhaseTradesMinimal = groupedTrades.map((trade: any) => ({
-      pnl: trade.pnl,
-      commission: trade.commission,
-      netPnL: trade.pnl + (trade.commission || 0)
-    }))
-
     // Get ALL trades for overall statistics
     const allTradesMinimal = await prisma.trade.findMany({
       where: {
@@ -169,22 +165,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
       },
       select: {
-        pnl: true,
-        commission: true
+        pnl: true
       }
     })
 
-    // CRITICAL FIX: Use net P&L and exclude break-even trades
+    // CRITICAL FIX: Use canonical net P&L (`trade.pnl`) and exclude break-even trades
     const winningTrades = allTradesMinimal.filter(
-      (trade: { pnl: number; commission: number | null }) => {
-        const netPnL = trade.pnl + (trade.commission || 0)
-        return netPnL > BREAK_EVEN_THRESHOLD
+      (trade: { pnl: number }) => {
+        return classifyOutcome(Number(trade.pnl || 0), breakEvenThreshold) === 'win'
       }
     ).length
     const losingTrades = allTradesMinimal.filter(
-      (trade: { pnl: number; commission: number | null }) => {
-        const netPnL = trade.pnl + (trade.commission || 0)
-        return netPnL < -BREAK_EVEN_THRESHOLD
+      (trade: { pnl: number }) => {
+        return classifyOutcome(Number(trade.pnl || 0), breakEvenThreshold) === 'loss'
       }
     ).length
     const tradableCount = winningTrades + losingTrades
@@ -195,7 +188,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       (stat: typeof tradeStats[number]) => stat.phaseAccountId === currentPhase?.id
     )
     const currentPhasePnL = currentPhaseStat
-      ? (currentPhaseStat._sum.pnl || 0) + (currentPhaseStat._sum.commission || 0)
+      ? (currentPhaseStat._sum.pnl || 0)
       : 0
 
     // Determine next action based on phase status
@@ -233,8 +226,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
       // Calculate high-water mark from CURRENT PHASE grouped trades in order
       // Grouped trades ensure partial closes are counted as single trades
-      for (const trade of groupedTrades as Array<{ pnl: number; commission: number | null }>) {
-        runningBalance += trade.pnl + (trade.commission || 0)
+      for (const trade of groupedTrades as Array<{ pnl: number }>) {
+        runningBalance += Number(trade.pnl || 0)
         highWaterMark = Math.max(highWaterMark, runningBalance)
       }
 
@@ -382,7 +375,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           startDate: phase.startDate,
           endDate: phase.endDate,
           tradeCount: phaseStat?._count.id || 0,
-          totalPnL: phaseStat ? (phaseStat._sum.pnl || 0) + (phaseStat._sum.commission || 0) : 0
+          totalPnL: phaseStat ? (phaseStat._sum.pnl || 0) : 0
         }
       }),
       currentPhase: currentPhase ? {
@@ -407,7 +400,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         totalTrades,
         totalPnL,
         winningTrades,
-        losingTrades: totalTrades - winningTrades,
+        losingTrades,
+        breakEvenTrades: Math.max(0, totalTrades - winningTrades - losingTrades),
         winRate,
         currentPhaseTrades: currentPhaseStat?._count.id || 0,
         currentPhasePnL
@@ -416,7 +410,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         id: trade.id,
         pnl: trade.pnl,
         commission: trade.commission,
-        netPnL: trade.pnl + (trade.commission || 0),
+        netPnL: trade.pnl,
         instrument: trade.instrument || trade.symbol,
         symbol: trade.symbol,
         side: trade.side,

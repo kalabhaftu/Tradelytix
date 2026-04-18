@@ -12,13 +12,15 @@ import {
   endOfMonth,
   getISOWeek,
 } from "date-fns"
-import { cn, formatCurrency, BREAK_EVEN_THRESHOLD } from "@/lib/utils"
+import { cn, formatCurrency } from "@/lib/utils"
 
 import { CalendarData } from "@/app/dashboard/types/calendar"
 import { useCalendarViewStore } from "@/store/calendar-view"
 import { useUserStore } from "@/store/user-store"
 import { useCalendarNotes } from "@/app/dashboard/hooks/use-calendar-notes"
 import { calculateDailyStats } from "./calendar-utils"
+import { useData } from '@/context/data-provider'
+import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 
@@ -49,17 +51,20 @@ const DayCell = memo(function DayCell({
 }) {
   const { visibleStats } = useCalendarViewStore()
   const isTodayDate = isToday(date)
+  const { statistics } = useData()
+  const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
 
   const hasTrades = !!dayData && dayData.tradeNumber > 0
-  const isProfit = dayData?.isProfit ?? (dayData?.pnl ? dayData.pnl > BREAK_EVEN_THRESHOLD : false)
-  const isLoss = dayData?.isLoss ?? (dayData?.pnl ? dayData.pnl < -BREAK_EVEN_THRESHOLD : false)
+  const dayOutcome = dayData ? classifyOutcome(Number(dayData.pnl || 0), breakEvenThreshold) : 'breakeven'
+  const isProfit = dayData?.isProfit ?? (dayOutcome === 'win')
+  const isLoss = dayData?.isLoss ?? (dayOutcome === 'loss')
   const isBreakEven = dayData?.isBreakEven ?? (!isProfit && !isLoss && hasTrades)
 
   const winRateValue = useMemo(() => {
     if (!dayData?.trades || dayData.trades.length === 0) return 0
-    const winners = dayData.trades.filter(t => (Number(t.pnl) + Number(t.commission || 0)) > BREAK_EVEN_THRESHOLD).length
+    const winners = dayData.trades.filter(t => classifyOutcome(Number(t.pnl || 0), breakEvenThreshold) === 'win').length
     return (winners / dayData.trades.length) * 100
-  }, [dayData])
+  }, [dayData, breakEvenThreshold])
 
   return (
     <div

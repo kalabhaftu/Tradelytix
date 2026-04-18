@@ -5,6 +5,7 @@ import { WidgetCard } from '../widget-card'
 import { CircularProgress } from '@/components/ui/circular-progress'
 import { useTradeStatistics } from '@/hooks/use-trade-statistics'
 import { Info } from 'lucide-react'
+import { formatBreakevenBand, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import {
   Tooltip,
   TooltipContent,
@@ -17,7 +18,14 @@ interface TradeWinRateProps {
 }
 
 const TradeWinRate = React.memo(function TradeWinRate({ size }: TradeWinRateProps) {
-  const { winRate, nbWin, nbLoss, nbBe: nbBreakeven, nbTrades } = useTradeStatistics()
+  const {
+    winRate,
+    nbWin,
+    nbLoss,
+    nbBe: nbBreakeven,
+    breakEvenThreshold
+  } = useTradeStatistics()
+  const threshold = getBreakEvenThreshold(breakEvenThreshold)
 
   return (
     <WidgetCard isKpi>
@@ -35,7 +43,9 @@ const TradeWinRate = React.memo(function TradeWinRate({ size }: TradeWinRateProp
                 </div>
               </TooltipTrigger>
               <TooltipContent side="bottom" sideOffset={5} className="max-w-[220px]">
-                <p className="text-xs">Percentage of winning trades out of total trades. Break-even shown separately in gauge.</p>
+                <p className="text-xs">
+                  Percentage of winning trades out of tradable trades. Current break-even band: {formatBreakevenBand(threshold)}.
+                </p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

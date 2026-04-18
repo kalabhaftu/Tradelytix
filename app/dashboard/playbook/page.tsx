@@ -19,7 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { BREAK_EVEN_THRESHOLD, classifyTrade, cn, formatCurrency, formatNoteContent } from '@/lib/utils'
+import { cn, formatCurrency, formatNoteContent } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { Eye, FileText, MoreVertical, Pencil, Plus, Trash2 as Trash } from 'lucide-react'
 import { useState } from 'react'
@@ -28,6 +28,8 @@ import { AddEditModelModal } from './components/add-edit-model-modal'
 import { useTradingModels } from '@/hooks/use-trading-models'
 import { useQueryClient } from '@tanstack/react-query'
 import { CardsGridSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import { useData } from '@/context/data-provider'
 
 interface TradingModel {
   id: string
@@ -53,17 +55,19 @@ function StrategyBlock({
   model,
   onView,
   onEdit,
-  onDelete
+  onDelete,
+  breakEvenThreshold
 }: {
   model: TradingModel
   onView: (m: TradingModel) => void
   onEdit: (m: TradingModel) => void
   onDelete: (id: string) => void
+  breakEvenThreshold: number
 }) {
   const winRate = model.stats?.winRate || 0
   const pnl = model.stats?.totalPnL || 0
-  const isProfit = pnl > BREAK_EVEN_THRESHOLD
-  const isLoss = pnl < -BREAK_EVEN_THRESHOLD
+  const isProfit = classifyOutcome(pnl, breakEvenThreshold) === 'win'
+  const isLoss = classifyOutcome(pnl, breakEvenThreshold) === 'loss'
 
   return (
     <div className="flex flex-col p-5 bg-muted/20 border border-border/50 rounded-xl hover:bg-muted/30 transition-all group relative">
@@ -143,8 +147,10 @@ function StrategyBlock({
 }
 
 export default function PlaybookPage() {
+  const { statistics } = useData()
   const queryClient = useQueryClient()
   const { tradingModels: fetchedModels, isLoading } = useTradingModels()
+  const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
   const models = (fetchedModels || []) as TradingModel[]
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add')
@@ -243,6 +249,7 @@ export default function PlaybookPage() {
                 onView={setViewModel}
                 onEdit={handleEditModel}
                 onDelete={setDeleteModelId}
+                breakEvenThreshold={breakEvenThreshold}
               />
             ))}
           </div>
@@ -299,7 +306,11 @@ export default function PlaybookPage() {
                 <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50">Total Profitability</span>
                 <span className={cn(
                   "text-sm font-bold",
-                  (viewModel?.stats?.totalPnL || 0) > BREAK_EVEN_THRESHOLD ? "text-long" : (viewModel?.stats?.totalPnL || 0) < -BREAK_EVEN_THRESHOLD ? "text-short" : "text-muted-foreground"
+                  classifyOutcome(viewModel?.stats?.totalPnL || 0, breakEvenThreshold) === 'win'
+                    ? "text-long"
+                    : classifyOutcome(viewModel?.stats?.totalPnL || 0, breakEvenThreshold) === 'loss'
+                      ? "text-short"
+                      : "text-muted-foreground"
                 )}>
                   ${viewModel?.stats?.totalPnL?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                 </span>

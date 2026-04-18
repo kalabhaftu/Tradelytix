@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { format, isValid } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatCurrency, BREAK_EVEN_THRESHOLD } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Play, RotateCcw, CheckCircle2, AlertCircle } from "lucide-react";
@@ -38,6 +38,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from "framer-motion";
+import { useData } from "@/context/data-provider";
+import { calculateWinRate, classifyOutcome, getBreakEvenThreshold } from "@/lib/metrics/outcome";
 
 interface FormatPreviewProps {
   trades: string[][];
@@ -65,6 +67,8 @@ export function FormatPreview({
   headers,
   mappings,
 }: FormatPreviewProps) {
+  const { statistics } = useData();
+  const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const hasStartedRef = useRef(false);
 
@@ -417,7 +421,15 @@ export function FormatPreview({
           <div className="text-center">
             <p className="text-xs text-muted-foreground">Win Rate</p>
             <p className="text-lg font-bold">
-              {((processedTrades.filter(t => (t.pnl || 0) > BREAK_EVEN_THRESHOLD).length / processedTrades.length) * 100).toFixed(0)}%
+              {(() => {
+                const wins = processedTrades.filter(
+                  t => classifyOutcome((t.pnl || 0), breakEvenThreshold) === 'win'
+                ).length
+                const losses = processedTrades.filter(
+                  t => classifyOutcome((t.pnl || 0), breakEvenThreshold) === 'loss'
+                ).length
+                return calculateWinRate(wins, losses).toFixed(0)
+              })()}%
             </p>
           </div>
           <div className="text-center">

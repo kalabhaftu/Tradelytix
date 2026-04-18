@@ -15,8 +15,10 @@ import {
   endOfMonth,
   isToday,
 } from "date-fns"
-import { cn, formatCurrency, BREAK_EVEN_THRESHOLD } from "@/lib/utils"
+import { cn, formatCurrency } from "@/lib/utils"
 import { CalendarData } from "@/app/dashboard/types/calendar"
+import { useData } from "@/context/data-provider"
+import { classifyOutcome, getBreakEvenThreshold } from "@/lib/metrics/outcome"
 import {
   Tooltip,
   TooltipContent,
@@ -33,10 +35,12 @@ function MiniMonth({
   monthDate,
   calendarData,
   year,
+  breakEvenThreshold,
 }: {
   monthDate: Date
   calendarData: CalendarData
   year: number
+  breakEvenThreshold: number
 }) {
   const stats = useMemo(() => {
     let pnl = 0
@@ -71,9 +75,9 @@ function MiniMonth({
           <span
             className={cn(
               "text-[10px] font-black px-1.5 py-0.5 rounded border",
-              stats.pnl > BREAK_EVEN_THRESHOLD
+              classifyOutcome(stats.pnl, breakEvenThreshold) === 'win'
                 ? "bg-long/10 border-long/20 text-long"
-                : stats.pnl < -BREAK_EVEN_THRESHOLD
+                : classifyOutcome(stats.pnl, breakEvenThreshold) === 'loss'
                   ? "bg-short/10 border-short/20 text-short"
                   : "bg-muted/30 border-border/20 text-muted-foreground",
             )}
@@ -120,18 +124,17 @@ function MiniMonth({
 
                       // Profit — green
                       hasTrades &&
-                        data.pnl > BREAK_EVEN_THRESHOLD &&
+                        classifyOutcome(data.pnl, breakEvenThreshold) === 'win' &&
                         "bg-long/20 border-long/25 text-long/80",
 
                       // Loss — red/orange
                       hasTrades &&
-                        data.pnl < -BREAK_EVEN_THRESHOLD &&
+                        classifyOutcome(data.pnl, breakEvenThreshold) === 'loss' &&
                         "bg-short/20 border-short/25 text-short/80",
 
                       // Breakeven
                       hasTrades &&
-                        !(data.pnl > BREAK_EVEN_THRESHOLD) &&
-                        !(data.pnl < -BREAK_EVEN_THRESHOLD) &&
+                        classifyOutcome(data.pnl, breakEvenThreshold) === 'breakeven' &&
                         "bg-muted/30 border-border/20 text-muted-foreground/40",
 
                       // Today
@@ -164,9 +167,9 @@ function MiniMonth({
                           "font-black text-xs tracking-tight",
                           !hasTrades
                             ? "text-muted-foreground/50"
-                            : data.pnl > BREAK_EVEN_THRESHOLD
+                            : classifyOutcome(data.pnl, breakEvenThreshold) === 'win'
                               ? "text-long"
-                              : data.pnl < -BREAK_EVEN_THRESHOLD
+                              : classifyOutcome(data.pnl, breakEvenThreshold) === 'loss'
                                 ? "text-short"
                                 : "text-muted-foreground",
                         )}
@@ -195,6 +198,8 @@ export default function YearlyView({
   year: number
   calendarData: CalendarData
 }) {
+  const { statistics } = useData()
+  const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
   const months = useMemo(
     () =>
       eachMonthOfInterval({
@@ -213,6 +218,7 @@ export default function YearlyView({
             monthDate={month}
             calendarData={calendarData}
             year={year}
+            breakEvenThreshold={breakEvenThreshold}
           />
         ))}
       </div>

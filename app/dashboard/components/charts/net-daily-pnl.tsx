@@ -4,7 +4,7 @@ import * as React from "react"
 import * as RechartsPrimitive from "recharts"
 import { WidgetCard, ChartTooltip as SharedChartTooltip } from '../widget-card'
 import { useWidgetData } from '@/hooks/use-widget-data'
-import { cn, formatCurrency, formatNumber, BREAK_EVEN_THRESHOLD } from "@/lib/utils"
+import { formatNumber } from "@/lib/utils"
 import { WidgetSize } from '@/app/dashboard/types/dashboard'
 import {
   Bar,
@@ -24,6 +24,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useData } from "@/context/data-provider"
+import { classifyOutcome, getBreakEvenThreshold } from "@/lib/metrics/outcome"
 
 // ============================================================================
 // TYPES
@@ -95,6 +97,8 @@ function formatAxisValue(value: number): string {
 // ============================================================================
 
 export default function NetDailyPnL({ size = 'small-long' }: NetDailyPnLProps) {
+  const { statistics } = useData()
+  const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
   const { data: rawChartData, isLoading } = useWidgetData('netDailyPnl')
   const chartData = React.useMemo(() => rawChartData ?? [], [rawChartData])
 
@@ -209,7 +213,13 @@ export default function NetDailyPnL({ size = 'small-long' }: NetDailyPnLProps) {
             {chartData.map((entry: any, index: number) => (
               <Cell
                 key={`cell-${index}`}
-                fill={entry.pnl > BREAK_EVEN_THRESHOLD ? COLORS.profit : entry.pnl < -BREAK_EVEN_THRESHOLD ? COLORS.loss : 'hsl(var(--muted-foreground)/0.4)'}
+                fill={
+                  classifyOutcome(entry.pnl, breakEvenThreshold) === 'win'
+                    ? COLORS.profit
+                    : classifyOutcome(entry.pnl, breakEvenThreshold) === 'loss'
+                      ? COLORS.loss
+                      : 'hsl(var(--muted-foreground)/0.4)'
+                }
               />
             ))}
           </Bar>

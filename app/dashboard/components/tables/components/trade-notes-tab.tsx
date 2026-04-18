@@ -3,7 +3,7 @@ import { Spinner } from '@/components/ui/spinner'
 
 import React from 'react'
 import Image from 'next/image'
-import { Control, Controller } from 'react-hook-form'
+import { Control, Controller, FieldValues, Path } from 'react-hook-form'
 import { Input } from '@/components/ui/input'
 import { LexicalEditor } from '@/components/ui/editor/lexical-editor'
 import { Button } from '@/components/ui/button'
@@ -11,8 +11,12 @@ import { Pencil, Trash2, Plus, X, Loader2 } from 'lucide-react'
 import { FileDropzone } from '@/components/ui/file-dropzone'
 import { TradeImagesGallery } from './trade-images-gallery'
 
-interface TradeNotesTabProps {
-    control: Control<any>
+type TradeNotesFieldValues = FieldValues & {
+    comment?: string
+}
+
+interface TradeNotesTabProps<TFieldValues extends TradeNotesFieldValues = TradeNotesFieldValues> {
+    control: Control<TFieldValues>
     cardPreviewImage: string | null
     images: Record<string, string | null>
     onUpload: (field: string, file: File) => void
@@ -158,7 +162,7 @@ function insertTemplateIntoNote(currentValue: string | undefined, templateState:
     })
 }
 
-export function TradeNotesTab({
+export function TradeNotesTab<TFieldValues extends TradeNotesFieldValues = TradeNotesFieldValues>({
     control,
     cardPreviewImage,
     images,
@@ -169,7 +173,7 @@ export function TradeNotesTab({
     uploadingField,
     chartLinks,
     setChartLinks
-}: TradeNotesTabProps) {
+}: TradeNotesTabProps<TFieldValues>) {
     return (
         <div className="space-y-8 px-1">
             {/* Trade Notes */}
@@ -180,7 +184,7 @@ export function TradeNotesTab({
                         <p className="text-xs text-muted-foreground">Document your thoughts, market conditions, and key takeaways.</p>
                     </div>
                     <Controller
-                        name="comment"
+                        name={'comment' as Path<TFieldValues>}
                         control={control}
                         render={({ field }) => (
                             <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto shrink-0">
@@ -256,7 +260,7 @@ export function TradeNotesTab({
                     />
                 </div>
                 <Controller
-                    name="comment"
+                    name={'comment' as Path<TFieldValues>}
                     control={control}
                     render={({ field }) => (
                         <LexicalEditor

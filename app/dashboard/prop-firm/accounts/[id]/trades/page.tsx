@@ -27,9 +27,11 @@ import {
   Zap,
   Clock
 } from "lucide-react"
-import { cn, formatCurrency, formatTradeData, BREAK_EVEN_THRESHOLD } from "@/lib/utils"
-import { AccountStatus, PhaseType } from "@/types/prop-firm"
+import { cn, formatTradeData } from "@/lib/utils"
+import { AccountStatus } from "@/types/prop-firm"
 import { PropFirmTradesRouteSkeleton } from "@/components/ui/non-dashboard-skeletons"
+import { useData } from '@/context/data-provider'
+import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 interface TradeData {
   id: string
@@ -72,6 +74,8 @@ export default function AccountTradesPage() {
   const [activeTab, setActiveTab] = useState('trades')
   const [phaseFilter, setPhaseFilter] = useState<string>('current') // NEW: Phase filter state
   const [availablePhases, setAvailablePhases] = useState<PhaseInfo[]>([]) // NEW: Available phases
+  const { statistics } = useData()
+  const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
 
   const accountId = params.id as string
 
@@ -141,7 +145,7 @@ export default function AccountTradesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, accountId])
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrencyAmount = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount)
   }
 
@@ -165,9 +169,9 @@ export default function AccountTradesPage() {
 
   // Calculate trade statistics using GROUPED trades and NET P&L
   const totalTrades = groupedTrades.length
-  const winningTrades = groupedTrades.filter((trade: TradeData) => (trade.pnl - ((trade as any).commission || 0)) > BREAK_EVEN_THRESHOLD).length
-  const losingTrades = groupedTrades.filter((trade: TradeData) => (trade.pnl - ((trade as any).commission || 0)) < -BREAK_EVEN_THRESHOLD).length
-  const breakEvenTrades = groupedTrades.filter((trade: TradeData) => (trade.pnl - ((trade as any).commission || 0)) === 0).length
+  const winningTrades = groupedTrades.filter((trade: TradeData) => classifyOutcome(Number(trade.pnl || 0), breakEvenThreshold) === 'win').length
+  const losingTrades = groupedTrades.filter((trade: TradeData) => classifyOutcome(Number(trade.pnl || 0), breakEvenThreshold) === 'loss').length
+  const breakEvenTrades = groupedTrades.filter((trade: TradeData) => classifyOutcome(Number(trade.pnl || 0), breakEvenThreshold) === 'breakeven').length
   // Calculate win rate excluding break-even trades (industry standard)
   const tradableTradesCount = winningTrades + losingTrades
   const winRate = tradableTradesCount > 0 ? Math.round((winningTrades / tradableTradesCount) * 1000) / 10 : 0
@@ -325,7 +329,7 @@ export default function AccountTradesPage() {
           </CardHeader>
           <CardContent>
             <div className={cn("text-2xl font-bold", totalPnl >= 0 ? "text-long" : "text-short")}>
-              {formatCurrency(totalPnl)}
+              {formatCurrencyAmount(totalPnl)}
             </div>
           </CardContent>
         </Card>
@@ -336,7 +340,7 @@ export default function AccountTradesPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(account.currentBalance)}</div>
+            <div className="text-2xl font-bold">{formatCurrencyAmount(account.currentBalance)}</div>
           </CardContent>
         </Card>
       </div>
@@ -410,13 +414,13 @@ export default function AccountTradesPage() {
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                           <div>
                             <p className="text-xs text-muted-foreground">Entry Price</p>
-                            <p className="font-medium">{formatCurrency(trade.entryPrice)}</p>
+                            <p className="font-medium">{formatCurrencyAmount(trade.entryPrice)}</p>
                           </div>
 
                           {trade.exitPrice && (
                             <div>
                               <p className="text-xs text-muted-foreground">Exit Price</p>
-                              <p className="font-medium">{formatCurrency(trade.exitPrice)}</p>
+                              <p className="font-medium">{formatCurrencyAmount(trade.exitPrice)}</p>
                             </div>
                           )}
 
@@ -428,7 +432,7 @@ export default function AccountTradesPage() {
                           <div>
                             <p className="text-xs text-muted-foreground">P&L</p>
                             <p className={cn("font-medium", trade.pnl >= 0 ? "text-long" : "text-short")}>
-                              {formatCurrency(trade.pnl)}
+                              {formatCurrencyAmount(trade.pnl)}
                             </p>
                           </div>
                         </div>
@@ -502,7 +506,7 @@ export default function AccountTradesPage() {
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                               <p className="text-xs text-muted-foreground">Entry Price</p>
-                              <p className="font-medium">{formatCurrency(trade.entryPrice)}</p>
+                              <p className="font-medium">{formatCurrencyAmount(trade.entryPrice)}</p>
                             </div>
 
                             <div>
@@ -513,7 +517,7 @@ export default function AccountTradesPage() {
                             <div>
                               <p className="text-xs text-muted-foreground">Unrealized P&L</p>
                               <p className={cn("font-medium", trade.pnl >= 0 ? "text-long" : "text-short")}>
-                                {formatCurrency(trade.pnl)}
+                                {formatCurrencyAmount(trade.pnl)}
                               </p>
                             </div>
                           </div>
@@ -579,12 +583,12 @@ export default function AccountTradesPage() {
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
                               <p className="text-xs text-muted-foreground">Entry Price</p>
-                              <p className="font-medium">{formatCurrency(trade.entryPrice)}</p>
+                              <p className="font-medium">{formatCurrencyAmount(trade.entryPrice)}</p>
                             </div>
 
                             <div>
                               <p className="text-xs text-muted-foreground">Exit Price</p>
-                              <p className="font-medium">{formatCurrency(trade.exitPrice || 0)}</p>
+                              <p className="font-medium">{formatCurrencyAmount(trade.exitPrice || 0)}</p>
                             </div>
 
                             <div>
@@ -595,7 +599,7 @@ export default function AccountTradesPage() {
                             <div>
                               <p className="text-xs text-muted-foreground">P&L</p>
                               <p className={cn("font-medium", trade.pnl >= 0 ? "text-long" : "text-short")}>
-                                {formatCurrency(trade.pnl)}
+                                {formatCurrencyAmount(trade.pnl)}
                               </p>
                             </div>
                           </div>

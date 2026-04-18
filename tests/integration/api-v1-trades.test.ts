@@ -23,6 +23,9 @@ vi.mock('@/lib/prisma', () => ({
     masterAccount: {
       findMany: vi.fn().mockResolvedValue([]),
     },
+    user: {
+      findUnique: vi.fn().mockResolvedValue({ breakEvenThreshold: 10 }),
+    },
   },
 }))
 
@@ -84,6 +87,7 @@ describe('GET /api/v1/trades', () => {
       { id: 'a1', number: '123', _count: { Trade: 1 } } as any,
     ])
     vi.mocked(prisma.masterAccount.findMany).mockResolvedValueOnce([])
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({ breakEvenThreshold: 12 } as any)
 
     const { GET } = await import('@/app/api/v1/trades/route')
     const url = new URL('http://localhost/api/v1/trades')
@@ -98,6 +102,7 @@ describe('GET /api/v1/trades', () => {
     expect(data).toHaveProperty('calendarData')
     expect(Array.isArray(data.trades)).toBe(true)
     expect(data.total).toBe(1)
+    expect(data.breakEvenThreshold).toBe(12)
   })
 
   it('applies account filter when accounts param is provided', async () => {
@@ -119,5 +124,52 @@ describe('GET /api/v1/trades', () => {
         }),
       })
     )
+  })
+
+  it('applies outcome filter using user threshold', async () => {
+    const { prisma } = await import('@/lib/prisma')
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({ breakEvenThreshold: 25 } as any)
+    vi.mocked(prisma.trade.findMany).mockResolvedValueOnce([
+      {
+        id: 'w1',
+        userId: 'internal-user-id',
+        accountNumber: '123',
+        instrument: 'US100',
+        entryPrice: '1',
+        closePrice: '2',
+        entryDate: '2024-01-01',
+        closeDate: '2024-01-01',
+        pnl: 40,
+        commission: 5,
+        timeInPosition: 100,
+        quantity: 1,
+        side: 'BUY',
+      } as any,
+      {
+        id: 'be1',
+        userId: 'internal-user-id',
+        accountNumber: '123',
+        instrument: 'US100',
+        entryPrice: '1',
+        closePrice: '2',
+        entryDate: '2024-01-02',
+        closeDate: '2024-01-02',
+        pnl: 20,
+        commission: -10,
+        timeInPosition: 100,
+        quantity: 1,
+        side: 'BUY',
+      } as any,
+    ])
+
+    const { GET } = await import('@/app/api/v1/trades/route')
+    const url = new URL('http://localhost/api/v1/trades?outcome=win')
+    const request = { nextUrl: url } as any
+    const response = await GET(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.total).toBe(1)
+    expect(data.trades[0].id).toBe('w1')
   })
 })

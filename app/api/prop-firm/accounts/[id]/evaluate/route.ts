@@ -103,8 +103,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(
       { 
         success: false, 
-        error: 'Failed to evaluate phase',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: 'Failed to evaluate phase'
       },
       { status: 500 }
     )
@@ -175,8 +174,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(
       { 
         success: false, 
-        error: 'Failed to get evaluation status',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: 'Failed to get evaluation status'
       },
       { status: 500 }
     )

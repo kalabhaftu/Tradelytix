@@ -26,7 +26,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true, job: serializeImportJob(job) })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch import job'
-    return NextResponse.json({ success: false, error: message }, { status: 500 })
+    return NextResponse.json({ success: false, error: 'Failed to fetch import job' }, { status: 500 })
   }
 }

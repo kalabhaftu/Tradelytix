@@ -135,8 +135,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(
       { 
         success: false, 
-        error: 'Failed to fetch payout data',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: 'Failed to fetch payout data'
       },
       { status: 500 }
     )

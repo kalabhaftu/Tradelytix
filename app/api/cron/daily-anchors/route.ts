@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
           anchorsSkipped++
         }
       } catch (error) {
-        const errorMsg = `Phase ${phase.id}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        const errorMsg = `Phase ${phase.id}: anchor creation failed`
         errors.push(errorMsg)
       }
     }
@@ -128,7 +128,6 @@ export async function GET(request: NextRequest) {
       {
         success: false,
         error: 'Daily anchor creation failed',
-        details: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString()
       },
       { status: 500 }
@@ -189,7 +188,6 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: 'Manual daily anchor creation failed',
-        details: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString()
       },
       { status: 500 }

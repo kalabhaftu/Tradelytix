@@ -180,7 +180,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(
       { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Failed to transition phase' 
+        error: 'Failed to transition phase'
       },
       { status: 500 }
     )

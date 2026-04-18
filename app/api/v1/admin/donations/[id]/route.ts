@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/server/admin-auth'
 import { applyRateLimit, adminLimiter } from '@/lib/rate-limiter'
+import { sanitizeErrorMessage, getErrorStatusCode } from '@/lib/api-error'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const rl = await applyRateLimit(req, adminLimiter)
@@ -25,8 +26,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     return NextResponse.json({ success: true, data: updated })
   } catch (error: any) {
-    const status = error.message?.includes('Forbidden') ? 403 : 500
-    return NextResponse.json({ success: false, error: error.message }, { status })
+    const status = getErrorStatusCode(error)
+    return NextResponse.json({ success: false, error: sanitizeErrorMessage(error) }, { status })
   }
 }
 
@@ -41,7 +42,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     await prisma.donationAddress.delete({ where: { id } })
     return NextResponse.json({ success: true })
   } catch (error: any) {
-    const status = error.message?.includes('Forbidden') ? 403 : 500
-    return NextResponse.json({ success: false, error: error.message }, { status })
+    const status = getErrorStatusCode(error)
+    return NextResponse.json({ success: false, error: sanitizeErrorMessage(error) }, { status })
   }
 }

@@ -1,51 +1,73 @@
 import { RateLimiterMemory } from 'rate-limiter-flexible'
 import { NextRequest, NextResponse } from 'next/server'
 
-// Rate limiters for different endpoint types
-export const apiLimiter = new RateLimiterMemory({
-  points: 100,
-  duration: 60,
-})
+/**
+ * Rate limiter with @vercel/kv persistence when available,
+ * falling back to in-memory when KV is not configured.
+ *
+ * In serverless (Vercel), memory-based limiters reset per cold start.
+ * KV-backed limiters persist across all instances.
+ */
 
-export const authLimiter = new RateLimiterMemory({
-  points: 10,
-  duration: 60,
-})
+// ─── KV availability check ───
+function isKvAvailable(): boolean {
+  return !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
+}
 
-export const aiLimiter = new RateLimiterMemory({
-  points: 20,
-  duration: 60,
-})
+// ─── KV-backed rate limiter (atomic increment with TTL) ───
+async function kvConsume(key: string, points: number, duration: number): Promise<{ success: boolean; remaining: number }> {
+  try {
+    const { kv } = await import('@vercel/kv')
+    const now = Math.floor(Date.now() / 1000)
+    const windowKey = `rl:${key}:${Math.floor(now / duration)}`
 
-export const importLimiter = new RateLimiterMemory({
-  points: 10,
-  duration: 60,
-})
+    const current = await kv.incr(windowKey)
 
-export const uploadLimiter = new RateLimiterMemory({
-  points: 30,
-  duration: 60,
-})
+    // Set expiry on first hit of this window
+    if (current === 1) {
+      await kv.expire(windowKey, duration)
+    }
 
-export const feedbackLimiter = new RateLimiterMemory({
-  points: 5,
-  duration: 60,
-})
+    if (current > points) {
+      return { success: false, remaining: 0 }
+    }
 
-export const adminLimiter = new RateLimiterMemory({
-  points: 200,
-  duration: 60,
-})
+    return { success: true, remaining: points - current }
+  } catch {
+    // KV error — allow request through (fail-open)
+    return { success: true, remaining: points }
+  }
+}
 
-export const publicLimiter = new RateLimiterMemory({
-  points: 30,
-  duration: 60,
-})
+// ─── Limiter config type ───
+interface LimiterConfig {
+  points: number
+  duration: number
+}
 
-export const errorReportLimiter = new RateLimiterMemory({
-  points: 10,
-  duration: 60,
-})
+// ─── In-memory fallback instances (used when KV is unavailable) ───
+const memoryLimiters = new Map<string, RateLimiterMemory>()
+
+function getMemoryLimiter(config: LimiterConfig): RateLimiterMemory {
+  const cacheKey = `${config.points}:${config.duration}`
+  let limiter = memoryLimiters.get(cacheKey)
+  if (!limiter) {
+    limiter = new RateLimiterMemory({ points: config.points, duration: config.duration })
+    memoryLimiters.set(cacheKey, limiter)
+  }
+  return limiter
+}
+
+// ─── Exported limiter configs (drop-in compatible with existing imports) ───
+export const apiLimiter: LimiterConfig = { points: 100, duration: 60 }
+export const authLimiter: LimiterConfig = { points: 10, duration: 60 }
+export const aiLimiter: LimiterConfig = { points: 20, duration: 60 }
+export const importLimiter: LimiterConfig = { points: 10, duration: 60 }
+export const uploadLimiter: LimiterConfig = { points: 30, duration: 60 }
+export const feedbackLimiter: LimiterConfig = { points: 5, duration: 60 }
+export const adminLimiter: LimiterConfig = { points: 200, duration: 60 }
+export const publicLimiter: LimiterConfig = { points: 30, duration: 60 }
+export const errorReportLimiter: LimiterConfig = { points: 10, duration: 60 }
 
 /**
  * Get identifier for rate limiting.
@@ -65,17 +87,48 @@ export function getRateLimitIdentifier(req: NextRequest): string {
 /**
  * Apply rate limiting to a request.
  * Returns null if allowed, or a 429 response if rate limited.
+ *
+ * Uses @vercel/kv when KV_REST_API_URL is configured (persistent across instances).
+ * Falls back to in-memory rate limiting otherwise (per-instance, resets on cold start).
  */
 export async function applyRateLimit(
   req: NextRequest,
-  limiter: RateLimiterMemory = apiLimiter
+  limiter: LimiterConfig = apiLimiter
 ): Promise<NextResponse | null> {
   const identifier = getRateLimitIdentifier(req)
 
-  try {
-    await limiter.consume(identifier)
+  // Try KV-backed rate limiting first (persistent across serverless instances)
+  if (isKvAvailable()) {
+    const result = await kvConsume(identifier, limiter.points, limiter.duration)
+    if (!result.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Too many requests',
+          details: 'Please wait a moment before trying again',
+          code: 'RATE_LIMIT_EXCEEDED',
+          retryable: true,
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(limiter.duration),
+            'X-RateLimit-Limit': String(limiter.points),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': String(Date.now() + (limiter.duration * 1000)),
+          },
+        }
+      )
+    }
     return null
-  } catch (rateLimitError) {
+  }
+
+  // Fallback: in-memory rate limiting
+  const memLimiter = getMemoryLimiter(limiter)
+  try {
+    await memLimiter.consume(identifier)
+    return null
+  } catch {
     return NextResponse.json(
       {
         success: false,
@@ -87,7 +140,7 @@ export async function applyRateLimit(
       {
         status: 429,
         headers: {
-          'Retry-After': '60',
+          'Retry-After': String(limiter.duration),
           'X-RateLimit-Limit': String(limiter.points),
           'X-RateLimit-Remaining': '0',
           'X-RateLimit-Reset': String(Date.now() + (limiter.duration * 1000)),
@@ -102,7 +155,7 @@ export async function applyRateLimit(
  */
 export function withRateLimit(
   handler: (req: NextRequest) => Promise<NextResponse>,
-  limiter: RateLimiterMemory = apiLimiter
+  limiter: LimiterConfig = apiLimiter
 ) {
   return async (req: NextRequest): Promise<NextResponse> => {
     const rateLimitResponse = await applyRateLimit(req, limiter)

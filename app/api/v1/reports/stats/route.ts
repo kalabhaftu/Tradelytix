@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
+      { error: 'Internal Server Error' },
       { status: 500 }
     )
   }

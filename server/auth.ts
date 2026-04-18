@@ -531,20 +531,10 @@ export async function getUserId(): Promise<string> {
         throw new Error("Authentication service temporarily unavailable")
       }
 
-      // Temporary workaround for development
-      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEV_MODE === 'true') {
-        return 'test-user-12345-abcdef'
-      }
-
       throw new Error("User not authenticated")
     }
 
     if (!user) {
-      // Temporary workaround for development
-      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEV_MODE === 'true') {
-        return 'test-user-12345-abcdef'
-      }
-
       throw new Error("User not authenticated")
     }
 

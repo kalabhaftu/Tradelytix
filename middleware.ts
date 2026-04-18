@@ -123,6 +123,29 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('X-XSS-Protection', '1; mode=block')
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+
+  // HSTS — force HTTPS in production (1 year, include subdomains, preload-ready)
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+  }
+
+  // Content Security Policy
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
+    "font-src 'self' fonts.gstatic.com",
+    "img-src 'self' data: blob: *.supabase.co",
+    "connect-src 'self' *.supabase.co api.x.ai ip-api.com",
+    "frame-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    process.env.NODE_ENV === 'production' ? 'upgrade-insecure-requests' : '',
+  ].filter(Boolean).join('; ')
+
+  response.headers.set('Content-Security-Policy', csp)
+
   return response
 }
 

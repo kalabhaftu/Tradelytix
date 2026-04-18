@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/server/admin-auth'
 import { applyRateLimit, adminLimiter } from '@/lib/rate-limiter'
+import { sanitizeErrorMessage, getErrorStatusCode } from '@/lib/api-error'
 
 export async function GET(req: NextRequest) {
   const rl = await applyRateLimit(req, adminLimiter)
@@ -35,8 +36,8 @@ export async function GET(req: NextRequest) {
       data: { errors: items, total, page, limit, totalPages: Math.ceil(total / limit) },
     })
   } catch (error: any) {
-    const status = error.message?.includes('Forbidden') ? 403 : 500
-    return NextResponse.json({ success: false, error: error.message }, { status })
+    const status = getErrorStatusCode(error)
+    return NextResponse.json({ success: false, error: sanitizeErrorMessage(error) }, { status })
   }
 }
 
@@ -58,7 +59,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true, deleted: result.count })
   } catch (error: any) {
-    const status = error.message?.includes('Forbidden') ? 403 : 500
-    return NextResponse.json({ success: false, error: error.message }, { status })
+    const status = getErrorStatusCode(error)
+    return NextResponse.json({ success: false, error: sanitizeErrorMessage(error) }, { status })
   }
 }

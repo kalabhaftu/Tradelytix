@@ -368,6 +368,7 @@ model User {
   TradeTag               TradeTag[]
   TradingModel           TradingModel[]
   WeeklyReview           WeeklyReview[]
+  WeeklyAIReview         WeeklyAIReview[]
   ActivityLog            ActivityLog[]
 
   @@index([auth_user_id])
@@ -767,5 +768,24 @@ model UserGeoLog {
   @@index([userId])
   @@index([countryCode])
   @@index([createdAt])
+  @@schema("public")
+}
+
+model WeeklyAIReview {
+  id        String   @id @default(cuid())
+  userId    String
+  weekStart DateTime @db.Date
+  weekEnd   DateTime @db.Date
+  summary   String   @db.Text
+  highlights Json    @default("[]")
+  lowlights  Json    @default("[]")
+  stats     Json     @default("{}")
+  grade     String   @default("")
+  focusNextWeek String? @db.Text
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStart])
+  @@index([userId, createdAt])
   @@schema("public")
 }

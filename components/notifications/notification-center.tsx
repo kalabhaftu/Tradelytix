@@ -21,6 +21,7 @@ import { NotificationItem } from './notification-item'
 import { FundedApprovalDialog } from '@/components/prop-firm/funded-approval-dialog'
 import { PhaseTransitionApprovalDialog } from '@/components/prop-firm/phase-transition-approval-dialog'
 import { AdjustDateDialog } from './adjust-date-dialog'
+import { WeeklyReviewDialog } from './weekly-review-dialog'
 import { toast } from 'sonner'
 import { Notification, NotificationType } from '@prisma/client'
 import { useDatabaseRealtime } from '@/lib/realtime/database-realtime'
@@ -47,6 +48,7 @@ const UPDATE_TYPES: NotificationType[] = [
   'IMPORT_STATUS',
   'IMPORT_PROCESSING',
   'IMPORT_COMPLETE',
+  'WEEKLY_PERFORMANCE',
 ]
 
 const SYSTEM_TYPES: NotificationType[] = [
@@ -73,6 +75,8 @@ export function NotificationCenter() {
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
   const [phaseTransitionDialogOpen, setPhaseTransitionDialogOpen] = useState(false)
   const [adjustDateDialogOpen, setAdjustDateDialogOpen] = useState(false)
+  const [weeklyReviewDialogOpen, setWeeklyReviewDialogOpen] = useState(false)
+  const [weeklyReviewId, setWeeklyReviewId] = useState<string | undefined>(undefined)
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null)
 
   const isOpenRef = useRef(isOpen)
@@ -238,6 +242,12 @@ export function NotificationCenter() {
       setSelectedNotification(notification)
       setAdjustDateDialogOpen(true)
       setIsOpen(false)
+    } else if (notification.type === 'WEEKLY_PERFORMANCE') {
+      const data = notification.data as any
+      setWeeklyReviewId(data?.reviewId)
+      setWeeklyReviewDialogOpen(true)
+      setIsOpen(false)
+      if (!notification.isRead) handleMarkAsRead(notification.id)
     } else {
       if (!notification.isRead) {
         handleMarkAsRead(notification.id)
@@ -391,6 +401,12 @@ export function NotificationCenter() {
         onOpenChange={setAdjustDateDialogOpen}
         notification={selectedNotification}
         onComplete={handleAdjustDateComplete}
+      />
+
+      <WeeklyReviewDialog
+        open={weeklyReviewDialogOpen}
+        onOpenChange={setWeeklyReviewDialogOpen}
+        reviewId={weeklyReviewId}
       />
     </>
   )

@@ -199,31 +199,6 @@ export function JournalClient() {
   const [tradeToDelete, setTradeToDelete] = useState<Trade | null>(null)
   const [showAIAnalysis, setShowAIAnalysis] = useState(false)
 
-  // Wire autoGenerateInsights: auto-open AI dialog when the setting is enabled
-  const autoInsightsCheckedRef = useRef(false)
-  useEffect(() => {
-    if (autoInsightsCheckedRef.current) return
-    autoInsightsCheckedRef.current = true
-
-    // Only auto-open once per session to avoid being annoying
-    const sessionKey = 'deltalytix_ai_auto_opened'
-    if (sessionStorage.getItem(sessionKey)) return
-
-    const checkAutoInsights = async () => {
-      try {
-        const res = await fetch('/api/auth/profile')
-        const result = await res.json()
-        if (result.success && result.data?.aiSettings?.autoGenerateInsights) {
-          setShowAIAnalysis(true)
-          sessionStorage.setItem(sessionKey, '1')
-        }
-      } catch {
-        // Silent — non-critical
-      }
-    }
-    checkAutoInsights()
-  }, [])
-
   // URL State
   const view = searchParams.get('view')
   const tradeIdParam = searchParams.get('tradeId')

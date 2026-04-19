@@ -60,6 +60,7 @@ const COLORS = {
 }
 
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
     Dialog,
     DialogContent,
@@ -84,6 +85,7 @@ import { DiverseCharts } from './components/diverse-charts'
 import { PerformanceCard } from './components/performance-card'
 import { PropFirmTab } from './components/propfirm-tab'
 import { StatsGridSkeleton, TablePanelSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { PageHeader } from '@/components/ui/page-header'
 
 interface ReportsPageClientProps {
     initialReportData?: ReportStatsResponse | null
@@ -432,14 +434,12 @@ export default function ReportsPageClient({
         <div className="w-full max-w-7xl mx-auto py-8 px-4 sm:px-6 pb-20 md:pb-8 overflow-hidden" id="report-content">
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                    <div>
-                        <h1 className="text-xl font-bold tracking-tight">Reports</h1>
-                        <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
-                            {periodLabel}
-                        </p>
-                    </div>
-                    <div className="no-export flex items-center gap-2">
+                <PageHeader
+                    title="Reports"
+                    meta={<span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/75">{periodLabel}</span>}
+                    className="mb-4"
+                    actions={
+                      <div className="no-export flex items-center gap-2">
                         {/* Export CSV Button */}
                         <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={isExporting} className="h-8 text-[11px] font-bold uppercase tracking-wider border-border/30 hover:bg-muted-foreground/10 rounded-xl gap-1.5">
                             <Download className="h-3.5 w-3.5 opacity-60" />
@@ -497,8 +497,9 @@ export default function ReportsPageClient({
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
-                    </div>
-                </div>
+                      </div>
+                    }
+                />
 
                 <ReportFilters
                     accounts={accounts || []}
@@ -522,7 +523,7 @@ export default function ReportsPageClient({
                         </div>
                     </div>
                 ) : !tradingActivity || !psychMetrics || filteredTrades.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-24 border border-dashed border-border/60 rounded-2xl bg-muted/5">
+                    <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border/50 bg-card/30 py-24">
                         <Zap className="h-10 w-10 text-muted-foreground/30 mb-4" />
                         <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/50 mb-4">Journal is empty for this period</h3>
                         <Button
@@ -536,7 +537,7 @@ export default function ReportsPageClient({
                     </div>
                 ) : (
                     <Tabs defaultValue="overview" className="w-full" onValueChange={setSelectedTab}>
-                        <TabsList className="mb-8 p-1 bg-muted/20 border border-border/40 rounded-xl no-export overflow-x-auto w-full justify-start sm:justify-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                        <TabsList className="mb-8 w-full justify-start overflow-x-auto rounded-2xl border border-border/16 bg-card/35 p-1 no-export sm:justify-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                             <TabsTrigger value="overview" className="px-3 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap">
                                 <TrendingUp className="h-3.5 w-3.5 shrink-0" />
                                 Overview
@@ -556,30 +557,59 @@ export default function ReportsPageClient({
                         </TabsList>
                         <TabsContent value="overview" className="space-y-12 focus-visible:outline-none">
                             <div className="space-y-10">
-                                {/* Main KPI Bar */}
-                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 py-6 border-y border-border/40">
-                                    <div className="flex flex-col">
-                                        <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-2">Total P/L</p>
-                                        <p className={cn("text-2xl sm:text-3xl font-black font-mono tracking-tighter", psychMetrics.totalNetPnL >= 0 ? "text-long" : "text-short")}>
-                                            ${psychMetrics.totalNetPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                                        </p>
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-2">Win Rate</p>
-                                        <p className="text-2xl sm:text-3xl font-black font-mono tracking-tighter text-foreground">{tradingActivity.winRate}%</p>
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-2">Profit Factor</p>
-                                        <p className="text-2xl sm:text-3xl font-black font-mono tracking-tighter text-primary">{psychMetrics.profitFactor}</p>
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-2">Expectancy</p>
-                                        <p className="text-2xl sm:text-3xl font-black font-mono tracking-tighter text-foreground">${psychMetrics.expectancy}</p>
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-2">Max Drawdown</p>
-                                        <p className="text-2xl sm:text-3xl font-black font-mono tracking-tighter text-short">${psychMetrics.maxDrawdown}</p>
-                                    </div>
+                                <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+                    <section className="rounded-[28px] border border-border/22 bg-card/40 p-6">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div>
+                                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/65">Audit Summary</p>
+                                                <h2 className="mt-2 text-sm font-semibold text-muted-foreground">
+                                                    Performance for the selected range, with risk and activity context on one surface.
+                                                </h2>
+                                            </div>
+                                            <Badge variant="outline" className="border-border/20 bg-background/55 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                                                {selectedTab}
+                                            </Badge>
+                                        </div>
+                                        <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+                                            <div>
+                                                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground/55">Net P/L</p>
+                                                <p className={cn("mt-2 text-4xl sm:text-5xl font-black font-mono tracking-tighter", psychMetrics.totalNetPnL >= 0 ? "text-long" : "text-short")}>
+                                                    ${psychMetrics.totalNetPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                </p>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3 sm:min-w-[240px]">
+                                                <div className="rounded-2xl border border-border/14 bg-background/35 p-3">
+                                                    <p className="text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/55">Trades</p>
+                                                    <p className="mt-2 text-lg font-black font-mono">{tradingActivity.totalTrades}</p>
+                                                </div>
+                                                <div className="rounded-2xl border border-border/14 bg-background/35 p-3">
+                                                    <p className="text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/55">Active Days</p>
+                                                    <p className="mt-2 text-lg font-black font-mono">{tradingActivity.tradingDaysActive}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section className="rounded-[28px] border border-border/22 bg-card/32 p-3">
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div className="rounded-2xl border border-border/14 bg-background/35 p-4">
+                                                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/55">Win Rate</p>
+                                                <p className="mt-2 text-2xl font-black font-mono tracking-tighter">{tradingActivity.winRate}%</p>
+                                            </div>
+                                            <div className="rounded-2xl border border-border/14 bg-background/35 p-4">
+                                                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/55">Profit Factor</p>
+                                                <p className="mt-2 text-2xl font-black font-mono tracking-tighter text-primary">{psychMetrics.profitFactor}</p>
+                                            </div>
+                                            <div className="rounded-2xl border border-border/14 bg-background/35 p-4">
+                                                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/55">Expectancy</p>
+                                                <p className="mt-2 text-2xl font-black font-mono tracking-tighter">${psychMetrics.expectancy}</p>
+                                            </div>
+                                            <div className="rounded-2xl border border-border/14 bg-background/35 p-4">
+                                                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/55">Max Drawdown</p>
+                                                <p className="mt-2 text-2xl font-black font-mono tracking-tighter text-short">${psychMetrics.maxDrawdown}</p>
+                                            </div>
+                                        </div>
+                                    </section>
                                 </div>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:items-stretch">
@@ -589,7 +619,7 @@ export default function ReportsPageClient({
                                             <TrendingUp className="h-4 w-4 text-primary" />
                                             <h2 className="text-[11px] uppercase tracking-[0.2em] font-black text-muted-foreground">Detailed Performance Audit</h2>
                                         </div>
-                                        <div className="border border-border/40 rounded-2xl overflow-hidden bg-muted/5 h-full">
+                                        <div className="h-full overflow-hidden rounded-2xl border border-border/22 bg-muted/5">
                                             <Table>
                                                 <TableBody>
                                                     <TableRow className="border-border/10 hover:bg-transparent">
@@ -669,7 +699,7 @@ export default function ReportsPageClient({
                                         </TooltipProvider>
                                     )}
                                 </div>
-                                                <div className="bg-muted/5 border border-border/40 rounded-2xl p-6 h-[280px] flex flex-col">
+                                                <div className="flex h-[280px] flex-col rounded-2xl border border-border/20 bg-muted/5 p-6">
                                                     <div className="flex-1 w-full">
                                                         <ResponsiveContainer width="100%" height="100%">
                                                             <AreaChart data={rMultipleChartData} margin={{ top: 10, right: 10, left: -30, bottom: 0 }}>
@@ -703,7 +733,7 @@ export default function ReportsPageClient({
                                             </div>
 
                                             {/* Clever Gap Filler: Risk Intelligence Audit */}
-                                            <div className="bg-muted/5 border border-border/40 rounded-2xl p-6 flex-1 flex flex-col justify-center">
+                                            <div className="rounded-2xl border border-border/22 bg-muted/5 p-6 flex-1 flex flex-col justify-center">
                                                 <div className="flex items-center justify-between mb-6">
                                                     <h3 className="text-[10px] uppercase font-black text-muted-foreground/60 tracking-[0.2em]">Risk Intelligence Audit</h3>
                                                     <div className="h-1 w-1 rounded-full bg-muted-foreground/20" />
@@ -745,7 +775,7 @@ export default function ReportsPageClient({
                                                         <div className="h-1 w-full bg-muted/20 rounded-full overflow-hidden">
                                                             <div 
                                                                 className="h-full bg-foreground transition-all duration-1000" 
-                                                                style={{ width: `${psychMetrics.consistencyScore}%` }} 
+                                                                style={{ width: `${Math.min(100, Math.max(0, Number(psychMetrics.consistencyScore)))}%` }} 
                                                             />
                                                         </div>
                                                     </div>
@@ -781,7 +811,7 @@ export default function ReportsPageClient({
                                 <h3 className="text-[10px] uppercase font-black text-muted-foreground/60 tracking-widest">Recent Activity</h3>
                                 <span className="text-[9px] font-bold text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full">Displaying up to 100 most recent trades</span>
                             </div>
-                            <div className="border border-border/40 rounded-xl overflow-x-auto no-scrollbar bg-card/50">
+                            <div className="overflow-x-auto rounded-xl border border-border/22 bg-card/50 no-scrollbar">
                               <div className="min-w-[700px] w-full">
                                 <Table>
                                     <TableHeader className="bg-muted/30">

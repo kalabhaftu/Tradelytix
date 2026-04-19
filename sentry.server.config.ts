@@ -16,11 +16,6 @@ if (SENTRY_DSN) {
     // Don't report in development
     enabled: process.env.NODE_ENV === 'production',
     
-    // Server-specific options
-    integrations: [
-      Sentry.prismaIntegration(),
-    ],
-    
     // Filter sensitive data
     beforeSend(event) {
       // Remove sensitive headers

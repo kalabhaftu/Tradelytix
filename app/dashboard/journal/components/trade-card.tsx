@@ -232,7 +232,7 @@ export function TradeCard({
 
       <CardContent className="space-y-3 flex-1 flex flex-col pt-0">
         {/* Preview Image */}
-        <div className="relative aspect-video overflow-hidden bg-muted/50 rounded-lg border">
+        <div className="relative aspect-video overflow-hidden rounded-xl border border-border/30 bg-muted/20 shadow-inner">
           {hasPreviewImage ? (
             <>
               <Image

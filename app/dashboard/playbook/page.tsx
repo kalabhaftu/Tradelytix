@@ -22,7 +22,7 @@ import {
 import { cn, formatCurrency, formatNoteContent } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { Eye, FileText, MoreVertical, Pencil, Plus, Trash2 as Trash } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { AddEditModelModal } from './components/add-edit-model-modal'
 import { useTradingModels } from '@/hooks/use-trading-models'
@@ -30,6 +30,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { CardsGridSkeleton } from '@/components/ui/non-dashboard-skeletons'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { useData } from '@/context/data-provider'
+import { PageHeader } from '@/components/ui/page-header'
 
 interface TradingModel {
   id: string
@@ -70,7 +71,7 @@ function StrategyBlock({
   const isLoss = classifyOutcome(pnl, breakEvenThreshold) === 'loss'
 
   return (
-    <div className="flex flex-col p-5 bg-muted/20 border border-border/50 rounded-xl hover:bg-muted/30 transition-all group relative">
+    <div className="group relative flex h-full flex-col rounded-[24px] border border-border/28 bg-card/68 p-5 transition-all hover:border-border/42 hover:bg-card/82">
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
           <h3 className="text-lg font-bold tracking-tight truncate">{model.name}</h3>
@@ -105,7 +106,7 @@ function StrategyBlock({
         </DropdownMenu>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t border-border/40">
+      <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-3">
         <div>
           <span className="text-[9px] font-black uppercase tracking-[0.1em] text-muted-foreground/60 block mb-1">Win Rate</span>
           <div className="flex items-baseline gap-1.5">
@@ -126,7 +127,7 @@ function StrategyBlock({
             {isProfit ? '+' : ''}${pnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
         </div>
-        <div className="col-span-2 md:col-span-1 border-t md:border-t-0 pt-4 md:pt-0">
+        <div className="col-span-2 md:col-span-1 md:pt-0">
           <span className="text-[9px] font-black uppercase tracking-[0.1em] text-muted-foreground/60 block mb-1">Adherence</span>
           <span className={cn(
             "text-lg font-bold tracking-tight",
@@ -137,11 +138,17 @@ function StrategyBlock({
         </div>
       </div>
 
-      {model.notes && (
-        <div className="text-[11px] text-muted-foreground/70 mt-4 leading-relaxed line-clamp-2 italic font-medium whitespace-pre-wrap">
-          {formatNoteContent(model.notes)}
-        </div>
-      )}
+      <div className="mt-4 border-t border-border/12 pt-4">
+        {model.notes ? (
+          <div className="line-clamp-2 whitespace-pre-wrap text-[11px] font-medium leading-relaxed text-muted-foreground/85">
+            {formatNoteContent(model.notes)}
+          </div>
+        ) : (
+          <p className="text-[11px] font-medium leading-relaxed text-muted-foreground/55">
+            Rules are defined, but no model note is attached yet.
+          </p>
+        )}
+      </div>
     </div>
   )
 }
@@ -151,12 +158,23 @@ export default function PlaybookPage() {
   const queryClient = useQueryClient()
   const { tradingModels: fetchedModels, isLoading } = useTradingModels()
   const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
-  const models = (fetchedModels || []) as TradingModel[]
+  const models = useMemo(() => (fetchedModels || []) as TradingModel[], [fetchedModels])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add')
   const [selectedModel, setSelectedModel] = useState<TradingModel | null>(null)
   const [deleteModelId, setDeleteModelId] = useState<string | null>(null)
   const [viewModel, setViewModel] = useState<TradingModel | null>(null)
+  const playbookStats = useMemo(() => {
+    const totalTrades = models.reduce((sum, model) => sum + (model.stats?.tradeCount || 0), 0)
+    const avgAdherence = models.length
+      ? models.reduce((sum, model) => sum + (model.stats?.avgAdherence || 0), 0) / models.length
+      : 0
+
+    return {
+      totalTrades,
+      avgAdherence,
+    }
+  }, [models])
 
   const handleAddModel = () => {
     setModalMode('add')
@@ -215,24 +233,40 @@ export default function PlaybookPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-12 pb-8 border-b border-border/50">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tighter">STRATEGY PLAYBOOK</h1>
-            <p className="text-xs text-muted-foreground font-black uppercase tracking-[0.3em] mt-1 opacity-60">
-              Systematic Trading Models • {models.length} Entries
-            </p>
+        <PageHeader
+          title="Strategy Playbook"
+          titleClassName="sm:text-3xl"
+          className="mb-6"
+          actions={
+            <Button onClick={handleAddModel} className="h-10 gap-2 px-6 text-xs font-black uppercase tracking-tighter">
+              <Plus className="h-4 w-4" />
+              Develop New Strategy
+            </Button>
+          }
+        />
+
+        {models.length > 0 && (
+          <div className="mb-8 grid gap-3 rounded-[28px] border border-border/20 bg-card/35 p-4 sm:grid-cols-3 sm:p-5">
+            <div className="rounded-2xl border border-border/14 bg-background/35 p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground/55">Models</p>
+              <p className="mt-2 text-2xl font-black font-mono tracking-tighter">{models.length}</p>
+            </div>
+            <div className="rounded-2xl border border-border/14 bg-background/35 p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground/55">Logged Trades</p>
+              <p className="mt-2 text-2xl font-black font-mono tracking-tighter">{playbookStats.totalTrades}</p>
+            </div>
+            <div className="rounded-2xl border border-border/14 bg-background/35 p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground/55">Avg Adherence</p>
+              <p className="mt-2 text-2xl font-black font-mono tracking-tighter">{playbookStats.avgAdherence.toFixed(0)}%</p>
+            </div>
           </div>
-          <Button onClick={handleAddModel} className="gap-2 font-black uppercase tracking-tighter text-xs h-10 px-6">
-            <Plus className="h-4 w-4" />
-            Develop New Strategy
-          </Button>
-        </div>
+        )}
 
         {/* Models Grid */}
         {isLoading ? (
           <CardsGridSkeleton cards={3} />
         ) : models.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 border border-dashed border-border/40 rounded-3xl bg-muted/5">
+          <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border/40 bg-card/30 py-24">
             <FileText className="h-12 w-12 text-muted-foreground/20 mb-6" />
             <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground/50 mb-6">No strategies defined</h3>
             <Button onClick={handleAddModel} variant="outline" className="gap-2 font-black uppercase tracking-tighter text-xs h-9">
@@ -241,7 +275,12 @@ export default function PlaybookPage() {
             </Button>
           </div>
         ) : (
-          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <div className={cn(
+            "grid gap-6",
+            models.length <= 2
+              ? "max-w-5xl grid-cols-1 md:grid-cols-2"
+              : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+          )}>
             {models.map((model) => (
               <StrategyBlock
                 key={model.id}
@@ -288,7 +327,7 @@ export default function PlaybookPage() {
 
       {/* View Model Dialog */}
       <AlertDialog open={!!viewModel} onOpenChange={() => setViewModel(null)}>
-        <AlertDialogContent className="max-w-2xl bg-background border-border/40">
+        <AlertDialogContent className="max-w-2xl bg-background border-border/28">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-2xl font-black tracking-tighter uppercase">{viewModel?.name}</AlertDialogTitle>
             <div className="flex items-center gap-4 mt-2">

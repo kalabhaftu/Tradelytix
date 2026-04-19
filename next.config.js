@@ -85,6 +85,22 @@ const nextConfig = {
       }
     }
 
+    config.ignoreWarnings = [
+      ...(config.ignoreWarnings || []),
+      (warning) => {
+        const message = typeof warning === 'string' ? warning : warning?.message || ''
+        const moduleIdentifier =
+          typeof warning === 'object' && warning?.module
+            ? String(warning.module?.resource || warning.module?.identifier?.() || '')
+            : ''
+
+        return (
+          message.includes('Critical dependency: the request of a dependency is an expression') &&
+          moduleIdentifier.includes('@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js')
+        )
+      },
+    ]
+
     // Optimize for better performance
     if (!dev) {
       config.optimization = {

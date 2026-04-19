@@ -58,7 +58,7 @@ export default function Navbar() {
 
   return (
     <motion.nav
-      className="sticky top-0 z-40 flex items-center text-foreground bg-background/80 backdrop-blur-md border-b border-border w-full"
+      className="sticky top-0 z-40 flex w-full items-center border-b border-border/50 bg-background/80 text-foreground backdrop-blur-md"
       initial={{ y: -48, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
@@ -77,7 +77,7 @@ export default function Navbar() {
           {/* Account Selector — hidden on mobile, shown in profile dropdown */}
           <Popover open={accountPopoverOpen} onOpenChange={setAccountPopoverOpen}>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="hidden sm:flex h-8 w-8 hover:bg-muted/50 border border-border/50 bg-card/50">
+              <Button variant="ghost" size="icon" className="hidden h-8 w-8 text-muted-foreground hover:bg-muted/40 hover:text-foreground sm:flex">
                 <Wallet className="h-4 w-4" />
               </Button>
             </PopoverTrigger>

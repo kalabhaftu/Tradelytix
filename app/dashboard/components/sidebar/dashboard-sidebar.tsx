@@ -29,7 +29,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar'
@@ -79,9 +78,9 @@ export function DashboardSidebar() {
   const activeId = getActiveId()
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
+    <Sidebar collapsible="icon" className="border-r border-border/50">
       {/* Header — Logo */}
-      <SidebarHeader className="h-12 flex items-center justify-center border-b border-border">
+      <SidebarHeader className="h-12 flex items-center justify-center px-2">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -130,8 +129,6 @@ export function DashboardSidebar() {
         {/* Spacer to push utility items to bottom */}
         <div className="flex-1 min-h-0" />
 
-        <SidebarSeparator />
-
         {/* Utility items at bottom of content area */}
         <SidebarGroup>
           <SidebarGroupLabel>Utilities</SidebarGroupLabel>
@@ -168,7 +165,7 @@ export function DashboardSidebar() {
       </SidebarContent>
 
       {/* Footer — Collapse button anchored at absolute bottom */}
-      <SidebarFooter className="border-t border-border p-2 mt-auto">
+      <SidebarFooter className="p-2 mt-auto">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={toggleSidebar} tooltip="Collapse" className="w-full justify-start text-muted-foreground hover:text-foreground">

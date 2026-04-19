@@ -100,10 +100,10 @@ export function CacheManagement() {
   }
 
   return (
-    <Card>
+    <Card className="border-border/40 bg-card/70">
       <CardHeader>
         <CardTitle>Cache Management</CardTitle>
-        <CardDescription>
+        <CardDescription className="text-muted-foreground/85">
           Clear cached data to resolve display issues or free up space
         </CardDescription>
       </CardHeader>
@@ -132,7 +132,7 @@ export function CacheManagement() {
         </div>
 
         {/* Information Alert */}
-        <Alert>
+        <Alert className="border-border/40 bg-muted/15">
           <Info className="h-4 w-4" />
           <AlertDescription>
             The app automatically clears stale caches when detecting version changes.
@@ -174,7 +174,7 @@ export function CacheManagement() {
             </Button>
           </div>
 
-          <div className="flex items-center justify-between pt-3 border-t">
+          <div className="flex items-center justify-between pt-3 border-t border-border/35">
             <div>
               <p className="text-sm font-medium">Clear All Cache</p>
               <p className="text-xs text-muted-foreground">
@@ -198,7 +198,7 @@ export function CacheManagement() {
         </div>
 
         {/* Help Text */}
-        <div className="text-xs text-muted-foreground space-y-1">
+        <div className="text-xs text-muted-foreground/85 space-y-1">
           <p><strong>When to clear cache:</strong></p>
           <ul className="list-disc list-inside space-y-1 ml-2">
             <li>Seeing outdated account balances or trade data</li>

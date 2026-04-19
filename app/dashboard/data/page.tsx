@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useEffect, lazy, Suspense, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { DataRouteSkeleton, TablePanelSkeleton } from "@/components/ui/non-dashboard-skeletons"
+import { PageHeader } from "@/components/ui/page-header"
 
 // Force dynamic rendering to avoid static generation issues
 export const dynamic = 'force-dynamic'
@@ -29,12 +30,11 @@ function DashboardContent() {
     <div className="w-full max-w-full px-4 sm:px-6 py-6">
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Data Management</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">Manage your trading accounts and trades</p>
+          <PageHeader title="Data Management" className="gap-2" />
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList>
+          <TabsList className="rounded-2xl border border-border/18 bg-card/35 p-1">
             <TabsTrigger value="accounts">Accounts</TabsTrigger>
             <TabsTrigger value="trades">Trades</TabsTrigger>
           </TabsList>

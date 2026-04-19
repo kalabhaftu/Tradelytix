@@ -70,6 +70,7 @@ import { groupTradesByExecution } from "@/lib/utils"
 import { useLiveAccountTransactions } from '@/hooks/use-live-account-transactions'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { AccountsRouteSkeleton } from "@/components/ui/non-dashboard-skeletons"
+import { PageHeader } from "@/components/ui/page-header"
 
 // Types
 interface Account {
@@ -460,62 +461,56 @@ export default function AccountsPage() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-6"
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                  Accounts
-                </h1>
-                <p className="text-muted-foreground mt-1 text-sm truncate">
-                  Manage and monitor your trading accounts
-                </p>
-              </div>
+            <PageHeader
+              title="Accounts"
+              actions={
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleRefresh}
+                        disabled={isRefreshing}
+                        className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                      >
+                        {isRefreshing ? <Spinner className="h-4 w-4" /> : <ArrowClockwise className="h-4 w-4" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Refresh accounts</TooltipContent>
+                  </Tooltip>
 
-              <div className="flex items-center gap-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={handleRefresh}
-                      disabled={isRefreshing}
-                      className="h-9 w-9"
-                    >
-                      {isRefreshing ? <Spinner className="h-4 w-4" /> : <ArrowClockwise className="h-4 w-4" />}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Refresh accounts</TooltipContent>
-                </Tooltip>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button className="h-9 gap-2">
-                      <Plus className="h-4 w-4" />
-                      <span className="hidden sm:inline">New Account</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-52">
-                    <DropdownMenuItem onClick={() => setCreateLiveDialogOpen(true)} className="gap-3 py-2.5">
-                      <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
-                        <User  className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <div className="font-medium">Live Account</div>
-                        <div className="text-xs text-muted-foreground">Personal trading</div>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setCreatePropFirmDialogOpen(true)} className="gap-3 py-2.5">
-                      <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
-                        <Buildings className="h-4 w-4 text-muted-foreground"  />
-                      </div>
-                      <div>
-                        <div className="font-medium">Prop Firm</div>
-                        <div className="text-xs text-muted-foreground">Funded challenge</div>
-                      </div>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button className="h-9 gap-2">
+                        <Plus className="h-4 w-4" />
+                        <span className="hidden sm:inline">New Account</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-52">
+                      <DropdownMenuItem onClick={() => setCreateLiveDialogOpen(true)} className="gap-3 py-2.5">
+                        <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
+                          <User  className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <div className="font-medium">Live Account</div>
+                          <div className="text-xs text-muted-foreground">Personal trading</div>
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setCreatePropFirmDialogOpen(true)} className="gap-3 py-2.5">
+                        <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
+                          <Buildings className="h-4 w-4 text-muted-foreground"  />
+                        </div>
+                        <div>
+                          <div className="font-medium">Prop Firm</div>
+                          <div className="text-xs text-muted-foreground">Funded challenge</div>
+                        </div>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              }
+            />
           </motion.div>
 
           {/* Stats Overview */}
@@ -624,7 +619,12 @@ export default function AccountsPage() {
                 onClearSearch={() => setSearchQuery('')}
               />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+              <div className={cn(
+                "grid gap-4",
+                serverAccounts.length === 1
+                  ? "max-w-2xl grid-cols-1"
+                  : "grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+              )}>
                 <AnimatePresence mode="popLayout">
                   {serverAccounts.map((account, index) => (
                     <motion.div
@@ -748,14 +748,34 @@ function AccountCard({
     (account.maxDrawdownRemaining && account.maxDrawdownRemaining < 1000)
   )
 
+  const phaseLabel = account.currentPhaseDetails?.phaseNumber
+    ? `Phase ${account.currentPhaseDetails.phaseNumber}`
+    : getStatusDisplayName(account.status)
+
+  const liveMeta = [
+    { label: 'Broker', value: account.broker || 'Manual' },
+    { label: 'Number', value: account.number },
+    { label: 'Start', value: formatCurrency(startingBalance) },
+    { label: 'Status', value: getStatusDisplayName(account.status) },
+  ]
+
+  const propMeta = [
+    { label: 'Evaluation', value: account.currentPhaseDetails?.evaluationType || 'Evaluation' },
+    { label: 'Phase', value: phaseLabel },
+    { label: 'Max Loss Left', value: `${formatCurrency(account.maxDrawdownRemaining || 0)}` },
+    { label: 'Daily Loss Left', value: `${formatCurrency(account.dailyDrawdownRemaining || 0)}` },
+  ]
+
+  const detailItems = isPropFirm ? propMeta : liveMeta
+
   return (
     <Card
       className={cn(
-        "group relative overflow-hidden transition-all duration-200 hover:shadow-md cursor-pointer",
-        isFailed && "opacity-75 border-destructive/30",
-        isArchived && "opacity-60",
-        isFunded && "ring-1 ring-primary/30",
-        isAtRisk && !isFailed && "ring-1 ring-destructive/30"
+        "group relative cursor-pointer overflow-hidden border border-border/40 bg-card/90 transition-all duration-200 hover:border-border/60 hover:shadow-md",
+        isFailed && "border-destructive/40",
+        isArchived && "opacity-70",
+        isFunded && "ring-1 ring-primary/25",
+        isAtRisk && !isFailed && "ring-1 ring-destructive/25"
       )}
       onClick={onView}
     >
@@ -770,7 +790,7 @@ function AccountCard({
 
       <CardContent className="p-4 pt-5">
         {/* Header */}
-        <div className="flex items-start justify-between mb-3">
+        <div className="mb-4 flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
             <div className={cn(
               "h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0",
@@ -792,12 +812,27 @@ function AccountCard({
               <h3 className="font-semibold text-sm truncate">
                 {account.displayName || account.name || account.number}
               </h3>
-              <p className="text-xs text-muted-foreground truncate">
-                {isPropFirm
-                  ? getStatusDisplayName(account.status)
-                  : account.broker || 'Live Account'
-                }
-              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                <Badge variant="outline" className="h-5 border-border/30 px-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {isPropFirm ? 'Prop Firm' : 'Live'}
+                </Badge>
+                {isPropFirm && (
+                  <Badge variant="outline" className="h-5 border-border/30 px-1.5 text-[10px]">
+                    {phaseLabel}
+                  </Badge>
+                )}
+                {!isPropFirm && (
+                  <Badge variant="outline" className="h-5 border-border/30 px-1.5 text-[10px]">
+                    {account.broker || 'Personal'}
+                  </Badge>
+                )}
+                <Badge
+                  variant={isFailed ? "destructive" : isFunded ? "default" : "secondary"}
+                  className="h-5 px-1.5 text-[10px] capitalize"
+                >
+                  {isFunded ? 'Funded' : getStatusDisplayName(account.status)}
+                </Badge>
+              </div>
             </div>
           </div>
 
@@ -846,14 +881,14 @@ function AccountCard({
         </div>
 
         {/* Balance */}
-        <div className="space-y-3">
-          <div className="flex items-end justify-between">
+        <div className="space-y-4">
+          <div className="flex items-end justify-between gap-3">
             <div>
               <p className="text-2xl font-bold tracking-tight">
                 {formatCurrency(equity)}
               </p>
               <div className={cn(
-                "flex items-center gap-1 text-xs font-medium",
+                "mt-1 flex items-center gap-1 text-xs font-medium",
                 pnl >= 0 ? "text-long" : "text-short"
               )}>
                 {pnl >= 0 ? <TrendUp className="h-3 w-3" /> : <TrendDown className="h-3 w-3" />}
@@ -861,9 +896,25 @@ function AccountCard({
                 <span className="text-muted-foreground">({pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(1)}%)</span>
               </div>
             </div>
-            <Badge variant="secondary" className="text-xs">
-              {displayTradeCount} trades
-            </Badge>
+            <div className="text-right">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Trades</p>
+              <p className="text-sm font-semibold">{displayTradeCount}</p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border/18 bg-muted/10 p-3">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+              {detailItems.map((item) => (
+                <div key={item.label}>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    {item.label}
+                  </p>
+                  <p className="mt-1 truncate text-sm font-medium">
+                    {item.value}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Progress bar for prop firm */}
@@ -894,7 +945,7 @@ function AccountCard({
 
           {/* Risk warning */}
           {isAtRisk && (
-            <div className="flex items-center gap-2 p-2 bg-destructive/10 rounded-lg text-destructive">
+            <div className="flex items-center gap-2 rounded-lg border border-destructive/18 bg-destructive/10 p-2 text-destructive">
               <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
               <span className="text-xs font-medium">Near drawdown limit</span>
             </div>
@@ -902,8 +953,8 @@ function AccountCard({
         </div>
 
         {/* Quick action hint */}
-        <div className="mt-3 pt-3 border-t flex items-center justify-between text-xs text-muted-foreground">
-          <span>{account.number}</span>
+        <div className="mt-4 flex items-center justify-between border-t border-border/18 pt-3 text-xs text-muted-foreground">
+          <span className="truncate">{isPropFirm ? (account.currentPhaseDetails?.evaluationType || 'Evaluation') : 'Live account'}</span>
           <span className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             View details <ChevronRight className="h-3 w-3" />
           </span>

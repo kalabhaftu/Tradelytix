@@ -337,78 +337,82 @@ export function DataManagementCard() {
 
   return (
     <div className="space-y-6">
-      {/* Header with Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-semibold">Data Management</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage your trading accounts and data
-          </p>
+      <section className="rounded-[26px] border border-border/22 bg-card/36 p-4 sm:p-5">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground/55">Accounts & Backups</p>
+              <h2 className="text-xl font-semibold tracking-tight">Organize connected accounts and keep cleanup separate from destructive actions.</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-2xl border border-border/14 bg-background/35 p-3">
+                <p className="text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/55">Groups</p>
+                <p className="mt-2 text-lg font-black font-mono">{stats.totalAccounts}</p>
+              </div>
+              <div className="rounded-2xl border border-border/14 bg-background/35 p-3">
+                <p className="text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/55">Phases</p>
+                <p className="mt-2 text-lg font-black font-mono">{stats.totalPhases}</p>
+              </div>
+              <div className="rounded-2xl border border-border/14 bg-background/35 p-3">
+                <p className="text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/55">Live</p>
+                <p className="mt-2 text-lg font-black font-mono">{stats.liveAccounts}</p>
+              </div>
+              <div className="rounded-2xl border border-border/14 bg-background/35 p-3">
+                <p className="text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground/55">Trades</p>
+                <p className="mt-2 text-lg font-black font-mono">{stats.totalTrades}</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <ImportDialog />
+            <AdvancedExportDialog />
+            {selectedAccounts.length > 0 && (
+              <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={deleteLoading}
+                    className="border border-destructive/25"
+                  >
+                    {deleteLoading ? (
+                      <Spinner className="h-4 w-4" />
+                    ) : (
+                      <>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete ({selectedAccounts.length})
+                      </>
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Delete {selectedAccounts.length} Account{selectedAccounts.length > 1 ? 's' : ''}?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete the selected account{selectedAccounts.length > 1 ? 's' : ''} and all associated trades. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteAccounts} disabled={deleteLoading}>
+                      {deleteLoading ? "Deleting..." : "Delete"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <ImportDialog />
-          <AdvancedExportDialog />
-          {/* Only show delete button when accounts are selected */}
-          {selectedAccounts.length > 0 && (
-            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  disabled={deleteLoading}
-                >
-                  {deleteLoading ? (
-                    <Spinner className="h-4 w-4" />
-                  ) : (
-                    <>
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete ({selectedAccounts.length})
-                    </>
-                  )}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    Delete {selectedAccounts.length} Account{selectedAccounts.length > 1 ? 's' : ''}?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete the selected account{selectedAccounts.length > 1 ? 's' : ''} and all associated trades. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteAccounts} disabled={deleteLoading}>
-                    {deleteLoading ? "Deleting..." : "Delete"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-        </div>
-      </div>
-
-      {/* Delete All Data Option */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-        onClick={() => setDeleteAllDataDialogOpen(true)}
-      >
-        <Trash2 className="mr-2 h-4 w-4" />
-        Delete All Data
-      </Button>
-      <DeleteAllDataDialog 
-        open={deleteAllDataDialogOpen} 
-        onOpenChange={setDeleteAllDataDialogOpen} 
-      />
+      </section>
 
       {/* Loading State */}
       {accountsLoading && <EntityListSkeleton items={3} />}
 
       {/* Select All */}
       {!accountsLoading && accountsWithTrades.length > 0 && (
-        <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+        <div className="flex items-center justify-between rounded-xl border border-border/24 bg-muted/18 p-4">
           <div className="flex items-center gap-3">
             <Checkbox
               id="select-all"
@@ -439,13 +443,13 @@ export function DataManagementCard() {
             return (
               <div 
                 key={group.accountName} 
-                className="border rounded-lg overflow-hidden bg-card"
+                className="overflow-hidden rounded-[22px] border border-border/24 bg-card/92"
               >
                 {/* Group Header */}
                 <div 
                   className={cn(
                     "p-4 transition-colors",
-                    hasMultiplePhases && "cursor-pointer hover:bg-muted/50"
+                    hasMultiplePhases && "cursor-pointer hover:bg-muted/35"
                   )}
                   onClick={() => hasMultiplePhases && toggleExpandAccount(group.accountName)}
                 >
@@ -477,6 +481,9 @@ export function DataManagementCard() {
                         {group.propFirm && (
                           <span className="text-xs text-muted-foreground">{group.propFirm}</span>
                         )}
+                        <Badge variant="outline" className="h-5 border-border/16 px-1.5 text-[10px] uppercase tracking-wide">
+                          {isPropFirm ? 'Prop Firm' : 'Live'}
+                        </Badge>
                       </div>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
@@ -493,11 +500,11 @@ export function DataManagementCard() {
 
                 {/* Phases */}
                 {(isExpanded || !hasMultiplePhases) && (
-                  <div className="border-t divide-y">
+                  <div className="divide-y divide-border/16 border-t border-border/18">
                     {group.phases.map((phase) => (
                       <div
                         key={phase.id}
-                        className="flex items-center gap-4 p-4 pl-6 hover:bg-muted/30 transition-colors"
+                        className="flex items-center gap-4 p-4 pl-6 transition-colors hover:bg-muted/20"
                       >
                         <Checkbox
                           checked={selectedAccounts.includes(phase.number)}
@@ -508,10 +515,10 @@ export function DataManagementCard() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-mono text-sm">{phase.number}</span>
                             {phase.currentPhase && (
-                              <Badge variant="outline" className="text-xs">
-                                {getPhaseDisplayLabel(phase.evaluationType, phase.currentPhase)}
-                              </Badge>
-                            )}
+                            <Badge variant="outline" className="border-border/16 text-xs">
+                              {getPhaseDisplayLabel(phase.evaluationType, phase.currentPhase)}
+                            </Badge>
+                          )}
                             <Badge 
                               variant={getStatusVariant(phase.status)} 
                               className="text-xs capitalize"
@@ -549,7 +556,7 @@ export function DataManagementCard() {
 
       {/* Empty State */}
       {!accountsLoading && accountsWithTrades.length === 0 && (
-        <div className="text-center py-16 border rounded-lg bg-muted/20">
+        <div className="rounded-2xl border border-dashed border-border/45 bg-card/30 py-16 text-center">
           <BarChart2 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
           <h3 className="text-lg font-medium mb-2">No accounts yet</h3>
           <p className="text-sm text-muted-foreground mb-4">
@@ -560,6 +567,30 @@ export function DataManagementCard() {
           </Button>
         </div>
       )}
+
+      <div className="rounded-2xl border border-dashed border-destructive/24 bg-destructive/5 p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold text-foreground">Danger Zone</h3>
+            <p className="text-sm text-muted-foreground">
+              Destructive actions live here so routine cleanup and backups stay separate.
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            onClick={() => setDeleteAllDataDialogOpen(true)}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete All Data
+          </Button>
+        </div>
+      </div>
+      <DeleteAllDataDialog 
+        open={deleteAllDataDialogOpen} 
+        onOpenChange={setDeleteAllDataDialogOpen} 
+      />
 
       {/* Rename Dialog */}
       <Dialog open={renameAccountDialogOpen} onOpenChange={setRenameAccountDialogOpen}>

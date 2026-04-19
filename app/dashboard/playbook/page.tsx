@@ -172,8 +172,8 @@ export default function PlaybookPage() {
 
   const handleSaveModel = async (data: { name: string; rules: any[]; notes?: string | null }) => {
     const url = modalMode === 'add'
-      ? '/api/user/trading-models'
-      : `/api/user/trading-models/${selectedModel?.id}`
+      ? '/api/v1/user/trading-models'
+      : `/api/v1/user/trading-models/${selectedModel?.id}`
 
     const response = await fetch(url, {
       method: modalMode === 'add' ? 'POST' : 'PATCH',
@@ -192,7 +192,7 @@ export default function PlaybookPage() {
   const handleDeleteModel = async () => {
     if (!deleteModelId) return
     try {
-      const response = await fetch(`/api/user/trading-models/${deleteModelId}`, {
+      const response = await fetch(`/api/v1/user/trading-models/${deleteModelId}`, {
         method: 'DELETE',
       })
       if (!response.ok) {

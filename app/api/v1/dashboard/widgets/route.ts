@@ -12,6 +12,8 @@ import {
 } from '@/lib/dashboard-math'
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
+import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
+import { logger } from '@/lib/logger'
 import { calculateBalanceInfo } from '@/lib/utils/balance-calculator'
 
 export async function GET(request: NextRequest) {

@@ -100,8 +100,8 @@ export default function AccountDetailPage() {
 
     try {
       const [tradesRes, payoutsRes] = await Promise.all([
-        fetch(`/api/prop-firm/accounts/${accountId}/trades?phase=all`),
-        fetch(`/api/prop-firm/accounts/${accountId}/payouts`)
+        fetch(`/api/v1/prop-firm/accounts/${accountId}/trades?phase=all`),
+        fetch(`/api/v1/prop-firm/accounts/${accountId}/payouts`)
       ])
 
       const [tradesJson, payoutsJson] = await Promise.all([
@@ -250,7 +250,7 @@ export default function AccountDetailPage() {
 
   const handleSaveName = async () => {
     try {
-      const response = await fetch(`/api/prop-firm/accounts/${accountId}`, {
+      const response = await fetch(`/api/v1/prop-firm/accounts/${accountId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accountName: editedAccountName })

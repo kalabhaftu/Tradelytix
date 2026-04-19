@@ -189,7 +189,7 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
   useEffect(() => {
     const fetchMode = async () => {
       try {
-        const response = await fetch('/api/settings/backtest-mode')
+        const response = await fetch('/api/v1/settings/backtest-mode')
         if (response.ok) {
           const data = await response.json()
           setInputMode(data.mode || 'manual')
@@ -206,7 +206,7 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
   const handleModeChange = async (newMode: 'manual' | 'simple') => {
     setInputMode(newMode)
     try {
-      await fetch('/api/settings/backtest-mode', {
+      await fetch('/api/v1/settings/backtest-mode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode: newMode })

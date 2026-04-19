@@ -29,7 +29,7 @@ export function TransactionHistory({ accountId }: TransactionHistoryProps) {
       setIsLoading(true)
       setError(null)
 
-      const response = await fetch(`/api/live-accounts/${accountId}/transactions`)
+      const response = await fetch(`/api/v1/live-accounts/${accountId}/transactions`)
       const result = await response.json()
 
       if (!result.success) {

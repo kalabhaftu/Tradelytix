@@ -50,7 +50,7 @@ export default function PayoutDetailPage() {
       setIsLoading(true)
       // Fetch payout from account's payout history
       // First, we need to get all accounts and find the payout
-      const accountsResponse = await fetch('/api/prop-firm/accounts')
+      const accountsResponse = await fetch('/api/v1/prop-firm/accounts')
       if (!accountsResponse.ok) {
         throw new Error('Failed to fetch accounts')
       }
@@ -63,7 +63,7 @@ export default function PayoutDetailPage() {
       let foundPayout = null
 
       for (const account of accountsData.data) {
-        const payoutsResponse = await fetch(`/api/prop-firm/accounts/${account.id}/payouts`)
+        const payoutsResponse = await fetch(`/api/v1/prop-firm/accounts/${account.id}/payouts`)
         if (payoutsResponse.ok) {
           const payoutsData = await payoutsResponse.json()
           if (payoutsData.success && payoutsData.data.history) {

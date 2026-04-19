@@ -13,7 +13,7 @@ export function useTradingModels() {
   const { data, isLoading, error } = useQuery<TradingModel[] | null>({
     queryKey: ['trading-models'],
     queryFn: async () => {
-      const response = await fetch('/api/user/trading-models')
+      const response = await fetch('/api/v1/user/trading-models')
       if (!response.ok) throw new Error('Failed to fetch trading models')
       const data = await response.json()
       // API shape: { success: true, models: [...] }

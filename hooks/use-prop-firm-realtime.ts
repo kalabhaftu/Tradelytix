@@ -110,7 +110,7 @@ export function usePropFirmRealtime(options: UsePropFirmRealtimeOptions): UsePro
       setError(null)
 
       const result = await fetchWithError<{ success: boolean; data: any }>(
-        `/api/prop-firm/accounts/${accountId}`,
+        `/api/v1/prop-firm/accounts/${accountId}`,
         { timeout: API_TIMEOUT }
       )
 

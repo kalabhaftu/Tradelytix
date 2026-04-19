@@ -123,7 +123,7 @@ export function DailyJournalModal({
         ...(accountId && { accountId })
       })
 
-      const response = await fetch(`/api/journal/daily?${params}`)
+      const response = await fetch(`/api/v1/journal/daily?${params}`)
 
       if (response.ok) {
         const data = await response.json()
@@ -157,8 +157,8 @@ export function DailyJournalModal({
 
       const method = journalId ? 'PUT' : 'POST'
       const url = journalId
-        ? `/api/journal/daily/${journalId}`
-        : '/api/journal/daily'
+        ? `/api/v1/journal/daily/${journalId}`
+        : '/api/v1/journal/daily'
 
       const response = await fetch(url, {
         method,

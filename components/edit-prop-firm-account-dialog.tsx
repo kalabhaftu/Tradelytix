@@ -161,7 +161,7 @@ export function EditPropFirmAccountDialog({
 
       // For prop firm accounts, use master account ID
       const masterAccountId = account.currentPhaseDetails?.masterAccountId || account.id
-      const endpoint = `/api/prop-firm/accounts/${masterAccountId}`
+      const endpoint = `/api/v1/prop-firm/accounts/${masterAccountId}`
 
       const response = await fetch(endpoint, {
         method: 'PATCH',

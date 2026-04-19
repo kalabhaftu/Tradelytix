@@ -26,7 +26,7 @@ export function useCalendarNotes(): UseCalendarNotesReturn {
       } catch {}
       
       // Fallback to API
-      const response = await fetch('/api/calendar/notes', {
+      const response = await fetch('/api/v1/calendar/notes', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       })
@@ -47,7 +47,7 @@ export function useCalendarNotes(): UseCalendarNotesReturn {
   })
 
   const saveNote = useCallback(async (date: Date, note: string) => {
-    const response = await fetch('/api/calendar/notes', {
+    const response = await fetch('/api/v1/calendar/notes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ date: date.toISOString(), note })
@@ -69,7 +69,7 @@ export function useCalendarNotes(): UseCalendarNotesReturn {
 
   const deleteNote = useCallback(async (date: Date) => {
     const dateKey = date.toISOString().split('T')[0]
-    const response = await fetch(`/api/calendar/notes?date=${date.toISOString()}`, {
+    const response = await fetch(`/api/v1/calendar/notes?date=${date.toISOString()}`, {
       method: 'DELETE'
     })
     if (!response.ok) throw new Error('Failed to delete note')

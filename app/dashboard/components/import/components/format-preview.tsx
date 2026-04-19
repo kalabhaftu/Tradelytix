@@ -27,7 +27,7 @@ import {
 } from "@tanstack/react-table";
 import React from "react";
 import { experimental_useObject as useObject } from '@ai-sdk/react'
-import { tradeSchema } from '@/app/api/ai/format-trades/schema'
+import { tradeSchema } from '@/app/api/v1/ai/format-trades/schema'
 import { z } from 'zod'
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -95,7 +95,7 @@ export function FormatPreview({
   }, [currentBatch, validTrades, batchSize]);
 
   const { object, submit, isLoading: isProcessing } = useObject({
-    api: '/api/ai/format-trades',
+    api: '/api/v1/ai/format-trades',
     schema: z.array(tradeSchema),
     onError(error) {
       setError(`Failed to process trades: ${error.message}`);

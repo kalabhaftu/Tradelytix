@@ -290,7 +290,7 @@ export default function ManualTradeForm({ setIsOpen, onClose }: ManualTradeFormP
       // Validate prop firm account phase
       if (data.accountNumber) {
         try {
-          const phaseCheckResponse = await fetch(`/api/prop-firm/accounts/validate-trade`, {
+          const phaseCheckResponse = await fetch(`/api/v1/prop-firm/accounts/validate-trade`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ accountNumber: data.accountNumber })

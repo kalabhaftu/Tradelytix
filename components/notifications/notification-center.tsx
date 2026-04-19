@@ -87,7 +87,7 @@ export function NotificationCenter() {
   const fetchNotifications = useCallback(async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/notifications?t=${Date.now()}`, {
+      const response = await fetch(`/api/v1/notifications?t=${Date.now()}`, {
         cache: 'no-store'
       })
       const result = await response.json()
@@ -105,7 +105,7 @@ export function NotificationCenter() {
 
   const refreshUnreadCount = useCallback(async () => {
     try {
-      const response = await fetch(`/api/notifications?unreadOnly=true&limit=1&t=${Date.now()}`, {
+      const response = await fetch(`/api/v1/notifications?unreadOnly=true&limit=1&t=${Date.now()}`, {
         cache: 'no-store'
       })
       const result = await response.json()
@@ -171,7 +171,7 @@ export function NotificationCenter() {
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
-      await fetch(`/api/notifications/${notificationId}`, {
+      await fetch(`/api/v1/notifications/${notificationId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isRead: true })
@@ -188,7 +188,7 @@ export function NotificationCenter() {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await fetch('/api/notifications', {
+      await fetch('/api/v1/notifications', {
         method: 'PATCH'
       })
 
@@ -202,7 +202,7 @@ export function NotificationCenter() {
 
   const handleDelete = async (notificationId: string) => {
     try {
-      await fetch(`/api/notifications/${notificationId}`, {
+      await fetch(`/api/v1/notifications/${notificationId}`, {
         method: 'DELETE'
       })
 
@@ -219,7 +219,7 @@ export function NotificationCenter() {
 
   const handleClearAll = async () => {
     try {
-      await fetch('/api/notifications', { method: 'DELETE' })
+      await fetch('/api/v1/notifications', { method: 'DELETE' })
 
       setNotifications([])
       setUnreadCount(0)

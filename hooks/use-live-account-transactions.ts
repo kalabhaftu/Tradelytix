@@ -21,7 +21,7 @@ export function useLiveAccountTransactions() {
         setError(null)
         
         // Fetch all transactions for all user's accounts
-        const response = await fetch('/api/live-accounts/transactions')
+        const response = await fetch('/api/v1/live-accounts/transactions')
         const result = await response.json()
 
         if (!result.success) {

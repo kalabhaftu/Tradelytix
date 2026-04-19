@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
+import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
+import { logger } from '@/lib/logger'
 import archiver from 'archiver'
 import { PassThrough } from 'stream'
 
@@ -16,6 +18,9 @@ const numberValuesToString = (obj: any) => {
 }
 
 export async function POST(request: NextRequest) {
+  const rateLimitRes = await applyRateLimit(request, apiLimiter)
+  if (rateLimitRes) return rateLimitRes
+
   try {
     const identity = await getResolvedUserIdentitySafe()
     if (!identity) {

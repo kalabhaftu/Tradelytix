@@ -84,7 +84,7 @@ export function CalendarModal({
         params.append('accountId', currentAccountId)
       }
 
-      const response = await fetch(`/api/journal/daily?${params}`)
+      const response = await fetch(`/api/v1/journal/daily?${params}`)
       if (response.ok) {
         const data = await response.json()
         if (data.journal) {
@@ -129,7 +129,7 @@ export function CalendarModal({
       const dateStr = format(selectedDate, 'yyyy-MM-dd')
 
       if (journalId) {
-        const response = await fetch(`/api/journal/daily/${journalId}`, {
+        const response = await fetch(`/api/v1/journal/daily/${journalId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ note, emotion: selectedEmotion }),
@@ -137,7 +137,7 @@ export function CalendarModal({
         if (!response.ok) throw new Error('Failed to update journal')
         toast.success('Journal updated successfully')
       } else {
-        const response = await fetch('/api/journal/daily', {
+        const response = await fetch('/api/v1/journal/daily', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

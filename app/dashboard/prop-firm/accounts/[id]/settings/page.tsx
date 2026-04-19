@@ -94,7 +94,7 @@ export default function AccountSettingsPage() {
   const fetchAccount = useCallback(async () => {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/prop-firm/accounts/${accountId}`)
+      const response = await fetch(`/api/v1/prop-firm/accounts/${accountId}`)
       
       if (!response.ok) {
         throw new Error('Failed to fetch account details')
@@ -173,7 +173,7 @@ export default function AccountSettingsPage() {
     try {
       setIsSaving(true)
       
-      const response = await fetch(`/api/prop-firm/accounts/${accountId}`, {
+      const response = await fetch(`/api/v1/prop-firm/accounts/${accountId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -210,7 +210,7 @@ export default function AccountSettingsPage() {
   const handleDeleteAccountConfirm = async () => {
     setShowDeleteDialog(false)
     try {
-      const response = await fetch(`/api/prop-firm/accounts/${accountId}`, {
+      const response = await fetch(`/api/v1/prop-firm/accounts/${accountId}`, {
         method: 'DELETE',
       })
       

@@ -125,7 +125,7 @@ export function AIAnalysisDialog({ isOpen, onClose, accountId }: AIAnalysisDialo
         params.append('accountId', accountId)
       }
 
-      const response = await fetch(`/api/journal/ai-analysis?${params}`)
+      const response = await fetch(`/api/v1/journal/ai-analysis?${params}`)
 
       if (!response.ok) {
         throw new Error('Failed to generate analysis')
@@ -141,7 +141,7 @@ export function AIAnalysisDialog({ isOpen, onClose, accountId }: AIAnalysisDialo
         const profileData = await profileRes.json()
         if (profileData.success && profileData.data?.aiSettings?.includeAiInsightsInNotifications) {
           const summary = data.analysis?.summary || 'AI analysis completed.'
-          await fetch('/api/notifications', {
+          await fetch('/api/v1/notifications', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

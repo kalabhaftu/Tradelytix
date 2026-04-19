@@ -14,7 +14,7 @@ export function useTags() {
   const { data: tags = [], isLoading, error } = useQuery<TradeTag[]>({
     queryKey: ['tags'],
     queryFn: async () => {
-      const response = await fetch('/api/tags')
+      const response = await fetch('/api/v1/tags')
       if (!response.ok) throw new Error('Failed to fetch tags')
       const data = await response.json()
       return data.tags || []
@@ -24,7 +24,7 @@ export function useTags() {
   })
 
   const createTag = async (name: string, color: string): Promise<TradeTag> => {
-    const response = await fetch('/api/tags', {
+    const response = await fetch('/api/v1/tags', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: name.trim(), color }),
@@ -39,7 +39,7 @@ export function useTags() {
   }
 
   const updateTag = async (id: string, name: string, color: string): Promise<TradeTag> => {
-    const response = await fetch(`/api/tags/${id}`, {
+    const response = await fetch(`/api/v1/tags/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: name.trim(), color }),
@@ -56,7 +56,7 @@ export function useTags() {
   }
 
   const deleteTag = async (id: string): Promise<void> => {
-    const response = await fetch(`/api/tags/${id}`, { method: 'DELETE' })
+    const response = await fetch(`/api/v1/tags/${id}`, { method: 'DELETE' })
     if (!response.ok) throw new Error('Failed to delete tag')
     queryClient.setQueryData<TradeTag[]>(['tags'], (old) =>
       (old || []).filter((t) => t.id !== id)

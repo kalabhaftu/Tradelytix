@@ -61,7 +61,7 @@ export function DeleteAllDataDialog({ open, onOpenChange }: DeleteAllDataDialogP
     try {
       setIsDownloadingBackup(true)
 
-      const response = await fetch('/api/user/data/backup')
+      const response = await fetch('/api/v1/user/data/backup')
 
       if (!response.ok) {
         throw new Error('Failed to generate backup')
@@ -104,7 +104,7 @@ export function DeleteAllDataDialog({ open, onOpenChange }: DeleteAllDataDialogP
     try {
       setIsDeleting(true)
 
-      const response = await fetch('/api/user/data', {
+      const response = await fetch('/api/v1/user/data', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json'

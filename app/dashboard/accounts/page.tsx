@@ -332,7 +332,7 @@ export default function AccountsPage() {
         : deletingAccount.id
 
       const endpoint = deletingAccount.accountType === 'prop-firm'
-        ? `/api/prop-firm/accounts/${accountId}`
+        ? `/api/v1/prop-firm/accounts/${accountId}`
         : `/api/v1/accounts/${accountId}`
 
       const response = await fetch(endpoint, { method: 'DELETE' })
@@ -359,7 +359,7 @@ export default function AccountsPage() {
         : account.id
 
       const endpoint = account.accountType === 'prop-firm'
-        ? `/api/prop-firm/accounts/${accountId}`
+        ? `/api/v1/prop-firm/accounts/${accountId}`
         : `/api/v1/accounts/${accountId}`
 
       const response = await fetch(endpoint, {

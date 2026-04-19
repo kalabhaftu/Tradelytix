@@ -225,7 +225,7 @@ export function DataManagementCard() {
 
           if (account.accountType === 'prop-firm') {
             accountId = account.currentPhaseDetails?.masterAccountId || account.id
-            endpoint = `/api/prop-firm/accounts/${accountId}`
+            endpoint = `/api/v1/prop-firm/accounts/${accountId}`
           } else {
             accountId = account.id
             endpoint = `/api/v1/accounts/${accountId}`

@@ -6,7 +6,7 @@ import { AccountFilterSettings, DEFAULT_FILTER_SETTINGS } from '@/types/account-
 const QUERY_KEY = ['account-filter-settings'] as const
 
 async function fetchAccountFilterSettings(): Promise<AccountFilterSettings> {
-  const response = await fetch('/api/settings/account-filters', {
+  const response = await fetch('/api/v1/settings/account-filters', {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
   })
@@ -17,7 +17,7 @@ async function fetchAccountFilterSettings(): Promise<AccountFilterSettings> {
 }
 
 async function saveAccountFilterSettings(settings: AccountFilterSettings): Promise<AccountFilterSettings> {
-  const response = await fetch('/api/settings/account-filters', {
+  const response = await fetch('/api/v1/settings/account-filters', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(settings),

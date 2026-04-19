@@ -264,7 +264,7 @@ class DataServiceClass {
 
     const result = await deduplicatedFetch<{ account: PropFirmAccount }>(
       cacheKey,
-      () => fetchWithError(`/api/prop-firm/accounts/${accountId}`, { timeout: API_TIMEOUT })
+      () => fetchWithError(`/api/v1/prop-firm/accounts/${accountId}`, { timeout: API_TIMEOUT })
     )
 
     if (result.ok && result.data?.account) {
@@ -299,7 +299,7 @@ class DataServiceClass {
     const params = phase ? `?phase=${phase}` : ''
     
     const result = await fetchWithError<{ success: boolean; data: { trades: any[] } }>(
-      `/api/prop-firm/accounts/${accountId}/trades${params}`,
+      `/api/v1/prop-firm/accounts/${accountId}/trades${params}`,
       { timeout: API_TIMEOUT }
     )
 
@@ -328,7 +328,7 @@ class DataServiceClass {
     history: any[]
   }>> {
     const result = await fetchWithError<{ success: boolean; data: any }>(
-      `/api/prop-firm/accounts/${accountId}/payouts`,
+      `/api/v1/prop-firm/accounts/${accountId}/payouts`,
       { timeout: API_TIMEOUT }
     )
 

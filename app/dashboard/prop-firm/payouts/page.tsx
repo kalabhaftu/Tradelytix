@@ -45,7 +45,7 @@ export default function PayoutsPage() {
   const fetchPayouts = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch('/api/prop-firm/accounts')
+      const response = await fetch('/api/v1/prop-firm/accounts')
       
       if (!response.ok) {
         throw new Error('Failed to fetch payouts')

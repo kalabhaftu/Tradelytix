@@ -84,7 +84,7 @@ export default function UniversalProcessor({
     setAiProcessingState('processing')
     
     try {
-      const response = await fetch('/api/ai/format-trades', {
+      const response = await fetch('/api/v1/ai/format-trades', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

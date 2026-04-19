@@ -43,7 +43,7 @@ export function BacktestingClient({ initialBacktests }: BacktestingClientProps) 
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
 
-      const response = await fetch('/api/backtesting', {
+      const response = await fetch('/api/v1/backtesting', {
         signal: controller.signal,
         cache: 'no-cache'
       })
@@ -154,7 +154,7 @@ export function BacktestingClient({ initialBacktests }: BacktestingClientProps) 
 
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetch(`/api/backtesting?id=${id}`, {
+      const response = await fetch(`/api/v1/backtesting?id=${id}`, {
         method: 'DELETE',
       })
 
@@ -348,7 +348,7 @@ export function BacktestingClient({ initialBacktests }: BacktestingClientProps) 
         onClose={() => setIsAddDialogOpen(false)}
         onAdd={async (backtestData) => {
           try {
-            const response = await fetch('/api/backtesting', {
+            const response = await fetch('/api/v1/backtesting', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(backtestData),

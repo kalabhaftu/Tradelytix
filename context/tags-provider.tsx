@@ -55,7 +55,7 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
 
     fetchPromise = (async () => {
       try {
-        const response = await fetch('/api/tags', {
+        const response = await fetch('/api/v1/tags', {
           headers: { 'Cache-Control': 'no-cache' }
         })
         

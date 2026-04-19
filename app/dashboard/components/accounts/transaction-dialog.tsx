@@ -65,7 +65,7 @@ export function TransactionDialog({
   const onSubmit = async (data: TransactionFormData) => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/live-accounts/${accountId}/transactions`, {
+      const response = await fetch(`/api/v1/live-accounts/${accountId}/transactions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

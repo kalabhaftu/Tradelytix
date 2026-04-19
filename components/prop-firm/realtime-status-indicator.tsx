@@ -97,7 +97,7 @@ export function RealtimeStatusIndicator({
     try {
       if (showRefreshing) setIsRefreshing(true)
 
-      const response = await fetch(`/api/prop-firm/accounts/${accountId}`)
+      const response = await fetch(`/api/v1/prop-firm/accounts/${accountId}`)
       if (!response.ok) {
         throw new Error('Failed to fetch account status')
       }

@@ -37,7 +37,7 @@ export function useJournalData(startDate?: Date, endDate?: Date, accountId?: str
       })
       if (accountId) params.append('accountId', accountId)
       
-      const response = await fetch(`/api/journal/list?${params}`)
+      const response = await fetch(`/api/v1/journal/list?${params}`)
       if (!response.ok) throw new Error('Failed to fetch journals')
       
       const data = await response.json()

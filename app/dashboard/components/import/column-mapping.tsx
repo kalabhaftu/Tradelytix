@@ -7,7 +7,7 @@ import { X, AlertTriangle, Info, RefreshCw, Sparkles } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { experimental_useObject as useObject } from '@ai-sdk/react'
 import { ImportType } from './import-type-selection'
-import { mappingSchema } from '@/app/api/ai/mappings/schema'
+import { mappingSchema } from '@/app/api/v1/ai/mappings/schema'
 import { cn } from '@/lib/utils'
 import { z } from 'zod'
 
@@ -57,7 +57,7 @@ interface ColumnMappingProps {
 
 export default function ColumnMapping({ headers, csvData, mappings, setMappings, error, importType }: ColumnMappingProps) {
   const { object, submit, isLoading } = useObject({
-    api: '/api/ai/mappings',
+    api: '/api/v1/ai/mappings',
     schema: mappingSchema,
     onError(error) {
     },

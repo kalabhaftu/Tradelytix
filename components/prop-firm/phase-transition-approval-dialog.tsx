@@ -103,7 +103,7 @@ export function PhaseTransitionApprovalDialog({
       setIsSubmitting(true)
 
       // Call the phase transition API
-      const response = await fetch(`/api/prop-firm/accounts/${notificationData.masterAccountId}/transition`, {
+      const response = await fetch(`/api/v1/prop-firm/accounts/${notificationData.masterAccountId}/transition`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -120,7 +120,7 @@ export function PhaseTransitionApprovalDialog({
       }
 
       // Mark notification as resolved (delete it since action is complete)
-      await fetch(`/api/notifications/${notification.id}`, {
+      await fetch(`/api/v1/notifications/${notification.id}`, {
         method: 'DELETE'
       })
 

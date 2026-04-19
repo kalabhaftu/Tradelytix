@@ -63,8 +63,8 @@ export default function RequestPayoutPage() {
 
         // Fetch account and eligibility in parallel
         const [accountRes, payoutsRes] = await Promise.all([
-          fetch(`/api/prop-firm/accounts/${accountId}`),
-          fetch(`/api/prop-firm/accounts/${accountId}/payouts`)
+          fetch(`/api/v1/prop-firm/accounts/${accountId}`),
+          fetch(`/api/v1/prop-firm/accounts/${accountId}/payouts`)
         ])
 
         if (!accountRes.ok || !payoutsRes.ok) {
@@ -117,7 +117,7 @@ export default function RequestPayoutPage() {
     try {
       setIsSubmitting(true)
 
-      const response = await fetch('/api/prop-firm/payouts', {
+      const response = await fetch('/api/v1/prop-firm/payouts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

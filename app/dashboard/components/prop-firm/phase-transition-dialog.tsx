@@ -97,7 +97,7 @@ export function PhaseTransitionDialog({
     try {
       setIsTransitioning(true)
 
-      const response = await fetch(`/api/prop-firm/accounts/${masterAccountId}/transition`, {
+      const response = await fetch(`/api/v1/prop-firm/accounts/${masterAccountId}/transition`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

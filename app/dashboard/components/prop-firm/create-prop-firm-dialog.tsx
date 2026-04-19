@@ -129,7 +129,7 @@ export function CreatePropFirmDialog({ open, onOpenChange, onSuccess }: PropFirm
 
   // Load templates on mount
   useEffect(() => {
-    fetch('/api/prop-firm-templates')
+    fetch('/api/v1/prop-firm-templates')
       .then(res => res.json())
       .then(data => {
         if (data.success) setTemplates(data.data)
@@ -181,7 +181,7 @@ export function CreatePropFirmDialog({ open, onOpenChange, onSuccess }: PropFirm
     try {
       setIsSubmitting(true)
 
-      const response = await fetch('/api/prop-firm/accounts', {
+      const response = await fetch('/api/v1/prop-firm/accounts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)

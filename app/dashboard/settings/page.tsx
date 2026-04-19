@@ -29,6 +29,7 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { useTheme } from '@/context/theme-provider'
+import { useAuth } from '@/context/auth-provider'
 import { createClient } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { formatBreakevenBand } from '@/lib/metrics/outcome'
@@ -61,6 +62,7 @@ import { useEffect, useState } from 'react'
 import { toast } from "sonner"
 import { CacheManagement } from "./components/cache-management"
 import { PageHeader } from "@/components/ui/page-header"
+import { getUserAvatarUrl } from "@/lib/user-avatar"
 
 const timezones = [
   'UTC',
@@ -113,7 +115,9 @@ function SettingRow({
 
 export default function SettingsPage() {
   const { theme, setTheme, accentPack, setAccentPack } = useTheme()
-  const user = useUserStore(state => state.supabaseUser)
+  const storeUser = useUserStore(state => state.supabaseUser)
+  const { user: authUser } = useAuth()
+  const user = storeUser ?? authUser
   const timezone = useUserStore(state => state.timezone)
   const setTimezone = useUserStore(state => state.setTimezone)
   const use24HourFormat = useUserStore(state => state.use24HourFormat)
@@ -136,6 +140,7 @@ export default function SettingsPage() {
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
   const [isUpdatingAiSettings, setIsUpdatingAiSettings] = useState(false)
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
+  const avatarUrl = getUserAvatarUrl(user)
 
 
   const handleThemeChange = (value: string) => {
@@ -425,7 +430,7 @@ export default function SettingsPage() {
             {/* User Info */}
             <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/30">
               <Avatar className="h-12 w-12 shrink-0">
-                <AvatarImage src={user?.user_metadata.avatar_url} />
+                <AvatarImage key={avatarUrl ?? 'settings-avatar-fallback'} src={avatarUrl} referrerPolicy="no-referrer" />
                 <AvatarFallback className="text-lg">
                   {user?.email?.[0].toUpperCase()}
                 </AvatarFallback>

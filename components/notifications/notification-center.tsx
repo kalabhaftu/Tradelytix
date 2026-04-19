@@ -138,6 +138,19 @@ export function NotificationCenter() {
     return () => clearInterval(interval)
   }, [refreshUnreadCount])
 
+  useEffect(() => {
+    const handleNotificationsRefresh = () => {
+      if (isOpenRef.current) {
+        fetchNotifications()
+      } else {
+        refreshUnreadCount()
+      }
+    }
+
+    window.addEventListener('notifications:refresh', handleNotificationsRefresh)
+    return () => window.removeEventListener('notifications:refresh', handleNotificationsRefresh)
+  }, [fetchNotifications, refreshUnreadCount])
+
   useDatabaseRealtime({
     userId: user?.id,
     enabled: !!user?.id,

@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
 import { Badge } from '@/components/ui/badge'
-import { JournalRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { JournalPageSkeleton } from './journal-page-skeleton'
 import { AIAnalysisDialog } from '@/app/dashboard/components/journal/ai-analysis-dialog'
 import {
   DropdownMenu,
@@ -289,7 +289,7 @@ export function JournalClient() {
 
   // Show loading skeleton
   if (isLoading && paginatedTrades.length === 0) {
-    return <JournalRouteSkeleton />
+    return <JournalPageSkeleton />
   }
 
   // If detail or edit view is active, show the panel instead of journal cards

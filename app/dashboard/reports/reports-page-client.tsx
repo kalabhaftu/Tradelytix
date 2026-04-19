@@ -84,7 +84,7 @@ import {
 import { DiverseCharts } from './components/diverse-charts'
 import { PerformanceCard } from './components/performance-card'
 import { PropFirmTab } from './components/propfirm-tab'
-import { StatsGridSkeleton, TablePanelSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { PropFirmReportsSkeleton, ReportsContentSkeleton } from './components/reports-page-skeleton'
 import { PageHeader } from '@/components/ui/page-header'
 
 interface ReportsPageClientProps {
@@ -515,13 +515,7 @@ export default function ReportsPageClient({
                 />
 
                 {isLoading ? (
-                    <div className="space-y-6">
-                        <StatsGridSkeleton count={8} />
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <TablePanelSkeleton rows={5} />
-                            <TablePanelSkeleton rows={5} />
-                        </div>
-                    </div>
+                    <ReportsContentSkeleton />
                 ) : !tradingActivity || !psychMetrics || filteredTrades.length === 0 ? (
                     <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border/50 bg-card/30 py-24">
                         <Zap className="h-10 w-10 text-muted-foreground/30 mb-4" />

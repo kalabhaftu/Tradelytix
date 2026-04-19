@@ -1,5 +1,5 @@
-import { PayoutsRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { GlobalPayoutDetailSkeleton } from '../components/payout-loading-skeletons'
 
 export default function Loading() {
-  return <PayoutsRouteSkeleton />
+  return <GlobalPayoutDetailSkeleton />
 }

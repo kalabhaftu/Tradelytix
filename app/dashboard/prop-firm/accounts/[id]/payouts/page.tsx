@@ -26,7 +26,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AccountStatus, PhaseType } from "@/types/prop-firm"
-import { PayoutsRouteSkeleton, TablePanelSkeleton } from "@/components/ui/non-dashboard-skeletons"
+import { AccountPayoutHistorySkeleton, AccountPayoutsPageSkeleton } from "../components/account-loading-skeletons"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -133,7 +133,7 @@ export default function AccountPayoutsPage() {
   }, [user, accountId])
 
   if (isLoading && !account) {
-    return <PayoutsRouteSkeleton />
+    return <AccountPayoutsPageSkeleton />
   }
 
   if (!account) {
@@ -293,7 +293,7 @@ export default function AccountPayoutsPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <TablePanelSkeleton rows={5} />
+            <AccountPayoutHistorySkeleton />
           ) : payouts.length === 0 ? (
             <div className="text-center py-8">
               <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

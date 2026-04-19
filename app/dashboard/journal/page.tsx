@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { JournalClient } from './components/journal-client'
-import { JournalRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { JournalPageSkeleton } from './components/journal-page-skeleton'
 
 // Enable dynamic rendering to respect account filters
 export const dynamic = 'force-dynamic'
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 // Client Component page - uses filtered data from context
 export default function JournalPage() {
   return (
-    <Suspense fallback={<JournalRouteSkeleton />}>
+    <Suspense fallback={<JournalPageSkeleton />}>
       <JournalClient />
     </Suspense>
   )

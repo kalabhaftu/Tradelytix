@@ -69,7 +69,7 @@ import { calculateAccountBalances } from "@/lib/utils/balance-calculator"
 import { groupTradesByExecution } from "@/lib/utils"
 import { useLiveAccountTransactions } from '@/hooks/use-live-account-transactions'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { AccountsRouteSkeleton } from "@/components/ui/non-dashboard-skeletons"
+import { AccountsPageSkeleton } from "./components/accounts-page-skeleton"
 import { PageHeader } from "@/components/ui/page-header"
 
 // Types
@@ -450,7 +450,7 @@ export default function AccountsPage() {
 
       {/* Primary Layout conditional guard */}
       {isLoading && serverAccounts.length === 0 ? (
-        <AccountsRouteSkeleton />
+        <AccountsPageSkeleton />
       ) : (
         <div className="min-h-screen bg-background">
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">

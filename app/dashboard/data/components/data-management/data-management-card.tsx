@@ -40,7 +40,7 @@ import { ImportDialog } from './import-dialog'
 import { DeleteAllDataDialog } from '@/components/data-management/delete-all-data-dialog'
 import { useUserStore } from '@/store/user-store'
 import { useSearchParams } from 'next/navigation'
-import { EntityListSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { DataManagementCardSkeleton } from '../data-page-skeleton'
 
 type AccountWithTrades = {
   id: string
@@ -408,7 +408,7 @@ export function DataManagementCard() {
       </section>
 
       {/* Loading State */}
-      {accountsLoading && <EntityListSkeleton items={3} />}
+      {accountsLoading && <DataManagementCardSkeleton />}
 
       {/* Select All */}
       {!accountsLoading && accountsWithTrades.length > 0 && (

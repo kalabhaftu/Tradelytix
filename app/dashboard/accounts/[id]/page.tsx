@@ -23,7 +23,7 @@ import { TransactionDialog } from "@/app/dashboard/components/accounts/transacti
 import { TransactionHistory } from "@/app/dashboard/components/accounts/transaction-history"
 import { useUserStore } from '@/store/user-store'
 import { useDatabaseRealtime } from '@/lib/realtime/database-realtime'
-import { PropFirmDetailRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { LiveAccountDetailSkeleton } from '../components/live-account-detail-skeleton'
 
 interface LiveAccountData {
   id: string
@@ -142,7 +142,7 @@ export default function LiveAccountDetailPage() {
   }
 
   if (isLoading) {
-    return <PropFirmDetailRouteSkeleton />
+    return <LiveAccountDetailSkeleton />
   }
 
   if (!account) {
@@ -431,5 +431,4 @@ export default function LiveAccountDetailPage() {
     </div>
   )
 }
-
 

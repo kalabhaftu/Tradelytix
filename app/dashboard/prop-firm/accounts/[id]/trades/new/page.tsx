@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft } from 'lucide-react'
 import ImportTradesCard from '@/app/dashboard/components/import/import-trades-card'
-import { ImportRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { ImportTradesPageSkeleton } from '../../components/account-loading-skeletons'
 
 interface AccountData {
   id: string
@@ -67,7 +67,7 @@ export default function NewTradePage() {
   }, [user, accountId, fetchAccount])
 
   if (isLoading) {
-    return <ImportRouteSkeleton />
+    return <ImportTradesPageSkeleton />
   }
 
   if (!account) {

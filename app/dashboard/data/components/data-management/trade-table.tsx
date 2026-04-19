@@ -22,7 +22,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { formatQuantity, formatTradeData, ensureExtendedTrade, cn } from '@/lib/utils'
 import { updateTradeAction } from '@/server/trades'
 import { ExtendedTrade } from '@/types/trade-extended'
-import { TablePanelSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { DataTradeTableSkeleton } from '../data-page-skeleton'
 import { useData } from '@/context/data-provider'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
@@ -263,7 +263,7 @@ export default function TradeTable() {
   ].filter(Boolean).length
 
   if (tradesLoading && formattedTrades.length === 0) {
-    return <TablePanelSkeleton rows={8} />
+    return <DataTradeTableSkeleton />
   }
 
   return (

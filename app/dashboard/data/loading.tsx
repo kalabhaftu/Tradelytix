@@ -1,5 +1,5 @@
-import { DataRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { DataPageSkeleton } from './components/data-page-skeleton'
 
 export default function Loading() {
-  return <DataRouteSkeleton />
+  return <DataPageSkeleton />
 }

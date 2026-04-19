@@ -1,5 +1,5 @@
-import { BacktestingRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { PlaybookPageSkeleton } from './components/playbook-page-skeleton'
 
 export default function Loading() {
-  return <BacktestingRouteSkeleton />
+  return <PlaybookPageSkeleton />
 }

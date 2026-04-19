@@ -29,7 +29,7 @@ import {
 } from "lucide-react"
 import { cn, formatTradeData } from "@/lib/utils"
 import { AccountStatus } from "@/types/prop-firm"
-import { PropFirmTradesRouteSkeleton } from "@/components/ui/non-dashboard-skeletons"
+import { AccountTradesPageSkeleton } from "../components/account-loading-skeletons"
 import { useData } from '@/context/data-provider'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
@@ -178,7 +178,7 @@ export default function AccountTradesPage() {
   const totalPnl = groupedTrades.reduce((sum: number, trade: TradeData) => sum + trade.pnl, 0)
 
   if (isLoading) {
-    return <PropFirmTradesRouteSkeleton />
+    return <AccountTradesPageSkeleton />
   }
 
   if (!account) {

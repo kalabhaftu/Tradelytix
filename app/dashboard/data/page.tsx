@@ -3,7 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useEffect, lazy, Suspense, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { DataRouteSkeleton, TablePanelSkeleton } from "@/components/ui/non-dashboard-skeletons"
+import { DataManagementCardSkeleton, DataPageSkeleton, DataTradeTableSkeleton } from "./components/data-page-skeleton"
 import { PageHeader } from "@/components/ui/page-header"
 
 // Force dynamic rendering to avoid static generation issues
@@ -39,12 +39,12 @@ function DashboardContent() {
             <TabsTrigger value="trades">Trades</TabsTrigger>
           </TabsList>
           <TabsContent value="accounts" className="mt-6">
-            <Suspense fallback={<TablePanelSkeleton rows={6} />}>
+            <Suspense fallback={<DataManagementCardSkeleton />}>
               <DataManagementCard />
             </Suspense>
           </TabsContent>
           <TabsContent value="trades" className="mt-6">
-            <Suspense fallback={<TablePanelSkeleton rows={8} />}>
+            <Suspense fallback={<DataTradeTableSkeleton />}>
               <TradeTable />
             </Suspense>
           </TabsContent>
@@ -56,7 +56,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<DataRouteSkeleton />}>
+    <Suspense fallback={<DataPageSkeleton />}>
       <DashboardContent />
     </Suspense>
   )

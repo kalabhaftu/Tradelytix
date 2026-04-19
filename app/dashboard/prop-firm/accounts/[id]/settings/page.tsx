@@ -26,7 +26,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AccountStatus, PhaseType } from "@/types/prop-firm"
-import { SettingsRouteSkeleton } from "@/components/ui/non-dashboard-skeletons"
+import { AccountSettingsPageSkeleton } from "../components/account-loading-skeletons"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -235,7 +235,7 @@ export default function AccountSettingsPage() {
   }
 
   if (isLoading) {
-    return <SettingsRouteSkeleton />
+    return <AccountSettingsPageSkeleton />
   }
 
   if (!account) {

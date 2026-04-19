@@ -27,7 +27,7 @@ import { toast } from 'sonner'
 import { AddEditModelModal } from './components/add-edit-model-modal'
 import { useTradingModels } from '@/hooks/use-trading-models'
 import { useQueryClient } from '@tanstack/react-query'
-import { CardsGridSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { PlaybookCardsSkeleton } from './components/playbook-page-skeleton'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { useData } from '@/context/data-provider'
 import { PageHeader } from '@/components/ui/page-header'
@@ -264,7 +264,7 @@ export default function PlaybookPage() {
 
         {/* Models Grid */}
         {isLoading ? (
-          <CardsGridSkeleton cards={3} />
+          <PlaybookCardsSkeleton />
         ) : models.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border/40 bg-card/30 py-24">
             <FileText className="h-12 w-12 text-muted-foreground/20 mb-6" />

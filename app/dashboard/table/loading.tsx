@@ -1,5 +1,5 @@
-import { TableRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { TablePageSkeleton } from './components/table-page-skeleton'
 
 export default function Loading() {
-  return <TableRouteSkeleton />
+  return <TablePageSkeleton />
 }

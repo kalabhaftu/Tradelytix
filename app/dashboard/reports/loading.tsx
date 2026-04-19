@@ -1,5 +1,5 @@
-import { ReportsRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { ReportsPageSkeleton } from './components/reports-page-skeleton'
 
 export default function Loading() {
-  return <ReportsRouteSkeleton />
+  return <ReportsPageSkeleton />
 }

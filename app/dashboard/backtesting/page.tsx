@@ -3,7 +3,7 @@ import { BacktestingClient } from './components/backtesting-client'
 import { BacktestTrade } from '@/types/backtesting-types'
 import { getUserId } from '@/server/auth'
 import { prisma } from '@/lib/prisma'
-import { BacktestingRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { BacktestingPageSkeleton } from './components/backtesting-page-skeleton'
 
 // Enable ISR with 5 minute revalidation
 export const revalidate = 300
@@ -76,7 +76,7 @@ export default async function BacktestingPage() {
   const backtests = await getBacktests()
 
   return (
-    <Suspense fallback={<BacktestingRouteSkeleton />}>
+    <Suspense fallback={<BacktestingPageSkeleton />}>
       <BacktestingClient initialBacktests={backtests} />
     </Suspense>
   )

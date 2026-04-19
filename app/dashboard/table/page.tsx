@@ -11,7 +11,7 @@ import { cn, classifyTrade, ensureExtendedTrade } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { TradeDetailPanel } from '../components/tables/trade-detail-panel'
 import { TradeEditPanel } from '../components/tables/trade-edit-panel'
-import { TableRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { TablePageSkeleton } from './components/table-page-skeleton'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
 // Lazy load the trade table component
@@ -142,7 +142,7 @@ export default function TablePage() {
 
   return (
     <div className="w-full px-3 sm:px-4 md:px-6 py-4">
-      <Suspense fallback={<TableRouteSkeleton />}>
+      <Suspense fallback={<TablePageSkeleton />}>
         <TableView />
       </Suspense>
     </div>

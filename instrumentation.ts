@@ -10,14 +10,7 @@ export async function register() {
 
   // Only run on server
   if (process.env.NEXT_RUNTIME === 'nodejs') {
-    // Keep the server config behind a runtime-resolved import so local
-    // development doesn't eagerly bundle Sentry's optional tracing tree.
-    const loadServerConfig = new Function(
-      'modulePath',
-      'return import(modulePath)'
-    ) as (modulePath: string) => Promise<unknown>
-
-    await loadServerConfig('./sentry.server.config')
+    await import('./sentry.server.config')
   }
 
   // Edge runtime

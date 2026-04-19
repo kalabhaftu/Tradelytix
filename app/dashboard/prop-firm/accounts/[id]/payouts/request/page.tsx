@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, DollarSign, AlertCircle, CheckCircle2, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { PayoutsRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { RequestPayoutPageSkeleton } from '../../components/account-loading-skeletons'
 
 interface EligibilityData {
   isEligible: boolean
@@ -146,7 +146,7 @@ export default function RequestPayoutPage() {
   }
 
   if (isLoading) {
-    return <PayoutsRouteSkeleton />
+    return <RequestPayoutPageSkeleton />
   }
 
   return (

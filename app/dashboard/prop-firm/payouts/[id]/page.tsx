@@ -21,7 +21,7 @@ import {
   Trash2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { PayoutsRouteSkeleton } from "@/components/ui/non-dashboard-skeletons"
+import { GlobalPayoutDetailSkeleton } from "../components/payout-loading-skeletons"
 
 interface PayoutData {
   id: string
@@ -126,7 +126,7 @@ export default function PayoutDetailPage() {
   }
 
   if (isLoading) {
-    return <PayoutsRouteSkeleton />
+    return <GlobalPayoutDetailSkeleton />
   }
 
   if (!payout) {

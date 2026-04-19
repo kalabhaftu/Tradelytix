@@ -1,5 +1,5 @@
-import { SettingsRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { AccountSettingsPageSkeleton } from '../components/account-loading-skeletons'
 
 export default function Loading() {
-  return <SettingsRouteSkeleton />
+  return <AccountSettingsPageSkeleton />
 }

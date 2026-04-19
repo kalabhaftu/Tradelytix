@@ -1,5 +1,5 @@
-import { JournalRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { JournalPageSkeleton } from './components/journal-page-skeleton'
 
 export default function Loading() {
-  return <JournalRouteSkeleton />
+  return <JournalPageSkeleton />
 }

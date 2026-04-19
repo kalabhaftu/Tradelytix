@@ -1,5 +1,5 @@
-import { PropFirmTradesRouteSkeleton } from '@/components/ui/non-dashboard-skeletons'
+import { AccountTradesPageSkeleton } from '../components/account-loading-skeletons'
 
 export default function Loading() {
-  return <PropFirmTradesRouteSkeleton />
+  return <AccountTradesPageSkeleton />
 }

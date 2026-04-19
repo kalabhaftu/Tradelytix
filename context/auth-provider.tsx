@@ -47,6 +47,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     enabled: true
   })
 
+  const clearBrowserAuthStorage = useCallback(() => {
+    if (typeof window === 'undefined') return
+
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('sb-') && key.includes('-auth-token')) {
+        localStorage.removeItem(key)
+      }
+    })
+    sessionStorage.clear()
+  }, [])
+
+  const isRecoverableSessionError = useCallback((error: unknown) => {
+    if (!error || typeof error !== 'object') return false
+
+    const maybeError = error as { message?: string; code?: string; status?: number }
+    const message = maybeError.message?.toLowerCase() || ''
+    const code = maybeError.code?.toLowerCase() || ''
+
+    return (
+      code === 'refresh_token_not_found' ||
+      message.includes('refresh token not found') ||
+      message.includes('invalid refresh token')
+    )
+  }, [])
+
   // Check if auth status is still valid (cache for 30 seconds)
   const isAuthCheckValid = () => {
     if (!authCheckCache) return false
@@ -105,13 +130,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Clear any cached auth data
     localStorage.removeItem('deltalytix_user_data')
     // Clear Supabase auth tokens (they start with 'sb-')
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('sb-') && key.includes('-auth-token')) {
-        localStorage.removeItem(key)
-      }
-    })
-    sessionStorage.clear()
-  }, [resetUser, setSupabaseUser])
+    clearBrowserAuthStorage()
+  }, [clearBrowserAuthStorage, resetUser, setSupabaseUser])
 
   useEffect(() => {
     const supabase = createClient()
@@ -146,13 +166,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null)
         }
       } catch (error) {
-        setSession(null)
-        setSupabaseUser(null)
-        setUser(null)
-        toast.error('Session Error', {
-          description: 'Failed to check authentication status',
-        })
-        await signOut()
+        if (isRecoverableSessionError(error)) {
+          clearBrowserAuthStorage()
+          setSession(null)
+          setSupabaseUser(null)
+          setUser(null)
+        } else {
+          setSession(null)
+          setSupabaseUser(null)
+          setUser(null)
+          toast.error('Session Error', {
+            description: 'Failed to check authentication status',
+          })
+          await signOut()
+        }
       } finally {
         setIsLoading(false)
       }
@@ -188,7 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [router, forceClearAuth, setSupabaseUser, setUser])
+  }, [router, forceClearAuth, setSupabaseUser, setUser, clearBrowserAuthStorage, isRecoverableSessionError])
 
   return (
     <AuthContext.Provider

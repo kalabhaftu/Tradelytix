@@ -60,6 +60,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { toast } from "sonner"
 import { CacheManagement } from "./components/cache-management"
+import { PageHeader } from "@/components/ui/page-header"
 
 const timezones = [
   'UTC',
@@ -99,7 +100,7 @@ function SettingRow({
         <div className="min-w-0">
           <p className="text-sm font-medium">{label}</p>
           {description && (
-            <p className="text-xs text-muted-foreground truncate">{description}</p>
+            <p className="text-xs text-muted-foreground/85">{description}</p>
           )}
         </div>
       </div>
@@ -398,8 +399,7 @@ export default function SettingsPage() {
     <div className="w-full max-w-7xl mx-auto py-8 px-4 sm:px-6 pb-20 md:pb-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground mt-1 text-sm">Manage your account settings and preferences</p>
+        <PageHeader title="Settings" className="gap-2" />
       </div>
 
       <motion.div
@@ -417,7 +417,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <CardTitle className="text-base">Profile</CardTitle>
-                <CardDescription className="text-xs">Your personal information</CardDescription>
+                <CardDescription className="text-xs text-muted-foreground/85">Your personal information</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -496,7 +496,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <CardTitle className="text-base">Preferences</CardTitle>
-                <CardDescription className="text-xs">Customize your experience</CardDescription>
+                <CardDescription className="text-xs text-muted-foreground/85">Customize your experience</CardDescription>
               </div>
             </div>
           </CardHeader>

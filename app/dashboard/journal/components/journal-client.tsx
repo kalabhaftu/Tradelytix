@@ -59,6 +59,7 @@ import { useTags } from '@/context/tags-provider'
 import { cn, ensureExtendedTrade } from '@/lib/utils'
 import { useJournal } from '@/hooks/use-journal'
 import { formatBreakevenBand, getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import { PageHeader } from '@/components/ui/page-header'
 
 const ITEMS_PER_PAGE = 21
 
@@ -322,36 +323,35 @@ export function JournalClient() {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between gap-4"
+        className="w-full"
       >
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight truncate">Trading Journal</h1>
-          <p className="text-muted-foreground mt-1 text-sm truncate">
-            Review and analyze your trade history
-          </p>
-        </div>
-        <div className="flex gap-2 flex-shrink-0">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => setShowAIAnalysis(true)}
-            className="gap-2"
-          >
-            <Sparkles className="h-4 w-4" />
-            <span className="hidden sm:inline">AI Analysis</span>
-            <span className="sm:hidden">AI</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="gap-2"
-          >
-            {isRefreshing ? <Spinner className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" />}
-            <span className="hidden sm:inline">Refresh</span>
-          </Button>
-        </div>
+        <PageHeader
+          title="Trading Journal"
+          actions={
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAIAnalysis(true)}
+                className="gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span className="hidden sm:inline">AI Analysis</span>
+                <span className="sm:hidden">AI</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="gap-2 text-muted-foreground hover:text-foreground"
+              >
+                {isRefreshing ? <Spinner className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" />}
+                <span className="hidden sm:inline">Refresh</span>
+              </Button>
+            </>
+          }
+        />
       </motion.div>
 
       {/* Stats */}

@@ -480,7 +480,7 @@ export default function AccountDetailPage() {
           transition={{ delay: 0.15 }}
         >
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="w-full justify-start overflow-x-auto">
+            <TabsList className="w-full justify-start overflow-x-auto rounded-2xl bg-muted/15 p-1">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="trades">Trades</TabsTrigger>
               {currentPhase.isFunded && <TabsTrigger value="payouts">Payouts</TabsTrigger>}
@@ -548,7 +548,7 @@ export default function AccountDetailPage() {
                         const winRate = Math.round(calculateWinRate(wins, losses))
 
                         return (
-                          <div key={phase.id} className="p-4 border rounded-lg">
+                          <div key={phase.id} className="rounded-2xl border border-border/30 bg-muted/15 p-4">
                             <div className="flex items-center justify-between mb-3">
                               <div className="flex items-center gap-2">
                                 <Badge variant={phase.status === 'active' ? 'default' : 'secondary'}>
@@ -596,7 +596,7 @@ export default function AccountDetailPage() {
                     </Button>
                   </CardHeader>
                   <CardContent>
-                    <div className="border rounded-lg overflow-hidden">
+                    <div className="overflow-hidden rounded-2xl border border-border/30 bg-card/40">
                       <table className="w-full">
                         <thead className="bg-muted/50">
                           <tr className="text-left text-xs">
@@ -629,7 +629,7 @@ export default function AccountDetailPage() {
                 </CardHeader>
                 <CardContent>
                   {isLoadingData ? (
-                    <div className="border rounded-lg overflow-hidden">
+                    <div className="overflow-hidden rounded-2xl border border-border/30 bg-card/40">
                       <table className="w-full">
                         <thead className="bg-muted/50">
                           <tr className="text-left text-xs">

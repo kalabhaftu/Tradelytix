@@ -76,15 +76,16 @@ export function ReportFilters({
     const activeFilterCount = Object.values(filters).filter(v => v !== 'all').length
 
     return (
-        <div className="flex flex-col gap-3 mb-6 no-export">
+        <div className="mb-8 flex flex-col gap-3 no-export">
+            <div className="rounded-[24px] border border-border/22 bg-card/40 p-3 sm:p-4">
             {/* Primary Controls — single row: Account | Presets | Date | Advanced toggle */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2.5">
                 {/* Account Selector */}
                 <Select
                     value={selectedAccountId || 'all'}
                     onValueChange={(val) => onAccountChange(val === 'all' ? null : val)}
                 >
-                    <SelectTrigger className="h-9 w-[160px] text-[11px] font-bold uppercase tracking-wider border-border/30 bg-muted/10 hover:bg-muted/20 transition-colors rounded-xl gap-1.5">
+                    <SelectTrigger className="h-9 w-[160px] gap-1.5 rounded-xl border-border/18 bg-background/55 text-[11px] font-bold uppercase tracking-wider transition-colors hover:bg-muted/20">
                         <Wallet className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         <SelectValue placeholder="All Accounts" />
                     </SelectTrigger>
@@ -99,10 +100,10 @@ export function ReportFilters({
                 </Select>
 
                 {/* Divider */}
-                <div className="h-5 w-px bg-border/30 hidden sm:block" />
+                <div className="hidden h-5 w-px bg-border/12 sm:block" />
 
                 {/* Date Presets */}
-                <div className="flex items-center bg-muted/10 rounded-xl border border-border/20 p-0.5 gap-0.5">
+                <div className="flex items-center gap-0.5 rounded-xl border border-border/14 bg-background/45 p-1">
                     {['7D', '30D', '90D', 'YTD', 'ALL'].map(preset => (
                         <Button
                             key={preset}
@@ -122,7 +123,7 @@ export function ReportFilters({
                 </div>
 
                 {/* Divider */}
-                <div className="h-5 w-px bg-border/30 hidden sm:block" />
+                <div className="hidden h-5 w-px bg-border/12 sm:block" />
 
                 {/* Custom Date Picker */}
                 <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
@@ -131,7 +132,7 @@ export function ReportFilters({
                             variant="outline"
                             size="sm"
                             className={cn(
-                                "h-9 gap-2 border-border/30 bg-muted/10 hover:bg-muted/20 px-3 rounded-xl text-[11px] font-bold uppercase tracking-wider",
+                                "h-9 gap-2 rounded-xl border-border/18 bg-background/55 px-3 text-[11px] font-bold uppercase tracking-wider hover:bg-muted/20",
                                 !dateRange && "text-muted-foreground"
                             )}
                         >
@@ -150,7 +151,7 @@ export function ReportFilters({
                             <ChevronDown className="h-3 w-3 opacity-40" />
                         </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 border-border/10 rounded-[24px] shadow-lg" align="end">
+                    <PopoverContent className="w-auto rounded-[24px] border-border/16 p-0 shadow-lg" align="end">
                         <CustomDateRangePicker
                             selected={dateRange}
                             onSelect={(range) => {
@@ -176,7 +177,7 @@ export function ReportFilters({
                         "h-9 gap-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all",
                         showAdvanced
                             ? "bg-primary text-primary-foreground"
-                            : "border-border/30 bg-muted/10 hover:bg-muted/20"
+                            : "border-border/22 bg-background/55 hover:bg-muted/20"
                     )}
                 >
                     <SlidersHorizontal className="h-3.5 w-3.5" />
@@ -188,11 +189,12 @@ export function ReportFilters({
                     )}
                 </Button>
             </div>
+            </div>
 
             {/* Advanced Filters — collapsible row */}
             <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
                 <CollapsibleContent className="data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up overflow-hidden">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-2 pb-1 border-t border-border/20">
+                    <div className="grid grid-cols-2 gap-3 rounded-[22px] border border-border/18 bg-card/30 p-3 sm:grid-cols-3 lg:grid-cols-5">
                         {/* Symbol */}
                         <FilterSelect
                             icon={<Hash className="h-3 w-3" />}
@@ -275,10 +277,10 @@ function FilterSelect({
                 <span className="text-[9px] font-black uppercase tracking-[0.1em]">{label}</span>
             </div>
             <Select value={value} onValueChange={onChange}>
-                <SelectTrigger className="h-8 text-[11px] font-bold uppercase tracking-wider border-border/20 bg-muted/10 hover:bg-muted/20 transition-colors rounded-lg">
+                <SelectTrigger className="h-8 rounded-lg border-border/18 bg-background/55 text-[11px] font-bold uppercase tracking-wider transition-colors hover:bg-muted/20">
                     <SelectValue placeholder={placeholder} />
                 </SelectTrigger>
-                <SelectContent className="border-border/10 rounded-xl">
+                <SelectContent className="rounded-xl border-border/16">
                     <SelectItem value="all" className="text-[11px] font-bold uppercase">{placeholder}</SelectItem>
                     {options.map(o => (
                         <SelectItem key={o.value} value={o.value} className="text-[11px] font-bold uppercase">{o.label}</SelectItem>

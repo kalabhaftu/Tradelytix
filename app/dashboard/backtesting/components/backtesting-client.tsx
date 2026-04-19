@@ -22,6 +22,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/ui/page-header'
 
 interface BacktestingClientProps {
   initialBacktests: BacktestTrade[]
@@ -172,10 +173,7 @@ export function BacktestingClient({ initialBacktests }: BacktestingClientProps) 
       <Tabs defaultValue="backtests" className="w-full">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight truncate">Backtesting</h1>
-            <p className="text-muted-foreground mt-1 text-sm truncate">
-              Track and analyze your paper trades
-            </p>
+            <PageHeader title="Backtesting" className="gap-2" />
           </div>
           <TabsList className="grid w-full sm:w-fit grid-cols-2 flex-shrink-0">
             <TabsTrigger value="backtests" className="gap-2">
@@ -297,14 +295,16 @@ export function BacktestingClient({ initialBacktests }: BacktestingClientProps) 
           </div>
 
           {filteredBacktests.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No backtests found</h3>
-                <p className="text-sm text-muted-foreground mb-4">
+            <Card className="border-dashed border-border/50 bg-card/40">
+              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/40">
+                  <AlertTriangle className="h-7 w-7 text-muted-foreground" />
+                </div>
+                <h3 className="mb-2 text-lg font-semibold">No backtests found</h3>
+                <p className="mb-5 max-w-md text-sm text-muted-foreground">
                   {searchTerm || filterBy !== 'all'
                     ? 'Try adjusting your search or filters'
-                    : 'Get started by adding your first backtest'}
+                    : 'Start with your first replay to build a clean performance baseline before you open analytics.'}
                 </p>
                 {!searchTerm && filterBy === 'all' && (
                   <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">

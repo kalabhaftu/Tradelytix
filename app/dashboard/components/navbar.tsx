@@ -33,9 +33,14 @@ import {
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Logo } from '@/components/logo'
 import { Badge } from '@/components/ui/badge'
+import { getUserAvatarUrl, getUserDisplayName } from '@/lib/user-avatar'
 
 export default function Navbar() {
-  const user = useUserStore(state => state.supabaseUser)
+  const storeUser = useUserStore(state => state.supabaseUser)
+  const { user: authUser } = useAuth()
+  const user = storeUser ?? authUser
+  const avatarUrl = getUserAvatarUrl(user)
+  const displayName = getUserDisplayName(user) || user?.email?.split('@')[0] || 'User'
   const [mounted, setMounted] = useState(false)
   const [filtersPopoverOpen, setFiltersPopoverOpen] = useState(false)
   const [accountPopoverOpen, setAccountPopoverOpen] = useState(false)
@@ -121,7 +126,7 @@ export default function Navbar() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.user_metadata?.avatar_url} />
+                  <AvatarImage key={avatarUrl ?? 'navbar-avatar-fallback'} src={avatarUrl} referrerPolicy="no-referrer" />
                   <AvatarFallback className="uppercase text-xs bg-muted text-foreground font-medium">
                     {user?.email?.[0] || 'U'}
                   </AvatarFallback>
@@ -131,14 +136,14 @@ export default function Navbar() {
             <DropdownMenuContent className="w-56" align="end" sideOffset={8}>
               <div className="flex items-center gap-3 p-3">
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src={user?.user_metadata?.avatar_url} />
+                  <AvatarImage key={avatarUrl ?? 'navbar-menu-avatar-fallback'} src={avatarUrl} referrerPolicy="no-referrer" />
                   <AvatarFallback className="uppercase text-xs bg-muted text-foreground font-medium">
                     {user?.email?.[0] || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col space-y-0.5 leading-none">
                   <p className="text-sm font-semibold truncate max-w-[160px]">
-                    {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+                    {displayName}
                   </p>
                   <p className="text-xs text-muted-foreground truncate max-w-[160px]">
                     {user?.email || ''}

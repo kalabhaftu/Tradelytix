@@ -54,6 +54,7 @@ export function useReportStats(
     },
     enabled,
     initialData: shouldUseInitialData ? options?.initialData : undefined,
+    placeholderData: shouldUseInitialData ? options?.initialData : undefined,
     staleTime: 60 * 1000, // Reports data is less volatile, 1 min stale
     gcTime: 5 * 60 * 1000,
   })

@@ -57,6 +57,7 @@ class DatabaseRealtimeManager {
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
   private reconnectTimeout: NodeJS.Timeout | null = null
+  private hasLoggedReconnectExhausted = false
   
   /**
    * Subscribe to database changes
@@ -161,6 +162,7 @@ class DatabaseRealtimeManager {
         if (status === 'SUBSCRIBED') {
           this.isConnected = true
           this.reconnectAttempts = 0
+          this.hasLoggedReconnectExhausted = false
           this.notifyStatus('connected')
         } else if (status === 'CHANNEL_ERROR') {
           this.isConnected = false
@@ -226,7 +228,11 @@ class DatabaseRealtimeManager {
   
   private scheduleReconnect(tables: RealtimeTable[], userId: string) {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('[Realtime] Max reconnect attempts reached')
+      if (!this.hasLoggedReconnectExhausted) {
+        console.warn('[Realtime] Max reconnect attempts reached; realtime paused until a later reconnect opportunity')
+        this.hasLoggedReconnectExhausted = true
+      }
+      this.notifyStatus('error')
       return
     }
     

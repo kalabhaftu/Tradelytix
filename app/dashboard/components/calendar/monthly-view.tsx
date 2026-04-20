@@ -12,6 +12,7 @@ import {
   endOfMonth,
   getISOWeek,
 } from "date-fns"
+import { BookOpen } from "lucide-react"
 import { cn, formatCurrency } from "@/lib/utils"
 
 import { CalendarData } from "@/app/dashboard/types/calendar"
@@ -146,11 +147,8 @@ const DayCell = memo(function DayCell({
       )}>
         {/* Note Icon — top left */}
         {hasNotes && (
-          <div className="absolute top-1.5 left-1.5 opacity-80" title="Has notes">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-foreground/70">
-              <path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z" />
-              <path d="M15 3v4a2 2 0 0 0 2 2h4" />
-            </svg>
+          <div className="absolute top-1.5 left-1.5 opacity-80" title="Has journal entry">
+            <BookOpen className="h-[13px] w-[13px] text-foreground/70" strokeWidth={2.25} />
           </div>
         )}
 

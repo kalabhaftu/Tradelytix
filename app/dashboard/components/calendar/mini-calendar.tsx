@@ -16,6 +16,13 @@ import { Button } from "@/components/ui/button"
 import { CalendarData } from "@/app/dashboard/types/calendar"
 import { useData } from "@/context/data-provider"
 import MonthlyView from "./monthly-view"
+import {
+  CALENDAR_GRADIENT_PRESETS,
+  type CalendarGradientPresetId,
+  clipCalendarCardSurface,
+  drawCalendarGradientBackground,
+  resolveCalendarGradientPreset,
+} from "./screenshot-gradients"
 
 const formatCompact = (value: number) => {
   if (Math.abs(value) >= 1000) return `$${(value / 1000).toFixed(1)}k`
@@ -31,7 +38,7 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const calendarRef = useRef<HTMLDivElement>(null)
 
-  const handleScreenshot = useCallback(async (withGradient: boolean) => {
+  const handleScreenshot = useCallback(async (variant: 'basic' | 'random' | CalendarGradientPresetId) => {
     if (!calendarRef.current) return
     try {
       toast.info("Capturing screenshot...")
@@ -74,6 +81,8 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
       const cardW = cardCanvas.width
       const cardH = cardCanvas.height
       // Padding only for gradient (around the entire card+logo unit)
+      const withGradient = variant !== 'basic'
+      const selectedGradient = withGradient ? resolveCalendarGradientPreset(variant) : null
       const padding = withGradient ? Math.round(28 * scale) : 0
       const totalW = cardW + padding * 2
       // Logo bar is INSIDE the card, so total height = card + logo bar + padding (if gradient)
@@ -87,35 +96,15 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
       // Combined card height including logo bar
       const combinedCardH = cardH + Math.round(logoBarHeight * scale)
       
-      if (withGradient) {
-        const grad = ctx.createLinearGradient(0, 0, totalW, totalH)
-        grad.addColorStop(0, '#0f0c29')
-        grad.addColorStop(0.5, '#302b63')
-        grad.addColorStop(1, '#24243e')
-        ctx.fillStyle = grad
-        ctx.fillRect(0, 0, totalW, totalH)
+      if (withGradient && selectedGradient) {
+        drawCalendarGradientBackground(ctx, selectedGradient.id, totalW, totalH)
 
         ctx.save()
         ctx.shadowColor = 'rgba(0,0,0,0.55)'
         ctx.shadowBlur = 45 * scale
         ctx.shadowOffsetY = 12 * scale
         const r = 16 * scale
-        // Draw rounded rect that includes both card AND logo bar area
-        ctx.beginPath()
-        ctx.moveTo(padding + r, padding)
-        ctx.lineTo(padding + cardW - r, padding)
-        ctx.quadraticCurveTo(padding + cardW, padding, padding + cardW, padding + r)
-        ctx.lineTo(padding + cardW, padding + combinedCardH - r)
-        ctx.quadraticCurveTo(padding + cardW, padding + combinedCardH, padding + cardW - r, padding + combinedCardH)
-        ctx.lineTo(padding + r, padding + combinedCardH)
-        ctx.quadraticCurveTo(padding, padding + combinedCardH, padding, padding + combinedCardH - r)
-        ctx.lineTo(padding, padding + r)
-        ctx.quadraticCurveTo(padding, padding, padding + r, padding)
-        ctx.closePath()
-        // Fill the entire area with dark background first
-        ctx.fillStyle = resolvedBg
-        ctx.fill()
-        ctx.clip()
+        clipCalendarCardSurface(ctx, padding, padding, cardW, combinedCardH, r, resolvedBg)
         // Draw the card content
         ctx.drawImage(cardCanvas, padding, padding)
         ctx.restore()
@@ -149,7 +138,7 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
-        link.download = `mini-calendar-${format(currentDate, 'yyyy-MM')}${withGradient ? '-styled' : ''}.png`
+        link.download = `mini-calendar-${format(currentDate, 'yyyy-MM')}${selectedGradient ? `-${selectedGradient.id}` : ''}.png`
         link.style.display = 'none'
         document.body.appendChild(link)
         link.click()
@@ -240,14 +229,20 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-36">
-                <DropdownMenuItem onClick={() => handleScreenshot(false)} className="gap-2 text-xs font-medium">
+                <DropdownMenuItem onClick={() => handleScreenshot('basic')} className="gap-2 text-xs font-medium">
                   <ImageIcon className="h-3.5 w-3.5" />
                   Basic
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleScreenshot(true)} className="gap-2 text-xs font-medium">
+                <DropdownMenuItem onClick={() => handleScreenshot('random')} className="gap-2 text-xs font-medium">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Gradient
+                  Random Gradient
                 </DropdownMenuItem>
+                {CALENDAR_GRADIENT_PRESETS.map((preset) => (
+                  <DropdownMenuItem key={preset.id} onClick={() => handleScreenshot(preset.id)} className="gap-2 text-xs font-medium">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {preset.label}
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

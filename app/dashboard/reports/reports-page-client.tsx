@@ -84,7 +84,7 @@ import {
 import { DiverseCharts } from './components/diverse-charts'
 import { PerformanceCard } from './components/performance-card'
 import { PropFirmTab } from './components/propfirm-tab'
-import { PropFirmReportsSkeleton, ReportsContentSkeleton, ReportsPageSkeleton } from './components/reports-page-skeleton'
+import { PropFirmReportsSkeleton, ReportsContentSkeleton } from './components/reports-page-skeleton'
 import { PageHeader } from '@/components/ui/page-header'
 
 interface ReportsPageClientProps {
@@ -424,10 +424,6 @@ export default function ReportsPageClient({
 
     const handleFilterChange = (key: string, value: string) => {
         setAdvancedFilters(prev => ({ ...prev, [key]: value }))
-    }
-
-    if (isLoading && !reportData) {
-        return <ReportsPageSkeleton />
     }
 
     const periodLabel = dateRange?.from && dateRange?.to

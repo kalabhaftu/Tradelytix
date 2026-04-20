@@ -84,15 +84,28 @@ export function NotificationItem({
   onDelete,
   onAction
 }: NotificationItemProps) {
-  const isActionable = notification.actionRequired && (
+  const isActionable =
+    notification.type === 'WEEKLY_PERFORMANCE' ||
+    (notification.actionRequired && (
     notification.type === 'FUNDED_PENDING_APPROVAL' ||
     notification.type === 'PHASE_TRANSITION_PENDING'
-  )
+    ))
+  const actionLabel = notification.type === 'WEEKLY_PERFORMANCE' ? 'Open review' : 'Take Action'
 
   return (
     <div
+      onClick={isActionable ? () => onAction(notification) : undefined}
+      onKeyDown={isActionable ? (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onAction(notification)
+        }
+      } : undefined}
+      role={isActionable ? 'button' : undefined}
+      tabIndex={isActionable ? 0 : undefined}
       className={cn(
         "p-4 hover:bg-muted/50 transition-colors border-l-4 relative group",
+        isActionable && "cursor-pointer",
         notificationColors[notification.type as NotificationType],
         !notification.isRead && "bg-muted/30"
       )}
@@ -145,9 +158,12 @@ export function NotificationItem({
                   variant="default"
                   size="sm"
                   className="h-7 text-xs px-3"
-                  onClick={() => onAction(notification)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onAction(notification)
+                  }}
                 >
-                  Take Action
+                  {actionLabel}
                   <ChevronRight className="h-3 w-3 ml-1" />
                 </Button>
               ) : (
@@ -156,7 +172,10 @@ export function NotificationItem({
                     variant="ghost"
                     size="sm"
                     className="h-7 text-xs"
-                    onClick={() => onMarkAsRead(notification.id)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onMarkAsRead(notification.id)
+                    }}
                   >
                     <Check className="h-3 w-3 mr-1" />
                     Mark read

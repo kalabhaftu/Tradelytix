@@ -192,7 +192,7 @@ export function JournalClient() {
 
   // State
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterBy, setFilterBy] = useState<'all' | 'wins' | 'losses' | 'buys' | 'sells'>('all')
+  const [filterBy, setFilterBy] = useState<'all' | 'wins' | 'losses' | 'breakeven' | 'buys' | 'sells'>('all')
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -396,7 +396,17 @@ export function JournalClient() {
             <Button variant="outline" size="sm" className="gap-2 h-9 whitespace-nowrap">
               <Filter className="h-4 w-4" />
               <span>
-                {filterBy === 'all' ? 'All' : filterBy === 'wins' ? 'Wins' : filterBy === 'losses' ? 'Losses' : filterBy === 'buys' ? 'Buys' : 'Sells'}
+                {filterBy === 'all'
+                  ? 'All'
+                  : filterBy === 'wins'
+                    ? 'Wins'
+                    : filterBy === 'losses'
+                      ? 'Losses'
+                      : filterBy === 'breakeven'
+                        ? 'BE'
+                        : filterBy === 'buys'
+                          ? 'Buys'
+                          : 'Sells'}
               </span>
             </Button>
           </DropdownMenuTrigger>
@@ -409,6 +419,9 @@ export function JournalClient() {
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setFilterBy('losses')}>
               Losses Only ({`< -$${activeBreakEvenThreshold}`})
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setFilterBy('breakeven')}>
+              Break-even Only ({formatBreakevenBand(activeBreakEvenThreshold)})
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => setFilterBy('buys')}>

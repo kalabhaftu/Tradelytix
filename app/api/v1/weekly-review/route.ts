@@ -23,6 +23,31 @@ export async function GET(request: NextRequest) {
     const params = request.nextUrl.searchParams
     const limit = parseInt(params.get('limit') || '10')
     const latest = params.get('latest') === 'true'
+    const reviewId = params.get('reviewId')
+
+    if (reviewId) {
+      const requestedReview = await prisma.weeklyAIReview.findFirst({
+        where: {
+          id: reviewId,
+          userId: internalUserId,
+        },
+      })
+
+      if (!requestedReview) {
+        return NextResponse.json({ success: true, data: [] })
+      }
+
+      const siblingReviews = await prisma.weeklyAIReview.findMany({
+        where: {
+          userId: internalUserId,
+          NOT: { id: reviewId },
+        },
+        orderBy: { weekStart: 'desc' },
+        take: Math.max(0, limit - 1),
+      })
+
+      return NextResponse.json({ success: true, data: [requestedReview, ...siblingReviews] })
+    }
 
     if (latest) {
       const review = await prisma.weeklyAIReview.findFirst({

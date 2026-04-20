@@ -17,7 +17,6 @@ import { CalendarData } from "@/app/dashboard/types/calendar"
 import { useData } from "@/context/data-provider"
 import MonthlyView from "./monthly-view"
 import {
-  CALENDAR_GRADIENT_PRESETS,
   type CalendarGradientPresetId,
   clipCalendarCardSurface,
   drawCalendarGradientBackground,
@@ -237,12 +236,6 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
                   <Sparkles className="h-3.5 w-3.5" />
                   Random Gradient
                 </DropdownMenuItem>
-                {CALENDAR_GRADIENT_PRESETS.map((preset) => (
-                  <DropdownMenuItem key={preset.id} onClick={() => handleScreenshot(preset.id)} className="gap-2 text-xs font-medium">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    {preset.label}
-                  </DropdownMenuItem>
-                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

@@ -37,9 +37,33 @@ const PRESETS: CalendarGradientPreset[] = [
 
 export const CALENDAR_GRADIENT_PRESETS = PRESETS
 
+let randomizedPresetQueue: CalendarGradientPresetId[] = []
+
+function shufflePresetIds() {
+  const presetIds = PRESETS.map((preset) => preset.id)
+
+  for (let i = presetIds.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const current = presetIds[i]
+    presetIds[i] = presetIds[j]
+    presetIds[j] = current
+  }
+
+  return presetIds
+}
+
+export function getNextRandomCalendarGradientPreset() {
+  if (randomizedPresetQueue.length === 0) {
+    randomizedPresetQueue = shufflePresetIds()
+  }
+
+  const nextPresetId = randomizedPresetQueue.shift() ?? PRESETS[0].id
+  return PRESETS.find((preset) => preset.id === nextPresetId) ?? PRESETS[0]
+}
+
 export function resolveCalendarGradientPreset(variant: 'random' | CalendarGradientPresetId) {
   if (variant === 'random') {
-    return PRESETS[Math.floor(Math.random() * PRESETS.length)]
+    return getNextRandomCalendarGradientPreset()
   }
 
   return PRESETS.find((preset) => preset.id === variant) ?? PRESETS[0]

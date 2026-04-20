@@ -24,7 +24,6 @@ import { useWidgetData } from "@/hooks/use-widget-data"
 import { CalendarData } from "@/app/dashboard/types/calendar"
 import { WidgetCard } from "../widget-card"
 import {
-  CALENDAR_GRADIENT_PRESETS,
   type CalendarGradientPresetId,
   clipCalendarCardSurface,
   drawCalendarGradientBackground,
@@ -260,12 +259,6 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
             <Sparkles className="h-3.5 w-3.5" />
             Random Gradient
           </DropdownMenuItem>
-          {CALENDAR_GRADIENT_PRESETS.map((preset) => (
-            <DropdownMenuItem key={preset.id} onClick={() => handleScreenshot(preset.id)} className="gap-2 text-xs font-medium">
-              <Sparkles className="h-3.5 w-3.5" />
-              {preset.label}
-            </DropdownMenuItem>
-          ))}
         </DropdownMenuContent>
       </DropdownMenu>
 

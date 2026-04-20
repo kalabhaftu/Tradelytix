@@ -243,23 +243,28 @@ export function NotificationCenter() {
   }
 
   const handleNotificationAction = (notification: Notification) => {
+    const openAfterPopoverCloses = (openDialog: () => void) => {
+      setIsOpen(false)
+      requestAnimationFrame(() => {
+        openDialog()
+      })
+    }
+
     if (notification.type === 'FUNDED_PENDING_APPROVAL' && notification.actionRequired) {
       setSelectedNotification(notification)
-      setApprovalDialogOpen(true)
-      setIsOpen(false)
+      openAfterPopoverCloses(() => setApprovalDialogOpen(true))
     } else if (notification.type === 'PHASE_TRANSITION_PENDING' && notification.actionRequired) {
       setSelectedNotification(notification)
-      setPhaseTransitionDialogOpen(true)
-      setIsOpen(false)
+      openAfterPopoverCloses(() => setPhaseTransitionDialogOpen(true))
     } else if (notification.type === 'SYSTEM' && notification.actionRequired && notification.invalidationKey?.startsWith('adjust-date-')) {
       setSelectedNotification(notification)
-      setAdjustDateDialogOpen(true)
-      setIsOpen(false)
+      openAfterPopoverCloses(() => setAdjustDateDialogOpen(true))
     } else if (notification.type === 'WEEKLY_PERFORMANCE') {
       const data = notification.data as any
-      setWeeklyReviewId(data?.reviewId)
-      setWeeklyReviewDialogOpen(true)
-      setIsOpen(false)
+      openAfterPopoverCloses(() => {
+        setWeeklyReviewId(data?.reviewId)
+        setWeeklyReviewDialogOpen(true)
+      })
       if (!notification.isRead) handleMarkAsRead(notification.id)
     } else {
       if (!notification.isRead) {
@@ -418,7 +423,12 @@ export function NotificationCenter() {
 
       <WeeklyReviewDialog
         open={weeklyReviewDialogOpen}
-        onOpenChange={setWeeklyReviewDialogOpen}
+        onOpenChange={(nextOpen) => {
+          setWeeklyReviewDialogOpen(nextOpen)
+          if (!nextOpen) {
+            setWeeklyReviewId(undefined)
+          }
+        }}
         reviewId={weeklyReviewId}
       />
     </>

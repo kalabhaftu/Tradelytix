@@ -24,8 +24,6 @@ interface CalendarViewState {
   setVisibleStats: (stats: Partial<VisibleStats>) => void
   screenshotWithGradient: boolean
   setScreenshotWithGradient: (enabled: boolean) => void
-  showWeekNumbers: boolean
-  setShowWeekNumbers: (enabled: boolean) => void
 }
 
 export const useCalendarViewStore = create<CalendarViewState>()(
@@ -50,8 +48,6 @@ export const useCalendarViewStore = create<CalendarViewState>()(
       })),
       screenshotWithGradient: true,
       setScreenshotWithGradient: (enabled) => set({ screenshotWithGradient: enabled }),
-      showWeekNumbers: true,
-      setShowWeekNumbers: (enabled) => set({ showWeekNumbers: enabled })
     }),
     {
       name: "calendar-view-store",

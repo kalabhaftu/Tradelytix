@@ -7,7 +7,7 @@ export interface UseJournalParams {
   page?: number
   limit?: number
   search?: string
-  filterBy?: 'all' | 'wins' | 'losses' | 'buys' | 'sells'
+  filterBy?: 'all' | 'wins' | 'losses' | 'breakeven' | 'buys' | 'sells'
   selectedTagIds?: string[]
   accountNumbers?: string[]
 }
@@ -36,6 +36,8 @@ export function useJournal(params: UseJournalParams) {
     queryParams.append('outcome', 'win')
   } else if (filterBy === 'losses') {
     queryParams.append('outcome', 'loss')
+  } else if (filterBy === 'breakeven') {
+    queryParams.append('outcome', 'breakeven')
   }
 
   // Buy/Sell

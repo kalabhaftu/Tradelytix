@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -15,15 +15,15 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
 import {
+  AlertTriangle,
   BarChart3,
-  TrendingUp,
-  TrendingDown,
-  Target,
+  Calendar,
   ChevronLeft,
   ChevronRight,
-  Calendar,
+  Target,
+  TrendingDown,
+  TrendingUp,
   Trophy,
-  AlertTriangle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -64,13 +64,13 @@ interface WeeklyReviewDialogProps {
 
 const gradeColors: Record<string, string> = {
   'A+': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-  'A': 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
+  A: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
   'B+': 'bg-green-500/15 text-green-400 border-green-500/25',
-  'B': 'bg-green-500/10 text-green-400 border-green-500/20',
+  B: 'bg-green-500/10 text-green-400 border-green-500/20',
   'C+': 'bg-yellow-500/15 text-yellow-400 border-yellow-500/25',
-  'C': 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-  'D': 'bg-orange-500/15 text-orange-400 border-orange-500/25',
-  'F': 'bg-red-500/15 text-red-400 border-red-500/25',
+  C: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+  D: 'bg-orange-500/15 text-orange-400 border-orange-500/25',
+  F: 'bg-red-500/15 text-red-400 border-red-500/25',
 }
 
 export function WeeklyReviewDialog({ open, onOpenChange, reviewId }: WeeklyReviewDialogProps) {
@@ -83,23 +83,31 @@ export function WeeklyReviewDialog({ open, onOpenChange, reviewId }: WeeklyRevie
 
     const fetchReviews = async () => {
       setIsLoading(true)
-      try {
-        const res = await fetch('/api/v1/weekly-review?limit=20')
-        const result = await res.json()
-        if (result.success && result.data) {
-          const reviewList = Array.isArray(result.data) ? result.data : [result.data]
-          setReviews(reviewList.filter(Boolean))
 
-          // If a specific reviewId was requested, find its index
+      try {
+        const query = new URLSearchParams({ limit: '20' })
+        if (reviewId) {
+          query.set('reviewId', reviewId)
+        }
+
+        const res = await fetch(`/api/v1/weekly-review?${query.toString()}`)
+        const result = await res.json()
+
+        if (result.success) {
+          const reviewList = (Array.isArray(result.data) ? result.data : [result.data]).filter(Boolean)
+          setReviews(reviewList)
+
           if (reviewId) {
-            const idx = reviewList.findIndex((r: WeeklyAIReview) => r.id === reviewId)
+            const idx = reviewList.findIndex((review: WeeklyAIReview) => review.id === reviewId)
             setCurrentIndex(idx >= 0 ? idx : 0)
           } else {
             setCurrentIndex(0)
           }
+        } else {
+          setReviews([])
         }
       } catch {
-        // Silent error
+        setReviews([])
       } finally {
         setIsLoading(false)
       }
@@ -116,23 +124,29 @@ export function WeeklyReviewDialog({ open, onOpenChange, reviewId }: WeeklyRevie
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-2xl max-h-[85vh] p-0 overflow-hidden">
+      <DialogContent className="w-full max-w-2xl max-h-[85vh] overflow-hidden p-0">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Weekly Performance Review</DialogTitle>
+          <DialogDescription>
+            Review weekly performance summaries, highlights, lowlights, and focus areas.
+          </DialogDescription>
+        </DialogHeader>
+
         {isLoading ? (
           <div className="flex items-center justify-center p-16">
             <Spinner className="h-6 w-6" />
           </div>
         ) : !review ? (
           <div className="flex flex-col items-center justify-center p-16 text-muted-foreground">
-            <BarChart3 className="h-10 w-10 mb-3 opacity-50" />
+            <BarChart3 className="mb-3 h-10 w-10 opacity-50" />
             <p className="text-sm">No weekly reviews yet.</p>
-            <p className="text-xs mt-1">Reviews are generated automatically each weekend.</p>
+            <p className="mt-1 text-xs">Reviews are generated automatically each weekend.</p>
           </div>
         ) : (
           <>
-            {/* Header */}
-            <div className="px-6 pt-6 pb-4">
+            <div className="px-6 pb-4 pt-6">
               <DialogHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-4">
                   <DialogTitle className="flex items-center gap-2 text-lg">
                     <BarChart3 className="h-5 w-5" />
                     Weekly Performance Review
@@ -141,7 +155,7 @@ export function WeeklyReviewDialog({ open, onOpenChange, reviewId }: WeeklyRevie
                     <Badge
                       variant="outline"
                       className={cn(
-                        'text-xl font-bold px-4 py-1 border',
+                        'border px-4 py-1 text-xl font-bold',
                         gradeColors[review.grade] || 'bg-muted text-muted-foreground'
                       )}
                     >
@@ -149,16 +163,15 @@ export function WeeklyReviewDialog({ open, onOpenChange, reviewId }: WeeklyRevie
                     </Badge>
                   )}
                 </div>
-                <DialogDescription className="flex items-center gap-1.5 mt-1">
+                <DialogDescription className="mt-1 flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5" />
-                  {format(new Date(review.weekStart), 'MMM d')} – {format(new Date(review.weekEnd), 'MMM d, yyyy')}
+                  {format(new Date(review.weekStart), 'MMM d')} - {format(new Date(review.weekEnd), 'MMM d, yyyy')}
                 </DialogDescription>
               </DialogHeader>
             </div>
 
             <ScrollArea className="max-h-[calc(85vh-140px)]">
-              <div className="px-6 pb-6 space-y-5">
-                {/* Key Stats Grid */}
+              <div className="space-y-5 px-6 pb-6">
                 <div className="grid grid-cols-4 gap-3">
                   <StatCard
                     label="Trades"
@@ -178,62 +191,62 @@ export function WeeklyReviewDialog({ open, onOpenChange, reviewId }: WeeklyRevie
                   />
                   <StatCard
                     label="Profit Factor"
-                    value={review.stats.profitFactor >= 999 ? '∞' : String(review.stats.profitFactor)}
-                    color={review.stats.profitFactor >= 1.5 ? 'text-long' : review.stats.profitFactor >= 1 ? 'text-muted-foreground' : 'text-short'}
+                    value={review.stats.profitFactor >= 999 ? 'Infinity' : String(review.stats.profitFactor)}
+                    color={
+                      review.stats.profitFactor >= 1.5
+                        ? 'text-long'
+                        : review.stats.profitFactor >= 1
+                          ? 'text-muted-foreground'
+                          : 'text-short'
+                    }
                   />
                 </div>
 
-                {/* Summary */}
                 <div>
-                  <p className="text-sm leading-relaxed text-foreground/90">
-                    {review.summary}
-                  </p>
+                  <p className="text-sm leading-relaxed text-foreground/90">{review.summary}</p>
                 </div>
 
                 <Separator />
 
-                {/* Highlights */}
-                {review.highlights && review.highlights.length > 0 && (
+                {review.highlights.length > 0 && (
                   <div>
-                    <h4 className="text-sm font-medium flex items-center gap-2 mb-2.5">
+                    <h4 className="mb-2.5 flex items-center gap-2 text-sm font-medium">
                       <TrendingUp className="h-4 w-4 text-long" />
                       What Went Well
                     </h4>
                     <ul className="space-y-2">
-                      {review.highlights.map((h, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
-                          <Trophy className="h-3.5 w-3.5 text-long mt-0.5 shrink-0" />
-                          {h}
+                      {review.highlights.map((highlight, index) => (
+                        <li key={index} className="flex items-start gap-2 text-sm text-foreground/80">
+                          <Trophy className="mt-0.5 h-3.5 w-3.5 shrink-0 text-long" />
+                          {highlight}
                         </li>
                       ))}
                     </ul>
                   </div>
                 )}
 
-                {/* Lowlights */}
-                {review.lowlights && review.lowlights.length > 0 && (
+                {review.lowlights.length > 0 && (
                   <div>
-                    <h4 className="text-sm font-medium flex items-center gap-2 mb-2.5">
+                    <h4 className="mb-2.5 flex items-center gap-2 text-sm font-medium">
                       <TrendingDown className="h-4 w-4 text-short" />
                       What Needs Work
                     </h4>
                     <ul className="space-y-2">
-                      {review.lowlights.map((l, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
-                          <AlertTriangle className="h-3.5 w-3.5 text-short mt-0.5 shrink-0" />
-                          {l}
+                      {review.lowlights.map((lowlight, index) => (
+                        <li key={index} className="flex items-start gap-2 text-sm text-foreground/80">
+                          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-short" />
+                          {lowlight}
                         </li>
                       ))}
                     </ul>
                   </div>
                 )}
 
-                {/* Focus Next Week */}
                 {review.focusNextWeek && (
                   <>
                     <Separator />
                     <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-                      <h4 className="text-sm font-medium flex items-center gap-2 mb-2">
+                      <h4 className="mb-2 flex items-center gap-2 text-sm font-medium">
                         <Target className="h-4 w-4 text-primary" />
                         Focus Next Week
                       </h4>
@@ -242,24 +255,25 @@ export function WeeklyReviewDialog({ open, onOpenChange, reviewId }: WeeklyRevie
                   </>
                 )}
 
-                {/* Instruments breakdown */}
-                {review.stats.instruments && review.stats.instruments.length > 0 && (
+                {review.stats.instruments.length > 0 && (
                   <>
                     <Separator />
                     <div>
-                      <h4 className="text-sm font-medium mb-2.5">Instruments</h4>
+                      <h4 className="mb-2.5 text-sm font-medium">Instruments</h4>
                       <div className="space-y-1.5">
-                        {review.stats.instruments.map((inst) => (
-                          <div key={inst.name} className="flex items-center justify-between text-sm">
-                            <span className="font-medium">{inst.name}</span>
+                        {review.stats.instruments.map((instrument) => (
+                          <div key={instrument.name} className="flex items-center justify-between text-sm">
+                            <span className="font-medium">{instrument.name}</span>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                              <span>{inst.trades} trades</span>
-                              <span>{inst.winRate}% WR</span>
-                              <span className={cn(
-                                'font-medium',
-                                inst.pnl >= 0 ? 'text-long' : 'text-short'
-                              )}>
-                                ${inst.pnl.toLocaleString()}
+                              <span>{instrument.trades} trades</span>
+                              <span>{instrument.winRate}% WR</span>
+                              <span
+                                className={cn(
+                                  'font-medium',
+                                  instrument.pnl >= 0 ? 'text-long' : 'text-short'
+                                )}
+                              >
+                                ${instrument.pnl.toLocaleString()}
                               </span>
                             </div>
                           </div>
@@ -271,16 +285,15 @@ export function WeeklyReviewDialog({ open, onOpenChange, reviewId }: WeeklyRevie
               </div>
             </ScrollArea>
 
-            {/* Navigation Footer */}
             {reviews.length > 1 && (
-              <div className="border-t px-6 py-3 flex items-center justify-between">
+              <div className="flex items-center justify-between border-t px-6 py-3">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setCurrentIndex(i => i + 1)}
+                  onClick={() => setCurrentIndex((index) => index + 1)}
                   disabled={!canGoNext}
                 >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  <ChevronLeft className="mr-1 h-4 w-4" />
                   Older
                 </Button>
                 <span className="text-xs text-muted-foreground">
@@ -289,11 +302,11 @@ export function WeeklyReviewDialog({ open, onOpenChange, reviewId }: WeeklyRevie
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setCurrentIndex(i => i - 1)}
+                  onClick={() => setCurrentIndex((index) => index - 1)}
                   disabled={!canGoPrev}
                 >
                   Newer
-                  <ChevronRight className="h-4 w-4 ml-1" />
+                  <ChevronRight className="ml-1 h-4 w-4" />
                 </Button>
               </div>
             )}
@@ -304,12 +317,22 @@ export function WeeklyReviewDialog({ open, onOpenChange, reviewId }: WeeklyRevie
   )
 }
 
-function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
+function StatCard({
+  label,
+  value,
+  sub,
+  color,
+}: {
+  label: string
+  value: string
+  sub?: string
+  color?: string
+}) {
   return (
     <div className="rounded-lg border bg-card p-3 text-center">
-      <p className="text-xs text-muted-foreground mb-1">{label}</p>
+      <p className="mb-1 text-xs text-muted-foreground">{label}</p>
       <p className={cn('text-lg font-bold', color)}>{value}</p>
-      {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+      {sub ? <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p> : null}
     </div>
   )
 }

@@ -612,6 +612,24 @@ export function formatCalendarData(trades: Trade[], accounts: Account[] = [], ti
   // PERF: Use pre-grouped trades if provided, otherwise group now
   const groupedTrades = preGrouped ?? groupTradesByExecution(trades)
 
+  const calculateTradeRMultiple = (trade: Partial<Trade>) => {
+    const stopLoss = Number((trade as any).stopLoss ?? 0)
+    const entryPrice = Number(trade.entryPrice ?? 0)
+    const closePrice = Number(trade.closePrice ?? 0)
+
+    if (!stopLoss || !entryPrice || !closePrice) return 0
+
+    const risk = Math.abs(entryPrice - stopLoss)
+    if (!risk) return 0
+
+    const side = String(trade.side || '').toLowerCase()
+    const reward = side === 'short' || side === 'sell'
+      ? entryPrice - closePrice
+      : closePrice - entryPrice
+
+    return reward / risk
+  }
+
   // Create a map of accounts for quick lookup
   const accountMap = new Map(accounts.map(account => [account.number, account]));
 
@@ -623,10 +641,18 @@ export function formatCalendarData(trades: Trade[], accounts: Account[] = [], ti
     const date = formatInTimeZone(new Date(trade.entryDate), timezone, 'yyyy-MM-dd')
 
     if (!acc[date]) {
-      acc[date] = { pnl: 0, tradeNumber: 0, longNumber: 0, shortNumber: 0, trades: [] }
+      acc[date] = {
+        pnl: 0,
+        tradeNumber: 0,
+        longNumber: 0,
+        shortNumber: 0,
+        dailyRMultiple: 0,
+        trades: []
+      }
     }
     acc[date].tradeNumber++
     acc[date].pnl += trade.pnl || 0;
+    acc[date].dailyRMultiple += calculateTradeRMultiple(trade)
 
     const isLong = trade.side
       ? (trade.side.toLowerCase() === 'long' || trade.side.toLowerCase() === 'buy' || trade.side.toLowerCase() === 'b')

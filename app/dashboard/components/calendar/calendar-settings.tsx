@@ -4,11 +4,11 @@
 import { Check, Settings as SettingsIcon } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
-import { Command, CommandGroup, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command"
+import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command"
 import { useCalendarViewStore, VisibleStats } from "@/store/calendar-view"
 
 export function CalendarSettings() {
-    const { visibleStats, setVisibleStats, showWeekNumbers, setShowWeekNumbers } = useCalendarViewStore()
+    const { visibleStats, setVisibleStats } = useCalendarViewStore()
 
     const stats: { key: keyof VisibleStats; label: string }[] = [
         { key: "pnl", label: "Daily P/L" },
@@ -33,18 +33,6 @@ export function CalendarSettings() {
             <PopoverContent className="w-[200px] p-0" align="end">
                 <Command>
                     <CommandList>
-                        <CommandGroup heading="Layout">
-                            <CommandItem
-                                onSelect={() => setShowWeekNumbers(!showWeekNumbers)}
-                                className="flex items-center justify-between py-2.5"
-                            >
-                                <span className="text-sm">Week Numbers</span>
-                                {showWeekNumbers && (
-                                    <Check className="h-4 w-4 text-primary" />
-                                )}
-                            </CommandItem>
-                        </CommandGroup>
-                        <CommandSeparator />
                         <CommandGroup heading="Display Stats">
                             {stats.map((stat) => (
                                 <CommandItem

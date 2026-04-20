@@ -75,7 +75,7 @@ const DayCell = memo(function DayCell({
         // Advanced calendar: cells fill grid space with minimum height
         isMiniCalendar 
           ? "min-h-[68px] sm:min-h-[76px] lg:min-h-[84px]" 
-          : "min-h-0 cursor-pointer",
+          : "min-h-[92px] lg:min-h-[104px] cursor-pointer",
 
         // No trades — uses theme tokens so it works in any color scheme
         !hasTrades && isCurrentMonth && "bg-muted/5 border-border/20 hover:border-border/40",
@@ -252,7 +252,7 @@ function WeeklySummary({
   return (
     <div
       className={cn(
-        "flex flex-col items-start justify-center rounded-[8px] border p-2.5 cursor-pointer transition-all hover:bg-muted/30 group h-full min-h-0",
+        "flex h-full min-h-[92px] flex-col items-start justify-center rounded-[8px] border p-2.5 cursor-pointer transition-all hover:bg-muted/30 group lg:min-h-[104px]",
         "bg-muted/10 border-border/20"
       )}
       onClick={() => onReviewWeek?.(weekDays[0])}
@@ -331,6 +331,9 @@ export default function MonthlyView({
   const displayWeekdays = hideWeekends 
     ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] 
     : WEEKDAYS
+  const rowTemplate = isMiniCalendar
+    ? `repeat(${weeks.length}, minmax(68px, 1fr))`
+    : `repeat(${weeks.length}, minmax(92px, 1fr))`
 
   return (
     <div className="flex h-full w-full overflow-hidden">
@@ -349,7 +352,7 @@ export default function MonthlyView({
         </div>
 
         {/* Day Grid - flex-1 to fill remaining space, grid-rows set to number of weeks */}
-        <div className={cn("flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 min-h-0", hideWeekends ? "grid-cols-5" : "grid-cols-7")} style={{ gridTemplateRows: `repeat(${weeks.length}, minmax(0, 1fr))` }}>
+        <div className={cn("flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 min-h-0", hideWeekends ? "grid-cols-5" : "grid-cols-7")} style={{ gridTemplateRows: rowTemplate }}>
           {weeks.map((week, weekIndex) => (
             <React.Fragment key={weekIndex}>
               {week.map((date) => {
@@ -385,7 +388,7 @@ export default function MonthlyView({
           </div>
 
           {/* Week rows — grid to align perfectly with calendar rows */}
-          <div className="flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 pl-1 md:pl-2 min-h-0" style={{ gridTemplateRows: `repeat(${weeks.length}, minmax(0, 1fr))` }}>
+          <div className="flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 pl-1 md:pl-2 min-h-0" style={{ gridTemplateRows: rowTemplate }}>
             {weeks.map((week, index) => (
               <WeeklySummary
                 key={index}

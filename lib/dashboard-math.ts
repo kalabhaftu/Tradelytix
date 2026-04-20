@@ -87,9 +87,10 @@ export function calculateOutcomeDistribution(
   trades: Partial<Trade>[],
   breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
 ) {
+  const groupedTrades = groupTradesByExecution(trades as Trade[])
   let wins = 0, losses = 0, breakeven = 0
 
-  trades.forEach((trade) => {
+  groupedTrades.forEach((trade) => {
     const netPnl = getTradeNetPnl(trade)
     if (isWinningTrade(netPnl, breakEvenThreshold)) wins++
     else if (isLosingTrade(netPnl, breakEvenThreshold)) losses++

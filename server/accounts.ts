@@ -10,6 +10,7 @@ import { NotificationService } from './services/notification-service'
 import { NotificationType } from '@prisma/client'
 import { logActivity } from '@/lib/activity-logger'
 import { calculateWinRate, classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 
 /**
  * Helper function to determine if a phase number represents the funded stage
@@ -355,16 +356,11 @@ export async function getAccountsAction(options?: { includeArchived?: boolean })
 
     // PERFORMANCE FIX: Single trade count query instead of duplicate
     // Both live and prop-firm accounts use accountNumber field, so one query is sufficient
-    const tradeCounts = await prisma.trade.groupBy({
-      by: ['accountNumber'],
+    const allTrades = await prisma.trade.findMany({
       where: { userId },
-      _count: { id: true }
+      select: TRADE_COUNT_SELECT,
     })
-
-    // Create a single map for quick lookup (used for both account types)
-    const tradeCountMap = new Map(
-      tradeCounts.map(tc => [tc.accountNumber, tc._count.id])
-    )
+    const groupedCounts = buildGroupedTradeCountSummary(allTrades as any)
 
     // Transform regular accounts
     const transformedAccounts = accounts.map((account: any) => ({
@@ -372,7 +368,7 @@ export async function getAccountsAction(options?: { includeArchived?: boolean })
       propfirm: '',
       accountType: 'live' as const,
       displayName: account.name || account.number,
-      tradeCount: tradeCountMap.get(account.number) || 0,
+      tradeCount: groupedCounts.groupedCountByLiveAccountNumber.get(account.number) || 0,
       owner: { id: userId, email: '' },
       isOwner: true,
       status: 'active' as const,
@@ -403,7 +399,10 @@ export async function getAccountsAction(options?: { includeArchived?: boolean })
 
           // Always use individual phase trade count
           // Aggregation for failed phases will be calculated on the client side (accounts page)
-          const phaseTradeCount = tradeCountMap.get(phase.phaseId) || 0
+          const phaseTradeCount =
+            groupedCounts.groupedCountByPhaseAccountId.get(phase.id) ||
+            groupedCounts.groupedCountByAccountNumber.get(phase.phaseId) ||
+            0
 
           transformedMasterAccounts.push({
             id: phase.id, // Use phase ID instead of composite key
@@ -1610,22 +1609,18 @@ export async function getAccountHistory(accountId: string) {
       where: { masterAccountId: accountId },
       orderBy: { startDate: 'asc' },
       include: {
-        _count: {
-          select: { Trade: true }
-        },
         Trade: {
-          select: {
-            pnl: true,
-            commission: true,
-            createdAt: true
-          },
+          select: TRADE_COUNT_SELECT,
           orderBy: { createdAt: 'asc' }
         }
       }
     })
 
     // Calculate total statistics
-    const totalTrades = phases.reduce((sum, phase) => sum + phase._count.Trade, 0)
+    const totalTrades = phases.reduce(
+      (sum, phase) => sum + buildGroupedTradeCountSummary(phase.Trade as any).groupedTradeCount,
+      0
+    )
     const totalPnl = phases.reduce((sum, phase) =>
       sum + phase.Trade.reduce((tradeSum, trade) => tradeSum + trade.pnl, 0), 0)
     const totalCommission = phases.reduce((sum, phase) =>
@@ -1650,10 +1645,11 @@ export async function getAccountHistory(accountId: string) {
         name: account.name
       },
       phases: phases.map(phase => {
-        const phaseWins = phase.Trade?.filter(
+        const groupedPhaseTrades = buildGroupedTradeCountSummary(phase.Trade as any).groupedTrades
+        const phaseWins = groupedPhaseTrades.filter(
           trade => classifyOutcome(trade.pnl, breakEvenThreshold) === 'win'
         ).length || 0
-        const phaseLosses = phase.Trade?.filter(
+        const phaseLosses = groupedPhaseTrades.filter(
           trade => classifyOutcome(trade.pnl, breakEvenThreshold) === 'loss'
         ).length || 0
         const tradableCount = phaseWins + phaseLosses
@@ -1666,7 +1662,7 @@ export async function getAccountHistory(accountId: string) {
           profitTargetPercent: phase.profitTargetPercent,
           dailyDrawdownPercent: phase.dailyDrawdownPercent,
           maxDrawdownPercent: phase.maxDrawdownPercent,
-          totalTrades: phase._count.Trade,
+          totalTrades: groupedPhaseTrades.length,
           winningTrades: phaseWins,
           winRate: calculateWinRate(phaseWins, phaseLosses),
           startDate: phase.startDate,

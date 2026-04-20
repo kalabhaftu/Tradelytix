@@ -24,7 +24,7 @@ import { useUserStore } from '@/store/user-store'
 import { ExtendedTrade, MarketBias, TradeOutcome } from '@/types/trade-extended'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, PenLine, Route, Newspaper } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -80,6 +80,7 @@ interface LocalTradingModel {
 export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) {
   const { statistics } = useData()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const initializedTradeKeyRef = useRef<string | null>(null)
   const { tradingModels: fetchedModels } = useTradingModels()
   const tradingModels = React.useMemo(
     () => (Array.isArray(fetchedModels) ? fetchedModels : []) as LocalTradingModel[],
@@ -139,7 +140,11 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
 
   // Initialize form when trade loads
   useEffect(() => {
-    if (trade) {
+    if (!trade || isSubmitting) return
+    const initializationKey = `${trade.id}:${tradingModelsKey}`
+    if (initializedTradeKeyRef.current === initializationKey) return
+    initializedTradeKeyRef.current = initializationKey
+
       setImageErrors({})
       const tagIds = Array.isArray(trade.tags) ? trade.tags : []
       setSelectedTags(tagIds)
@@ -198,9 +203,8 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
       setComment((trade as any).comment || '')
       setTradeOutcome((trade as any).outcome || null)
       setRuleBroken((trade as any).ruleBroken || false)
-    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trade, reset, tradingModelsKey])
+  }, [trade, reset, tradingModelsKey, isSubmitting])
 
   const filteredNewsEvents = React.useMemo(() => {
     if (!newsSearchQuery.trim()) return allNewsEvents
@@ -307,7 +311,7 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
         <div className="px-4 sm:px-6 py-3 border-b border-border/40 shrink-0">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
-              <Button variant="ghost" size="sm" onClick={handleCloseAttempt} className="h-8 px-2 text-xs hover:bg-accent/50 shrink-0">
+              <Button variant="ghost" size="sm" onClick={handleCloseAttempt} disabled={isSubmitting} className="h-8 px-2 text-xs hover:bg-accent/50 shrink-0">
                 <ArrowLeft className="mr-1 h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Back</span>
               </Button>
@@ -373,6 +377,7 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
                   uploadingField={uploadingField}
                   chartLinks={chartLinks}
                   setChartLinks={setChartLinks}
+                  isSubmitting={isSubmitting}
                 />
               </TabsContent>
 

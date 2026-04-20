@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 
@@ -26,24 +27,12 @@ export async function GET(request: NextRequest) {
       include: { PhaseAccount: { orderBy: { phaseNumber: 'asc' } } }
     });
 
-    // 3. Fetch trade counts globally for all user accounts
-    const tradeCounts = await prisma.trade.groupBy({
-      by: ['accountNumber', 'phaseAccountId'],
+    // 3. Fetch all trades once and build grouped execution counts
+    const allTrades = await prisma.trade.findMany({
       where: { userId: internalUserId },
-      _count: { id: true }
+      select: TRADE_COUNT_SELECT,
     })
-
-    // Create maps for efficient lookup
-    const liveTradeCountMap = new Map()
-    const phaseTradeCountMap = new Map()
-    
-    tradeCounts.forEach((tc) => {
-      if (tc.phaseAccountId) {
-        phaseTradeCountMap.set(tc.phaseAccountId, tc._count.id)
-      } else if (tc.accountNumber) {
-        liveTradeCountMap.set(tc.accountNumber, tc._count.id)
-      }
-    })
+    const groupedCounts = buildGroupedTradeCountSummary(allTrades as any)
 
     const isFundedPhase = (evaluationType: string, phaseNumber: number): boolean => {
       switch (evaluationType) {
@@ -67,7 +56,7 @@ export async function GET(request: NextRequest) {
         startingBalance: acc.startingBalance,
         accountType: 'live',
         displayName: acc.name || acc.number,
-        tradeCount: liveTradeCountMap.get(acc.number) || 0,
+        tradeCount: groupedCounts.groupedCountByLiveAccountNumber.get(acc.number) || 0,
         status: 'active',
         currentPhase: null,
         createdAt: acc.createdAt,
@@ -93,7 +82,7 @@ export async function GET(request: NextRequest) {
             startingBalance: phase.accountSize || master.accountSize,
             accountType: 'prop-firm',
             displayName: `${master.accountName} (${isFundedPhase(master.evaluationType, phase.phaseNumber) ? 'Funded' : 'Phase ' + phase.phaseNumber})`,
-            tradeCount: phaseTradeCountMap.get(phase.id) || 0,
+            tradeCount: groupedCounts.groupedCountByPhaseAccountId.get(phase.id) || 0,
             status: phase.status,
             currentPhase: phase.phaseNumber,
             createdAt: phase.createdAt || master.createdAt,

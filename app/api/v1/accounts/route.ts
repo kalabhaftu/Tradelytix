@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { calculateAccountBalance } from '@/lib/utils/balance-calculator'
-import { groupTradesByExecution } from '@/lib/utils'
+import { buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 
 export async function GET(request: NextRequest) {
@@ -24,29 +24,17 @@ export async function GET(request: NextRequest) {
     const typeFilter = searchParams.get('type') || 'all' // 'live', 'prop-firm', 'all'
     const search = searchParams.get('search')?.toLowerCase() || ''
 
-    // 1. Fetch RAW LIVE accounts
+    // 1. Fetch live accounts
     const liveAccounts = await prisma.account.findMany({
       where: { userId: internalUserId },
       orderBy: { createdAt: 'desc' },
-      include: {
-         _count: { select: { Trade: true } }
-      }
-    });
+    })
 
-    // 2. Fetch RAW PROP FIRM accounts
+    // 2. Fetch prop firm accounts
     const propFirmAccounts = await prisma.masterAccount.findMany({
       where: { userId: internalUserId },
       include: { PhaseAccount: { orderBy: { phaseNumber: 'asc' } } }
-    });
-    
-    // We need trade counts per phaseId as well
-    const propTradeCounts = await prisma.trade.groupBy({
-      by: ['phaseAccountId'],
-      where: { userId: internalUserId, phaseAccountId: { not: null } },
-      _count: { id: true }
     })
-    const propTradeCountMap = new Map()
-    propTradeCounts.forEach((tc) => propTradeCountMap.set(tc.phaseAccountId, tc._count.id))
 
     const isFundedPhase = (evaluationType: string, phaseNumber: number): boolean => {
       switch (evaluationType) {
@@ -70,7 +58,7 @@ export async function GET(request: NextRequest) {
         startingBalance: acc.startingBalance,
         accountType: 'live',
         displayName: acc.name || acc.number,
-        tradeCount: acc._count.Trade || 0,
+        tradeCount: 0,
         status: 'active', // Live accounts don't inherently have failed/passed
         currentPhase: null,
         createdAt: acc.createdAt,
@@ -94,7 +82,7 @@ export async function GET(request: NextRequest) {
             startingBalance: phase.accountSize || master.accountSize,
             accountType: 'prop-firm',
             displayName: `${master.accountName} (${isFundedPhase(master.evaluationType, phase.phaseNumber) ? 'Funded' : 'Phase '+phase.phaseNumber})`,
-            tradeCount: propTradeCountMap.get(phase.id) || 0,
+            tradeCount: 0,
             status: phase.status,
             currentPhase: phase.phaseNumber,
             createdAt: phase.createdAt || master.createdAt,
@@ -203,7 +191,7 @@ export async function GET(request: NextRequest) {
       const pnl = calculatedEquity - (acc.startingBalance || 0)
       
       // Grouping logic for clean grouped trade counts
-      const groupedCount = calcTrades.length > 0 ? groupTradesByExecution(calcTrades as any).length : 0
+      const groupedCount = calcTrades.length > 0 ? buildGroupedTradeCountSummary(calcTrades as any).groupedTradeCount : 0
       
       return {
          ...acc,

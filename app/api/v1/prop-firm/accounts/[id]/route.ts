@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // ID is pure masterAccountId (UUID), not composite
 
     // PERFORMANCE OPTIMIZATION: Use parallel queries and database aggregations
-    const [masterAccount, phases, tradeStats, userSettings] = await Promise.all([
+    const [masterAccount, phases, allPhaseTrades, userSettings] = await Promise.all([
       // 1. Get master account basic info (no nested relations)
       prisma.masterAccount.findFirst({
         where: {
@@ -87,19 +88,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         orderBy: { phaseNumber: 'asc' }
       }),
 
-      // 3. Get trade statistics using database aggregation (MUCH FASTER)
-      prisma.trade.groupBy({
-        by: ['phaseAccountId'],
+      // 3. Get all phase trades once, then build grouped execution stats consistently
+      prisma.trade.findMany({
         where: {
           PhaseAccount: {
             masterAccountId
           }
         },
-        _count: {
-          id: true
-        },
-        _sum: {
-          pnl: true,
+        select: TRADE_COUNT_SELECT,
+        orderBy: {
+          exitTime: 'asc'
         }
       }),
       prisma.user.findUnique({
@@ -124,63 +122,24 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // NOTE: Evaluation is now done in the background after trade import
     // This keeps the GET request fast and responsive
 
-    // Calculate statistics from aggregated data (FAST - no array operations)
-    const totalTrades = tradeStats.reduce((sum: number, stat: any) => sum + stat._count.id, 0)
-    const totalPnL = tradeStats.reduce((sum: number, stat: any) => {
-      const pnl = stat._sum.pnl || 0
-      return sum + pnl
-    }, 0)
+    const groupedCounts = buildGroupedTradeCountSummary(allPhaseTrades as any)
+    const totalTrades = groupedCounts.groupedTradeCount
+    const totalPnL = groupedCounts.groupedTrades.reduce(
+      (sum: number, trade: any) => sum + Number(trade.pnl || 0),
+      0
+    )
 
-    // FIXED: Get trades ONLY for the current active phase (not all phases)
-    // CRITICAL: Fetch full trade data to enable grouping of partial closes
-    const currentPhaseTradesFull = currentPhase ? await prisma.trade.findMany({
-      where: {
-        phaseAccountId: currentPhase.id  // Only current phase trades
-      },
-      select: {
-        id: true,
-        pnl: true,
-        commission: true,
-        entryId: true,
-        instrument: true,
-        symbol: true,
-        side: true,
-        entryDate: true,
-        closeDate: true,
-        entryTime: true,
-        exitTime: true,
-        quantity: true,
-        entryPrice: true,
-        closePrice: true
-      },
-      orderBy: {
-        exitTime: 'asc'  // Ordered for proper high-water mark calculation
-      }
-    }) : []
-
-    // CRITICAL FIX: Group trades to handle partial closes correctly
-    const { groupTradesByExecution } = await import('@/lib/utils')
-    const groupedTrades = groupTradesByExecution(currentPhaseTradesFull as any)
-
-    // Get ALL trades for overall statistics
-    const allTradesMinimal = await prisma.trade.findMany({
-      where: {
-        PhaseAccount: {
-          masterAccountId
-        }
-      },
-      select: {
-        pnl: true
-      }
-    })
+    const currentPhaseGroupedTrades = groupedCounts.groupedTrades.filter(
+      (trade: any) => trade.phaseAccountId === currentPhase?.id
+    )
 
     // CRITICAL FIX: Use canonical net P&L (`trade.pnl`) and exclude break-even trades
-    const winningTrades = allTradesMinimal.filter(
+    const winningTrades = groupedCounts.groupedTrades.filter(
       (trade: { pnl: number }) => {
         return classifyOutcome(Number(trade.pnl || 0), breakEvenThreshold) === 'win'
       }
     ).length
-    const losingTrades = allTradesMinimal.filter(
+    const losingTrades = groupedCounts.groupedTrades.filter(
       (trade: { pnl: number }) => {
         return classifyOutcome(Number(trade.pnl || 0), breakEvenThreshold) === 'loss'
       }
@@ -189,12 +148,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const winRate = tradableCount > 0 ? (winningTrades / tradableCount) * 100 : 0
 
     // Calculate current phase statistics - PHASE SPECIFIC!
-    const currentPhaseStat = tradeStats.find(
-      (stat: typeof tradeStats[number]) => stat.phaseAccountId === currentPhase?.id
-    )
-    const currentPhasePnL = currentPhaseStat
-      ? (currentPhaseStat._sum.pnl || 0)
+    const currentPhaseTradeCount = currentPhase
+      ? (groupedCounts.groupedCountByPhaseAccountId.get(currentPhase.id) || 0)
       : 0
+    const currentPhasePnL = currentPhaseGroupedTrades.reduce(
+      (sum: number, trade: any) => sum + Number(trade.pnl || 0),
+      0
+    )
 
     // Determine next action based on phase status
     let nextAction = 'continue_trading'
@@ -231,7 +191,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
       // Calculate high-water mark from CURRENT PHASE grouped trades in order
       // Grouped trades ensure partial closes are counted as single trades
-      for (const trade of groupedTrades as Array<{ pnl: number }>) {
+      for (const trade of currentPhaseGroupedTrades as Array<{ pnl: number }>) {
         runningBalance += Number(trade.pnl || 0)
         highWaterMark = Math.max(highWaterMark, runningBalance)
       }
@@ -361,9 +321,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         owner: { id: masterAccount.userId, email: '' }
       },
       phases: phases.map((phase: typeof phases[number]) => {
-        const phaseStat = tradeStats.find(
-          (stat: typeof tradeStats[number]) => stat.phaseAccountId === phase.id
-        )
+        const phaseTrades = groupedCounts.groupedTrades.filter((trade: any) => trade.phaseAccountId === phase.id)
         return {
           id: phase.id,
           phaseNumber: phase.phaseNumber,
@@ -379,8 +337,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           payoutCycleDays: phase.payoutCycleDays,
           startDate: phase.startDate,
           endDate: phase.endDate,
-          tradeCount: phaseStat?._count.id || 0,
-          totalPnL: phaseStat ? (phaseStat._sum.pnl || 0) : 0
+          tradeCount: groupedCounts.groupedCountByPhaseAccountId.get(phase.id) || 0,
+          totalPnL: phaseTrades.reduce((sum: number, trade: any) => sum + Number(trade.pnl || 0), 0)
         }
       }),
       currentPhase: currentPhase ? {
@@ -408,10 +366,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         losingTrades,
         breakEvenTrades: Math.max(0, totalTrades - winningTrades - losingTrades),
         winRate,
-        currentPhaseTrades: currentPhaseStat?._count.id || 0,
+        currentPhaseTrades: currentPhaseTradeCount,
         currentPhasePnL
       },
-      recentTrades: groupedTrades.slice(-20).reverse().map((trade: any) => ({  // FIXED: Show recent grouped trades from CURRENT PHASE only
+      recentTrades: currentPhaseGroupedTrades.slice(-20).reverse().map((trade: any) => ({  // FIXED: Show recent grouped trades from CURRENT PHASE only
         id: trade.id,
         pnl: trade.pnl,
         commission: trade.commission,

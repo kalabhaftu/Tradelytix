@@ -10,6 +10,7 @@ import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -269,8 +270,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
     // else: phaseFilter === 'all', use all phases
 
-    // Flatten trades from filtered phases
-    const trades = phasesToInclude.flatMap((phase: (typeof masterAccount.PhaseAccount)[number]) =>
+    // Flatten then group trades from filtered phases so every UI "trade" means a grouped execution
+    const rawTrades = phasesToInclude.flatMap((phase: (typeof masterAccount.PhaseAccount)[number]) =>
       phase.Trade.map((trade: (typeof phase.Trade)[number]) => ({
         ...trade,
         phase: {
@@ -281,6 +282,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
       }))
     )
+    const groupedSummary = buildGroupedTradeCountSummary(rawTrades as any)
+    const trades = groupedSummary.groupedTrades
 
     return NextResponse.json({
       success: true,
@@ -298,7 +301,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
               (p: (typeof masterAccount.PhaseAccount)[number]) => ({
                 phaseNumber: p.phaseNumber,
                 status: p.status,
-                tradeCount: p.Trade.length,
+                tradeCount: buildGroupedTradeCountSummary(p.Trade as any).groupedTradeCount,
               })
             ),
           }

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { cloneDefaultTemplateLayout } from '@/lib/dashboard/default-template-layout'
+import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 
 interface ActiveTemplateShell {
   id: string
@@ -64,10 +65,9 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
 
     const internalUserId = userLookup.id
 
-    const [accounts, calendarNotes, propFirmAccounts, tradeCounts, activeTemplate] = await Promise.all([
+    const [accounts, calendarNotes, propFirmAccounts, allTrades, activeTemplate] = await Promise.all([
       prisma.account.findMany({
         where: { userId: internalUserId },
-        include: { _count: { select: { Trade: true } } },
         orderBy: { createdAt: 'desc' }
       }),
 
@@ -92,10 +92,9 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
         include: { PhaseAccount: { orderBy: { phaseNumber: 'asc' } } }
       }),
 
-      prisma.trade.groupBy({
-        by: ['accountNumber'],
+      prisma.trade.findMany({
         where: { userId: internalUserId },
-        _count: { id: true }
+        select: TRADE_COUNT_SELECT,
       }),
 
       prisma.dashboardTemplate.findFirst({
@@ -116,12 +115,7 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
       }),
     ])
 
-    const tradeCountMap = new Map(
-      tradeCounts.map((tc: { accountNumber: string | null; _count: { id: number } }) => [
-        tc.accountNumber,
-        tc._count.id,
-      ])
-    )
+    const groupedCounts = buildGroupedTradeCountSummary(allTrades as any)
 
     const isFundedPhase = (evaluationType: string, phaseNumber: number): boolean => {
       switch (evaluationType) {
@@ -140,7 +134,7 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
     const processedLiveAccounts = accounts.map((acc: typeof accounts[number]) => ({
       ...acc,
       propfirm: '',
-      tradeCount: tradeCountMap.get(acc.number) || 0,
+      tradeCount: groupedCounts.groupedCountByLiveAccountNumber.get(acc.number) || 0,
       accountType: 'live' as const,
       displayName: acc.name || acc.number,
       status: 'active' as const,
@@ -157,7 +151,10 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
           if (!phase.phaseId || phase.phaseId.trim() === '') return
 
           const phaseName = getPhaseDisplayName(masterAccount.evaluationType, phase.phaseNumber)
-          const phaseTradeCount = tradeCountMap.get(phase.phaseId) || 0
+          const phaseTradeCount =
+            groupedCounts.groupedCountByPhaseAccountId.get(phase.id) ||
+            groupedCounts.groupedCountByAccountNumber.get(phase.phaseId) ||
+            0
 
           processedPropFirmAccounts.push({
             id: phase.id,

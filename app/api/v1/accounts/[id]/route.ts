@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { logActivity, getClientIp } from '@/lib/activity-logger'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
@@ -26,13 +27,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         id: accountId,
         userId: internalUserId,
       },
-      include: {
-        _count: {
-          select: {
-            Trade: true
-          }
-        }
-      }
     })
 
     if (!account) {
@@ -46,11 +40,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       where: {
         accountId: account.id,
       },
-      select: {
-        pnl: true,
-        commission: true,
-        entryDate: true,
-      },
+      select: TRADE_COUNT_SELECT,
       orderBy: {
         entryDate: 'desc'
       }
@@ -79,6 +69,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const currentEquity = account.startingBalance + profitLoss + totalTransactions
     const lastTradeDate = trades.length > 0 ? trades[0].entryDate : null
+    const tradeCounts = buildGroupedTradeCountSummary(trades as any)
 
     return NextResponse.json({
       success: true,
@@ -93,7 +84,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         currentEquity,
         profitLoss,
         status: 'active',
-        tradeCount: account._count.Trade,
+        tradeCount: tradeCounts.groupedTradeCount,
         lastTradeDate,
         createdAt: account.createdAt,
       }

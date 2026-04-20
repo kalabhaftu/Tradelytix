@@ -63,7 +63,7 @@ export function useDashboardStats(settings: AccountFilterSettings = DEFAULT_FILT
 
       return {
         totalAccounts: Array.isArray(result.widgets?.accountBalanceChart) ? result.widgets.accountBalanceChart.length : 0,
-        totalTrades: stats.nbTrades || result.total || 0,
+        totalTrades: stats.nbTrades ?? 0,
         totalEquity: accountBalance.currentBalance || 0,
         totalPnL: stats.totalPnL || accountBalance.netPnL || 0,
         winRate: stats.winRate || 0,

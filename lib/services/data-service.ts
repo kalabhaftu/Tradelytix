@@ -155,7 +155,7 @@ class DataServiceClass {
 
       const normalized: DashboardStats = {
         totalAccounts: Array.isArray(result.data.widgets?.accountBalanceChart) ? result.data.widgets.accountBalanceChart.length : 0,
-        totalTrades: apiStats.nbTrades || result.data.total || 0,
+        totalTrades: apiStats.nbTrades ?? 0,
         totalEquity: accountBalance.currentBalance || 0,
         totalPnL: apiStats.totalPnL || accountBalance.netPnL || 0,
         winRate: apiStats.winRate || 0,

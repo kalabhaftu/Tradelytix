@@ -26,6 +26,7 @@ interface TradeNotesTabProps<TFieldValues extends TradeNotesFieldValues = TradeN
     uploadingField: string | null
     chartLinks: string[]
     setChartLinks: (links: string[]) => void
+    isSubmitting?: boolean
 }
 
 const EMPTY_PARAGRAPH_NODE = {
@@ -172,10 +173,19 @@ export function TradeNotesTab<TFieldValues extends TradeNotesFieldValues = Trade
     setImageError,
     uploadingField,
     chartLinks,
-    setChartLinks
+    setChartLinks,
+    isSubmitting = false,
 }: TradeNotesTabProps<TFieldValues>) {
     return (
-        <div className="space-y-8 px-1">
+        <div className="relative space-y-8 px-1">
+            {isSubmitting ? (
+                <div className="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-background/55 backdrop-blur-[1px]">
+                    <div className="flex items-center gap-2 rounded-full border border-border/50 bg-card/95 px-3 py-1.5 text-xs font-semibold shadow-sm">
+                        <Spinner className="h-3.5 w-3.5" />
+                        Saving trade...
+                    </div>
+                </div>
+            ) : null}
             {/* Trade Notes */}
             <div className="space-y-3">
                 <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-4 sm:gap-2">

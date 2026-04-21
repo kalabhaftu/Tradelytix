@@ -96,11 +96,9 @@ export function TradeTableMobileCard({
               </Badge>
               {trade.entryTime && (
                 <>
-                  {getTradingSession(trade.entryTime) !== 'Outside Session' && (
-                    <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 border-primary/20 bg-primary/5 text-primary">
-                      {getTradingSession(trade.entryTime)}
-                    </Badge>
-                  )}
+                  <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 border-primary/20 bg-primary/5 text-primary">
+                    {getTradingSession(trade.entryTime)}
+                  </Badge>
                    {getKillzoneBadge(trade.entryTime, trade.symbol || undefined) && (
                     <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 border-warning/20 bg-warning/5 text-warning">
                       {getKillzoneBadge(trade.entryTime, trade.symbol || undefined)}
@@ -216,4 +214,3 @@ export function TradeTableMobileCard({
     </div>
   )
 }
-

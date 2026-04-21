@@ -231,7 +231,7 @@ export function WeeklyModal({
       if (classifyOutcome(netPnL, breakEvenThreshold) === 'win') pairStats[pair].wins += 1
 
       // Session Stats (proper timezone handling)
-      const session = getTradingSession(trade.entryDate) || 'Outside Session'
+      const session = getTradingSession(trade.entryDate)
       if (!sessionStats[session]) sessionStats[session] = { pnl: 0, trades: 0 }
       sessionStats[session].pnl += netPnL
       sessionStats[session].trades += 1

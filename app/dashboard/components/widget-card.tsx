@@ -41,8 +41,8 @@ export function WidgetCard({
       <div
         className={cn(
           'w-full h-full overflow-hidden widget-card',
-          'bg-muted/10 border border-border/40 rounded-xl sm:rounded-2xl',
-          'p-3 sm:p-4',
+          'bg-muted/10 border border-border/40 rounded-xl min-[1440px]:rounded-2xl',
+          'p-3 min-[1440px]:p-4',
           className
         )}
       >

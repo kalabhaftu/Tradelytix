@@ -195,7 +195,8 @@ export default function AccountDetailPage() {
           profitTarget: realtimeAccount.currentPhase && realtimeAccount.accountSize
             ? (realtimeAccount.currentPhase.profitTargetPercent / 100) * realtimeAccount.accountSize
             : 0,
-          netProfitSincePhaseStart: realtimeAccount.currentPnL ?? 0,
+          grossProfitSincePhaseStart: realtimeAccount.currentGrossPnL ?? realtimeAccount.currentPnL ?? 0,
+          netProfitSincePhaseStart: realtimeAccount.currentNetPnL ?? realtimeAccount.currentPnL ?? 0,
           isFunded,
         },
         drawdown: {
@@ -446,7 +447,7 @@ export default function AccountDetailPage() {
               ? `Split: ${account.profitSplitPercent || 80}%`
               : `Target: ${formatCurrency(currentPhase.profitTarget)}`}
             icon={<Target className="h-5 w-5" />}
-            trend={currentPhase.netProfitSincePhaseStart >= 0 ? 'positive' : 'negative'}
+            trend={(currentPhase.isFunded ? currentPhase.netProfitSincePhaseStart : currentPhase.grossProfitSincePhaseStart) >= 0 ? 'positive' : 'negative'}
           />
         </motion.div>
 
@@ -465,7 +466,7 @@ export default function AccountDetailPage() {
                 </div>
                 <Progress value={Math.min(progress.profitProgress, 100)} className="h-2" />
                 <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                  <span>Current: {formatCurrency(currentPhase.netProfitSincePhaseStart)}</span>
+                  <span>Current: {formatCurrency(currentPhase.grossProfitSincePhaseStart)}</span>
                   <span>Target: {formatCurrency(currentPhase.profitTarget)}</span>
                 </div>
               </CardContent>

@@ -12,12 +12,6 @@ import {
   ResponsiveContainer,
   ReferenceLine
 } from "recharts"
-import { Info } from "lucide-react"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import { WidgetCard, ChartTooltip as SharedChartTooltip } from '../widget-card'
 import { useWidgetData } from "@/hooks/use-widget-data"
 import { formatNumber } from "@/lib/utils"
@@ -35,6 +29,7 @@ interface PnLByInstrumentProps {
 
 interface InstrumentData {
   instrument: string
+  symbol?: string
   pnl: number
   trades: number
   wins: number
@@ -102,19 +97,46 @@ export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrument
   // DATA HOOKS (PRESERVED - DO NOT MODIFY)
   // ---------------------------------------------------------------------------
   const { data: chartData = [], isLoading } = useWidgetData('pnlByInstrument')
+  const isCompact = size === 'small' || size === 'small-long'
+  const normalizedChartData = React.useMemo(() => {
+    return chartData.map((item: InstrumentData, index: number) => {
+      const rawLabel = String(item.instrument || item.symbol || '').trim()
+      const instrument = rawLabel.length > 0 ? rawLabel : `Instrument ${index + 1}`
+      return {
+        ...item,
+        instrument,
+      }
+    })
+  }, [chartData])
+  const labelMetrics = React.useMemo(() => {
+    const maxLabelLength = normalizedChartData.reduce((max: number, item: InstrumentData) => {
+      return Math.max(max, item.instrument.length)
+    }, 0)
+    const crowded = normalizedChartData.length >= 8 || maxLabelLength > 6
+
+    return {
+      crowded,
+      xAxisHeight: crowded ? 64 : 28,
+      xAxisAngle: crowded ? -38 : 0,
+      textAnchor: crowded ? 'end' as const : 'middle' as const,
+      bottomMargin: crowded ? 44 : 20,
+      maxBarSize: crowded ? 34 : 50,
+      tickFontSize: crowded ? (isCompact ? 8 : 9) : (isCompact ? 9 : 10),
+    }
+  }, [normalizedChartData, isCompact])
 
   // ---------------------------------------------------------------------------
   // Y-AXIS DOMAIN CALCULATION (PRESERVED - DO NOT MODIFY)
   // ---------------------------------------------------------------------------
   const { yDomain, yTicks } = React.useMemo(() => {
-    if (!chartData.length) {
+    if (!normalizedChartData.length) {
       return {
         yDomain: [-100, 100] as [number, number],
         yTicks: [-100, -50, 0, 50, 100],
       }
     }
 
-    const pnls = chartData.map((item: any) => item.pnl)
+    const pnls = normalizedChartData.map((item: any) => item.pnl)
     const minValue = Math.min(...pnls)
     const maxValue = Math.max(...pnls)
 
@@ -143,7 +165,7 @@ export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrument
     const ticks = [-niceMax, -niceMax / 2, 0, niceMax / 2, niceMax]
 
     return { yDomain: domain, yTicks: ticks }
-  }, [chartData])
+  }, [normalizedChartData])
 
   if (isLoading) {
     return (
@@ -155,7 +177,7 @@ export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrument
     )
   }
 
-  if (chartData.length === 0) {
+  if (normalizedChartData.length === 0) {
     return (
       <WidgetCard title="P/L by Instrument">
         <div className="flex items-center justify-center h-full text-muted-foreground/50 text-sm">
@@ -166,19 +188,14 @@ export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrument
   }
 
   // ---------------------------------------------------------------------------
-  // SIZE-RESPONSIVE VALUES
-  // ---------------------------------------------------------------------------
-  const isCompact = size === 'small' || size === 'small-long'
-
-  // ---------------------------------------------------------------------------
   // RENDER
   // ---------------------------------------------------------------------------
   return (
     <WidgetCard title="P/L by Instrument">
                   <ResponsiveContainer width="100%" height="100%">
             <AnyBarChart
-              data={chartData}
-              margin={{ top: 20, right: 20, left: 10, bottom: 20 }}
+              data={normalizedChartData}
+              margin={{ top: 20, right: 20, left: 10, bottom: labelMetrics.bottomMargin }}
               barGap={4}
             >
               {/* Subtle Grid - Horizontal Only */}
@@ -193,11 +210,17 @@ export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrument
               <XAxis
                 dataKey="instrument"
                 stroke={COLORS.axis}
-                fontSize={isCompact ? 9 : 10}
+                fontSize={labelMetrics.tickFontSize}
                 tickLine={false}
                 axisLine={false}
-                tickMargin={8}
-                tickFormatter={(value) => value.length > 8 ? value.substring(0, 6) + '..' : value}
+                tickMargin={labelMetrics.crowded ? 12 : 8}
+                minTickGap={0}
+                interval={0}
+                angle={labelMetrics.xAxisAngle}
+                textAnchor={labelMetrics.textAnchor}
+                height={labelMetrics.xAxisHeight}
+                tickFormatter={(value) => String(value ?? '').trim()}
+                allowDuplicatedCategory
               />
 
               {/* Y Axis - Currency */}
@@ -230,9 +253,10 @@ export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrument
               <Bar
                 dataKey="pnl"
                 radius={CHART_CONFIG.barRadius}
-                maxBarSize={50}
+                maxBarSize={labelMetrics.maxBarSize}
+                barSize={labelMetrics.crowded ? 22 : 30}
               >
-                {chartData.map((entry: any, index: number) => (
+                {normalizedChartData.map((entry: any, index: number) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={

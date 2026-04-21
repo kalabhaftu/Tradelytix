@@ -29,7 +29,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar'
 import { Logo } from '@/components/logo'
@@ -58,7 +57,7 @@ const utilityItems = [
 export function DashboardSidebar() {
   const pathname = usePathname()
   const { refreshTrades } = useData()
-  const { state, toggleSidebar } = useSidebar()
+  const { state, toggleSidebar, isMobile } = useSidebar()
   const isCollapsed = state === 'collapsed'
 
   const getActiveId = () => {
@@ -80,11 +79,11 @@ export function DashboardSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-border/50">
       {/* Header — Logo */}
-      <SidebarHeader className="h-12 flex items-center justify-center px-2">
+      <SidebarHeader className={cn("flex items-center justify-center px-2", isMobile ? "h-12 pt-2 pb-1" : "h-12")}>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              size="lg"
+              size={isMobile ? "default" : "lg"}
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               asChild
             >
@@ -103,14 +102,16 @@ export function DashboardSidebar() {
       </SidebarHeader>
 
       {/* Main nav */}
-      <SidebarContent className="flex flex-col">
-        <SidebarGroup>
+      <SidebarContent className={cn("flex flex-1 min-h-0 flex-col", isMobile && "gap-0 px-1 pb-0 overflow-hidden")}>
+        <div className={cn("flex min-h-0 flex-1 flex-col", isMobile && "overflow-y-auto overscroll-contain")}>
+        <SidebarGroup className={cn(isMobile && "p-1.5 pt-0")}>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className={cn(isMobile && "gap-0.5")}>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
+                    size={isMobile ? "sm" : "default"}
                     tooltip={item.label}
                     isActive={activeId === item.id}
                     asChild
@@ -126,17 +127,17 @@ export function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Spacer to push utility items to bottom */}
-        <div className="flex-1 min-h-0" />
+        <div className="flex-1 min-h-3" />
 
         {/* Utility items at bottom of content area */}
-        <SidebarGroup>
+        <SidebarGroup className={cn(isMobile && "p-1.5 pb-0")}>
           <SidebarGroupLabel>Utilities</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className={cn(isMobile && "gap-0.5")}>
               {/* Refresh Data action */}
               <SidebarMenuItem>
                 <SidebarMenuButton
+                  size={isMobile ? "sm" : "default"}
                   tooltip="Refresh Data"
                   onClick={() => refreshTrades()}
                 >
@@ -148,6 +149,7 @@ export function DashboardSidebar() {
               {utilityItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
+                    size={isMobile ? "sm" : "default"}
                     tooltip={item.label}
                     isActive={activeId === item.id}
                     asChild
@@ -162,13 +164,14 @@ export function DashboardSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        </div>
       </SidebarContent>
 
       {/* Footer — Collapse button anchored at absolute bottom */}
-      <SidebarFooter className="p-2 mt-auto">
+      <SidebarFooter className={cn("mt-auto", isMobile ? "p-1.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]" : "p-2")}>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={toggleSidebar} tooltip="Collapse" className="w-full justify-start text-muted-foreground hover:text-foreground">
+            <SidebarMenuButton size={isMobile ? "sm" : "default"} onClick={toggleSidebar} tooltip="Collapse" className="w-full justify-start text-muted-foreground hover:text-foreground">
               <PanelLeftClose />
               <span>Collapse</span>
             </SidebarMenuButton>

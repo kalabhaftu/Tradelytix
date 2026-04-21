@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
@@ -198,7 +198,7 @@ const Sidebar = React.forwardRef<
           <SheetContent
             data-sidebar="sidebar"
             data-mobile="true"
-            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden !h-[100dvh] !max-h-[100dvh] !inset-y-0"
+            className="z-[210] w-[--sidebar-width] max-w-[--sidebar-width] overflow-hidden bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden !top-0 !bottom-0 !h-[100vh] !h-[100dvh] !max-h-[100vh] !max-h-[100dvh]"
             style={
               {
                 "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -206,7 +206,8 @@ const Sidebar = React.forwardRef<
             }
             side={side}
           >
-            <div className="flex h-[100dvh] w-full flex-col">{children}</div>
+            <SheetTitle className="sr-only">Navigation menu</SheetTitle>
+            <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-sidebar">{children}</div>
           </SheetContent>
         </Sheet>
       )
@@ -404,7 +405,7 @@ const SidebarContent = React.forwardRef<
       ref={ref}
       data-sidebar="content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
+        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden data-[mobile=true]:overflow-hidden",
         className
       )}
       {...props}

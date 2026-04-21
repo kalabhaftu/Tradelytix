@@ -151,8 +151,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const currentPhaseTradeCount = currentPhase
       ? (groupedCounts.groupedCountByPhaseAccountId.get(currentPhase.id) || 0)
       : 0
-    const currentPhasePnL = currentPhaseGroupedTrades.reduce(
+    const currentPhaseGrossPnL = currentPhaseGroupedTrades.reduce(
       (sum: number, trade: any) => sum + Number(trade.pnl || 0),
+      0
+    )
+    const currentPhaseNetPnL = currentPhaseGroupedTrades.reduce(
+      (sum: number, trade: any) => sum + Number(trade.pnl || 0) + Number(trade.commission || 0),
       0
     )
 
@@ -178,7 +182,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // FIXED: Calculate current balance and equity from CURRENT PHASE trades only
-    const currentBalance = masterAccount.accountSize + currentPhasePnL
+    const currentBalance = masterAccount.accountSize + currentPhaseNetPnL
     const currentEquity = currentBalance
 
     // Calculate drawdown based on current phase rules
@@ -293,13 +297,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           }
         })
       ),
-      currentPnL: currentPhasePnL,  // FIXED: Use current phase PnL, not total across all phases
+      currentPnL: currentPhaseNetPnL,
+      currentGrossPnL: currentPhaseGrossPnL,
+      currentNetPnL: currentPhaseNetPnL,
       currentBalance: currentBalance,
       currentEquity: currentEquity,
       dailyDrawdownRemaining: drawdownData.dailyDrawdownRemaining,
       maxDrawdownRemaining: drawdownData.maxDrawdownRemaining,
       profitTargetProgress: currentPhase && currentPhase.profitTargetPercent > 0
-        ? Math.min(Math.round((currentPhasePnL / (masterAccount.accountSize * currentPhase.profitTargetPercent / 100)) * 1000) / 10, 100)  // FIXED: Use current phase PnL
+        ? Math.min(Math.round((currentPhaseGrossPnL / (masterAccount.accountSize * currentPhase.profitTargetPercent / 100)) * 1000) / 10, 100)
         : 0,
       lastUpdated: new Date().toISOString()
     }
@@ -367,7 +373,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         breakEvenTrades: Math.max(0, totalTrades - winningTrades - losingTrades),
         winRate,
         currentPhaseTrades: currentPhaseTradeCount,
-        currentPhasePnL
+        currentPhaseGrossPnL,
+        currentPhaseNetPnL
       },
       recentTrades: currentPhaseGroupedTrades.slice(-20).reverse().map((trade: any) => ({  // FIXED: Show recent grouped trades from CURRENT PHASE only
         id: trade.id,

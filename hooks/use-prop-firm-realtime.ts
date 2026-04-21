@@ -47,6 +47,8 @@ interface PropFirmAccountLocal {
     endDate: string | null
   }>
   currentPnL?: number
+  currentGrossPnL?: number
+  currentNetPnL?: number
   currentBalance?: number
   currentEquity?: number
   dailyDrawdownRemaining?: number

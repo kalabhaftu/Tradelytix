@@ -34,7 +34,7 @@ function WidgetSkeleton({ className, style }: { className?: string; style?: Reac
 /** KPI skeleton — compact block */
 function KpiSkeleton() {
   return (
-    <div className="bg-muted/10 border border-border/40 rounded-2xl p-4 h-[100px] flex flex-col justify-between">
+    <div className="bg-muted/10 border border-border/40 rounded-xl min-[1440px]:rounded-2xl p-3 min-[1440px]:p-4 h-[104px] min-[1440px]:h-[100px] flex flex-col justify-between">
       <SkeletonBlock className="h-2 w-20" />
       <div className="space-y-2">
         <SkeletonBlock className="h-6 w-28" />
@@ -55,8 +55,19 @@ export function MainDashboardSkeleton() {
   return (
     <div className="px-4 py-4 space-y-3">
       {/* KPI Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {[0, 1, 2, 3, 4].map(i => <KpiSkeleton key={`kpi-${i}`} />)}
+      <div className="grid grid-cols-1 min-[768px]:grid-cols-2 min-[1024px]:grid-cols-6 min-[1440px]:grid-cols-5 gap-3">
+        {[0, 1, 2, 3, 4].map(i => (
+          <div
+            key={`kpi-${i}`}
+            className={cn(
+              i === 4 && "min-[768px]:max-[1023px]:col-span-2",
+              i <= 2 && "min-[1024px]:max-[1439px]:col-span-2",
+              i >= 3 && "min-[1024px]:max-[1439px]:col-span-3"
+            )}
+          >
+            <KpiSkeleton />
+          </div>
+        ))}
       </div>
 
       {/* Row 1: Large (8-col) + Medium (4-col) */}
@@ -91,17 +102,55 @@ export function MainDashboardSkeleton() {
 
 interface TemplateAwareLayoutItem {
   i: string
+  type?: string
+  size?: string
   x: number
   y: number
   w: number
   h: number
 }
 
+interface TemplateAwareLayouts {
+  wide: TemplateAwareLayoutItem[]
+  narrow: TemplateAwareLayoutItem[]
+  tablet: TemplateAwareLayoutItem[]
+  mobile: TemplateAwareLayoutItem[]
+}
+
+function GridSkeletonLayout({
+  items,
+  cols,
+  className,
+}: {
+  items: TemplateAwareLayoutItem[]
+  cols: number
+  className?: string
+}) {
+  return (
+    <div
+      className={cn("gap-3", className)}
+      style={{ gridAutoRows: '76px', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+    >
+      {items.map((item) => (
+        <WidgetSkeleton
+          key={item.i}
+          style={{
+            gridColumn: `span ${Math.max(1, Math.min(cols, item.w))} / span ${Math.max(1, Math.min(cols, item.w))}`,
+            gridRow: `span ${Math.max(1, item.h)} / span ${Math.max(1, item.h)}`,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
 export function TemplateAwareDashboardSkeleton({
   layout,
+  layouts,
   className,
 }: {
   layout: TemplateAwareLayoutItem[]
+  layouts: TemplateAwareLayouts
   className?: string
 }) {
   const kpiWidgets = layout
@@ -109,25 +158,38 @@ export function TemplateAwareDashboardSkeleton({
     .sort((a, b) => a.x - b.x)
     .slice(0, 5)
 
-  const nonKpiWidgets = layout
-    .filter((item) => item.y > 0)
-    .sort((a, b) => (a.y === b.y ? a.x - b.x : a.y - b.y))
-
   return (
     <div className={cn("px-3 sm:px-4 pt-3 sm:pt-4 space-y-3", className)}>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+      <div className="grid grid-cols-1 min-[768px]:grid-cols-2 min-[1024px]:grid-cols-6 min-[1440px]:grid-cols-5 gap-2 sm:gap-3">
         {Array.from({ length: 5 }).map((_, index) => {
           const hasSlot = kpiWidgets.some((item) => item.x === index)
           return hasSlot ? (
-            <KpiSkeleton key={`kpi-${index}`} />
+            <div
+              key={`kpi-${index}`}
+              className={cn(
+                index === 4 && "min-[768px]:max-[1023px]:col-span-2",
+                index <= 2 && "min-[1024px]:max-[1439px]:col-span-2",
+                index >= 3 && "min-[1024px]:max-[1439px]:col-span-3"
+              )}
+            >
+              <KpiSkeleton />
+            </div>
           ) : (
-            <div key={`kpi-empty-${index}`} className="h-[100px] rounded-2xl border border-border/20 bg-transparent" />
+            <div
+              key={`kpi-empty-${index}`}
+              className={cn(
+                "h-[100px] rounded-2xl border border-border/20 bg-transparent",
+                index === 4 && "min-[768px]:max-[1023px]:col-span-2",
+                index <= 2 && "min-[1024px]:max-[1439px]:col-span-2",
+                index >= 3 && "min-[1024px]:max-[1439px]:col-span-3"
+              )}
+            />
           )
         })}
       </div>
 
-      <div className="space-y-3 md:hidden">
-        {nonKpiWidgets.map((item) => (
+      <div className="space-y-3 min-[768px]:hidden">
+        {layouts.mobile.map((item) => (
           <WidgetSkeleton
             key={item.i}
             className="min-h-[220px]"
@@ -136,20 +198,23 @@ export function TemplateAwareDashboardSkeleton({
         ))}
       </div>
 
-      <div
-        className="hidden md:grid grid-cols-12 gap-3"
-        style={{ gridAutoRows: '76px' }}
-      >
-        {nonKpiWidgets.map((item) => (
-          <WidgetSkeleton
-            key={item.i}
-            style={{
-              gridColumn: `span ${Math.max(1, Math.min(12, item.w))} / span ${Math.max(1, Math.min(12, item.w))}`,
-              gridRow: `span ${Math.max(1, item.h)} / span ${Math.max(1, item.h)}`,
-            }}
-          />
-        ))}
-      </div>
+      <GridSkeletonLayout
+        items={layouts.tablet}
+        cols={6}
+        className="hidden min-[768px]:grid min-[1024px]:hidden"
+      />
+
+      <GridSkeletonLayout
+        items={layouts.narrow}
+        cols={12}
+        className="hidden min-[1024px]:grid min-[1440px]:hidden"
+      />
+
+      <GridSkeletonLayout
+        items={layouts.wide}
+        cols={12}
+        className="hidden min-[1440px]:grid"
+      />
     </div>
   )
 }

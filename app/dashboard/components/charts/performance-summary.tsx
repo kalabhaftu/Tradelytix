@@ -108,9 +108,9 @@ export default function PerformanceSummaryWidget() {
 
   return (
     <WidgetCard title="Performance">
-      <div className="flex h-full gap-0">
-        {/* Left: Equity Chart (takes ~65% width) */}
-        <div className="flex-1 min-w-0 h-full pr-3">
+      <div className="flex h-full flex-col min-[1280px]:flex-row gap-0">
+        {/* Left: Equity Chart */}
+        <div className="flex-1 min-w-0 h-[220px] min-[768px]:h-[260px] min-[1280px]:h-full pb-3 min-[1280px]:pb-0 min-[1280px]:pr-3">
           {Array.isArray(chartData) && chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
@@ -164,8 +164,8 @@ export default function PerformanceSummaryWidget() {
           )}
         </div>
 
-        {/* Right: Stats Sidebar (fixed width) */}
-        <div className="w-[160px] shrink-0 flex flex-col justify-center pl-3 border-l border-border/30">
+        {/* Right: Stats Sidebar */}
+        <div className="w-full min-[1280px]:w-[160px] shrink-0 flex flex-col justify-center pt-3 min-[1280px]:pt-0 min-[1280px]:pl-3 border-t border-border/30 min-[1280px]:border-t-0 min-[1280px]:border-l">
           {stats ? (
             <>
               <StatItem label="Total trades" value={String(stats.totalTrades)} />

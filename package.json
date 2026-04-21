@@ -38,6 +38,7 @@
     "diagnose:metrics": "tsx scripts/diagnose-metric-consistency.ts",
     "diagnose:data": "tsx scripts/diagnose-data-integrity.ts",
     "diagnose:trade-counts": "tsx scripts/audit-trade-counts.ts",
+    "diagnose:propfirm": "tsx scripts/audit-propfirm-report.ts",
     "cleanup:orphaned-users": "tsx scripts/cleanup-orphaned-users.ts"
   },
   "dependencies": {

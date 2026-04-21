@@ -50,8 +50,8 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
     <WidgetCard isKpi>
       <div className="h-full flex flex-col justify-between">
         {/* Header row with title, info, and trade count badge */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">
               Account Balance & PnL
             </span>
@@ -75,17 +75,17 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
           
           {/* Trade count badge */}
           {nbTrades > 0 && (
-            <div className="flex items-center gap-1 px-2 py-0.5 bg-muted/50 rounded-full">
+            <div className="ml-auto flex items-center gap-1 rounded-full bg-muted/50 px-2 py-0.5">
               <span className="text-xxs font-semibold text-muted-foreground">{nbTrades}</span>
             </div>
           )}
         </div>
 
         {/* Main value area */}
-        <div className="flex items-end justify-between">
+        <div className="flex items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
             {/* Large balance number */}
-            <span className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            <span className="text-[1.65rem] min-[768px]:text-[1.85rem] min-[1440px]:text-3xl font-bold tracking-tight text-foreground">
               {formatCompactCurrency(totalBalance)}
             </span>
             
@@ -102,8 +102,8 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
           </div>
 
           {/* Chart icon */}
-          <div className="p-2 rounded-lg bg-primary/10">
-            <Wallet className="h-5 w-5 text-primary/60" />
+          <div className="rounded-lg bg-primary/10 p-1.5 min-[1440px]:p-2">
+            <Wallet className="h-4 w-4 min-[1440px]:h-5 min-[1440px]:w-5 text-primary/60" />
           </div>
         </div>
       </div>

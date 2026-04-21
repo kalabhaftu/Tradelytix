@@ -77,6 +77,7 @@ import KpiWidgetSelector from './kpi-widget-selector'
 import { EmptyAccountState } from './empty-account-state'
 import { TemplateAwareDashboardSkeleton } from '@/components/ui/dashboard-skeleton'
 import { WIDGET_GRID_DEFAULTS } from '../config/widget-dimensions'
+import { buildResponsiveDashboardLayouts } from '@/lib/dashboard/responsive-layouts'
 import { toast } from 'sonner'
 
 import 'react-grid-layout/css/styles.css'
@@ -148,41 +149,10 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
     return layout.filter(w => !isKpiRowWidget(w))
   }, [layout])
 
-  // Convert our WidgetLayout[] to react-grid-layout's Layout[]
-  const gridLayouts = useMemo(() => {
-    const desktopLayout = gridWidgets.map(w => {
-      const defaults = WIDGET_GRID_DEFAULTS[w.type as WidgetType] || WIDGET_GRID_DEFAULTS.default
-      return {
-        i: w.i,
-        x: w.x,
-        y: w.y - 1, // Shift down by 1 since KPI row is separate
-        w: w.w,
-        h: w.h,
-        minW: defaults.minW,
-        minH: defaults.minH,
-        static: !isEditMode,
-      }
-    })
-
-    return {
-      xl: desktopLayout,
-      lg: desktopLayout,
-      md: desktopLayout.map(l => ({
-        ...l,
-        // On tablets: 2-column layout instead of single column
-        w: Math.min(l.w, 6),
-        x: l.x >= 6 ? 0 : l.x,
-      })),
-      sm: desktopLayout.map(l => ({ 
-        ...l, 
-        w: 1, 
-        minW: 1, 
-        x: 0,
-        // On mobile, enforce minH to ensure contents (like the mini calendar) don't get crushed vertically
-        h: Math.max(l.h, l.minH || 4) 
-      })), // Stack strictly on mobile
-    }
-  }, [gridWidgets, isEditMode])
+  const gridLayouts = useMemo(
+    () => buildResponsiveDashboardLayouts(layout as any, isEditMode),
+    [layout, isEditMode]
+  )
 
   // Handle layout change from react-grid-layout
   const handleLayoutChange = useCallback((newLayout: any[], allLayouts: Record<string, any[]>) => {
@@ -319,11 +289,14 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
         <TemplateAwareDashboardSkeleton
           layout={skeletonLayout.map(item => ({
             i: item.i,
+            type: item.type,
+            size: item.size,
             x: item.x,
             y: item.y,
             w: item.w,
             h: item.h,
           }))}
+          layouts={buildResponsiveDashboardLayouts(skeletonLayout as any, false)}
         />
       </div>
     )
@@ -331,7 +304,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
 
   return (
     <div className={cn('space-y-3', className)}>
-      {/* KPI Row — Responsive grid: stacked on mobile, 5-col on desktop */}
+      {/* KPI Row — mobile 1-up, tablet 2+2+1, narrow desktop 3+2, wide desktop 5-up */}
       <div className="px-3 sm:px-4 pt-3 sm:pt-4">
         <div
           className={cn(
@@ -339,13 +312,18 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
             isEditMode && 'border-2 border-dashed border-border/50 rounded-xl p-2'
           )}
         >
-          {/* Mobile: 2-col grid that stacks, Tablet: 3-col, Desktop: 5-col */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+          <div className="grid grid-cols-1 min-[768px]:grid-cols-2 min-[1024px]:grid-cols-6 min-[1440px]:grid-cols-5 gap-2 sm:gap-3">
             {kpiLayout.map((widget, index) => {
-              // On mobile (2-col), if this is the 5th item (index 4) and it would be alone, span full width
-              const isLastItemAlone = index === 4 && kpiLayout.filter(w => w !== null).length === 5
               return (
-              <div key={`kpi-slot-${index}`} className={cn("relative", isLastItemAlone && "col-span-2 sm:col-span-1")}>
+              <div
+                key={`kpi-slot-${index}`}
+                className={cn(
+                  "relative",
+                  index === 4 && "min-[768px]:max-[1023px]:col-span-2",
+                  index <= 2 && "min-[1024px]:max-[1439px]:col-span-2",
+                  index >= 3 && "min-[1024px]:max-[1439px]:col-span-3"
+                )}
+              >
                 {widget ? (
                   <div className="relative group h-full">
                     {/* Edit mode controls */}
@@ -394,8 +372,8 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
         <Responsive
           width={containerWidth}
           layouts={gridLayouts}
-          breakpoints={{ xl: 1280, lg: 1024, md: 768, sm: 480 }}
-          cols={{ xl: GRID_COLS, lg: GRID_COLS, md: 6, sm: 1 }}
+          breakpoints={{ wide: 1440, narrow: 1024, tablet: 768, mobile: 0 }}
+          cols={{ wide: GRID_COLS, narrow: GRID_COLS, tablet: 6, mobile: 1 }}
           rowHeight={ROW_HEIGHT}
           margin={GRID_MARGIN}
           containerPadding={[8, 8]}

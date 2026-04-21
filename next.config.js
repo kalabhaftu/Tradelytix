@@ -37,7 +37,12 @@ const nextConfig = {
     },
   },
 
-  serverExternalPackages: ['@supabase/ssr', '@supabase/supabase-js'],
+  serverExternalPackages: [
+    '@supabase/ssr',
+    '@supabase/supabase-js',
+    '@prisma/instrumentation',
+    '@opentelemetry/instrumentation',
+  ],
 
   // Disable ESLint during builds to prevent build failures
   // ESLint can still be run manually with `npm run lint`
@@ -88,15 +93,17 @@ const nextConfig = {
     config.ignoreWarnings = [
       ...(config.ignoreWarnings || []),
       (warning) => {
-        const message = typeof warning === 'string' ? warning : warning?.message || ''
-        const moduleIdentifier =
-          typeof warning === 'object' && warning?.module
-            ? String(warning.module?.resource || warning.module?.identifier?.() || '')
-            : ''
+        const warningText =
+          typeof warning === 'string'
+            ? warning
+            : [warning?.message, warning?.details]
+                .filter(Boolean)
+                .join('\n')
 
         return (
-          message.includes('Critical dependency: the request of a dependency is an expression') &&
-          moduleIdentifier.includes('@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js')
+          warningText.includes('Critical dependency: the request of a dependency is an expression') &&
+          (warningText.includes('@opentelemetry/instrumentation') ||
+            warningText.includes('@prisma/instrumentation'))
         )
       },
     ]

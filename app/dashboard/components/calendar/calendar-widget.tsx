@@ -238,14 +238,14 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
 
   // Header right content — settings gear + snapshot dropdown
   const headerControls = (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1 max-[420px]:gap-0.5">
       {/* Snapshot dropdown — icon only, hidden in screenshot output */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
-            className="screenshot-btn h-7 w-7 hover:bg-primary/5 hover:text-primary transition-all bg-muted/20 border border-border/30 rounded-lg"
+            className="screenshot-btn h-6 w-6 max-[420px]:h-5 max-[420px]:w-5 sm:h-7 sm:w-7 hover:bg-primary/5 hover:text-primary transition-all bg-muted/20 border border-border/30 rounded-lg"
           >
             <Camera className="h-3.5 w-3.5" />
           </Button>
@@ -267,6 +267,23 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
     </div>
   )
 
+  const mobileInlineControls = (
+    <div className="flex shrink-0 items-center gap-0.5 whitespace-nowrap">
+      <div
+        className={cn(
+          "flex h-6 max-[420px]:h-5 sm:h-7 shrink-0 items-center rounded-md border px-1.5 max-[420px]:px-1 sm:px-2 text-[10px] max-[420px]:text-[9px] font-black tracking-tight shadow-sm",
+          isPositive ? "border-long/20 bg-long/10 text-long" : "border-short/20 bg-short/10 text-short"
+        )}
+      >
+        {formatCompact(displayTotal)}
+      </div>
+      <div className="flex h-6 max-[420px]:h-5 sm:h-7 shrink-0 items-center rounded-md border border-chart-4/20 bg-chart-4/10 px-1.5 max-[420px]:px-1 sm:px-2 text-[10px] max-[420px]:text-[9px] font-black tracking-tight text-chart-4 shadow-sm">
+        {tradedDaysCount}d
+      </div>
+      {headerControls}
+    </div>
+  )
+
   return (
     <div id="advanced-calendar-capture" ref={calendarRef} data-screenshot-wrap className={cn("h-full w-full", className)}>
       <WidgetCard
@@ -275,24 +292,25 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         className="overflow-hidden flex flex-col h-full"
       >
         {/* Unified Header: Navigation + Stats + Controls */}
-        <div className="flex flex-row flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-border/20 bg-muted/5 flex-shrink-0">
-          {/* Left side: Navigation + This month button */}
-          <div className="flex items-center gap-1.5 shrink-0">
+        <div className="border-b border-border/20 bg-muted/5 px-3 py-2 flex-shrink-0">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 max-[420px]:gap-0.5">
+            {/* Left side: Navigation + This month button */}
+            <div className="flex min-w-0 flex-1 items-center gap-1">
             {/* Navigation Group */}
             <div className="flex items-center gap-0.5 bg-muted/30 rounded-lg p-0.5 border border-border/30 font-bold shrink-0">
-              <Button variant="ghost" size="icon" onClick={handlePrev} className="h-7 w-7 hover:bg-background" aria-label="Previous">
-                <ChevronLeft className="h-3.5 w-3.5" />
+              <Button variant="ghost" size="icon" onClick={handlePrev} className="h-6 w-6 max-[420px]:h-5 max-[420px]:w-5 sm:h-7 sm:w-7 hover:bg-background" aria-label="Previous">
+                <ChevronLeft className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               </Button>
-              <div className="px-2 min-w-[80px] sm:min-w-[90px] text-center">
-                <span className="text-[10px] sm:text-[11px] font-black capitalize tracking-tight">
+              <div className="px-1 min-w-[48px] max-[420px]:min-w-[44px] sm:min-w-[64px] lg:min-w-[90px] text-center">
+                <span className="text-[10px] max-[420px]:text-[9px] font-black capitalize tracking-tight">
                   {viewMode === 'daily'
                     ? format(currentDate, 'MMM yyyy')
                     : format(currentDate, 'yyyy')
                   }
                 </span>
               </div>
-              <Button variant="ghost" size="icon" onClick={handleNext} className="h-7 w-7 hover:bg-background" aria-label="Next">
-                <ChevronRight className="h-3.5 w-3.5" />
+              <Button variant="ghost" size="icon" onClick={handleNext} className="h-6 w-6 max-[420px]:h-5 max-[420px]:w-5 sm:h-7 sm:w-7 hover:bg-background" aria-label="Next">
+                <ChevronRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               </Button>
             </div>
 
@@ -300,14 +318,18 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
             <Button
               onClick={() => setCurrentDate(new Date())}
               variant="outline"
-              className="h-7 px-2.5 text-[10px] font-black bg-muted/20 hover:bg-muted border-border/40 transition-colors hidden sm:inline-flex"
+              className="h-7 px-2.5 text-[10px] font-black bg-muted/20 hover:bg-muted border-border/40 transition-colors hidden lg:inline-flex"
             >
               This month
             </Button>
           </div>
 
-          {/* Right side: Stats + View switcher + Controls */}
-          <div className="flex items-center gap-2 shrink-0">
+            <div className="lg:hidden">
+              {mobileInlineControls}
+            </div>
+
+            {/* Right side: Stats + View switcher + Controls */}
+            <div className="hidden shrink-0 items-center gap-2 lg:flex">
             {/* Stats label - hide on mobile */}
             <span className="text-[9px] sm:text-[10px] font-bold text-muted-foreground hidden md:block">
               {viewMode === 'daily' ? 'Monthly:' : 'Yearly:'}
@@ -355,7 +377,9 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
             </div>
 
             {headerControls}
+            </div>
           </div>
+
         </div>
 
         {/* Calendar Content - fully responsive, fills available space */}

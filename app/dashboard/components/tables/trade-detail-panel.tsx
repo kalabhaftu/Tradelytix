@@ -150,7 +150,7 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
               >
                 {formatCurrency(netPnL)}
               </Badge>
-              {session && session !== 'Outside Session' && (
+              {session && (
                 <Badge variant="outline" className="text-[10px] border-primary/20 bg-primary/5 text-primary hidden md:inline-flex shrink-0">
                   {session}
                 </Badge>

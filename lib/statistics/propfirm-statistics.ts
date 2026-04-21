@@ -1,54 +1,83 @@
-/**
- * Prop Firm Account Statistics Calculator
- *
- * Computes per-account and aggregate analytics for all funded/challenge accounts.
- * All math runs server-side — no raw trade arrays sent to client.
- */
-
 import { prisma } from '@/lib/prisma'
-import { groupTradesByExecution } from '@/lib/utils'
+import {
+  calculatePropFirmPhaseMetrics,
+  derivePropFirmLifecycleStatus,
+  isFundedPhaseForEvaluation,
+  resolveReportPhase,
+  summarizePhaseHistory,
+} from '@/lib/prop-firm/reporting'
 
-// ============================================================
-// TYPES
-// ============================================================
+type PhaseWithRelations = {
+  id: string
+  masterAccountId: string
+  phaseNumber: number
+  phaseId: string | null
+  status: string
+  profitTargetPercent: number
+  dailyDrawdownPercent: number
+  maxDrawdownPercent: number
+  maxDrawdownType: string
+  minTradingDays: number
+  timeLimitDays: number | null
+  consistencyRulePercent: number
+  profitSplitPercent: number | null
+  payoutCycleDays: number | null
+  startDate: Date
+  endDate: Date | null
+  Trade: Array<any>
+  Payout: Array<any>
+  BreachRecord: Array<{ id: string }>
+}
+
+type MasterWithRelations = {
+  id: string
+  userId: string
+  accountName: string
+  propFirmName: string
+  accountSize: number
+  evaluationType: string
+  currentPhase: number
+  createdAt: Date
+  status: string
+  isArchived: boolean
+  PhaseAccount: PhaseWithRelations[]
+  Payout: Array<{ id: string; amount: number; status: string }>
+}
 
 export interface PropFirmAccountDTO {
   id: string
-  masterAccountId: string
-  propFirmName: string
+  masterId: string
   accountName: string
+  propFirmName: string
   accountSize: number
   evaluationType: string
-  phaseNumber: number
-  phaseStatus: string  // active | passed | failed | archived | pending | pending_approval
-  masterStatus: string // active | funded | failed
-  startDate: string
-  endDate: string | null
-  durationDays: number
-
-  // Trade stats
-  totalTrades: number
-  tradingDaysActive: number
+  masterStatus: string
+  lifecycleStatus: 'active' | 'funded' | 'failed' | 'passed' | 'pending_approval'
+  currentPhaseNumber: number | null
+  currentPhaseStatus: string | null
+  isFundedStage: boolean
+  grossPnL: number
+  netPnL: number
+  profitTargetAmount: number
+  profitTargetProgressPct: number
+  tradeCount: number
+  activeDays: number
   winRate: string
   profitFactor: string
   expectancy: string
-
-  // P&L
-  totalNetPnL: number
   peakProfit: number
-  maxDrawdown: number   // peak-to-trough in $
+  maxDrawdown: number
   maxDrawdownPct: string
-
-  // Limits from phase config
-  profitTargetPercent: number
-  maxDrawdownPercent: number
-  dailyDrawdownPercent: number
-
-  // Breach info
   breachCount: number
-
-  // Payouts
   totalPayouts: number
+  durationDays: number
+  phaseHistory: Array<{
+    id: string
+    phaseNumber: number
+    phaseId: string | null
+    status: string
+    isFundedStage: boolean
+  }>
 }
 
 export interface PropFirmSummaryDTO {
@@ -57,188 +86,196 @@ export interface PropFirmSummaryDTO {
   fundedAccounts: number
   failedAccounts: number
   passedPhases: number
-
   totalNetPnL: number
+  totalGrossPnL: number
   totalPayoutsReceived: number
   totalBreaches: number
-
-  bestAccount: string | null
-  worstAccount: string | null
-
   accounts: PropFirmAccountDTO[]
 }
 
-// ============================================================
-// CORE COMPUTATION
-// ============================================================
+function toDurationDays(startDate?: Date | null, endDate?: Date | null) {
+  if (!startDate) return 0
+  const start = startDate.getTime()
+  const end = (endDate ?? new Date()).getTime()
+  const delta = Math.max(0, end - start)
+  return Math.max(1, Math.round(delta / (1000 * 60 * 60 * 24)))
+}
 
-export async function calculatePropFirmStatistics(
-  userId: string
-): Promise<PropFirmSummaryDTO> {
-  // Fetch all master accounts with phases, trades, breaches, and payouts
-  const masterAccounts = await prisma.masterAccount.findMany({
-    where: { userId },
-    include: {
+function getProfitTargetAmount(accountSize: number, phase?: Pick<PhaseWithRelations, 'profitTargetPercent'> | null) {
+  if (!phase?.profitTargetPercent) return 0
+  return accountSize * (phase.profitTargetPercent / 100)
+}
+
+function normalizeProgress(current: number, target: number) {
+  if (target <= 0) return 100
+  return Math.max(0, Math.min(100, (current / target) * 100))
+}
+
+export async function fetchPropFirmReportMasters(userId: string): Promise<MasterWithRelations[]> {
+  return prisma.masterAccount.findMany({
+    where: {
+      userId,
+      isArchived: false,
+    },
+    select: {
+      id: true,
+      userId: true,
+      accountName: true,
+      propFirmName: true,
+      accountSize: true,
+      evaluationType: true,
+      currentPhase: true,
+      createdAt: true,
+      status: true,
+      isArchived: true,
+      Payout: {
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+        },
+      },
       PhaseAccount: {
-        include: {
+        orderBy: {
+          phaseNumber: 'asc',
+        },
+        select: {
+          id: true,
+          masterAccountId: true,
+          phaseNumber: true,
+          phaseId: true,
+          status: true,
+          profitTargetPercent: true,
+          dailyDrawdownPercent: true,
+          maxDrawdownPercent: true,
+          maxDrawdownType: true,
+          minTradingDays: true,
+          timeLimitDays: true,
+          consistencyRulePercent: true,
+          profitSplitPercent: true,
+          payoutCycleDays: true,
+          startDate: true,
+          endDate: true,
           Trade: {
             select: {
               id: true,
+              phaseAccountId: true,
               entryId: true,
-              entryDate: true,
-              closeDate: true,
-              pnl: true,
-              commission: true,
-              quantity: true,
-              entryPrice: true,
-              stopLoss: true,
               instrument: true,
               symbol: true,
               side: true,
+              pnl: true,
+              commission: true,
+              quantity: true,
               timeInPosition: true,
-              groupId: true,
+              entryDate: true,
+              closeDate: true,
+              entryTime: true,
+              exitTime: true,
+              entryPrice: true,
+              closePrice: true,
+              accountNumber: true,
+            },
+            orderBy: {
+              exitTime: 'asc',
+            },
+          },
+          Payout: {
+            select: {
+              id: true,
+              amount: true,
+              status: true,
             },
           },
           BreachRecord: {
-            select: { id: true, breachType: true, breachAmount: true, breachTime: true },
-          },
-          Payout: {
-            select: { amount: true, status: true },
+            select: {
+              id: true,
+            },
           },
         },
-        orderBy: { phaseNumber: 'asc' },
       },
     },
-    orderBy: { createdAt: 'asc' },
-  })
+    orderBy: {
+      createdAt: 'desc',
+    },
+  }) as Promise<MasterWithRelations[]>
+}
 
-  const accounts: PropFirmAccountDTO[] = []
-  let totalNetPnL = 0
-  let totalPayoutsReceived = 0
-  let totalBreaches = 0
-  let bestPnL = -Infinity
-  let worstPnL = Infinity
-  let bestAccountName: string | null = null
-  let worstAccountName: string | null = null
-
-  let totalCount = 0
-  let activeCount = 0
-  let fundedCount = 0
-  let failedCount = 0
-  let passedPhaseCount = 0
-
-  for (const master of masterAccounts) {
-    totalCount++ // count by master account
-
-    if (master.status === 'active') activeCount++
-    else if (master.status === 'funded') fundedCount++
-    else if (master.status === 'failed') failedCount++
-
-    for (const phase of master.PhaseAccount) {
-      if (phase.status === 'passed') passedPhaseCount++
-
-      // Group partial trades for accurate per-trade metrics
-      const rawTrades = phase.Trade as any[]
-      const trades = groupTradesByExecution(rawTrades)
-
-      // Single-pass metrics
-      let cumulativePnL = 0
-      let peakEquity = 0
-      let maxDD = 0
-      let wins = 0
-      let losses = 0
-      let totalGrossProfit = 0
-      let totalGrossLoss = 0
-      const tradeDates = new Set<string>()
-
-      for (const t of trades) {
-        const net = (t.pnl || 0) + (t.commission || 0)
-        cumulativePnL += net
-
-        if (t.entryDate) tradeDates.add(t.entryDate.slice(0, 10))
-
-        if (net > 0) { wins++; totalGrossProfit += net }
-        else if (net < 0) { losses++; totalGrossLoss += Math.abs(net) }
-
-        if (cumulativePnL > peakEquity) peakEquity = cumulativePnL
-        const dd = peakEquity - cumulativePnL
-        if (dd > maxDD) maxDD = dd
+export function mapMasterAccountToReportAccount(master: MasterWithRelations): PropFirmAccountDTO {
+  const resolvedPhase = resolveReportPhase(master as any)
+  const lifecycleStatus = derivePropFirmLifecycleStatus(master as any, resolvedPhase as any)
+  const phaseHistory = summarizePhaseHistory(master as any)
+  const isFundedStage = resolvedPhase
+    ? isFundedPhaseForEvaluation(master.evaluationType, resolvedPhase.phaseNumber)
+    : master.status === 'funded'
+  const phaseMetrics = resolvedPhase
+    ? calculatePropFirmPhaseMetrics(resolvedPhase as any, master.accountSize)
+    : {
+        groupedTrades: [],
+        tradeCount: 0,
+        activeDays: 0,
+        grossPnl: 0,
+        netPnl: 0,
+        winRate: '0.0',
+        profitFactor: '0.00',
+        expectancy: '0.00',
+        peakProfit: 0,
+        maxDrawdown: 0,
+        maxDrawdownPct: '0.00',
+        totalPayouts: 0,
+        breachCount: 0,
       }
 
-      const tradable = wins + losses
-      const winRate = tradable > 0 ? ((wins / tradable) * 100).toFixed(1) : '0.0'
-      const profitFactor = totalGrossLoss > 0
-        ? (totalGrossProfit / totalGrossLoss).toFixed(2)
-        : totalGrossProfit > 0 ? '99.00' : '0.00'
-      const expectancy = trades.length > 0 ? (cumulativePnL / trades.length).toFixed(2) : '0.00'
-
-      const maxDDPct = master.accountSize > 0
-        ? ((maxDD / master.accountSize) * 100).toFixed(2)
-        : '0.00'
-
-      // Duration
-      const start = new Date(phase.startDate)
-      const end = phase.endDate ? new Date(phase.endDate) : new Date()
-      const durationDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)))
-
-      // Payouts (only 'paid' ones count as received)
-      const paidPayouts = phase.Payout
-        .filter(p => p.status === 'paid')
-        .reduce((sum, p) => sum + p.amount, 0)
-
-      const breachCount = phase.BreachRecord.length
-
-      const accountDisplayName = `${master.propFirmName} – ${master.accountName} P${phase.phaseNumber}`
-
-      accounts.push({
-        id: phase.id,
-        masterAccountId: master.id,
-        propFirmName: master.propFirmName,
-        accountName: master.accountName,
-        accountSize: master.accountSize,
-        evaluationType: master.evaluationType,
-        phaseNumber: phase.phaseNumber,
-        phaseStatus: phase.status,
-        masterStatus: master.status,
-        startDate: phase.startDate.toISOString(),
-        endDate: phase.endDate?.toISOString() ?? null,
-        durationDays,
-        totalTrades: trades.length,
-        tradingDaysActive: tradeDates.size,
-        winRate,
-        profitFactor,
-        expectancy,
-        totalNetPnL: cumulativePnL,
-        peakProfit: peakEquity,
-        maxDrawdown: maxDD,
-        maxDrawdownPct: maxDDPct,
-        profitTargetPercent: phase.profitTargetPercent,
-        maxDrawdownPercent: phase.maxDrawdownPercent,
-        dailyDrawdownPercent: phase.dailyDrawdownPercent,
-        breachCount,
-        totalPayouts: paidPayouts,
-      })
-
-      totalNetPnL += cumulativePnL
-      totalPayoutsReceived += paidPayouts
-      totalBreaches += breachCount
-
-      if (cumulativePnL > bestPnL) { bestPnL = cumulativePnL; bestAccountName = accountDisplayName }
-      if (cumulativePnL < worstPnL) { worstPnL = cumulativePnL; worstAccountName = accountDisplayName }
-    }
-  }
+  const profitTargetAmount = getProfitTargetAmount(master.accountSize, resolvedPhase)
 
   return {
-    totalAccounts: totalCount,
-    activeAccounts: activeCount,
-    fundedAccounts: fundedCount,
-    failedAccounts: failedCount,
-    passedPhases: passedPhaseCount,
-    totalNetPnL,
-    totalPayoutsReceived,
-    totalBreaches,
-    bestAccount: bestAccountName,
-    worstAccount: worstAccountName,
+    id: master.id,
+    masterId: master.id,
+    accountName: master.accountName,
+    propFirmName: master.propFirmName,
+    accountSize: master.accountSize,
+    evaluationType: master.evaluationType,
+    masterStatus: master.status,
+    lifecycleStatus,
+    currentPhaseNumber: resolvedPhase?.phaseNumber ?? null,
+    currentPhaseStatus: resolvedPhase?.status ?? null,
+    isFundedStage,
+    grossPnL: phaseMetrics.grossPnl,
+    netPnL: phaseMetrics.netPnl,
+    profitTargetAmount,
+    profitTargetProgressPct: normalizeProgress(phaseMetrics.grossPnl, profitTargetAmount),
+    tradeCount: phaseMetrics.tradeCount,
+    activeDays: phaseMetrics.activeDays,
+    winRate: phaseMetrics.winRate,
+    profitFactor: phaseMetrics.profitFactor,
+    expectancy: phaseMetrics.expectancy,
+    peakProfit: phaseMetrics.peakProfit,
+    maxDrawdown: phaseMetrics.maxDrawdown,
+    maxDrawdownPct: phaseMetrics.maxDrawdownPct,
+    breachCount: phaseMetrics.breachCount,
+    totalPayouts: phaseMetrics.totalPayouts,
+    durationDays: toDurationDays(resolvedPhase?.startDate ?? master.createdAt, resolvedPhase?.endDate ?? null),
+    phaseHistory,
+  }
+}
+
+export async function calculatePropFirmStatistics(userId: string): Promise<PropFirmSummaryDTO> {
+  const masters = await fetchPropFirmReportMasters(userId)
+  const accounts = masters.map(mapMasterAccountToReportAccount)
+
+  return {
+    totalAccounts: accounts.length,
+    activeAccounts: accounts.filter((account) => account.lifecycleStatus === 'active').length,
+    fundedAccounts: accounts.filter((account) => account.lifecycleStatus === 'funded').length,
+    failedAccounts: accounts.filter((account) => account.lifecycleStatus === 'failed').length,
+    passedPhases: accounts.reduce(
+      (sum, account) => sum + account.phaseHistory.filter((phase) => phase.status === 'passed').length,
+      0
+    ),
+    totalNetPnL: accounts.reduce((sum, account) => sum + account.netPnL, 0),
+    totalGrossPnL: accounts.reduce((sum, account) => sum + account.grossPnL, 0),
+    totalPayoutsReceived: accounts.reduce((sum, account) => sum + account.totalPayouts, 0),
+    totalBreaches: accounts.reduce((sum, account) => sum + account.breachCount, 0),
     accounts,
   }
 }

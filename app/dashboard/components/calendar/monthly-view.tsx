@@ -14,6 +14,7 @@ import {
 } from "date-fns"
 import { BookOpen } from "lucide-react"
 import { cn, formatCurrency } from "@/lib/utils"
+import { useMediaQuery } from "@/hooks/use-media-query"
 
 import { CalendarData } from "@/app/dashboard/types/calendar"
 import { useCalendarViewStore } from "@/store/calendar-view"
@@ -102,7 +103,7 @@ const DayCell = memo(function DayCell({
           ======================= */}
       <div className={cn(
         "flex flex-col items-center justify-center w-full h-full relative p-1",
-        !isMiniCalendar && "md:hidden"
+        !isMiniCalendar && "min-[1024px]:hidden"
       )}>
         {/* Simple Note Dot */}
         {hasNotes && (
@@ -143,7 +144,7 @@ const DayCell = memo(function DayCell({
           ======================= */}
       <div className={cn(
         "hidden flex-col w-full h-full relative p-1.5",
-        !isMiniCalendar && "md:flex"
+        !isMiniCalendar && "min-[1024px]:flex"
       )}>
         {/* Note Icon — top left */}
         {hasNotes && (
@@ -300,6 +301,8 @@ export default function MonthlyView({
 }) {
   const timezone = useUserStore((state) => state.timezone)
   const { notes } = useCalendarNotes()
+  const isCompactAdvancedCalendar = useMediaQuery('(max-width: 1439px)')
+  const shouldUseWeekdayOnlyLayout = hideWeekends || (!isMiniCalendar && isCompactAdvancedCalendar)
 
   // Sunday-start weeks
   const weeks = useMemo(() => {
@@ -311,8 +314,9 @@ export default function MonthlyView({
     for (let i = 0; i < days.length; i += 7) {
       let weekDays = days.slice(i, i + 7)
       
-      // Filter out weekends if requested
-      if (hideWeekends) {
+      // Filter out weekends when explicitly requested or when the advanced
+      // calendar switches to its compact weekday-first layout.
+      if (shouldUseWeekdayOnlyLayout) {
         weekDays = weekDays.filter(day => {
           const dayIndex = day.getDay()
           return dayIndex !== 0 && dayIndex !== 6
@@ -324,9 +328,9 @@ export default function MonthlyView({
       }
     }
     return weeksArray
-  }, [currentDate, hideWeekends])
+  }, [currentDate, shouldUseWeekdayOnlyLayout])
 
-  const displayWeekdays = hideWeekends 
+  const displayWeekdays = shouldUseWeekdayOnlyLayout 
     ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] 
     : WEEKDAYS
   const rowTemplate = isMiniCalendar
@@ -334,11 +338,11 @@ export default function MonthlyView({
     : `repeat(${weeks.length}, minmax(92px, 1fr))`
 
   return (
-    <div className="flex h-full w-full overflow-hidden">
+    <div className={cn("flex h-full w-full overflow-hidden", isMiniCalendar ? "flex-col" : "flex-row")}>
       {/* Main Calendar Grid Container */}
       <div className={cn("flex flex-col flex-1 h-full min-h-0", isMiniCalendar ? "min-w-[300px]" : "min-w-0")}>
         {/* Weekday Headers */}
-        <div className={cn("grid gap-1 md:gap-1.5 px-2 md:px-3 py-1.5 md:py-2 shrink-0", hideWeekends ? "grid-cols-5" : "grid-cols-7")}>
+        <div className={cn("grid gap-1 md:gap-1.5 px-2 md:px-3 py-1.5 md:py-2 shrink-0", shouldUseWeekdayOnlyLayout ? "grid-cols-5" : "grid-cols-7")}>
           {displayWeekdays.map((day) => (
             <div
               key={day}
@@ -350,7 +354,7 @@ export default function MonthlyView({
         </div>
 
         {/* Day Grid - flex-1 to fill remaining space, grid-rows set to number of weeks */}
-        <div className={cn("flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 min-h-0", hideWeekends ? "grid-cols-5" : "grid-cols-7")} style={{ gridTemplateRows: rowTemplate }}>
+        <div className={cn("flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 min-h-0", shouldUseWeekdayOnlyLayout ? "grid-cols-5" : "grid-cols-7")} style={{ gridTemplateRows: rowTemplate }}>
           {weeks.map((week, weekIndex) => (
             <React.Fragment key={weekIndex}>
               {week.map((date) => {
@@ -366,7 +370,7 @@ export default function MonthlyView({
                     dayData={dayData}
                     hasNotes={hasNotes}
                     isCurrentMonth={isCurrentMonth}
-                    hideWeekends={hideWeekends}
+                    hideWeekends={shouldUseWeekdayOnlyLayout}
                     isMiniCalendar={isMiniCalendar}
                     onClick={() => onSelectDate?.(date)}
                   />
@@ -377,9 +381,10 @@ export default function MonthlyView({
         </div>
       </div>
 
-      {/* Weekly Summaries Sidebar — separate from main grid, aligned via matching grid rows */}
       {!isMiniCalendar && (
-        <div className="hidden lg:flex flex-col w-[110px] xl:w-[125px] border-l border-border/10 shrink-0 h-full">
+        <>
+        {/* Weekly Summaries Sidebar — kept at the side so weekday cells gain width on smaller screens */}
+        <div className="flex h-full w-[78px] shrink-0 flex-col border-l border-border/10 min-[420px]:w-[88px] sm:w-[96px] lg:w-[104px] xl:w-[116px] 2xl:w-[125px]">
           {/* Spacer matches weekday-header height exactly (py-1.5 md:py-2 + text line = ~34px on md) */}
           <div className="shrink-0 py-1.5 md:py-2">
             <div className="h-[16px]" /> {/* text-[11px] line height */}
@@ -399,6 +404,7 @@ export default function MonthlyView({
             ))}
           </div>
         </div>
+        </>
       )}
     </div>
   )

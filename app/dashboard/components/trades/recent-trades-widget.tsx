@@ -75,10 +75,10 @@ export default function RecentTradesWidget() {
     <WidgetCard title="Recent Trades">
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="grid grid-cols-[1fr_1.2fr_auto] gap-3 pb-2 border-b border-border/30 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 shrink-0">
+        <div className="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_auto] min-[1280px]:grid-cols-[1fr_1.2fr_auto] gap-2 min-[1280px]:gap-3 pb-2 border-b border-border/30 text-[9px] min-[1280px]:text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 shrink-0">
           <div>Date</div>
           <div>Symbol</div>
-          <div className="text-right min-w-[70px]">P&L</div>
+          <div className="text-right min-w-[58px] min-[1280px]:min-w-[70px]">P&L</div>
         </div>
 
         {/* Trades List - shows only what fits, no scrolling */}
@@ -115,7 +115,7 @@ export default function RecentTradesWidget() {
               return (
                 <div
                   key={trade.id || index}
-                  className="grid grid-cols-[1fr_1.2fr_auto] gap-3 py-2 text-xs hover:bg-muted/30 rounded-lg transition-colors px-1 items-center"
+                  className="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_auto] min-[1280px]:grid-cols-[1fr_1.2fr_auto] gap-2 min-[1280px]:gap-3 py-2 text-[11px] min-[1280px]:text-xs hover:bg-muted/30 rounded-lg transition-colors px-1 items-center"
                   style={{ height: ROW_HEIGHT }}
                 >
                   <div className="text-muted-foreground/60 font-medium truncate">
@@ -126,7 +126,7 @@ export default function RecentTradesWidget() {
                   </div>
                   <div
                     className={cn(
-                      'text-right font-bold font-mono min-w-[70px]',
+                      'text-right font-bold font-mono min-w-[58px] min-[1280px]:min-w-[70px]',
                       isProfitable
                         ? 'text-long'
                         : isLoss

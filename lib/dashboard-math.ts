@@ -569,7 +569,6 @@ export function calculateSessionAnalysis(
       'New York': { trades: 0, wins: 0, pnl: 0 },
       'London': { trades: 0, wins: 0, pnl: 0 },
       'Asia': { trades: 0, wins: 0, pnl: 0 },
-      'Outside Session': { trades: 0, wins: 0, pnl: 0 }
   }
 
   trades.forEach(trade => {

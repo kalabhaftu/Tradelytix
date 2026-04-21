@@ -2,14 +2,14 @@ import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
 
 export const DEFAULT_TIMEZONE = 'America/New_York';
 
-export type MarketSession = 'Asia' | 'London' | 'New York' | 'Outside Session';
+export type MarketSession = 'Asia' | 'London' | 'New York';
 export type KillzoneBadge = 'London Killzone' | 'NY Killzone' | 'Lunch Time' | 'NY PM Session';
 
-// Sessions (for analysis) - Priority: NY > London > Asia
+// Sessions (for analysis) - single continuous assignment in New York time
 export const MARKET_SESSIONS = [
   { name: 'New York', start: 8, end: 17 },
-  { name: 'London', start: 3, end: 12 },
-  { name: 'Asia', start: 19, end: 4 }, // Crosses midnight
+  { name: 'London', start: 3, end: 8 },
+  { name: 'Asia', start: 18, end: 3 }, // Display range; fallback captures the remainder
 ];
 
 // Killzones (indicators only)
@@ -21,28 +21,27 @@ export const KILLZONE_BADGES = [
 ];
 
 /**
- * Returns the analytical market session based on priority: NY > London > Asia.
+ * Returns the analytical market session in America/New_York time.
+ * The mapping is continuous with no Outside Session bucket:
+ * - New York: 08:00-17:00
+ * - London: 03:00-08:00
+ * - Asia: everything else
  */
 export function getTradingSession(date: Date | string | number): MarketSession {
-  if (!date) return 'Outside Session';
+  if (!date) return 'Asia';
   const parsedDate = new Date(date);
-  if (isNaN(parsedDate.getTime())) return 'Outside Session';
+  if (isNaN(parsedDate.getTime())) return 'Asia';
 
   const nyDate = toZonedTime(parsedDate, DEFAULT_TIMEZONE);
   const hour = nyDate.getHours();
   const minute = nyDate.getMinutes();
   const time = hour + minute / 60;
 
-  // New York Priority (08:00 - 17:00)
   if (time >= 8 && time < 17) return 'New York';
-  
-  // London Priority (03:00 - 12:00)
-  if (time >= 3 && time < 12) return 'London';
-  
-  // Asia Priority (19:00 - 04:00) - crosses midnight
-  if (time >= 19 || time < 4) return 'Asia';
 
-  return 'Outside Session';
+  if (time >= 3 && time < 8) return 'London';
+
+  return 'Asia';
 }
 
 export function getKillzoneBadge(date: Date | string | number, symbol?: string): KillzoneBadge | string | null {

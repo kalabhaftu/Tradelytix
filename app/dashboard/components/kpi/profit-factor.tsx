@@ -54,8 +54,8 @@ const ProfitFactor = React.memo(function ProfitFactor({ size }: ProfitFactorProp
         </div>
 
         {/* Main content: large value + bi-color gauge */}
-        <div className="flex items-center justify-between">
-          <span className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[1.65rem] min-[768px]:text-[1.85rem] min-[1440px]:text-3xl font-bold tracking-tight text-foreground">
             {profitFactor.toFixed(2)}
           </span>
 
@@ -68,6 +68,7 @@ const ProfitFactor = React.memo(function ProfitFactor({ size }: ProfitFactorProp
             backgroundColor="hsl(var(--border))"
             type="circle"
             showPercentage={false}
+            className="origin-right scale-[0.84] min-[768px]:scale-[0.92] min-[1440px]:scale-100"
           />
         </div>
       </div>

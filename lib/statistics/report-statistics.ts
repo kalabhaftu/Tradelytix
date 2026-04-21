@@ -4,7 +4,7 @@
  * Absorbs ALL client-side useMemo calculations from reports/page.tsx:
  * - tradingActivity (win rate, avg trades/month, trading days)
  * - psychMetrics (drawdown, expectancy, streaks, avg holding time, profit factor)
- * - sessionPerformance (per-session stats for NY/London/Asia/Outside)
+ * - sessionPerformance (per-session stats for New York/London/Asia)
  * - rMultipleDistribution (R-multiple buckets)
  * 
  * These were previously computed client-side on 50,000+ trade arrays.
@@ -288,7 +288,6 @@ function buildFilterOptions(symbols: string[], strategies: Array<{ id: string; n
       'New York',
       'London',
       'Asia',
-      'Outside Session',
     ],
     outcomes: [
       { value: 'WIN', label: 'Win' },
@@ -348,9 +347,8 @@ function computeAllMetrics(
   // Session performance
   const sessions: SessionPerformanceDTO = {
     'New York': { name: 'New York Session', range: '08:00 - 17:00', trades: 0, wins: 0, pnl: 0, totalHoldMs: 0, peak: 0, maxDD: 0 },
-    'London': { name: 'London Session', range: '03:00 - 12:00', trades: 0, wins: 0, pnl: 0, totalHoldMs: 0, peak: 0, maxDD: 0 },
-    'Asia': { name: 'Asia Session', range: '19:00 - 04:00', trades: 0, wins: 0, pnl: 0, totalHoldMs: 0, peak: 0, maxDD: 0 },
-    'Outside Session': { name: 'Outside Session', range: 'N/A', trades: 0, wins: 0, pnl: 0, totalHoldMs: 0, peak: 0, maxDD: 0 },
+    'London': { name: 'London Session', range: '03:00 - 08:00', trades: 0, wins: 0, pnl: 0, totalHoldMs: 0, peak: 0, maxDD: 0 },
+    'Asia': { name: 'Asia Session', range: '18:00 - 03:00', trades: 0, wins: 0, pnl: 0, totalHoldMs: 0, peak: 0, maxDD: 0 },
   }
 
   // R-multiple distribution
@@ -469,7 +467,7 @@ function computeAllMetrics(
     if (trade.entryDate) {
       const entryDateStr = trade.entryDate || ''
       const date = entryDateStr.includes('Z') ? entryDateStr : `${entryDateStr}Z`
-      const sessionName = getTradingSession(new Date(date)) || 'Outside Session'
+      const sessionName = getTradingSession(new Date(date))
 
       if (sessions[sessionName]) {
         const s = sessions[sessionName]

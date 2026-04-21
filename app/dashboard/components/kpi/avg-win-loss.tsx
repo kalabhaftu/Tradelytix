@@ -65,7 +65,7 @@ const AvgWinLoss = React.memo(function AvgWinLoss({ size }: AvgWinLossProps) {
         {/* Main content */}
         <div className="flex flex-col gap-2">
           {/* Large ratio value */}
-          <span className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+          <span className="text-[1.65rem] min-[768px]:text-[1.85rem] min-[1440px]:text-3xl font-bold tracking-tight text-foreground">
             {riskRewardRatio.toFixed(2)}
           </span>
 
@@ -82,7 +82,7 @@ const AvgWinLoss = React.memo(function AvgWinLoss({ size }: AvgWinLossProps) {
               />
             </div>
 
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between gap-3 text-[11px] min-[1440px]:text-xs">
               <span className="font-semibold text-profit">
                 {formatCurrency(avgWin)}
               </span>

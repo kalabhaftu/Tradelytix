@@ -21,19 +21,15 @@ if (!env.NODE_OPTIONS) {
   env.NODE_OPTIONS = '--max-old-space-size=4096'
 }
 
-if (useWindowsWasmFallback) {
-  env.NEXT_TEST_WASM = '1'
-}
-
 if (requestedTurbo && useWindowsWasmFallback) {
   console.warn(
-    '[dev] Windows Application Control is blocking native Next SWC, so local dev is using the wasm fallback. Turbopack is disabled for this session because it does not work with wasm bindings.'
+    '[dev] Windows Application Control can block native Next SWC on this machine, so Turbopack is disabled for this local session. Next.js will use its built-in fallback path if the native compiler is unavailable.'
   )
 }
 
 if (useWindowsWasmFallback) {
   console.log(
-    '[dev] Starting Next.js with the local Windows-safe wasm compiler fallback. This only affects local dev and does not change production builds.'
+    '[dev] Starting Next.js in Windows-safe local mode. This only affects local dev and does not change production builds.'
   )
 }
 

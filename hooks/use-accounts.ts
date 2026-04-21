@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useUserStore } from '@/store/user-store'
 import { useRouter } from 'next/navigation'
 import useSWR from 'swr'
@@ -87,7 +87,7 @@ export function useAccounts(options: UseAccountsOptions = {}) {
     keepPreviousData: true,
   })
 
-  const accounts: UnifiedAccount[] = data?.data || []
+  const accounts: UnifiedAccount[] = useMemo(() => data?.data || [], [data])
   const pagination = data?.pagination || { total: 0, page: 1, limit: 50, totalPages: 1 }
 
   const refetch = useCallback(async () => {

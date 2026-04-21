@@ -48,7 +48,7 @@ export class NotificationService {
                         updatedAt: new Date() // Bump timestamp
                     }
                 })
-                revalidateTag(`notifications-${userId}`)
+                revalidateTag(`notifications-${userId}`, 'max')
                 return updated
             }
         }
@@ -65,7 +65,7 @@ export class NotificationService {
             }
         })
 
-        revalidateTag(`notifications-${userId}`)
+        revalidateTag(`notifications-${userId}`, 'max')
         return notification
     }
 
@@ -82,6 +82,6 @@ export class NotificationService {
             },
             data: { isRead: true }
         })
-        revalidateTag(`notifications-${userId}`)
+        revalidateTag(`notifications-${userId}`, 'max')
     }
 }

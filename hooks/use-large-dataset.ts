@@ -97,6 +97,35 @@ export const useLargeDataset = <T>(
     }
   }, [fetchUrl, finalConfig.pageSize, cache])
 
+  const preloadPages = useCallback(async (startPage: number, filters?: any) => {
+    if (activeRequests.size >= finalConfig.maxConcurrentRequests) {
+      return
+    }
+
+    const pagesToLoad = []
+    for (let i = 0; i < finalConfig.preloadPages; i++) {
+      const page = startPage + i
+      if (!cache.has(page) && !activeRequests.has(page)) {
+        pagesToLoad.push(page)
+      }
+    }
+
+    for (const page of pagesToLoad.slice(0, finalConfig.maxConcurrentRequests - activeRequests.size)) {
+      setActiveRequests(prev => new Set([...prev, page]))
+      try {
+        await loadPage(page, filters)
+      } catch (error) {
+        // Ignore preload errors
+      } finally {
+        setActiveRequests(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(page)
+          return newSet
+        })
+      }
+    }
+  }, [activeRequests, finalConfig.maxConcurrentRequests, finalConfig.preloadPages, cache, loadPage])
+
   const loadMore = useCallback(async (filters?: any) => {
     if (state.loading || !state.hasMore || activeRequests.size >= finalConfig.maxConcurrentRequests) {
       return
@@ -126,7 +155,6 @@ export const useLargeDataset = <T>(
         return newSet
       })
 
-      // Preload next pages
       preloadPages(nextPage + 1, filters)
     } catch (error) {
       setState(prev => ({
@@ -140,36 +168,7 @@ export const useLargeDataset = <T>(
         return newSet
       })
     }
-  }, [state.loading, state.hasMore, state.currentPage, activeRequests.size, finalConfig.maxConcurrentRequests, finalConfig.pageSize, loadPage])
-
-  const preloadPages = useCallback(async (startPage: number, filters?: any) => {
-    if (activeRequests.size >= finalConfig.maxConcurrentRequests) {
-      return
-    }
-
-    const pagesToLoad = []
-    for (let i = 0; i < finalConfig.preloadPages; i++) {
-      const page = startPage + i
-      if (!cache.has(page) && !activeRequests.has(page)) {
-        pagesToLoad.push(page)
-      }
-    }
-
-    for (const page of pagesToLoad.slice(0, finalConfig.maxConcurrentRequests - activeRequests.size)) {
-      setActiveRequests(prev => new Set([...prev, page]))
-      try {
-        await loadPage(page, filters)
-      } catch (error) {
-        // Ignore preload errors
-      } finally {
-        setActiveRequests(prev => {
-          const newSet = new Set(prev)
-          newSet.delete(page)
-          return newSet
-        })
-      }
-    }
-  }, [activeRequests, finalConfig.maxConcurrentRequests, finalConfig.preloadPages, cache, loadPage])
+  }, [state.loading, state.hasMore, state.currentPage, activeRequests.size, finalConfig.maxConcurrentRequests, finalConfig.pageSize, loadPage, preloadPages])
 
   const refresh = useCallback(async (filters?: any) => {
     setCache(new Map())

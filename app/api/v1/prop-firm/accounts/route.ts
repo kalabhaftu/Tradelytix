@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Invalidate accounts cache after successful creation
-    revalidateTag(`accounts-${internalUserId}`)
+    revalidateTag(`accounts-${internalUserId}`, 'max')
     // NOTE: Real-time refresh is handled client-side via polling or manual refresh
     // triggerDataRefresh cannot be used here as it's a client-only module
     

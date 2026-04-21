@@ -76,12 +76,15 @@ export function useDataProviderRealtime(options: UseDataProviderRealtimeOptions)
   })
 
   useEffect(() => {
+    const tradesTimeout = realtimeRefreshTimeoutRef.current.trades
+    const accountsTimeout = realtimeRefreshTimeoutRef.current.accounts
+
     return () => {
-      if (realtimeRefreshTimeoutRef.current.trades) {
-        clearTimeout(realtimeRefreshTimeoutRef.current.trades)
+      if (tradesTimeout) {
+        clearTimeout(tradesTimeout)
       }
-      if (realtimeRefreshTimeoutRef.current.accounts) {
-        clearTimeout(realtimeRefreshTimeoutRef.current.accounts)
+      if (accountsTimeout) {
+        clearTimeout(accountsTimeout)
       }
     }
   }, [])

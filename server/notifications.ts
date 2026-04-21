@@ -30,7 +30,7 @@ export async function createNotificationAction(data: {
       }
     })
 
-    revalidateTag(`notifications-${userId}`)
+    revalidateTag(`notifications-${userId}`, 'max')
     return { success: true, data: notification }
   } catch (error) {
     return { success: false, error: 'Failed to create notification' }
@@ -92,7 +92,7 @@ export async function markNotificationReadAction(notificationId: string) {
       data: { isRead: true }
     })
 
-    revalidateTag(`notifications-${userId}`)
+    revalidateTag(`notifications-${userId}`, 'max')
     return { success: true, data: notification }
   } catch (error) {
     return { success: false, error: 'Failed to mark as read' }
@@ -114,7 +114,7 @@ export async function markAllNotificationsReadAction() {
     data: { isRead: true }
   })
 
-  revalidateTag(`notifications-${userId}`)
+  revalidateTag(`notifications-${userId}`, 'max')
 }
 
 /**
@@ -132,7 +132,7 @@ export async function deleteNotificationAction(notificationId: string) {
       }
     })
 
-    revalidateTag(`notifications-${userId}`)
+    revalidateTag(`notifications-${userId}`, 'max')
     return { success: true }
   } catch (error) {
     return { success: false, error: 'Failed to delete notification' }
@@ -257,8 +257,8 @@ export async function handleFundedApprovalAction(data: {
     })
   })
 
-  revalidateTag(`notifications-${userId}`)
-  revalidateTag(`accounts-${userId}`)
+  revalidateTag(`notifications-${userId}`, 'max')
+  revalidateTag(`accounts-${userId}`, 'max')
 }
 
 /**
@@ -333,7 +333,7 @@ export async function handleFundedDeclineAction(data: {
     })
   })
 
-  revalidateTag(`notifications-${userId}`)
-  revalidateTag(`accounts-${userId}`)
+  revalidateTag(`notifications-${userId}`, 'max')
+  revalidateTag(`accounts-${userId}`, 'max')
 }
 

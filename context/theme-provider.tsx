@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { useUserStore } from '@/store/user-store'
 
 type Theme = 'light' | 'dark' | 'system'
@@ -46,12 +46,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false)
   const user = useUserStore(state => state.user)
 
-  const resolveEffective = (t: Theme): 'light' | 'dark' => {
+  const resolveEffective = useCallback((t: Theme): 'light' | 'dark' => {
     if (t === 'system') return getSystemTheme()
     return t
-  }
+  }, [])
 
-  const applyTheme = (t: Theme) => {
+  const applyTheme = useCallback((t: Theme) => {
     if (typeof window === 'undefined') return
     const effective = resolveEffective(t)
     const root = window.document.documentElement
@@ -64,7 +64,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.classList.add('dark')
       root.style.colorScheme = 'dark'
     }
-  }
+  }, [resolveEffective])
 
   useEffect(() => {
     setMounted(true)
@@ -91,7 +91,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
     mq.addEventListener('change', handler)
     return () => mq.removeEventListener('change', handler)
-  }, [])
+  }, [applyTheme])
 
   // Sync with user profile when it loads from DB
   useEffect(() => {
@@ -116,14 +116,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         }
       }
     }
-  }, [user, mounted])
+  }, [user, mounted, applyTheme])
 
   useEffect(() => {
     if (mounted) {
       applyTheme(theme)
       localStorage.setItem('theme', theme)
     }
-  }, [theme, mounted])
+  }, [theme, mounted, applyTheme])
 
   useEffect(() => {
     if (mounted) {

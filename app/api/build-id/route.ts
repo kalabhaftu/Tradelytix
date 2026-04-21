@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server'
 
-// Edge Runtime for faster response times
-export const runtime = 'edge'
-
 /**
  * API endpoint to return the current build ID
  * Used by deployment detection to identify when a new version is deployed

@@ -134,9 +134,9 @@ export async function DELETE(request: NextRequest) {
     })
 
     // Invalidate all caches (use internal user ID for consistency with other cache keys)
-    revalidateTag(`trades-${internalUserId}`)
-    revalidateTag(`accounts-${internalUserId}`)
-    revalidateTag(`user-data-${internalUserId}`)
+    revalidateTag(`trades-${internalUserId}`, 'max')
+    revalidateTag(`accounts-${internalUserId}`, 'max')
+    revalidateTag(`user-data-${internalUserId}`, 'max')
 
     return NextResponse.json({
       success: true,

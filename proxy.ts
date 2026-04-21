@@ -5,7 +5,7 @@ import { cookies } from 'next/headers'
 const publicRoutes = ["/", "/not-found", "/api/auth", "/docs", "/privacy", "/feedback", "/donate", "/changelog", "/about", "/contact"]
 const protectedRoutes = ["/dashboard", "/admin"]
 
-export default async function middleware(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
   const pathname = req.nextUrl.pathname
 
   if (
@@ -107,7 +107,7 @@ export default async function middleware(req: NextRequest) {
     return addSecurityHeaders(response)
 
   } catch (err) {
-    console.error('Middleware error:', err)
+    console.error('Proxy error:', err)
     if (isProtectedRoute) {
       const authUrl = new URL('/', req.url)
       authUrl.searchParams.set('error', 'exception')

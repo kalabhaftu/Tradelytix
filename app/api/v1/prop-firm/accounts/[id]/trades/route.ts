@@ -145,7 +145,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         
         // Invalidate cache
         const { revalidateTag } = await import('next/cache')
-        revalidateTag(`accounts-${internalUserId}`)
+        revalidateTag(`accounts-${internalUserId}`, 'max')
       }
     } catch (evalError) {
       // Don't fail the trade creation if evaluation fails

@@ -147,7 +147,7 @@ export async function updateIsFirstConnectionAction(isFirstConnection: boolean) 
       null
     )
 
-    revalidateTag(`user-data-${userId}`)
+    revalidateTag(`user-data-${userId}`, 'max')
 
     return { success: true }
   } catch (error) {

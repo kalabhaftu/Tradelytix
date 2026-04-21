@@ -91,7 +91,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       })
       
       // Invalidate cache when account status changes
-      revalidateTag(`accounts-${internalUserId}`)
+      revalidateTag(`accounts-${internalUserId}`, 'max')
     }
 
     return NextResponse.json({

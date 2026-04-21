@@ -158,7 +158,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       : `Phase ${nextPhaseNumber}`
 
     // Invalidate cache so UI updates on refresh
-    revalidateTag(`accounts-${internalUserId}`)
+    revalidateTag(`accounts-${internalUserId}`, 'max')
     // NOTE: Real-time refresh is handled client-side via polling or manual refresh
     // triggerDataRefresh cannot be used here as it's a client-only module
 

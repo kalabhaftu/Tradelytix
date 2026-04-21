@@ -41,7 +41,7 @@ interface TradeQuery extends TradeCountQuery {
 export async function revalidateCache(tags: string[]) {
   tags.forEach(tag => {
     try {
-      revalidateTag(tag)
+      revalidateTag(tag, 'max')
     } catch (error) {
       logger.error(`Error revalidating tag ${tag}`, error, 'Cache')
     }
@@ -286,7 +286,7 @@ export async function updateTradesAction(tradesIds: string[], update: Partial<Tr
       data: update as any
     })
 
-    revalidateTag(`trades-${internalUserId}`)
+    revalidateTag(`trades-${internalUserId}`, 'max')
 
     return result.count
   } catch (error) {

@@ -1,5 +1,4 @@
 /** @type {import('next').NextConfig} */
-const path = require('path')
 
 // Conditionally load bundle analyzer only if available
 let withBundleAnalyzer = (config) => config
@@ -44,12 +43,6 @@ const nextConfig = {
     '@opentelemetry/instrumentation',
   ],
 
-  // Disable ESLint during builds to prevent build failures
-  // ESLint can still be run manually with `npm run lint`
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
   images: {
     remotePatterns: [
       {
@@ -77,55 +70,6 @@ const nextConfig = {
   compiler: {
     // Remove console logs in production for better performance
     removeConsole: process.env.NODE_ENV === 'production',
-  },
-
-  // Optimize webpack cache (only applies when NOT using Turbopack)
-  webpack: (config, { dev, isServer }) => {
-    // Only apply webpack config when not using Turbopack
-    if (dev && !process.env.TURBOPACK) {
-      config.cache = {
-        type: 'filesystem',
-        maxMemoryGenerations: 1,
-        cacheDirectory: path.resolve(__dirname, '.next/cache/webpack'),
-      }
-    }
-
-    config.ignoreWarnings = [
-      ...(config.ignoreWarnings || []),
-      (warning) => {
-        const warningText =
-          typeof warning === 'string'
-            ? warning
-            : [warning?.message, warning?.details]
-                .filter(Boolean)
-                .join('\n')
-
-        return (
-          warningText.includes('Critical dependency: the request of a dependency is an expression') &&
-          (warningText.includes('@opentelemetry/instrumentation') ||
-            warningText.includes('@prisma/instrumentation'))
-        )
-      },
-    ]
-
-    // Optimize for better performance
-    if (!dev) {
-      config.optimization = {
-        ...config.optimization,
-        moduleIds: 'deterministic',
-        chunkIds: 'deterministic',
-      }
-    }
-
-    // Vercel-specific webpack optimizations
-    if (process.env.VERCEL && !dev && isServer) {
-      config.optimization = {
-        ...config.optimization,
-        providedExports: true,
-      }
-    }
-
-    return config
   },
 
   // Vercel-specific configuration

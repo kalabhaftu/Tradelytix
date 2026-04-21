@@ -657,12 +657,12 @@ export async function checkAndResetAccountsAction() {
 export async function invalidateUserCaches(userId: string) {
   try {
     const { revalidateTag } = await import('next/cache')
-    revalidateTag(`accounts-${userId}`)
-    revalidateTag(`user-data-${userId}`)
-    revalidateTag(`grouped-trades-${userId}`)
-    revalidateTag(`trades-${userId}`)
-    revalidateTag(`prop-firm-accounts-${userId}`)
-    revalidateTag(`prop-firm-phases-${userId}`)
+    revalidateTag(`accounts-${userId}`, 'max')
+    revalidateTag(`user-data-${userId}`, 'max')
+    revalidateTag(`grouped-trades-${userId}`, 'max')
+    revalidateTag(`trades-${userId}`, 'max')
+    revalidateTag(`prop-firm-accounts-${userId}`, 'max')
+    revalidateTag(`prop-firm-phases-${userId}`, 'max')
   } catch (error) {
     // Ignore cache invalidation errors
   }

@@ -2,14 +2,16 @@ import { Spinner } from '@/components/ui/spinner'
 
 
 import React from 'react'
-import Image from 'next/image'
 import { Control, Controller, FieldValues, Path } from 'react-hook-form'
 import { Input } from '@/components/ui/input'
 import { LexicalEditor } from '@/components/ui/editor/lexical-editor'
 import { Button } from '@/components/ui/button'
-import { Pencil, Trash2, Plus, X, Loader2 } from 'lucide-react'
+import { Pencil, Trash2, Plus, X } from 'lucide-react'
 import { FileDropzone } from '@/components/ui/file-dropzone'
 import { TradeImagesGallery } from './trade-images-gallery'
+import { parseTradePreviewImageValue } from '@/lib/trade-preview-image'
+import { DEFAULT_TRADE_PREVIEW_TRANSFORM, type TradePreviewTransform } from '@/lib/trade-preview'
+import { TradePreviewCropEditor } from './trade-preview-crop-editor'
 
 type TradeNotesFieldValues = FieldValues & {
     comment?: string
@@ -18,6 +20,7 @@ type TradeNotesFieldValues = FieldValues & {
 interface TradeNotesTabProps<TFieldValues extends TradeNotesFieldValues = TradeNotesFieldValues> {
     control: Control<TFieldValues>
     cardPreviewImage: string | null
+    cardPreviewTransform: TradePreviewTransform | null
     images: Record<string, string | null>
     onUpload: (field: string, file: File) => void
     onRemove: (field: string) => void
@@ -27,6 +30,7 @@ interface TradeNotesTabProps<TFieldValues extends TradeNotesFieldValues = TradeN
     chartLinks: string[]
     setChartLinks: (links: string[]) => void
     isSubmitting?: boolean
+    onPreviewTransformChange: (transform: TradePreviewTransform) => void
 }
 
 const EMPTY_PARAGRAPH_NODE = {
@@ -166,6 +170,7 @@ function insertTemplateIntoNote(currentValue: string | undefined, templateState:
 export function TradeNotesTab<TFieldValues extends TradeNotesFieldValues = TradeNotesFieldValues>({
     control,
     cardPreviewImage,
+    cardPreviewTransform,
     images,
     onUpload,
     onRemove,
@@ -175,7 +180,10 @@ export function TradeNotesTab<TFieldValues extends TradeNotesFieldValues = Trade
     chartLinks,
     setChartLinks,
     isSubmitting = false,
+    onPreviewTransformChange,
 }: TradeNotesTabProps<TFieldValues>) {
+    const normalizedCardPreviewImage = parseTradePreviewImageValue(cardPreviewImage).src
+
     return (
         <div className="relative space-y-8 px-1">
             {isSubmitting ? (
@@ -287,75 +295,81 @@ export function TradeNotesTab<TFieldValues extends TradeNotesFieldValues = Trade
                 <div className="space-y-4">
                     <div className="space-y-1">
                         <h3 className="text-sm font-semibold text-foreground">Featured Analysis</h3>
-                        <p className="text-xs text-muted-foreground">The primary image shown in your journal feed.</p>
+                        <p className="text-xs text-muted-foreground">The primary image shown in your journal feed. You can drag and zoom it below so the card preview shows the exact framing you want.</p>
                     </div>
-                    <div className="relative aspect-video rounded-xl overflow-hidden border border-border/50 bg-muted/30 group">
-                        {cardPreviewImage && String(cardPreviewImage).trim() !== '' ? (
-                            <>
-                                {!imageErrors.cardPreviewImage ? (
-                                    <Image
-                                        src={cardPreviewImage}
-                                        alt="Preview"
-                                        fill
-                                        className="object-cover"
-                                        unoptimized
-                                        loading="eager"
+                    <div className="relative">
+                        {normalizedCardPreviewImage && String(normalizedCardPreviewImage).trim() !== '' ? (
+                            !imageErrors.cardPreviewImage ? (
+                                <div className="space-y-3">
+                                    <TradePreviewCropEditor
+                                        src={normalizedCardPreviewImage}
+                                        alt="Featured trade preview"
+                                        value={cardPreviewTransform ?? DEFAULT_TRADE_PREVIEW_TRANSFORM}
+                                        disabled={isSubmitting || uploadingField === 'cardPreviewImage'}
                                         onError={() => setImageError('cardPreviewImage', true)}
+                                        onChange={onPreviewTransformChange}
                                     />
-                                ) : (
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <div className="rounded-full border border-border/50 bg-background/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                                            Card preview
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            size="sm"
+                                            className="h-9 px-4 text-xs font-semibold border-border bg-background/95 hover:bg-accent transition-all"
+                                            onClick={() => {
+                                                const input = document.createElement('input')
+                                                input.type = 'file'
+                                                input.accept = 'image/*'
+                                                input.onchange = (e) => {
+                                                    const file = (e.target as HTMLInputElement).files?.[0]
+                                                    if (file) onUpload('cardPreviewImage', file)
+                                                }
+                                                input.click()
+                                            }}
+                                        >
+                                            <Pencil className="h-3.5 w-3.5 mr-2" />
+                                            Replace
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="sm"
+                                            className="h-9 px-4 text-xs font-semibold hover:bg-destructive/90 transition-all"
+                                            onClick={() => onRemove('cardPreviewImage')}
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5 mr-2" />
+                                            Remove
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="relative aspect-video rounded-xl overflow-hidden border border-border/50 bg-muted/30">
                                     <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
                                         <X className="h-8 w-8 text-destructive/50 mb-2" />
                                         <p className="text-xs text-muted-foreground">Image link broken</p>
                                     </div>
-                                )}
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center gap-4 px-4">
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        size="sm"
-                                        className="h-9 px-4 text-xs font-semibold border-border bg-background/95 hover:bg-accent transition-all"
-                                        onClick={() => {
-                                            const input = document.createElement('input')
-                                            input.type = 'file'
-                                            input.accept = 'image/*'
-                                            input.onchange = (e) => {
-                                                const file = (e.target as HTMLInputElement).files?.[0]
-                                                if (file) onUpload('cardPreviewImage', file)
-                                            }
-                                            input.click()
-                                        }}
-                                    >
-                                        <Pencil className="h-3.5 w-3.5 mr-2" />
-                                        Replace
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="destructive"
-                                        size="sm"
-                                        className="h-9 px-4 text-xs font-semibold hover:bg-destructive/90 transition-all"
-                                        onClick={() => onRemove('cardPreviewImage')}
-                                    >
-                                        <Trash2 className="h-3.5 w-3.5 mr-2" />
-                                        Remove
-                                    </Button>
                                 </div>
-                            </>
+                            )
                         ) : (
-                            <FileDropzone
-                                variant="default"
-                                onDrop={(files) => {
-                                    const file = files[0]
-                                    if (file) onUpload('cardPreviewImage', file)
-                                }}
-                                accept={{ 'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp'] }}
-                                className="h-full border-none bg-muted/50 hover:bg-muted/80"
-                                description="Drag & drop or click to upload preview"
-                                icon={<Plus className="h-8 w-8 text-muted-foreground/40 mb-2" />}
-                                disabled={uploadingField === 'cardPreviewImage'}
-                            />
+                            <div className="aspect-video rounded-xl overflow-hidden border border-border/50 bg-muted/30">
+                                <FileDropzone
+                                    variant="default"
+                                    onDrop={(files) => {
+                                        const file = files[0]
+                                        if (file) onUpload('cardPreviewImage', file)
+                                    }}
+                                    accept={{ 'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp'] }}
+                                    className="h-full border-none bg-muted/50 hover:bg-muted/80"
+                                    description="Drag & drop or click to upload preview"
+                                    icon={<Plus className="h-8 w-8 text-muted-foreground/40 mb-2" />}
+                                    disabled={uploadingField === 'cardPreviewImage'}
+                                />
+                            </div>
                         )}
                         {uploadingField === 'cardPreviewImage' && (
-                            <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                            <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-background/80">
                                 <Spinner className="h-5 w-5 text-primary" />
                             </div>
                         )}

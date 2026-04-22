@@ -243,6 +243,7 @@ model Trade {
   comment            String?
   groupId            String?
   cardPreviewImage   String?
+  cardPreviewTransform Json?
   imageOne           String?
   imageTwo           String?
   imageThree         String?

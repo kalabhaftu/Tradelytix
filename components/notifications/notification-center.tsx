@@ -315,8 +315,9 @@ export function NotificationCenter() {
         </PopoverTrigger>
 
         <PopoverContent
-          className="w-80 sm:w-96 p-0"
+          className="w-[min(24rem,calc(100vw-1rem))] p-0 sm:w-96"
           align="end"
+          side="bottom"
           sideOffset={8}
         >
           {/* Header with filter icon */}

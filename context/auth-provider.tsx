@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { toast } from 'sonner'
 import { Session } from '@supabase/supabase-js'
 import { signOut } from '@/server/auth'
@@ -32,6 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const router = useRouter()
   const [authCheckCache, setAuthCheckCache] = useState<{timestamp: number, isAuthenticated: boolean} | null>(null)
+  const lastSyncedSessionRef = useRef<string | null>(null)
 
   // Get user store setters
   const setUser = useUserStore(state => state.setUser)
@@ -70,6 +71,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       message.includes('refresh token not found') ||
       message.includes('invalid refresh token')
     )
+  }, [])
+
+  const syncSessionToServer = useCallback(async (nextSession: Session | null) => {
+    if (!nextSession?.access_token || !nextSession.refresh_token || !nextSession.user?.id) {
+      lastSyncedSessionRef.current = null
+      return false
+    }
+
+    const sessionKey = [
+      nextSession.user.id,
+      nextSession.expires_at || '0',
+      nextSession.access_token.slice(-12),
+    ].join(':')
+
+    if (lastSyncedSessionRef.current === sessionKey) {
+      return true
+    }
+
+    try {
+      const response = await fetch('/api/auth/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: nextSession.access_token,
+          refreshToken: nextSession.refresh_token,
+        }),
+      })
+
+      if (!response.ok) {
+        return false
+      }
+
+      lastSyncedSessionRef.current = sessionKey
+      return true
+    } catch {
+      return false
+    }
   }, [])
 
   // Check if auth status is still valid (cache for 30 seconds)
@@ -126,6 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSupabaseUser(null)
     setAuthCheckCache(null)
     setIsLoading(false)
+    lastSyncedSessionRef.current = null
     
     // Clear any cached auth data
     localStorage.removeItem('deltalytix_user_data')
@@ -159,11 +198,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Synchronize with user store
         if (session?.user) {
           setSupabaseUser(session.user)
+          await syncSessionToServer(session)
           // Note: We don't set the database user here as it requires a database call
           // The database user will be set when the user data is loaded
         } else {
           setSupabaseUser(null)
           setUser(null)
+          lastSyncedSessionRef.current = null
         }
       } catch (error) {
         if (isRecoverableSessionError(error)) {
@@ -171,10 +212,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(null)
           setSupabaseUser(null)
           setUser(null)
+          lastSyncedSessionRef.current = null
         } else {
           setSession(null)
           setSupabaseUser(null)
           setUser(null)
+          lastSyncedSessionRef.current = null
           toast.error('Session Error', {
             description: 'Failed to check authentication status',
           })
@@ -196,11 +239,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Synchronize with user store
         if (session?.user) {
           setSupabaseUser(session.user)
+          void syncSessionToServer(session)
           // Note: We don't set the database user here as it requires a database call
           // The database user will be set when the user data is loaded
         } else {
           setSupabaseUser(null)
           setUser(null)
+          lastSyncedSessionRef.current = null
         }
 
         // Add error handling for router refresh
@@ -215,7 +260,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [router, forceClearAuth, setSupabaseUser, setUser, clearBrowserAuthStorage, isRecoverableSessionError])
+  }, [router, forceClearAuth, setSupabaseUser, setUser, clearBrowserAuthStorage, isRecoverableSessionError, syncSessionToServer])
 
   return (
     <AuthContext.Provider

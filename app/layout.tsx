@@ -13,7 +13,7 @@ import { DeploymentMonitor } from "@/components/deployment-monitor";
 import { ClientErrorReporter } from "@/components/error-reporter";
 import { ErrorBoundaryWrapper } from "@/components/error-boundary";
 import { SeasonalManager } from "@/app/dashboard/components/seasonal/seasonal-manager";
-import { ServiceWorkerCleanup } from "@/components/service-worker-cleanup";
+import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import Script from "next/script"
 
 // Font configuration now imported from lib/fonts.ts
@@ -281,7 +281,7 @@ export default async function RootLayout({
               <ConsoleFilterWrapper>
                 <AuthProvider>
                   <TooltipProvider>
-                    <ServiceWorkerCleanup />
+                    <ServiceWorkerRegister />
                     <DeploymentMonitor />
                     <CookieNotice />
                     <SafeToaster />

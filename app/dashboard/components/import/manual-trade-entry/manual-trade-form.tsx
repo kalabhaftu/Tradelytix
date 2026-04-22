@@ -436,7 +436,7 @@ export default function ManualTradeForm({ setIsOpen, onClose }: ManualTradeFormP
                         <BarChart3 className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="start">
+                    <PopoverContent className="w-[min(26rem,calc(100vw-1rem))] p-0" align="start" side="bottom">
                       <Command>
                         <CommandInput
                           placeholder="Search or type custom..."

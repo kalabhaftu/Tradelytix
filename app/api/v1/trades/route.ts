@@ -58,6 +58,7 @@ const TRADE_SELECT = {
   closeReason: true,
   comment: true,
   cardPreviewImage: true,
+  cardPreviewTransform: true,
   imageOne: true,
   imageTwo: true,
   imageThree: true,

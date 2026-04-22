@@ -174,6 +174,8 @@ export async function GET(request: NextRequest) {
         commission: t.commission,
         timeInPosition: t.timeInPosition,
         comment: t.comment,
+        cardPreviewImage: t.cardPreviewImage,
+        cardPreviewTransform: t.cardPreviewTransform,
         tags: t.tags || []
       })),
       groups: [], // Groups removed - no longer used

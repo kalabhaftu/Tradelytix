@@ -24,6 +24,7 @@ import { useUserStore } from '@/store/user-store'
 import { ExtendedTrade, MarketBias, TradeOutcome } from '@/types/trade-extended'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, PenLine, Route, Newspaper } from 'lucide-react'
+import { Trade } from '@prisma/client'
 import React, { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -33,16 +34,27 @@ import { TradeNotesTab } from './components/trade-notes-tab'
 import { TradeStrategyTab } from './components/trade-strategy-tab'
 import { classifyTrade, cn, formatCurrency } from '@/lib/utils'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import { parseTradePreviewImageValue } from '@/lib/trade-preview-image'
+import {
+  DEFAULT_TRADE_PREVIEW_TRANSFORM,
+  normalizeTradePreviewTransform,
+  type TradePreviewTransform,
+} from '@/lib/trade-preview'
 
 interface TradeEditPanelProps {
   trade: ExtendedTrade
   onClose: () => void
-  onSave: (updatedTrade: Partial<ExtendedTrade>) => Promise<void>
+  onSave: (updatedTrade: Partial<Trade>) => Promise<void>
 }
 
 const editTradeSchema = z.object({
   comment: z.string().optional(),
   cardPreviewImage: z.string().optional(),
+  cardPreviewTransform: z.object({
+    zoom: z.number(),
+    x: z.number(),
+    y: z.number(),
+  }).nullable().optional(),
   imageOne: z.string().optional(),
   imageTwo: z.string().optional(),
   imageThree: z.string().optional(),
@@ -121,6 +133,7 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
     defaultValues: {
       comment: '',
       cardPreviewImage: '',
+      cardPreviewTransform: { ...DEFAULT_TRADE_PREVIEW_TRANSFORM },
       imageOne: '', imageTwo: '', imageThree: '',
       imageFour: '', imageFive: '', imageSix: '',
       modelId: null,
@@ -173,7 +186,12 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
       }
 
       const imageFields = {
-        cardPreviewImage: (trade as any).cardPreviewImage || '',
+        cardPreviewImage: parseTradePreviewImageValue((trade as any).cardPreviewImage).src || '',
+        cardPreviewTransform: (trade as any).cardPreviewImage
+          ? normalizeTradePreviewTransform(
+              (trade as any).cardPreviewTransform ?? DEFAULT_TRADE_PREVIEW_TRANSFORM
+            )
+          : null,
         imageOne: (trade as any).imageOne || '',
         imageTwo: (trade as any).imageTwo || '',
         imageThree: (trade as any).imageThree || '',
@@ -240,6 +258,9 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
       })
       if (!result.success || !result.url) throw new Error(result.error || 'Upload failed')
       setValue(field, result.url, { shouldDirty: true })
+      if (field === 'cardPreviewImage') {
+        setValue('cardPreviewTransform', { ...DEFAULT_TRADE_PREVIEW_TRANSFORM }, { shouldDirty: true })
+      }
       setImageErrors(prev => { const n = { ...prev }; delete n[field]; return n })
       toast.success('Image uploaded successfully')
     } catch (error) {
@@ -258,7 +279,10 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
         modelId: data.modelId || null,
         selectedRules: selectedRules.length > 0 ? selectedRules : null,
         tags: selectedTags.length > 0 ? selectedTags : [],
-        cardPreviewImage: data.cardPreviewImage || null,
+        cardPreviewImage: parseTradePreviewImageValue(data.cardPreviewImage).src || null,
+        cardPreviewTransform: data.cardPreviewImage
+          ? normalizeTradePreviewTransform(data.cardPreviewTransform)
+          : null,
         imageOne: data.imageOne || null,
         imageTwo: data.imageTwo || null,
         imageThree: data.imageThree || null,
@@ -359,6 +383,10 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
                 <TradeNotesTab
                   control={control}
                   cardPreviewImage={watchedValues.cardPreviewImage || null}
+                  cardPreviewTransform={watchedValues.cardPreviewTransform ?? null}
+                  onPreviewTransformChange={(transform) => {
+                    setValue('cardPreviewTransform', transform as TradePreviewTransform, { shouldDirty: true })
+                  }}
                   images={{
                     imageOne: watchedValues.imageOne || null,
                     imageTwo: watchedValues.imageTwo || null,
@@ -370,6 +398,9 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
                   onUpload={(field, file) => handleImageUpload(field as any, file)}
                   onRemove={(field) => {
                     setValue(field as any, '', { shouldDirty: true })
+                    if (field === 'cardPreviewImage') {
+                      setValue('cardPreviewTransform', null, { shouldDirty: true })
+                    }
                     setImageErrors(prev => { const n = { ...prev }; delete n[field]; return n })
                   }}
                   imageErrors={imageErrors}

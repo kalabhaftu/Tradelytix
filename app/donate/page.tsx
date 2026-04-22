@@ -40,19 +40,19 @@ export default function DonatePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
       {/* Hero */}
-      <div className="text-center mb-12">
+      <div className="mb-10 text-center">
         <div className="inline-flex items-center justify-center p-4 rounded-full bg-primary/10 mb-6">
           <Heart className="h-10 w-10 text-primary" />
         </div>
         <h1 className="text-4xl font-bold tracking-tight mb-4">Support Deltalytix</h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          Deltalytix is <strong>100% free</strong> and open source, built to help traders who can't afford expensive journaling tools.
-          Your donation helps cover hosting costs and keeps the platform running for everyone.
+        <p className="mx-auto max-w-2xl leading-relaxed text-muted-foreground">
+          Deltalytix is a free trading journal and analytics platform. Donations help cover hosting,
+          storage, and the ongoing work required to keep the product stable and improving.
         </p>
-        <p className="text-sm text-muted-foreground mt-3">
-          Copy any wallet address below and send your donation manually. Every contribution matters.
+        <p className="mt-3 text-sm text-muted-foreground">
+          Choose a wallet below, copy the address, and send from your preferred network.
         </p>
       </div>
 
@@ -137,12 +137,9 @@ export default function DonatePage() {
       )}
 
       {/* Footer */}
-      <div className="text-center mt-12 pt-8 border-t">
+      <div className="mt-12 border-t pt-8 text-center">
         <p className="text-sm text-muted-foreground">
-          Every contribution helps keep Deltalytix free and accessible for traders worldwide.
-        </p>
-        <p className="text-xs text-muted-foreground/60 mt-2">
-          Built with care for the trading community
+          Thank you for helping keep Deltalytix available to traders who need it.
         </p>
       </div>
     </div>

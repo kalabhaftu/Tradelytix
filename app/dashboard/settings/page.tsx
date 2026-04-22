@@ -794,11 +794,9 @@ export default function SettingsPage() {
 
         {/* Linked Accounts */}
         <LinkedAccounts />
-          </div>
-        </div>
 
         {/* Account Management Section */}
-        <Card className="xl:col-span-2">
+        <Card>
           <CardHeader className="pb-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
@@ -842,8 +840,8 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
-
-
+          </div>
+        </div>
 
       </motion.div>
 

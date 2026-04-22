@@ -1,66 +1,21 @@
-'use client'
+import { GitBranch, ShieldCheck, Workflow } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeftRight, Shield, Wrench } from 'lucide-react'
+import { DocsCardGrid, DocsInfoCard, DocsPage, DocsSection } from '@/components/docs/docs-page'
 
-export default function ArchitectureDivergencesDocs() {
+export default function ArchitectureDivergencesDocsPage() {
   return (
-    <div className="space-y-12">
-      <div className="space-y-4">
-        <Badge variant="outline" className="mb-2">For Developers</Badge>
-        <h1>Architecture Divergences (90/10 Migration)</h1>
-        <p className="text-xl">
-          Intentional deviations from the original plan (kept for stability and to match the current codebase).
-        </p>
-      </div>
-
-      <div className="space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ArrowLeftRight className="h-5 w-5 text-primary" />
-              React Query vs SWR
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground space-y-2">
-            <p><strong className="text-foreground">Decision:</strong> React Query (TanStack Query) is the canonical client data layer.</p>
-            <p><strong className="text-foreground">Reason:</strong> SWR migration would add churn without benefit; React Query already exists across the app.</p>
-            <p><strong className="text-foreground">Impact:</strong> Data fetching uses <code>useQuery</code>/<code>useMutation</code> hooks. SWR hooks are not used.</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wrench className="h-5 w-5 text-primary" />
-              Dashboard stats ownership
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground space-y-2">
-            <p><strong className="text-foreground">Decision:</strong> Dashboard stats are canonical in <code>/api/v1/trades</code> with server-side widget aggregation.</p>
-            <p><strong className="text-foreground">Reason:</strong> Dashboard has bespoke logic (account filter settings, prop-firm integration). Forcing it through generic helpers risks changing UX/behavior.</p>
-            <p><strong className="text-foreground">Impact:</strong> Reports use <code>report-statistics.ts</code>; dashboard uses <code>/api/v1/trades</code> with a stable v1 contract.</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary" />
-              Other decisions
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground space-y-3">
-            <ul className="list-disc pl-5 space-y-2">
-              <li><strong className="text-foreground">Accounts stats endpoint:</strong> no <code>/api/accounts/stats</code> added; existing page was acceptable.</li>
-              <li><strong className="text-foreground">Major news events:</strong> served server-side via <code>/api/news-events</code> instead of client importing a large constant file.</li>
-              <li><strong className="text-foreground">Cron security:</strong> cron endpoints require a secret header in production.</li>
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <DocsPage
+      badge="For Developers"
+      title="Architecture Divergences"
+      description="This page documents product-level divergence patterns at a safe level: where a subsystem owns behavior for good reasons, and why forcing everything through one abstraction can hurt the UX."
+    >
+      <DocsSection title="Typical divergence patterns">
+        <DocsCardGrid>
+          <DocsInfoCard icon={Workflow} title="Dashboard-specific aggregation" description="The dashboard can own bespoke data shaping when that is necessary to keep widget behavior, templates, and filters consistent." />
+          <DocsInfoCard icon={GitBranch} title="Shell-specific interaction rules" description="Mobile drawers, command palette flows, and public support pages may need dedicated layout logic instead of pretending one component shape fits every surface." />
+          <DocsInfoCard icon={ShieldCheck} title="Safe public docs boundary" description="Developer-facing explanations should stop at conceptual ownership and avoid leaking internal-only operational detail." />
+        </DocsCardGrid>
+      </DocsSection>
+    </DocsPage>
   )
 }
-

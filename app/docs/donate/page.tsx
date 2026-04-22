@@ -1,38 +1,42 @@
 import Link from 'next/link'
 
+import { DocsCallout, DocsPage, DocsSection } from '@/components/docs/docs-page'
+
 export default function DonateGuideDocsPage() {
   return (
-    <div className="space-y-8">
-      <div>
-        <h1>Support the Project</h1>
-        <p className="text-lg text-muted-foreground">Help keep Deltalytix free for everyone.</p>
-      </div>
+    <DocsPage
+      badge="Resources"
+      title="Support the Project"
+      description="Deltalytix stays free to use. If you want to support hosting, maintenance, and continued product work, the donation page lists the current wallet options."
+    >
+      <DocsSection title="How to donate">
+        <ol>
+          <li>Open the <Link href="/donate">donation page</Link>.</li>
+          <li>Choose the wallet/network you want to use.</li>
+          <li>Copy the address and send from your preferred wallet.</li>
+        </ol>
+      </DocsSection>
 
-      <h2>Why Donate?</h2>
-      <p>Deltalytix is built and maintained by a solo developer, running entirely on free hosting services. Donations help cover:</p>
-      <ul>
-        <li>Domain and hosting costs</li>
-        <li>Database and storage usage</li>
-        <li>Development time for new features</li>
-        <li>Keeping the platform ad-free</li>
-      </ul>
+      <DocsSection title="What support helps with">
+        <ul>
+          <li>Hosting and database costs</li>
+          <li>Storage and operational overhead</li>
+          <li>Maintenance, fixes, and ongoing product improvement</li>
+        </ul>
+      </DocsSection>
 
-      <h2>How to Donate</h2>
-      <p>Visit the <Link href="/donate" className="text-primary hover:underline">donation page</Link> to see available crypto wallet addresses. Simply:</p>
-      <ol>
-        <li>Choose a token/network</li>
-        <li>Copy the wallet address</li>
-        <li>Send from your wallet</li>
-      </ol>
-      <p>We support Bitcoin, Ethereum, USDT (multiple networks), USDC, Solana, and BNB.</p>
+      <DocsSection title="Other ways to help">
+        <ul>
+          <li>Send high-quality feedback</li>
+          <li>Share the product with other traders</li>
+          <li>Contribute documentation or code if you are part of the contributor community</li>
+        </ul>
+      </DocsSection>
 
-      <h2>Other Ways to Help</h2>
-      <ul>
-        <li><strong>Star the repo</strong> on GitHub — visibility helps attract contributors</li>
-        <li><strong>Share Deltalytix</strong> with other traders</li>
-        <li><strong>Submit feedback</strong> — bug reports and feature requests are incredibly valuable</li>
-        <li><strong>Contribute code</strong> — PRs are welcome!</li>
-      </ul>
-    </div>
+      <DocsCallout title="Keep it simple">
+        The donation page is intentionally lightweight: it lists supported wallets, lets you copy an
+        address quickly, and keeps the support flow clear without turning it into a marketing page.
+      </DocsCallout>
+    </DocsPage>
   )
 }

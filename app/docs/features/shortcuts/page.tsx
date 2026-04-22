@@ -1,63 +1,34 @@
+import { Keyboard, Search, Sparkles } from 'lucide-react'
+
+import { DocsCardGrid, DocsInfoCard, DocsPage, DocsSection } from '@/components/docs/docs-page'
+
 export default function ShortcutsDocsPage() {
   return (
-    <div className="space-y-8">
-      <div>
-        <h1>Keyboard Shortcuts</h1>
-        <p className="text-lg text-muted-foreground">Navigate Deltalytix faster with keyboard shortcuts.</p>
-      </div>
-
-      <h2>Global Shortcuts</h2>
-      <div className="overflow-x-auto">
-        <table>
-          <thead>
-            <tr>
-              <th>Shortcut</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td><code>Ctrl/⌘ + K</code></td><td>Open quick search / command palette</td></tr>
-            <tr><td><code>Ctrl/⌘ + /</code></td><td>Toggle sidebar</td></tr>
-            <tr><td><code>Ctrl/⌘ + B</code></td><td>Toggle sidebar collapse</td></tr>
-            <tr><td><code>Esc</code></td><td>Close dialogs and popups</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h2>Dashboard Shortcuts</h2>
-      <div className="overflow-x-auto">
-        <table>
-          <thead>
-            <tr>
-              <th>Shortcut</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td><code>←</code> / <code>→</code></td><td>Navigate date range (previous/next period)</td></tr>
-            <tr><td><code>T</code></td><td>Jump to today</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h2>Journal Editor</h2>
-      <div className="overflow-x-auto">
-        <table>
-          <thead>
-            <tr>
-              <th>Shortcut</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td><code>Ctrl/⌘ + B</code></td><td>Bold</td></tr>
-            <tr><td><code>Ctrl/⌘ + I</code></td><td>Italic</td></tr>
-            <tr><td><code>Ctrl/⌘ + U</code></td><td>Underline</td></tr>
-            <tr><td><code>Ctrl/⌘ + Shift + X</code></td><td>Strikethrough</td></tr>
-            <tr><td><code>Ctrl/⌘ + V</code></td><td>Paste (supports images)</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <DocsPage
+      badge="Feature Guide"
+      title="Keyboard Shortcuts"
+      description="The fastest navigation tool in the dashboard is the command palette, which centralizes navigation and actions such as opening quick add."
+    >
+      <DocsSection title="Primary shortcut">
+        <DocsCardGrid>
+          <DocsInfoCard
+            icon={Search}
+            title="Command palette"
+            description="Use Ctrl/Cmd + K to open the command palette and jump to pages or trigger shell actions."
+            items={['Navigation shortcuts live in one searchable place', 'Add New Trade launches the shared quick-add dialog', 'Palette behavior matches desktop shell conventions']}
+          />
+          <DocsInfoCard
+            icon={Keyboard}
+            title="Modal behavior"
+            description="Dialogs, sheets, and popovers are designed to stay keyboard accessible with standard escape-to-close behavior where appropriate."
+          />
+          <DocsInfoCard
+            icon={Sparkles}
+            title="Use shortcuts for speed, not discovery"
+            description="Shortcuts are best treated as a layer on top of the visible UI rather than the only way to reach core product actions."
+          />
+        </DocsCardGrid>
+      </DocsSection>
+    </DocsPage>
   )
 }

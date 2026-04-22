@@ -204,7 +204,7 @@ export function CalendarModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleCloseAttempt}>
-        <DialogContent className="max-w-4xl w-full h-[100dvh] sm:h-[90vh] p-0 flex flex-col overflow-hidden">
+        <DialogContent className="w-[min(96vw,72rem)] max-w-[72rem] h-[100dvh] sm:h-[min(90vh,56rem)] p-0 flex flex-col overflow-hidden">
           {/* Header - Simple */}
           <div className="flex items-center justify-between p-4 border-b bg-card">
             <div>
@@ -230,7 +230,7 @@ export function CalendarModal({
             </div>
 
             {/* Trades Tab */}
-            <TabsContent value="trades" className="flex-1 overflow-auto m-0 px-4 pb-4">
+            <TabsContent value="trades" className="m-0 flex-1 overflow-auto px-4 pb-4">
               <ScrollArea className="h-full">
                 <div className="space-y-4 py-4">
                   <DailyStats dayData={dayData} isWeekly={false} />
@@ -290,7 +290,7 @@ export function CalendarModal({
             </TabsContent>
 
             {/* Journal Tab */}
-            <TabsContent value="journal" className="flex-1 overflow-auto m-0 px-4 pb-4">
+            <TabsContent value="journal" className="m-0 flex-1 overflow-auto px-4 pb-4">
               {isLoadingJournal ? (
                 <div className="flex flex-col gap-4 p-4 min-h-[200px]">
                   <div className="space-y-2">

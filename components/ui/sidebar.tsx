@@ -219,13 +219,13 @@ const Sidebar = React.forwardRef<
     if (isOverlay) {
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-          <SheetContent
-            data-sidebar="sidebar"
-            data-mobile="true"
-            className="z-[260] w-screen max-w-screen overflow-hidden border-r border-sidebar-border bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden !top-0 !bottom-0 !h-[100dvh] !max-h-[100dvh] !rounded-none sm:w-[22rem] sm:max-w-[22rem]"
-            style={
-              {
-                "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+        <SheetContent
+          data-sidebar="sidebar"
+          data-mobile="true"
+          className="z-[260] overflow-hidden border-r border-sidebar-border bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden !top-0 !bottom-0 !left-0 !right-auto !h-[100dvh] !max-h-[100dvh] !w-screen !max-w-screen !rounded-none sm:!w-[22rem] sm:!max-w-[22rem]"
+          style={
+            {
+              "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
               } as React.CSSProperties
             }
             side={side}
@@ -429,7 +429,7 @@ const SidebarContent = React.forwardRef<
       ref={ref}
       data-sidebar="content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
+        "flex min-h-0 flex-1 flex-col gap-2 group-data-[collapsible=icon]:overflow-hidden",
         className
       )}
       {...props}

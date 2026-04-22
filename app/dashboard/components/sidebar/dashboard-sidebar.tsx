@@ -88,14 +88,15 @@ export function DashboardSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-border/40 bg-sidebar">
       <div className={cn('grid h-full min-h-0 bg-sidebar', isOverlay ? 'grid-rows-[auto_1fr_auto]' : 'grid-rows-[auto_1fr_auto]')}>
-        <SidebarHeader className={cn('border-b border-sidebar-border/40', isOverlay ? 'px-4 pt-5 pb-3' : 'px-2 py-2')}>
+        <SidebarHeader className={cn('border-b border-sidebar-border/40', isOverlay ? 'px-4 pt-4 pb-2.5' : 'px-2 py-2')}>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
                 size="lg"
                 variant={isCollapsed ? 'icon' : 'default'}
                 className={cn(
-                  'h-12 rounded-2xl data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground',
+                  'rounded-2xl data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground',
+                  isOverlay ? 'h-11' : 'h-12',
                   !isCollapsed && !isOverlay && 'px-3'
                 )}
                 asChild
@@ -116,12 +117,12 @@ export function DashboardSidebar() {
           </SidebarMenu>
         </SidebarHeader>
 
-        <SidebarContent className={cn('min-h-0', isOverlay ? 'overflow-y-auto overscroll-contain px-4 py-3' : 'overflow-y-auto px-2 py-2')}>
-          <div className="flex min-h-0 flex-col">
+        <SidebarContent className={cn('min-h-0', isOverlay ? 'overflow-hidden px-4 py-2.5' : 'overflow-y-auto px-2 py-2')}>
+          <div className={cn('flex flex-1 flex-col', isOverlay ? 'min-h-full overflow-y-auto overscroll-contain' : 'min-h-0')}>
             <SidebarGroup className={cn('pt-0', isOverlay ? 'px-0' : 'px-0')}>
-              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+              <SidebarGroupLabel className={cn(isOverlay && 'h-7 px-1 text-[11px] tracking-wide')}>Navigation</SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu className={cn(isOverlay && 'gap-1.5')}>
+                <SidebarMenu className={cn(isOverlay && 'gap-1')}>
                   {navItems.map((item) => (
                     <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton
@@ -131,7 +132,7 @@ export function DashboardSidebar() {
                         isActive={activeId === item.id}
                         asChild
                         className={cn(
-                          isOverlay && 'h-12 rounded-2xl px-4 text-base [&>svg]:size-[18px]',
+                          isOverlay && 'h-11 rounded-2xl px-4 text-[15px] [&>svg]:size-[17px]',
                           !isOverlay && !isCollapsed && 'px-3'
                         )}
                       >
@@ -147,16 +148,16 @@ export function DashboardSidebar() {
             </SidebarGroup>
 
             <SidebarGroup className={cn('mt-auto', isOverlay ? 'px-0 pb-0 pt-6' : 'px-0 pb-0 pt-6')}>
-              <SidebarGroupLabel>Utilities</SidebarGroupLabel>
+              <SidebarGroupLabel className={cn(isOverlay && 'h-7 px-1 text-[11px] tracking-wide')}>Utilities</SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu className={cn(isOverlay && 'gap-1.5')}>
+                <SidebarMenu className={cn(isOverlay && 'gap-1')}>
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       size={isOverlay ? 'lg' : 'default'}
                       variant={isCollapsed ? 'icon' : 'default'}
                       tooltip="Refresh Data"
                       className={cn(
-                        isOverlay && 'h-12 rounded-2xl px-4 text-base [&>svg]:size-[18px]',
+                        isOverlay && 'h-11 rounded-2xl px-4 text-[15px] [&>svg]:size-[17px]',
                         !isOverlay && !isCollapsed && 'px-3'
                       )}
                       onClick={() => {
@@ -178,7 +179,7 @@ export function DashboardSidebar() {
                         isActive={activeId === item.id}
                         asChild
                         className={cn(
-                          isOverlay && 'h-12 rounded-2xl px-4 text-base [&>svg]:size-[18px]',
+                          isOverlay && 'h-11 rounded-2xl px-4 text-[15px] [&>svg]:size-[17px]',
                           !isOverlay && !isCollapsed && 'px-3'
                         )}
                       >
@@ -198,7 +199,7 @@ export function DashboardSidebar() {
         <SidebarFooter
           className={cn(
             'border-t border-sidebar-border/60 bg-sidebar',
-            isOverlay ? 'px-4 py-2 pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+0.35rem)]' : 'p-2'
+            isOverlay ? 'px-4 py-2 pb-[calc(max(0.5rem,env(safe-area-inset-bottom))+0.25rem)]' : 'p-2'
           )}
         >
           <SidebarMenu>
@@ -210,7 +211,7 @@ export function DashboardSidebar() {
                 tooltip={collapseLabel}
                 className={cn(
                   'w-full text-muted-foreground hover:text-foreground',
-                  isOverlay && 'h-12 rounded-2xl px-4 text-base [&>svg]:size-[18px]',
+                  isOverlay && 'h-11 rounded-2xl px-4 text-[15px] [&>svg]:size-[17px]',
                   !isOverlay && !isCollapsed && 'justify-start px-3'
                 )}
               >

@@ -40,6 +40,7 @@ import {
   Check,
   Clock,
   Database,
+  Pencil,
   Laptop,
   Moon,
   Palette,
@@ -94,19 +95,19 @@ function SettingRow({
   className?: string
 }) {
   return (
-    <div className={cn("flex items-center justify-between gap-4 py-3", className)}>
-      <div className="flex items-center gap-3 min-w-0">
+    <div className={cn("grid grid-cols-1 gap-3 py-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-4", className)}>
+      <div className="flex min-w-0 items-start gap-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
           <Icon className="h-4 w-4 text-muted-foreground" />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 pt-0.5">
           <p className="text-sm font-medium">{label}</p>
           {description && (
             <p className="text-xs text-muted-foreground/85">{description}</p>
           )}
         </div>
       </div>
-      <div className="shrink-0">
+      <div className="flex w-full min-w-0 md:w-auto md:justify-end">
         {action}
       </div>
     </div>
@@ -140,6 +141,11 @@ export default function SettingsPage() {
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
   const [isUpdatingAiSettings, setIsUpdatingAiSettings] = useState(false)
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [savedProfileNames, setSavedProfileNames] = useState({
+    firstName: '',
+    lastName: '',
+  })
   const avatarUrl = getUserAvatarUrl(user)
 
 
@@ -167,9 +173,11 @@ export default function SettingsPage() {
         const result = await response.json()
 
         if (result.success) {
+          const nextFirstName = result.data.firstName || ''
+          const nextLastName = result.data.lastName || ''
           setProfileData({
-            firstName: result.data.firstName || '',
-            lastName: result.data.lastName || '',
+            firstName: nextFirstName,
+            lastName: nextLastName,
             email: result.data.email || '',
             autoAdjustAccountDate: result.data.autoAdjustAccountDate ?? false,
             breakEvenThreshold: typeof result.data.breakEvenThreshold === 'number' ? result.data.breakEvenThreshold : 10,
@@ -177,6 +185,10 @@ export default function SettingsPage() {
               ...defaultAiSettings,
               ...(result.data.aiSettings || {})
             }
+          })
+          setSavedProfileNames({
+            firstName: nextFirstName,
+            lastName: nextLastName,
           })
           const safeThreshold = typeof result.data.breakEvenThreshold === 'number' ? result.data.breakEvenThreshold : 10
           setBreakEvenDraft(String(safeThreshold))
@@ -205,7 +217,12 @@ export default function SettingsPage() {
 
       const result = await response.json()
 
-      if (result.success) {
+        if (result.success) {
+        setSavedProfileNames({
+          firstName: profileData.firstName,
+          lastName: profileData.lastName,
+        })
+        setIsEditingProfile(false)
         toast.success("Profile updated", {
           description: "Your profile information has been saved.",
           duration: 3000
@@ -392,6 +409,15 @@ export default function SettingsPage() {
 
   const isDeleteConfirmed = deleteConfirmText === 'Delete my account'
 
+  const handleCancelProfileEdit = () => {
+    setProfileData(prev => ({
+      ...prev,
+      firstName: savedProfileNames.firstName,
+      lastName: savedProfileNames.lastName,
+    }))
+    setIsEditingProfile(false)
+  }
+
   const getThemeDisplay = () => {
     if (theme === 'dark') return { icon: Moon, label: 'Dark' }
     if (theme === 'light') return { icon: Sun, label: 'Light' }
@@ -409,21 +435,35 @@ export default function SettingsPage() {
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="grid gap-6 grid-cols-1 xl:grid-cols-2"
+        className="space-y-6"
       >
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:items-start">
+          <div className="flex min-w-0 flex-col gap-6">
         {/* Profile Section */}
         <Card>
           <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                <User className="h-5 w-5 text-muted-foreground" />
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                  <User className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Profile</CardTitle>
+                  <CardDescription className="text-xs text-muted-foreground/85">Your personal information</CardDescription>
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-base">Profile</CardTitle>
-                <CardDescription className="text-xs text-muted-foreground/85">Your personal information</CardDescription>
-              </div>
+              <Button
+                variant={isEditingProfile ? "secondary" : "outline"}
+                size="sm"
+                className="gap-2"
+                onClick={() => setIsEditingProfile(true)}
+                disabled={isLoadingProfile || isEditingProfile}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Edit
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -458,7 +498,7 @@ export default function SettingsPage() {
                     placeholder="Enter your first name"
                     value={profileData.firstName}
                     onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
-                    disabled={isLoadingProfile}
+                    disabled={isLoadingProfile || !isEditingProfile}
                     className="h-9"
                   />
                 </div>
@@ -469,7 +509,7 @@ export default function SettingsPage() {
                     placeholder="Enter your last name"
                     value={profileData.lastName}
                     onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
-                    disabled={isLoadingProfile}
+                    disabled={isLoadingProfile || !isEditingProfile}
                     className="h-9"
                   />
                 </div>
@@ -481,16 +521,78 @@ export default function SettingsPage() {
               <Input id="email" type="email" value={user?.email || ''} disabled className="h-9" />
             </div>
 
-            <PrimaryButton
-              onClick={handleProfileUpdate}
-              loading={isUpdatingProfile || isLoadingProfile}
-              loadingText={isLoadingProfile ? "Fetching..." : "Updating..."}
-              className="w-full sm:w-auto"
-            >
-              Update Profile
-            </PrimaryButton>
+            {isEditingProfile && (
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={handleCancelProfileEdit}
+                  disabled={isUpdatingProfile}
+                >
+                  Cancel
+                </Button>
+                <PrimaryButton
+                  onClick={handleProfileUpdate}
+                  loading={isUpdatingProfile || isLoadingProfile}
+                  loadingText={isLoadingProfile ? "Fetching..." : "Updating..."}
+                  className="w-full sm:w-auto"
+                >
+                  Save Profile
+                </PrimaryButton>
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* AI Preferences Section */}
+        <Card>
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                <Bot className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <CardTitle className="text-base">AI Preferences</CardTitle>
+                <CardDescription className="text-xs">Control AI-generated insights and automation</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-1">
+            <SettingRow
+              icon={Sparkles}
+              label="Weekly AI Performance Reviews"
+              description="Get an AI-generated weekly report card every weekend"
+              action={
+                <Switch
+                  checked={profileData.aiSettings.autoGenerateInsights}
+                  onCheckedChange={(checked) => handleAiSettingsChange('autoGenerateInsights', checked)}
+                  disabled={isLoadingProfile || isUpdatingAiSettings}
+                />
+              }
+            />
+
+            <Separator />
+
+            <SettingRow
+              icon={BellRing}
+              label="AI insights in notifications"
+              description="Create a notification with a summary when you run an AI analysis"
+              action={
+                <Switch
+                  checked={profileData.aiSettings.includeAiInsightsInNotifications}
+                  onCheckedChange={(checked) => handleAiSettingsChange('includeAiInsightsInNotifications', checked)}
+                  disabled={isLoadingProfile || isUpdatingAiSettings}
+                />
+              }
+            />
+          </CardContent>
+        </Card>
+
+        {/* Cache Management */}
+        <CacheManagement />
+          </div>
+
+          <div className="flex min-w-0 flex-col gap-6">
 
         {/* Preferences Section */}
         <Card>
@@ -690,55 +792,10 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* AI Preferences Section */}
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                <Bot className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <CardTitle className="text-base">AI Preferences</CardTitle>
-                <CardDescription className="text-xs">Control AI-generated insights and automation</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            <SettingRow
-              icon={Sparkles}
-              label="Weekly AI Performance Reviews"
-              description="Get an AI-generated weekly report card every weekend"
-              action={
-                <Switch
-                  checked={profileData.aiSettings.autoGenerateInsights}
-                  onCheckedChange={(checked) => handleAiSettingsChange('autoGenerateInsights', checked)}
-                  disabled={isLoadingProfile || isUpdatingAiSettings}
-                />
-              }
-            />
-
-            <Separator />
-
-            <SettingRow
-              icon={BellRing}
-              label="AI insights in notifications"
-              description="Create a notification with a summary when you run an AI analysis"
-              action={
-                <Switch
-                  checked={profileData.aiSettings.includeAiInsightsInNotifications}
-                  onCheckedChange={(checked) => handleAiSettingsChange('includeAiInsightsInNotifications', checked)}
-                  disabled={isLoadingProfile || isUpdatingAiSettings}
-                />
-              }
-            />
-          </CardContent>
-        </Card>
-
         {/* Linked Accounts */}
         <LinkedAccounts />
-
-        {/* Cache Management */}
-        <CacheManagement />
+          </div>
+        </div>
 
         {/* Account Management Section */}
         <Card className="xl:col-span-2">

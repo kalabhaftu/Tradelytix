@@ -50,6 +50,7 @@ export default function Navbar() {
   const [accountPopoverOpen, setAccountPopoverOpen] = useState(false)
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [mobileAccountsOpen, setMobileAccountsOpen] = useState(false)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
 
   const { accountNumbers, isMobile } = useData()
   const { forceClearAuth } = useAuth()
@@ -125,7 +126,7 @@ export default function Navbar() {
           </div>
 
           {/* Profile dropdown — includes mobile-only items */}
-          <DropdownMenu>
+          <DropdownMenu open={profileMenuOpen} onOpenChange={setProfileMenuOpen}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
                 <Avatar className="h-8 w-8">
@@ -160,6 +161,7 @@ export default function Navbar() {
                 className="sm:hidden cursor-pointer"
                 onSelect={(e) => {
                   e.preventDefault()
+                  setProfileMenuOpen(false)
                   setMobileAccountsOpen(true)
                 }}
               >
@@ -177,6 +179,7 @@ export default function Navbar() {
                 className="sm:hidden cursor-pointer"
                 onSelect={(e) => {
                   e.preventDefault()
+                  setProfileMenuOpen(false)
                   setMobileFiltersOpen(true)
                 }}
               >
@@ -187,7 +190,11 @@ export default function Navbar() {
               <DropdownMenuSeparator className="sm:hidden" />
 
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/settings" className="cursor-pointer">
+                <Link
+                  href="/dashboard/settings"
+                  className="cursor-pointer"
+                  onClick={() => setProfileMenuOpen(false)}
+                >
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </Link>

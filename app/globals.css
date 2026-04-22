@@ -245,6 +245,8 @@ html {
 }
 
 body[data-sidebar-drawer-open="true"] .mobile-bottom-nav {
+  visibility: hidden;
+  display: none;
   opacity: 0;
   pointer-events: none;
   transform: translateY(100%);
@@ -280,8 +282,7 @@ body[data-sidebar-drawer-open="true"] .mobile-bottom-nav {
   }
 
   /* Prevent dialogs from overflowing on small screens */
-  [data-radix-dialog-content],
-  [role="dialog"] {
+  [data-dialog-content] {
     max-width: calc(100vw - 1.5rem) !important;
     max-height: calc(100vh - 3rem) !important;
     overflow-y: auto;
@@ -309,8 +310,7 @@ body[data-sidebar-drawer-open="true"] .mobile-bottom-nav {
 /* Small mobile screens */
 @media (max-width: 480px) {
   /* Even more compact dialogs */
-  [data-radix-dialog-content],
-  [role="dialog"] {
+  [data-dialog-content] {
     max-width: calc(100vw - 1rem) !important;
     margin: 0.5rem;
     padding: 1rem;

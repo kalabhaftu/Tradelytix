@@ -38,9 +38,9 @@ const sheetVariants = cva(
         top: "inset-x-0 top-0 max-h-[85dvh] overflow-y-auto border-b p-6 data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
         bottom:
           "inset-x-0 bottom-0 max-h-[85dvh] overflow-y-auto border-t p-6 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-        left: "inset-y-0 left-0 h-[100dvh] w-[min(92vw,26rem)] max-w-none overflow-hidden border-r p-0 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
+        left: "inset-y-0 left-0 h-[100dvh] w-screen max-w-screen overflow-hidden border-r p-0 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:w-[22rem] sm:max-w-[22rem]",
         right:
-          "inset-y-0 right-0 h-[100dvh] w-[min(92vw,26rem)] max-w-none overflow-hidden border-l p-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
+          "inset-y-0 right-0 h-[100dvh] w-screen max-w-screen overflow-hidden border-l p-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:w-[22rem] sm:max-w-[22rem]",
       },
     },
     defaultVariants: {
@@ -61,11 +61,15 @@ const SheetContent = React.forwardRef<
     <SheetOverlay />
     <SheetPrimitive.Content
       ref={ref}
+      data-sheet-content=""
       className={cn("max-h-[100dvh] overscroll-contain", sheetVariants({ side }), className)}
       {...props}
     >
       {/* Fallback a11y title to prevent runtime errors when consumers omit a SheetTitle. */}
       <SheetPrimitive.Title className="sr-only">Panel</SheetPrimitive.Title>
+      <SheetPrimitive.Description className="sr-only">
+        Panel content
+      </SheetPrimitive.Description>
       {children}
       <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
         <X className="h-4 w-4" />

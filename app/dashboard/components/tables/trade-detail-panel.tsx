@@ -26,6 +26,7 @@ import { useState } from 'react'
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 import { toast } from 'sonner'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import { stripTradePreviewImageConfig } from '@/lib/trade-preview-image'
 
 interface TradeDetailPanelProps {
   trade: Trade
@@ -73,7 +74,7 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
 
   // Images
   const images = [
-    tradeData.cardPreviewImage,
+    stripTradePreviewImageConfig(tradeData.cardPreviewImage),
     tradeData.imageOne,
     tradeData.imageTwo,
     tradeData.imageThree,
@@ -484,7 +485,7 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
                 variant="secondary"
                 size="sm"
                 className="absolute bottom-4 right-4"
-                onClick={() => downloadImage(selectedImage!, trade, selectedImageIndex)}
+                onClick={() => downloadImage(stripTradePreviewImageConfig(selectedImage) || selectedImage!, trade, selectedImageIndex)}
               >
                 <Download className="h-4 w-4 mr-2" />
                 Download

@@ -70,7 +70,7 @@ export function TagSelector({ selectedTagIds, onChange, className }: TagSelector
               <span className="text-xs">Add Tag</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-64 p-3" align="start">
+          <PopoverContent className="w-[min(18rem,calc(100vw-1rem))] p-3" align="start" side="bottom">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold flex items-center gap-1">

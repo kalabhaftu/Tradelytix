@@ -352,7 +352,7 @@ export default function TradeTable() {
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0" align="start">
+            <PopoverContent className="w-[min(18rem,calc(100vw-1rem))] p-0" align="start" side="bottom">
               <Command>
                 <CommandInput placeholder="Search instruments..." />
                 <CommandEmpty>No instruments found.</CommandEmpty>
@@ -392,7 +392,7 @@ export default function TradeTable() {
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[250px] p-0" align="start">
+            <PopoverContent className="w-[min(20rem,calc(100vw-1rem))] p-0" align="start" side="bottom">
               <Command>
                 <CommandInput placeholder="Search accounts..." />
                 <CommandEmpty>No accounts found.</CommandEmpty>

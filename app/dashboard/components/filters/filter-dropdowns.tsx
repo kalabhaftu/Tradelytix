@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useData } from "@/context/data-provider"
 import { ChevronDown } from "lucide-react"
@@ -50,14 +50,14 @@ function FilterDropdown({
   }
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
         <Button variant="outline" className={`flex items-center ${className || ''}`}>
           <span className="flex-1 text-left">{buttonText[type]}</span>
           <ChevronDown className="ml-2 h-4 w-4 shrink-0" />
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-[300px]" align="start">
+      </PopoverTrigger>
+      <PopoverContent className="w-[min(20rem,calc(100vw-1rem))] p-0" align="start" side="bottom">
         <Command shouldFilter={false}>
           <CommandInput 
             placeholder={"Search..."} 
@@ -99,8 +99,8 @@ function FilterDropdown({
             </ScrollArea>
           </CommandList>
         </Command>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </PopoverContent>
+    </Popover>
   )
 }
 

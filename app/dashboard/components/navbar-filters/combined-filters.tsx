@@ -27,6 +27,7 @@ interface CombinedFiltersProps {
   onSave?: () => void
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  renderTrigger?: boolean
 }
 
 const DATE_PRESETS = [
@@ -91,7 +92,12 @@ const DATE_PRESETS = [
   }
 ]
 
-export function CombinedFilters({ onSave, open: controlledOpen, onOpenChange }: CombinedFiltersProps) {
+export function CombinedFilters({
+  onSave,
+  open: controlledOpen,
+  onOpenChange,
+  renderTrigger = true,
+}: CombinedFiltersProps) {
   const { formattedTrades, instruments, setInstruments, dateRange, setDateRange } = useData()
   const [currentView, setCurrentView] = useState<FilterView>('menu')
   const [internalOpen, setInternalOpen] = useState(false)
@@ -555,6 +561,18 @@ export function CombinedFilters({ onSave, open: controlledOpen, onOpenChange }: 
     </div>
   )
 
+  const content = (
+    <>
+      {currentView === 'menu' && renderMenuView()}
+      {currentView === 'instrument' && renderInstrumentView()}
+      {currentView === 'date' && renderDateView()}
+    </>
+  )
+
+  if (!renderTrigger) {
+    return <div className="w-full">{content}</div>
+  }
+
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
@@ -578,15 +596,14 @@ export function CombinedFilters({ onSave, open: controlledOpen, onOpenChange }: 
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="p-0 w-auto max-w-[90vw] sm:max-w-[95vw]"
+        className="w-[min(24rem,calc(100vw-1rem))] p-0 sm:w-auto sm:max-w-[95vw]"
         align="end"
+        side="bottom"
         sideOffset={4}
         collisionPadding={16}
         avoidCollisions={true}
       >
-        {currentView === 'menu' && renderMenuView()}
-        {currentView === 'instrument' && renderInstrumentView()}
-        {currentView === 'date' && renderDateView()}
+        {content}
       </PopoverContent>
     </Popover>
   )

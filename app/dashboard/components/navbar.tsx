@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { useData } from "@/context/data-provider"
 import { useAuth } from "@/context/auth-provider"
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import ImportButton from './import/import-button'
 import { NotificationCenter } from '@/components/notifications/notification-center'
 import { motion } from 'framer-motion'
@@ -14,7 +14,6 @@ import { CombinedFilters } from './navbar-filters/combined-filters'
 import { AccountSelector } from './navbar-filters/account-selector'
 import { useUserStore } from '@/store/user-store'
 import { ThemeSwitcher } from '@/components/theme-switcher'
-import { Separator } from '@/components/ui/separator'
 import { TemplateSelector } from './template-selector'
 import { signOut } from '@/server/auth'
 import { Settings, LogOut, Wallet } from 'lucide-react'
@@ -30,6 +29,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Logo } from '@/components/logo'
 import { Badge } from '@/components/ui/badge'
@@ -41,15 +46,12 @@ export default function Navbar() {
   const user = storeUser ?? authUser
   const avatarUrl = getUserAvatarUrl(user)
   const displayName = getUserDisplayName(user) || user?.email?.split('@')[0] || 'User'
-  const [mounted, setMounted] = useState(false)
   const [filtersPopoverOpen, setFiltersPopoverOpen] = useState(false)
   const [accountPopoverOpen, setAccountPopoverOpen] = useState(false)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const [mobileAccountsOpen, setMobileAccountsOpen] = useState(false)
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  const { accountNumbers } = useData()
+  const { accountNumbers, isMobile } = useData()
   const { forceClearAuth } = useAuth()
 
   useKeyboardShortcuts()
@@ -71,8 +73,8 @@ export default function Navbar() {
       <div className="flex items-center justify-between w-full px-4 h-12">
         {/* Left: Sidebar mobile trigger & logo */}
         <div className="flex items-center gap-3">
-          <SidebarTrigger className="md:hidden w-8 h-8" />
-          <Link href="/dashboard" className="md:hidden flex items-center">
+          <SidebarTrigger className="lg:hidden w-8 h-8" />
+          <Link href="/dashboard" className="lg:hidden flex items-center">
             <Logo className="h-6 w-6" />
           </Link>
         </div>
@@ -80,15 +82,16 @@ export default function Navbar() {
         {/* Right: Account Selector + Filters + Template + Import + Notifications + Theme + Profile */}
         <div className="flex items-center gap-1 sm:gap-1.5">
           {/* Account Selector — hidden on mobile, shown in profile dropdown */}
-          <Popover open={accountPopoverOpen} onOpenChange={setAccountPopoverOpen}>
+          <Popover open={!isMobile && accountPopoverOpen} onOpenChange={setAccountPopoverOpen}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="hidden h-8 w-8 text-muted-foreground hover:bg-muted/40 hover:text-foreground sm:flex">
                 <Wallet className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              className="p-0 w-auto max-w-[90vw]"
+              className="w-[min(22rem,calc(100vw-1rem))] p-0"
               align="end"
+              side="bottom"
               sideOffset={4}
               collisionPadding={16}
             >
@@ -133,7 +136,7 @@ export default function Navbar() {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" sideOffset={8}>
+            <DropdownMenuContent className="w-[min(14rem,calc(100vw-1rem))]" align="end" sideOffset={8}>
               <div className="flex items-center gap-3 p-3">
                 <Avatar className="h-9 w-9">
                   <AvatarImage key={avatarUrl ?? 'navbar-menu-avatar-fallback'} src={avatarUrl} referrerPolicy="no-referrer" />
@@ -155,7 +158,10 @@ export default function Navbar() {
               {/* Mobile-only: Accounts */}
               <DropdownMenuItem
                 className="sm:hidden cursor-pointer"
-                onSelect={(e) => { e.preventDefault(); setAccountPopoverOpen(true) }}
+                onSelect={(e) => {
+                  e.preventDefault()
+                  setMobileAccountsOpen(true)
+                }}
               >
                 <Wallet className="mr-2 h-4 w-4" />
                 Accounts
@@ -169,7 +175,10 @@ export default function Navbar() {
               {/* Mobile-only: Filters */}
               <DropdownMenuItem
                 className="sm:hidden cursor-pointer"
-                onSelect={(e) => { e.preventDefault(); setFiltersPopoverOpen(true) }}
+                onSelect={(e) => {
+                  e.preventDefault()
+                  setMobileFiltersOpen(true)
+                }}
               >
                 <Settings className="mr-2 h-4 w-4" />
                 Filters
@@ -204,6 +213,31 @@ export default function Navbar() {
           </DropdownMenu>
         </div>
       </div>
+
+      <Dialog open={mobileAccountsOpen} onOpenChange={setMobileAccountsOpen}>
+        <DialogContent className="max-w-[min(100vw-1rem,32rem)] p-0 overflow-hidden">
+          <DialogHeader className="px-4 pt-4 pb-0">
+            <DialogTitle>Account Filter</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[min(80dvh,42rem)] overflow-y-auto px-1 pb-3">
+            <AccountSelector onSave={() => setMobileAccountsOpen(false)} />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+        <DialogContent className="max-w-[min(100vw-1rem,32rem)] p-0 overflow-hidden">
+          <DialogHeader className="px-4 pt-4 pb-0">
+            <DialogTitle>Filters</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[min(80dvh,42rem)] overflow-y-auto px-1 pb-3">
+            <CombinedFilters
+              renderTrigger={false}
+              onSave={() => setMobileFiltersOpen(false)}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.nav>
   )
 }

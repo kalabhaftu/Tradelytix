@@ -268,7 +268,7 @@ export function TemplateSelector() {
 
       {/* Template Name Dialog (used by both Create and Clone) */}
       <Dialog open={nameDialogOpen} onOpenChange={setNameDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" onOpenAutoFocus={(event) => event.preventDefault()}>
           <DialogHeader>
             <DialogTitle>{nameDialogMode === 'clone' ? 'Clone Template' : 'New Template'}</DialogTitle>
             <DialogDescription>
@@ -278,7 +278,6 @@ export function TemplateSelector() {
             </DialogDescription>
           </DialogHeader>
           <Input
-            autoFocus
             placeholder="Template name"
             value={templateName}
             onChange={e => setTemplateName(e.target.value)}

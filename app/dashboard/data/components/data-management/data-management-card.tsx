@@ -594,7 +594,7 @@ export function DataManagementCard() {
 
       {/* Rename Dialog */}
       <Dialog open={renameAccountDialogOpen} onOpenChange={setRenameAccountDialogOpen}>
-        <DialogContent>
+        <DialogContent onOpenAutoFocus={(event) => event.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Rename Account</DialogTitle>
             <DialogDescription>
@@ -619,7 +619,6 @@ export function DataManagementCard() {
                   value={newAccountNumber}
                   onChange={(e) => setNewAccountNumber(e.target.value)}
                   placeholder="Enter new account number"
-                  autoFocus
                 />
               </div>
             </div>

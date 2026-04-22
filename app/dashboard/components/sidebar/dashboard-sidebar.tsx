@@ -18,6 +18,7 @@ import {
   MessageSquare,
   Heart,
 } from 'lucide-react'
+
 import {
   Sidebar,
   SidebarContent,
@@ -45,7 +46,6 @@ const navItems = [
   { id: 'backtesting', label: 'Backtesting', icon: FlaskConical, href: '/dashboard/backtesting' },
 ]
 
-// Utility items at the bottom
 const utilityItems = [
   { id: 'feedback', label: 'Feedback', icon: MessageSquare, href: '/feedback' },
   { id: 'donate', label: 'Donate', icon: Heart, href: '/donate' },
@@ -57,8 +57,8 @@ const utilityItems = [
 export function DashboardSidebar() {
   const pathname = usePathname()
   const { refreshTrades } = useData()
-  const { state, toggleSidebar, isMobile } = useSidebar()
-  const isCollapsed = state === 'collapsed'
+  const { state, toggleSidebar, isOverlay, setOpenMobile } = useSidebar()
+  const isCollapsed = state === 'collapsed' && !isOverlay
 
   const getActiveId = () => {
     if (pathname === '/dashboard') return 'widgets'
@@ -76,108 +76,140 @@ export function DashboardSidebar() {
 
   const activeId = getActiveId()
 
+  const handleMobileClose = () => {
+    if (isOverlay) {
+      setOpenMobile(false)
+    }
+  }
+
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/50">
-      {/* Header — Logo */}
-      <SidebarHeader className={cn("flex items-center justify-center px-2", isMobile ? "h-12 pt-2 pb-1" : "h-12")}>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              size={isMobile ? "default" : "lg"}
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-              asChild
-            >
-              <Link href="/dashboard" className={cn(
-                "flex items-center",
-                isCollapsed ? "justify-center" : "gap-2"
-              )}>
-                <Logo className="h-6 w-6 shrink-0" />
-                {!isCollapsed && (
-                  <span className="text-sm font-bold tracking-tight">Deltalytix</span>
+    <Sidebar collapsible="icon" className="border-r border-border/40 bg-sidebar">
+      <div className="grid h-full min-h-0 grid-rows-[auto_1fr_auto] bg-sidebar">
+        <SidebarHeader className={cn('px-3', isOverlay ? 'pt-5 pb-3' : 'py-2')}>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                size="lg"
+                className={cn(
+                  'h-12 rounded-2xl data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground',
+                  isCollapsed && 'justify-center'
                 )}
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
-
-      {/* Main nav */}
-      <SidebarContent className={cn("flex flex-1 min-h-0 flex-col", isMobile && "gap-0 px-1 pb-0 overflow-hidden")}>
-        <div className={cn("flex min-h-0 flex-1 flex-col", isMobile && "overflow-y-auto overscroll-contain")}>
-        <SidebarGroup className={cn(isMobile && "p-1.5 pt-0")}>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className={cn(isMobile && "gap-0.5")}>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    size={isMobile ? "sm" : "default"}
-                    tooltip={item.label}
-                    isActive={activeId === item.id}
-                    asChild
-                  >
-                    <Link href={item.href}>
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <div className="flex-1 min-h-3" />
-
-        {/* Utility items at bottom of content area */}
-        <SidebarGroup className={cn(isMobile && "p-1.5 pb-0")}>
-          <SidebarGroupLabel>Utilities</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className={cn(isMobile && "gap-0.5")}>
-              {/* Refresh Data action */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  size={isMobile ? "sm" : "default"}
-                  tooltip="Refresh Data"
-                  onClick={() => refreshTrades()}
+                asChild
+              >
+                <Link
+                  href="/dashboard"
+                  onClick={handleMobileClose}
+                  className={cn('flex items-center', isCollapsed ? 'justify-center' : 'gap-3')}
                 >
-                  <RefreshCw />
-                  <span>Refresh Data</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+                  <Logo className="h-6 w-6 shrink-0" />
+                  {(!isCollapsed || isOverlay) && (
+                    <span className="text-sm font-bold tracking-tight">Deltalytix</span>
+                  )}
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
 
-              {utilityItems.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    size={isMobile ? "sm" : "default"}
-                    tooltip={item.label}
-                    isActive={activeId === item.id}
-                    asChild
-                  >
-                    <Link href={item.href}>
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        </div>
-      </SidebarContent>
+        <SidebarContent className={cn('min-h-0 px-2', isOverlay ? 'overflow-hidden px-3 pb-3' : '')}>
+          <div className={cn('flex min-h-0 flex-1 flex-col', isOverlay ? 'overflow-y-auto overscroll-contain pr-1' : '')}>
+            <SidebarGroup className={cn('pt-0', isOverlay && 'px-0')}>
+              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className={cn(isOverlay && 'gap-1.5')}>
+                  {navItems.map((item) => (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton
+                        size={isOverlay ? 'lg' : 'default'}
+                        tooltip={item.label}
+                        isActive={activeId === item.id}
+                        asChild
+                        className={cn(
+                          isOverlay && 'h-12 rounded-2xl px-4 text-base [&>svg]:size-[18px]',
+                          isCollapsed && 'justify-center'
+                        )}
+                      >
+                        <Link href={item.href} onClick={handleMobileClose}>
+                          <item.icon />
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
 
-      {/* Footer — Collapse button anchored at absolute bottom */}
-      <SidebarFooter className={cn("mt-auto", isMobile ? "p-1.5 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]" : "p-2")}>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size={isMobile ? "sm" : "default"} onClick={toggleSidebar} tooltip="Collapse" className="w-full justify-start text-muted-foreground hover:text-foreground">
-              <PanelLeftClose />
-              <span>Collapse</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
+            <div className="flex-1 min-h-6" />
+
+            <SidebarGroup className={cn(isOverlay && 'px-0 pb-0')}>
+              <SidebarGroupLabel>Utilities</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className={cn(isOverlay && 'gap-1.5')}>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      size={isOverlay ? 'lg' : 'default'}
+                      tooltip="Refresh Data"
+                      className={cn(isOverlay && 'h-12 rounded-2xl px-4 text-base [&>svg]:size-[18px]')}
+                      onClick={() => {
+                        refreshTrades()
+                        handleMobileClose()
+                      }}
+                    >
+                      <RefreshCw />
+                      <span>Refresh Data</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  {utilityItems.map((item) => (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton
+                        size={isOverlay ? 'lg' : 'default'}
+                        tooltip={item.label}
+                        isActive={activeId === item.id}
+                        asChild
+                        className={cn(
+                          isOverlay && 'h-12 rounded-2xl px-4 text-base [&>svg]:size-[18px]',
+                          isCollapsed && 'justify-center'
+                        )}
+                      >
+                        <Link href={item.href} onClick={handleMobileClose}>
+                          <item.icon />
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </div>
+        </SidebarContent>
+
+        <SidebarFooter
+          className={cn(
+            'border-t border-sidebar-border/60 bg-sidebar',
+            isOverlay ? 'px-3 py-2 pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+0.35rem)]' : 'p-2'
+          )}
+        >
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                size={isOverlay ? 'lg' : 'default'}
+                onClick={toggleSidebar}
+                tooltip="Collapse"
+                className={cn(
+                  'w-full justify-start text-muted-foreground hover:text-foreground',
+                  isOverlay && 'h-12 rounded-2xl px-4 text-base [&>svg]:size-[18px]'
+                )}
+              >
+                <PanelLeftClose />
+                <span>Collapse</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </div>
     </Sidebar>
   )
 }

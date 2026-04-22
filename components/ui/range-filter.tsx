@@ -59,7 +59,7 @@ export function RangeFilter({ column, title, placeholder }: RangeFilterProps) {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80" align="start">
+      <PopoverContent className="w-[min(20rem,calc(100vw-1rem))]" align="start" side="bottom">
         <div className="grid gap-4">
           <div className="space-y-2">
             <h4 className="font-medium leading-none">{title}</h4>

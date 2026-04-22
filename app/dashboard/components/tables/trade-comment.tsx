@@ -97,7 +97,13 @@ export function TradeComment({ tradeIds, comment: initialComment, onCommentChang
             </Button>
           </div>
         </PopoverTrigger>
-        <PopoverContent className="w-[500px] p-4" align="start" forceMount sideOffset={5}>
+        <PopoverContent
+          className="w-[min(32rem,calc(100vw-1rem))] p-4"
+          align="start"
+          side="bottom"
+          forceMount
+          sideOffset={8}
+        >
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-2">
               <Label>Trade Comment</Label>

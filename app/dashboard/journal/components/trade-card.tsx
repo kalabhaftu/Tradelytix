@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState } from 'react'
-import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Trade } from '@prisma/client'
 import { ArrowUpRight, ArrowDownRight, CalendarDays, Clock, Target, DollarSign, MoreVertical, Eye, Pencil, Trash2 as Trash, AlertCircle } from 'lucide-react'
@@ -26,6 +25,9 @@ import { useTags } from '@/context/tags-provider'
 import { formatTimeInZone } from '@/lib/time-utils'
 import { useUserStore } from '@/store/user-store'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import { parseTradePreviewImageValue } from '@/lib/trade-preview-image'
+import { TradePreviewImage } from '@/components/trades/trade-preview-image'
+import { DEFAULT_TRADE_PREVIEW_TRANSFORM } from '@/lib/trade-preview'
 
 interface TradeCardProps {
   trade: Trade
@@ -54,7 +56,8 @@ export function TradeCard({
   const isWin = outcome === 'win'
   const isLoss = outcome === 'loss'
   const isBreakEven = outcome === 'breakeven'
-  const hasPreviewImage = !!(trade as any).cardPreviewImage && String((trade as any).cardPreviewImage).trim() !== ''
+  const previewImage = parseTradePreviewImageValue((trade as any).cardPreviewImage)
+  const hasPreviewImage = !!previewImage.src && String(previewImage.src).trim() !== ''
 
   // Parse trade tags - tags is now an array
   const tradeTagIds = Array.isArray((trade as any).tags) ? (trade as any).tags : []
@@ -235,11 +238,11 @@ export function TradeCard({
         <div className="relative aspect-video overflow-hidden rounded-xl border border-border/30 bg-muted/20 shadow-inner">
           {hasPreviewImage ? (
             <>
-              <Image
-                src={(trade as any).cardPreviewImage}
+              <TradePreviewImage
+                src={previewImage.src || ''}
                 alt={`Trade ${trade.instrument} ${trade.side}`}
-                fill
-                className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                transform={(trade as any).cardPreviewTransform ?? DEFAULT_TRADE_PREVIEW_TRANSFORM}
+                imageClassName="transition-transform duration-300 group-hover:scale-[1.02]"
                 onLoad={() => setImageLoaded(true)}
                 onError={() => setImageError(true)}
                 unoptimized

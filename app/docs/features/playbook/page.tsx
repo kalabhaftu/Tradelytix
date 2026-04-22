@@ -1,39 +1,33 @@
+import { BookCopy, Tags, Target } from 'lucide-react'
+
+import { DocsCardGrid, DocsInfoCard, DocsPage, DocsSection } from '@/components/docs/docs-page'
+
 export default function PlaybookDocsPage() {
   return (
-    <div className="space-y-8">
-      <div>
-        <h1>Playbook & Trading Models</h1>
-        <p className="text-lg text-muted-foreground">
-          Define your trading strategies and track how each model performs over time.
-        </p>
-      </div>
-
-      <h2>Overview</h2>
-      <p>
-        A Trading Model (or playbook entry) represents a specific setup or strategy you trade. 
-        By tagging trades with their model, you can see which strategies are profitable and which need refinement.
-      </p>
-
-      <h2>Creating a Model</h2>
-      <ol>
-        <li>Go to <strong>Playbook</strong> from the sidebar</li>
-        <li>Click <strong>New Model</strong></li>
-        <li>Define: name, description, and rules/criteria</li>
-        <li>Save — the model will now appear in trade tagging dropdowns</li>
-      </ol>
-
-      <h2>Tagging Trades</h2>
-      <p>When reviewing your trades in the trade table or calendar, assign a trading model to each trade. This links the trade to your strategy for aggregated analysis.</p>
-
-      <h2>Performance Tracking</h2>
-      <p>The Playbook page shows per-model analytics:</p>
-      <ul>
-        <li>Win rate per model</li>
-        <li>Average R-multiple</li>
-        <li>Total P&L contribution</li>
-        <li>Trade count and frequency</li>
-        <li>Best/worst performing model comparison</li>
-      </ul>
-    </div>
+    <DocsPage
+      badge="Feature Guide"
+      title="Playbook & Models"
+      description="The playbook is where traders organize setups, models, and review language so trade history can be interpreted against a repeatable framework."
+    >
+      <DocsSection title="What belongs here">
+        <DocsCardGrid>
+          <DocsInfoCard
+            icon={Target}
+            title="Setups and rules"
+            description="Use the playbook to define what counts as a setup, what rules matter, and what criteria should be reviewed consistently."
+          />
+          <DocsInfoCard
+            icon={Tags}
+            title="Shared labels"
+            description="Tags, model selections, and related labeling help the rest of the app group trades meaningfully."
+          />
+          <DocsInfoCard
+            icon={BookCopy}
+            title="Review reference"
+            description="Playbook content becomes the reference layer behind trade review rather than a disconnected notes page."
+          />
+        </DocsCardGrid>
+      </DocsSection>
+    </DocsPage>
   )
 }

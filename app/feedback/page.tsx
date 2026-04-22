@@ -91,21 +91,45 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+    <div className="mx-auto max-w-3xl space-y-6">
+      <div className="space-y-3">
+        <p className="text-xs font-black uppercase tracking-[0.24em] text-muted-foreground">
+          Product Feedback
+        </p>
+        <h1 className="flex items-center gap-3 text-3xl font-bold tracking-tight sm:text-4xl">
           <MessageSquare className="h-8 w-8 text-primary" />
           Send Feedback
         </h1>
-        <p className="text-muted-foreground mt-2">
-          Found a bug? Have a feature idea? We'd love to hear from you.
+        <p className="max-w-2xl text-muted-foreground">
+          Use this form for bugs, feature requests, and product feedback. Clear reproduction steps,
+          screenshots, and account context help us review issues faster.
         </p>
       </div>
 
-      <Card>
+      <Card className="border-border/70 bg-card/60 shadow-[0_18px_50px_-30px_rgba(0,0,0,0.42)]">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">What helps most</CardTitle>
+          <CardDescription>
+            Tell us what you expected, what happened instead, and how we can reproduce it.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 text-sm text-muted-foreground md:grid-cols-3">
+          <div className="rounded-xl border border-border/60 bg-background/50 px-4 py-3">
+            Include the page, widget, or flow involved.
+          </div>
+          <div className="rounded-xl border border-border/60 bg-background/50 px-4 py-3">
+            Add screenshots or files when visual context matters.
+          </div>
+          <div className="rounded-xl border border-border/60 bg-background/50 px-4 py-3">
+            Mention filters, account state, or browser/device if relevant.
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/70 bg-card/60 shadow-[0_18px_50px_-30px_rgba(0,0,0,0.42)]">
         <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label className="text-xs">Name <span className="text-muted-foreground">(optional)</span></Label>
                 <Input placeholder="Your name" value={name} onChange={e => setName(e.target.value)} />

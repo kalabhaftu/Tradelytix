@@ -1,37 +1,46 @@
+import { Bot, Link2, Palette, User } from 'lucide-react'
+
+import { DocsCardGrid, DocsInfoCard, DocsPage, DocsSection } from '@/components/docs/docs-page'
+
 export default function SettingsDocsPage() {
   return (
-    <div className="space-y-8">
-      <div>
-        <h1>Settings</h1>
-        <p className="text-lg text-muted-foreground">Customize Deltalytix to fit your workflow.</p>
-      </div>
+    <DocsPage
+      badge="Feature Guide"
+      title="Settings"
+      description="Settings control profile information, display preferences, time-related behavior, linked accounts, AI preferences, and account-level actions."
+    >
+      <DocsSection title="What you can configure">
+        <DocsCardGrid>
+          <DocsInfoCard
+            icon={User}
+            title="Profile"
+            description="Update first and last name, review your account email, and manage profile details through an explicit edit flow."
+          />
+          <DocsInfoCard
+            icon={Palette}
+            title="Preferences"
+            description="Theme, accent pack, timezone, time format, and break-even threshold all live in settings."
+          />
+          <DocsInfoCard
+            icon={Bot}
+            title="AI preferences"
+            description="Control whether AI review features are enabled for the parts of the product that support them."
+          />
+          <DocsInfoCard
+            icon={Link2}
+            title="Linked accounts and account actions"
+            description="Manage linked login providers, data management access, sign-out, and account deletion in one place."
+          />
+        </DocsCardGrid>
+      </DocsSection>
 
-      <h2>Available Settings</h2>
-
-      <h3>General</h3>
-      <ul>
-        <li><strong>Timezone</strong> — Set your trading timezone for accurate date grouping</li>
-        <li><strong>Time Format</strong> — Choose 12h or 24h display</li>
-        <li><strong>Theme</strong> — System, Light, or Dark mode</li>
-      </ul>
-
-      <h3>Accent Packs</h3>
-      <p>Customize the dashboard color scheme with pre-built accent packs. Options include Classic, Ocean, Sunset, Emerald, and more.</p>
-
-      <h3>Calendar Display</h3>
-      <ul>
-        <li>Choose which stats appear on calendar day cells (P&L, trade count, R-multiple)</li>
-        <li>Toggle the weekly summary row on/off</li>
-      </ul>
-
-      <h3>AI Settings</h3>
-      <p>Configure AI-powered features like natural-language CSV parsing. Requires an API key for your chosen provider.</p>
-
-      <h3>Account Linking</h3>
-      <p>Link additional OAuth providers (Google, Discord) to your account for alternative login methods.</p>
-
-      <h3>Auto-Adjust Account Date</h3>
-      <p>When enabled, the dashboard date range automatically aligns with your selected account&apos;s active period.</p>
-    </div>
+      <DocsSection title="Layout notes">
+        <p>
+          The settings screen is organized as intentional sections instead of a brittle equal-height
+          two-column grid, so cards can grow naturally without leaving awkward dead space between
+          unrelated sections.
+        </p>
+      </DocsSection>
+    </DocsPage>
   )
 }

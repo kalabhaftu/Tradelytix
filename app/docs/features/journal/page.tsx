@@ -1,49 +1,40 @@
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { BookOpen, Image, Smile, CalendarDays, FileText } from 'lucide-react'
+import { BookOpen, ImageIcon, StickyNote } from 'lucide-react'
+
+import { DocsCardGrid, DocsInfoCard, DocsPage, DocsSection } from '@/components/docs/docs-page'
 
 export default function JournalDocsPage() {
   return (
-    <div className="space-y-8">
-      <div>
-        <h1>Journal & Daily Notes</h1>
-        <p className="text-lg text-muted-foreground">
-          Capture your thoughts, emotions, and analysis for every trading day with Deltalytix&apos;s rich-text journaling system.
+    <DocsPage
+      badge="Feature Guide"
+      title="Journal & Notes"
+      description="The journal connects your trade history with written review. It surfaces day-level notes, journaled trading days, and trade cards that can include cropped preview images, screenshots, and trade context."
+    >
+      <DocsSection title="What the journal is for">
+        <DocsCardGrid>
+          <DocsInfoCard
+            icon={BookOpen}
+            title="Day-level review"
+            description="Review a trading day with its P&L context, visible journal state, and the linked trades that happened on that date."
+          />
+          <DocsInfoCard
+            icon={StickyNote}
+            title="Trade notes"
+            description="Trade edit flows support notes, tags, and related metadata so written review stays attached to the trade record."
+          />
+          <DocsInfoCard
+            icon={ImageIcon}
+            title="Visual context"
+            description="Featured trade images now keep a saved preview crop so the journal card shows the framing the user chose instead of a generic center crop."
+          />
+        </DocsCardGrid>
+      </DocsSection>
+
+      <DocsSection title="Calendar connection">
+        <p>
+          Journaled days surface through the calendar experience, and selecting a day can open a daily
+          review modal that bridges trades, notes, and performance context.
         </p>
-      </div>
-
-      <h2>Overview</h2>
-      <p>
-        The journal is the heart of your trading discipline. Deltalytix provides a powerful rich-text editor powered by Lexical 
-        that supports images, formatting, embeds, and more — all automatically saved and tied to your calendar.
-      </p>
-
-      <h2>How to Use</h2>
-      <h3>1. Open the Journal</h3>
-      <p>Click on any day in the <strong>Calendar</strong> widget on your dashboard, or navigate to the <strong>Daily Notes</strong> section. Each day gets its own journal entry.</p>
-
-      <h3>2. Write Your Notes</h3>
-      <p>The editor supports:</p>
-      <ul>
-        <li><strong>Rich text formatting</strong> — Bold, italic, underline, strikethrough, headings, lists</li>
-        <li><strong>Image uploads</strong> — Paste or drag chart screenshots directly into the editor</li>
-        <li><strong>Checklists</strong> — Track your pre-market routine or post-session review items</li>
-        <li><strong>Code blocks</strong> — Useful for noting specific indicator settings or scripts</li>
-      </ul>
-
-      <h3>3. Attach Emotions</h3>
-      <p>Tag your daily emotional state to track how psychology correlates with performance over time. Options include: Confident, Anxious, Neutral, FOMO, Disciplined, Frustrated, and more.</p>
-
-      <h3>4. Review Past Entries</h3>
-      <p>Navigate between days using the calendar. All journal entries are permanently saved and can be searched in the future.</p>
-
-      <h2>Tips</h2>
-      <ul>
-        <li>Write your journal <em>before</em> checking P&L to capture unbiased thoughts</li>
-        <li>Include screenshots of key setups — the editor handles image uploads natively</li>
-        <li>Use the checklist feature for your daily routine (e.g., &quot;Checked calendar events&quot;, &quot;Identified bias&quot;)</li>
-        <li>Review your journal weekly to spot behavioral patterns</li>
-      </ul>
-    </div>
+      </DocsSection>
+    </DocsPage>
   )
 }

@@ -1,39 +1,49 @@
 import Link from 'next/link'
 
+import { DocsCallout, DocsPage, DocsSection } from '@/components/docs/docs-page'
+
 export default function FeedbackGuideDocsPage() {
   return (
-    <div className="space-y-8">
-      <div>
-        <h1>Feedback Guide</h1>
-        <p className="text-lg text-muted-foreground">How to submit effective feedback and bug reports.</p>
-      </div>
+    <DocsPage
+      badge="Resources"
+      title="Feedback Guide"
+      description="Use feedback when you want to report a bug, request a feature, or flag something that feels broken or misleading in the product."
+    >
+      <DocsSection title="Where to send feedback">
+        <ul>
+          <li>
+            <strong>Public page:</strong> <Link href="/feedback">/feedback</Link>
+          </li>
+          <li>
+            <strong>Inside the app:</strong> the dashboard sidebar includes a direct Feedback entry
+          </li>
+        </ul>
+      </DocsSection>
 
-      <h2>Where to Submit</h2>
-      <p>You can submit feedback in two ways:</p>
-      <ul>
-        <li><strong>Public feedback page</strong> — <Link href="/feedback" className="text-primary hover:underline">/feedback</Link> (no login required)</li>
-        <li><strong>Dashboard sidebar</strong> — Click the &quot;Feedback&quot; item (auto-fills your info)</li>
-      </ul>
+      <DocsSection title="What helps us review it quickly">
+        <ul>
+          <li>Page or feature name</li>
+          <li>What you expected to happen</li>
+          <li>What happened instead</li>
+          <li>Active filters, account context, or mobile/PWA context when relevant</li>
+          <li>Screenshots or files if the issue is visual or import-related</li>
+        </ul>
+      </DocsSection>
 
-      <h2>What to Include</h2>
-      <h3>Bug Reports</h3>
-      <ul>
-        <li>Steps to reproduce the issue</li>
-        <li>What you expected to happen</li>
-        <li>What actually happened</li>
-        <li>Screenshots if possible (drag-and-drop supported)</li>
-        <li>Browser + OS information</li>
-      </ul>
+      <DocsSection title="Best use cases">
+        <ul>
+          <li>Broken dashboard totals or filter behavior</li>
+          <li>Trade edit or journal issues</li>
+          <li>Import mapping problems</li>
+          <li>Responsive/mobile problems</li>
+          <li>Feature requests and usability suggestions</li>
+        </ul>
+      </DocsSection>
 
-      <h3>Feature Requests</h3>
-      <ul>
-        <li>Describe the problem you&apos;re trying to solve</li>
-        <li>Explain your ideal solution</li>
-        <li>Mention any alternatives you&apos;ve considered</li>
-      </ul>
-
-      <h2>Response Times</h2>
-      <p>Feedback is reviewed regularly. If you&apos;re logged in when you submit, you&apos;ll receive a notification when an admin responds.</p>
-    </div>
+      <DocsCallout title="Tip" tone="success">
+        If the issue depends on one account, one symbol, one date range, or one device width, mention
+        that directly in the message. It cuts down reproduction time a lot.
+      </DocsCallout>
+    </DocsPage>
   )
 }

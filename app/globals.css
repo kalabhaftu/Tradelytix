@@ -244,6 +244,12 @@ html {
   display: none;
 }
 
+body[data-sidebar-drawer-open="true"] .mobile-bottom-nav {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(100%);
+}
+
 /* Ensure tables don't break layout on mobile */
 @media (max-width: 768px) {
   table {

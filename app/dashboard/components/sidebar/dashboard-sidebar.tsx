@@ -15,6 +15,7 @@ import {
   BookMarked,
   RefreshCw,
   PanelLeftClose,
+  PanelLeftOpen,
   MessageSquare,
   Heart,
 } from 'lucide-react'
@@ -75,6 +76,8 @@ export function DashboardSidebar() {
   }
 
   const activeId = getActiveId()
+  const collapseLabel = isCollapsed ? 'Expand' : 'Collapse'
+  const CollapseIcon = isCollapsed ? PanelLeftOpen : PanelLeftClose
 
   const handleMobileClose = () => {
     if (isOverlay) {
@@ -84,22 +87,24 @@ export function DashboardSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/40 bg-sidebar">
-      <div className="grid h-full min-h-0 grid-rows-[auto_1fr_auto] bg-sidebar">
-        <SidebarHeader className={cn('px-3', isOverlay ? 'pt-5 pb-3' : 'py-2')}>
+      <div className={cn('grid h-full min-h-0 bg-sidebar', isOverlay ? 'grid-rows-[auto_1fr_auto]' : 'grid-rows-[auto_1fr_auto]')}>
+        <SidebarHeader className={cn('border-b border-sidebar-border/40', isOverlay ? 'px-4 pt-5 pb-3' : 'px-2 py-2')}>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
                 size="lg"
+                variant={isCollapsed ? 'icon' : 'default'}
                 className={cn(
                   'h-12 rounded-2xl data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground',
-                  isCollapsed && 'justify-center'
+                  !isCollapsed && !isOverlay && 'px-3'
                 )}
                 asChild
+                tooltip="Dashboard Home"
               >
                 <Link
                   href="/dashboard"
                   onClick={handleMobileClose}
-                  className={cn('flex items-center', isCollapsed ? 'justify-center' : 'gap-3')}
+                  className={cn('flex w-full items-center', isCollapsed ? 'justify-center' : 'gap-3')}
                 >
                   <Logo className="h-6 w-6 shrink-0" />
                   {(!isCollapsed || isOverlay) && (
@@ -111,9 +116,9 @@ export function DashboardSidebar() {
           </SidebarMenu>
         </SidebarHeader>
 
-        <SidebarContent className={cn('min-h-0 px-2', isOverlay ? 'overflow-hidden px-3 pb-3' : '')}>
-          <div className={cn('flex min-h-0 flex-1 flex-col', isOverlay ? 'overflow-y-auto overscroll-contain pr-1' : '')}>
-            <SidebarGroup className={cn('pt-0', isOverlay && 'px-0')}>
+        <SidebarContent className={cn('min-h-0', isOverlay ? 'overflow-y-auto overscroll-contain px-4 py-3' : 'overflow-y-auto px-2 py-2')}>
+          <div className="flex min-h-0 flex-col">
+            <SidebarGroup className={cn('pt-0', isOverlay ? 'px-0' : 'px-0')}>
               <SidebarGroupLabel>Navigation</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu className={cn(isOverlay && 'gap-1.5')}>
@@ -121,12 +126,13 @@ export function DashboardSidebar() {
                     <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton
                         size={isOverlay ? 'lg' : 'default'}
+                        variant={isCollapsed ? 'icon' : 'default'}
                         tooltip={item.label}
                         isActive={activeId === item.id}
                         asChild
                         className={cn(
                           isOverlay && 'h-12 rounded-2xl px-4 text-base [&>svg]:size-[18px]',
-                          isCollapsed && 'justify-center'
+                          !isOverlay && !isCollapsed && 'px-3'
                         )}
                       >
                         <Link href={item.href} onClick={handleMobileClose}>
@@ -140,17 +146,19 @@ export function DashboardSidebar() {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            <div className="flex-1 min-h-6" />
-
-            <SidebarGroup className={cn(isOverlay && 'px-0 pb-0')}>
+            <SidebarGroup className={cn('mt-auto', isOverlay ? 'px-0 pb-0 pt-6' : 'px-0 pb-0 pt-6')}>
               <SidebarGroupLabel>Utilities</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu className={cn(isOverlay && 'gap-1.5')}>
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       size={isOverlay ? 'lg' : 'default'}
+                      variant={isCollapsed ? 'icon' : 'default'}
                       tooltip="Refresh Data"
-                      className={cn(isOverlay && 'h-12 rounded-2xl px-4 text-base [&>svg]:size-[18px]')}
+                      className={cn(
+                        isOverlay && 'h-12 rounded-2xl px-4 text-base [&>svg]:size-[18px]',
+                        !isOverlay && !isCollapsed && 'px-3'
+                      )}
                       onClick={() => {
                         refreshTrades()
                         handleMobileClose()
@@ -165,12 +173,13 @@ export function DashboardSidebar() {
                     <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton
                         size={isOverlay ? 'lg' : 'default'}
+                        variant={isCollapsed ? 'icon' : 'default'}
                         tooltip={item.label}
                         isActive={activeId === item.id}
                         asChild
                         className={cn(
                           isOverlay && 'h-12 rounded-2xl px-4 text-base [&>svg]:size-[18px]',
-                          isCollapsed && 'justify-center'
+                          !isOverlay && !isCollapsed && 'px-3'
                         )}
                       >
                         <Link href={item.href} onClick={handleMobileClose}>
@@ -189,22 +198,24 @@ export function DashboardSidebar() {
         <SidebarFooter
           className={cn(
             'border-t border-sidebar-border/60 bg-sidebar',
-            isOverlay ? 'px-3 py-2 pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+0.35rem)]' : 'p-2'
+            isOverlay ? 'px-4 py-2 pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+0.35rem)]' : 'p-2'
           )}
         >
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
                 size={isOverlay ? 'lg' : 'default'}
+                variant={isCollapsed ? 'icon' : 'default'}
                 onClick={toggleSidebar}
-                tooltip="Collapse"
+                tooltip={collapseLabel}
                 className={cn(
-                  'w-full justify-start text-muted-foreground hover:text-foreground',
-                  isOverlay && 'h-12 rounded-2xl px-4 text-base [&>svg]:size-[18px]'
+                  'w-full text-muted-foreground hover:text-foreground',
+                  isOverlay && 'h-12 rounded-2xl px-4 text-base [&>svg]:size-[18px]',
+                  !isOverlay && !isCollapsed && 'justify-start px-3'
                 )}
               >
-                <PanelLeftClose />
-                <span>Collapse</span>
+                <CollapseIcon />
+                {(!isCollapsed || isOverlay) && <span>{collapseLabel}</span>}
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

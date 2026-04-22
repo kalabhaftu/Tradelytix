@@ -10,7 +10,6 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog'
 import {
     Select,
@@ -22,13 +21,17 @@ import {
 import { Plus, TrendingUp as TrendUp, TrendingDown as TrendDown } from "lucide-react"
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useQuickAddStore } from '@/store/quick-add-store'
 
 interface QuickAddFABProps {
     className?: string
 }
 
 export function QuickAddFAB({ className }: QuickAddFABProps) {
-    const [isOpen, setIsOpen] = useState(false)
+    const isOpen = useQuickAddStore((state) => state.isOpen)
+    const openQuickAdd = useQuickAddStore((state) => state.openQuickAdd)
+    const closeQuickAdd = useQuickAddStore((state) => state.closeQuickAdd)
+    const setQuickAddOpen = useQuickAddStore((state) => state.setQuickAddOpen)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [formData, setFormData] = useState({
         instrument: '',
@@ -61,7 +64,7 @@ export function QuickAddFAB({ className }: QuickAddFABProps) {
             if (response.ok) {
                 toast.success('Trade added successfully')
                 setFormData({ instrument: '', side: 'long', pnl: '' })
-                setIsOpen(false)
+                closeQuickAdd()
                 // Reload page to refresh data
                 window.location.reload()
             } else {
@@ -77,20 +80,20 @@ export function QuickAddFAB({ className }: QuickAddFABProps) {
     const pnlValue = parseFloat(formData.pnl) || 0
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-                <Button
-                    size="icon"
-                    className={cn(
-                        "fixed bottom-28 right-6 h-14 w-14 rounded-full shadow-md z-[60]",
-                        "bg-primary hover:bg-primary/90 text-primary-foreground",
-                        "lg:hidden", // Match bottom nav breakpoint
-                        className
-                    )}
-                >
-                    <Plus className="h-6 w-6" />
-                </Button>
-            </DialogTrigger>
+        <Dialog open={isOpen} onOpenChange={setQuickAddOpen}>
+            <Button
+                type="button"
+                size="icon"
+                onClick={openQuickAdd}
+                className={cn(
+                    "fixed bottom-28 right-6 h-14 w-14 rounded-full shadow-md z-[60]",
+                    "bg-primary hover:bg-primary/90 text-primary-foreground",
+                    "lg:hidden", // Match bottom nav breakpoint
+                    className
+                )}
+            >
+                <Plus className="h-6 w-6" />
+            </Button>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Quick Add Trade</DialogTitle>

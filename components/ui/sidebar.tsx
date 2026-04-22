@@ -105,6 +105,20 @@ const SidebarProvider = React.forwardRef<
       }
     }, [isOverlay])
 
+    React.useEffect(() => {
+      if (typeof document === "undefined") return
+
+      if (isOverlay && openMobile) {
+        document.body.dataset.sidebarDrawerOpen = "true"
+      } else {
+        delete document.body.dataset.sidebarDrawerOpen
+      }
+
+      return () => {
+        delete document.body.dataset.sidebarDrawerOpen
+      }
+    }, [isOverlay, openMobile])
+
     // Adds a keyboard shortcut to toggle the sidebar.
     React.useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
@@ -208,7 +222,7 @@ const Sidebar = React.forwardRef<
           <SheetContent
             data-sidebar="sidebar"
             data-mobile="true"
-            className="z-[260] w-[min(22rem,92vw)] max-w-[min(22rem,92vw)] overflow-hidden border-r border-sidebar-border bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden !top-0 !bottom-0 !h-[100dvh] !max-h-[100dvh] !rounded-none sm:w-[22rem] sm:max-w-[22rem]"
+            className="z-[260] w-screen max-w-screen overflow-hidden border-r border-sidebar-border bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden !top-0 !bottom-0 !h-[100dvh] !max-h-[100dvh] !rounded-none sm:w-[22rem] sm:max-w-[22rem]"
             style={
               {
                 "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -530,6 +544,8 @@ const sidebarMenuButtonVariants = cva(
         default: "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         outline:
           "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
+        icon:
+          "mx-auto !h-10 !w-10 justify-center rounded-xl !px-0 !py-0 text-sidebar-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground [&>span:last-child]:hidden",
       },
       size: {
         default: "h-8 text-sm",

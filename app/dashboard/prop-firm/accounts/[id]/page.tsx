@@ -37,6 +37,7 @@ import { AccountStatus } from "@/types/prop-firm"
 import { AccountNotFoundError, ConnectionError } from "@/components/prop-firm/account-error-boundary"
 import { HistoryTab } from "./components/history-tab"
 import { calculateWinRate, classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import { getTradeNetPnl } from '@/lib/metrics/pnl'
 
 import { DetailPageSkeleton } from "./components/detail-skeleton"
 import { MetricCard } from "./components/metric-card"
@@ -225,12 +226,12 @@ export default function AccountDetailPage() {
     if (!tradesData.length) return null
 
     const wins = tradesData.filter(
-      t => classifyOutcome((t.pnl || 0), breakEvenThreshold) === 'win'
+      t => classifyOutcome(getTradeNetPnl(t), breakEvenThreshold) === 'win'
     )
     const losses = tradesData.filter(
-      t => classifyOutcome((t.pnl || 0), breakEvenThreshold) === 'loss'
+      t => classifyOutcome(getTradeNetPnl(t), breakEvenThreshold) === 'loss'
     )
-    const totalPnl = tradesData.reduce((sum, t) => sum + (t.pnl || 0), 0)
+    const totalPnl = tradesData.reduce((sum, t) => sum + getTradeNetPnl(t), 0)
 
     return {
       totalTrades: tradesData.length,
@@ -539,12 +540,12 @@ export default function AccountDetailPage() {
                         const phaseTrades = tradesData.filter((t: any) =>
                           t.phase?.id === phase.id || t.phaseAccountId === phase.id
                         )
-                        const phasePnL = phaseTrades.reduce((sum: number, t: any) => sum + (t.pnl || 0), 0)
+                        const phasePnL = phaseTrades.reduce((sum: number, t: any) => sum + getTradeNetPnl(t), 0)
                         const wins = phaseTrades.filter(
-                          (t: any) => classifyOutcome((t.pnl || 0), breakEvenThreshold) === 'win'
+                          (t: any) => classifyOutcome(getTradeNetPnl(t), breakEvenThreshold) === 'win'
                         ).length
                         const losses = phaseTrades.filter(
-                          (t: any) => classifyOutcome((t.pnl || 0), breakEvenThreshold) === 'loss'
+                          (t: any) => classifyOutcome(getTradeNetPnl(t), breakEvenThreshold) === 'loss'
                         ).length
                         const winRate = Math.round(calculateWinRate(wins, losses))
 
@@ -785,12 +786,12 @@ export default function AccountDetailPage() {
                   const phaseTrades = tradesData.filter((t: any) =>
                     t.phase?.id === phase.id || t.phaseAccountId === phase.id
                   )
-                  const totalPnL = phaseTrades.reduce((sum: number, t: any) => sum + (t.pnl || 0), 0)
+                  const totalPnL = phaseTrades.reduce((sum: number, t: any) => sum + getTradeNetPnl(t), 0)
                   const wins = phaseTrades.filter(
-                    (t: any) => classifyOutcome((t.pnl || 0), breakEvenThreshold) === 'win'
+                    (t: any) => classifyOutcome(getTradeNetPnl(t), breakEvenThreshold) === 'win'
                   ).length
                   const losses = phaseTrades.filter(
-                    (t: any) => classifyOutcome((t.pnl || 0), breakEvenThreshold) === 'loss'
+                    (t: any) => classifyOutcome(getTradeNetPnl(t), breakEvenThreshold) === 'loss'
                   ).length
 
                   return {

@@ -13,6 +13,7 @@ import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-c
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
+import { getTradeNetPnl } from '@/lib/metrics/pnl'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -136,12 +137,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // CRITICAL FIX: Use canonical net P&L (`trade.pnl`) and exclude break-even trades
     const winningTrades = groupedCounts.groupedTrades.filter(
       (trade: { pnl: number }) => {
-        return classifyOutcome(Number(trade.pnl || 0), breakEvenThreshold) === 'win'
+        return classifyOutcome(getTradeNetPnl(trade), breakEvenThreshold) === 'win'
       }
     ).length
     const losingTrades = groupedCounts.groupedTrades.filter(
       (trade: { pnl: number }) => {
-        return classifyOutcome(Number(trade.pnl || 0), breakEvenThreshold) === 'loss'
+        return classifyOutcome(getTradeNetPnl(trade), breakEvenThreshold) === 'loss'
       }
     ).length
     const tradableCount = winningTrades + losingTrades
@@ -380,7 +381,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         id: trade.id,
         pnl: trade.pnl,
         commission: trade.commission,
-        netPnL: trade.pnl,
+        netPnL: getTradeNetPnl(trade),
         instrument: trade.instrument || trade.symbol,
         symbol: trade.symbol,
         side: trade.side,

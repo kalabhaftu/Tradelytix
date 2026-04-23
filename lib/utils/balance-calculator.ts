@@ -10,10 +10,19 @@
  */
 
 import { Trade, Account } from '@prisma/client'
+import {
+  getBalanceByMode,
+  getTradeFees,
+  getTradeGrossPnl,
+  getTradeNetPnl,
+  normalizePnlDisplayMode,
+  type PnlDisplayMode,
+} from '@/lib/metrics/pnl'
 
 export interface BalanceCalculationOptions {
   excludeFailedAccounts?: boolean
   includePayouts?: boolean
+  pnlDisplayMode?: PnlDisplayMode
 }
 
 /**
@@ -22,10 +31,15 @@ export interface BalanceCalculationOptions {
 export interface BalanceResult {
   startingBalance: number
   currentBalance: number
+  currentGrossBalance: number
   totalPnL: number
+  grossPnL: number
   totalFees: number
   totalCommissions: number
   netPnL: number
+  displayPnL: number
+  displayBalance: number
+  pnlDisplayMode: PnlDisplayMode
   changeAmount: number
   changePercent: number
 }
@@ -92,10 +106,8 @@ export function calculateAccountBalance(
   // The excludeFailedAccounts option is used elsewhere for total calculations
 
   // Calculate cumulative PnL (net of commissions)
-  // Commission is stored as NEGATIVE in DB, so we ADD it
   const cumulativePnL = relevantTrades.reduce((sum, trade) => {
-    const netPnL = (trade.pnl || 0) + (trade.commission || 0)
-    return sum + netPnL
+    return sum + getTradeNetPnl(trade)
   }, 0)
 
   balance += cumulativePnL
@@ -308,25 +320,34 @@ export function calculateBalanceInfo(
   trades: (Trade | any)[],
   options: BalanceCalculationOptions = {}
 ): BalanceResult {
+  const pnlDisplayMode = normalizePnlDisplayMode(options.pnlDisplayMode)
   // Use the deduplicated starting balance calculation
   const startingBalance = calculateTotalStartingBalance(accounts)
 
   // Calculate totals from trades
-  const totalPnL = trades.reduce((sum, t) => sum + (t.pnl || 0), 0)
-  const totalCommissions = trades.reduce((sum, t) => sum + (t.commission || 0), 0)
-  const netPnL = totalPnL + totalCommissions  // Commission is negative
+  const totalPnL = trades.reduce((sum, trade) => sum + getTradeGrossPnl(trade), 0)
+  const totalCommissions = trades.reduce((sum, trade) => sum + getTradeFees(trade), 0)
+  const netPnL = trades.reduce((sum, trade) => sum + getTradeNetPnl(trade), 0)
 
   const currentBalance = startingBalance + netPnL
+  const currentGrossBalance = startingBalance + totalPnL
+  const displayPnL = pnlDisplayMode === 'gross' ? totalPnL : netPnL
+  const displayBalance = getBalanceByMode(startingBalance, totalPnL, netPnL, pnlDisplayMode)
   const changeAmount = currentBalance - startingBalance
   const changePercent = startingBalance > 0 ? (changeAmount / startingBalance) * 100 : 0
 
   return {
     startingBalance,
     currentBalance,
+    currentGrossBalance,
     totalPnL,
+    grossPnL: totalPnL,
     totalFees: totalCommissions, // Fees are same as commissions
     totalCommissions,
     netPnL,
+    displayPnL,
+    displayBalance,
+    pnlDisplayMode,
     changeAmount,
     changePercent
   }
@@ -371,11 +392,11 @@ export function calculateBalanceHistory(
     // Count wins/losses from day's trades
     const dayTrades = dayData.trades || []
     const wins = dayTrades.filter(t => {
-      const netPnL = (t.pnl || 0) + (t.commission || 0)  // Commission is negative
+      const netPnL = getTradeNetPnl(t)
       return netPnL > 0
     }).length
     const losses = dayTrades.filter(t => {
-      const netPnL = (t.pnl || 0) + (t.commission || 0)  // Commission is negative
+      const netPnL = getTradeNetPnl(t)
       return netPnL < 0
     }).length
 

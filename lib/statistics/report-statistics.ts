@@ -16,8 +16,10 @@ import { classifyTrade } from '@/lib/utils'
 import { getTradingSession } from '@/lib/time-utils'
 import { groupTradesByExecution } from '@/lib/utils'
 import { DEFAULT_BREAK_EVEN_THRESHOLD, getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import { getTradeNetPnl } from '@/lib/metrics/pnl'
 import { 
-  calculateRMultiple, 
+  calculateTradeRMultiple, 
+  hasValidTradeRMultipleData,
   calculateRSquared, 
   calculatePeakToTroughDrawdown,
   calculateExpectancy,
@@ -25,7 +27,7 @@ import {
   calculateRecoveryFactor
 } from '@/lib/math/performance-metrics'
 
-export { calculateRMultiple }
+export { calculateTradeRMultiple as calculateRMultiple }
 
 // Moved to @/lib/math/performance-metrics.ts
 
@@ -251,11 +253,11 @@ export async function calculateReportStatistics(
     })
     : trades
   const filteredTrades = requestedOutcome === 'WIN'
-    ? sessionFilteredTrades.filter(t => classifyTrade(Number(t.pnl || 0), breakEvenThreshold) === 'win')
+    ? sessionFilteredTrades.filter(t => classifyTrade(getTradeNetPnl(t), breakEvenThreshold) === 'win')
     : requestedOutcome === 'LOSS'
-      ? sessionFilteredTrades.filter(t => classifyTrade(Number(t.pnl || 0), breakEvenThreshold) === 'loss')
+      ? sessionFilteredTrades.filter(t => classifyTrade(getTradeNetPnl(t), breakEvenThreshold) === 'loss')
       : requestedOutcome === 'BREAKEVEN'
-        ? sessionFilteredTrades.filter(t => classifyTrade(Number(t.pnl || 0), breakEvenThreshold) === 'breakeven')
+        ? sessionFilteredTrades.filter(t => classifyTrade(getTradeNetPnl(t), breakEvenThreshold) === 'breakeven')
         : sessionFilteredTrades
 
   if (filteredTrades.length === 0) {
@@ -382,7 +384,7 @@ function computeAllMetrics(
 
   // Single pass through all trades
   for (const trade of sorted) {
-    const netPnL = Number(trade.pnl || 0)
+    const netPnL = getTradeNetPnl(trade)
     const outcome = classifyTrade(netPnL, breakEvenThreshold)
 
     // Cumulative PnL + Drawdown
@@ -473,7 +475,7 @@ function computeAllMetrics(
         const s = sessions[sessionName]
         s.trades++
         if (outcome === 'win') s.wins++
-        s.pnl += (trade.pnl || 0)
+        s.pnl += netPnL
 
         if (trade.entryDate && trade.closeDate) {
           const entry = new Date(trade.entryDate).getTime()
@@ -492,18 +494,20 @@ function computeAllMetrics(
 
     // R-multiple distribution (PRICE POINTS - OPTION 1)
     // Track if trade has valid stop loss for data quality indicator
-    const hasValidStopLoss = trade.stopLoss && trade.stopLoss !== 0 && trade.stopLoss !== trade.entryPrice
+    const hasValidStopLoss = hasValidTradeRMultipleData(trade)
     if (hasValidStopLoss) tradesWithStopLoss++
 
-    const r = calculateRMultiple(trade.side, trade.entryPrice, trade.closePrice, trade.stopLoss)
-    totalRMultipleDelta += r
+    if (hasValidStopLoss) {
+      const r = calculateTradeRMultiple(trade)
+      totalRMultipleDelta += r
 
-    if (r < -1) rDistribution['<-1R']++
-    else if (r < 0) rDistribution['-1R to 0R']++
-    else if (r < 1) rDistribution['0R to 1R']++
-    else if (r < 2) rDistribution['1R to 2R']++
-    else if (r < 3) rDistribution['2R to 3R']++
-    else rDistribution['>3R']++
+      if (r < -1) rDistribution['<-1R']++
+      else if (r < 0) rDistribution['-1R to 0R']++
+      else if (r < 1) rDistribution['0R to 1R']++
+      else if (r < 2) rDistribution['1R to 2R']++
+      else if (r < 3) rDistribution['2R to 3R']++
+      else rDistribution['>3R']++
+    }
   }
 
   // Finalize streaks

@@ -28,6 +28,7 @@ import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { parseTradePreviewImageValue } from '@/lib/trade-preview-image'
 import { TradePreviewImage } from '@/components/trades/trade-preview-image'
 import { DEFAULT_TRADE_PREVIEW_TRANSFORM } from '@/lib/trade-preview'
+import { getTradeNetPnl, getTradePnlByMode, normalizePnlDisplayMode } from '@/lib/metrics/pnl'
 
 interface TradeCardProps {
   trade: Trade
@@ -50,9 +51,14 @@ export function TradeCard({
   const [imageError, setImageError] = useState(false)
   const { getTagsByIds } = useTags()
   const timezone = useUserStore((state) => state.timezone)
+  const pnlDisplayMode = normalizePnlDisplayMode(
+    useUserStore((state) => state.user?.pnlDisplayMode)
+  )
   const threshold = getBreakEvenThreshold(breakEvenThreshold)
 
-  const outcome = classifyTrade(trade.pnl, threshold)
+  const netPnl = getTradeNetPnl(trade)
+  const displayPnl = getTradePnlByMode(trade, pnlDisplayMode)
+  const outcome = classifyTrade(netPnl, threshold)
   const isWin = outcome === 'win'
   const isLoss = outcome === 'loss'
   const isBreakEven = outcome === 'breakeven'
@@ -85,7 +91,7 @@ export function TradeCard({
     const takeProfit = takeProfitRaw && parseFloat(takeProfitRaw.toString()) !== 0 ? parseFloat(takeProfitRaw.toString()) : null
 
     const side = trade.side?.toUpperCase()
-    const isWin = trade.pnl > threshold
+    const isWin = netPnl > threshold
 
     // Check for incomplete data
     const hasIncompleteData = !entryPrice || !closePrice || !stopLoss || !side
@@ -194,7 +200,7 @@ export function TradeCard({
 
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <Badge
-              variant={getStatusVariant(trade.pnl)}
+              variant={getStatusVariant(netPnl)}
               className={cn(
                 "text-xs font-medium px-2",
                 isWin ? "bg-long/10 text-long border-long/20" : isLoss ? "bg-short/10 text-short border-short/20" : "bg-muted/10 text-muted-foreground border-border"
@@ -273,7 +279,7 @@ export function TradeCard({
                 "font-semibold truncate",
                 isWin ? 'text-long' : isLoss ? 'text-short' : 'text-muted-foreground'
               )}>
-                {formatCurrency(trade.pnl)}
+                {formatCurrency(displayPnl)}
               </p>
             </div>
           </div>

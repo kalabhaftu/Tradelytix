@@ -46,6 +46,7 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
         timezone: true,
         theme: true,
         accentPack: true,
+        pnlDisplayMode: true,
         firstName: true,
         lastName: true,
         accountFilterSettings: true,

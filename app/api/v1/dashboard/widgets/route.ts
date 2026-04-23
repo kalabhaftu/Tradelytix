@@ -15,6 +15,7 @@ import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { calculateBalanceInfo } from '@/lib/utils/balance-calculator'
+import { normalizePnlDisplayMode } from '@/lib/metrics/pnl'
 
 export async function GET(request: NextRequest) {
   const type = request.nextUrl.searchParams.get('type')
@@ -97,7 +98,17 @@ export async function GET(request: NextRequest) {
       if (accountNumbers.length > 0) {
         filteredDbAccounts = userAccounts.filter(acc => accountNumbers.includes(acc.number))
       }
-      result = calculateBalanceInfo(filteredDbAccounts, trades)
+      let pnlDisplayMode = 'net'
+      if (accountOwnerId) {
+        const userSettings = await prisma.user.findUnique({
+          where: { id: accountOwnerId },
+          select: { pnlDisplayMode: true }
+        })
+        pnlDisplayMode = normalizePnlDisplayMode(userSettings?.pnlDisplayMode)
+      }
+      result = calculateBalanceInfo(filteredDbAccounts, trades, {
+        pnlDisplayMode: normalizePnlDisplayMode(pnlDisplayMode)
+      })
       break
     default:
       return NextResponse.json({ error: 'Unknown widget type' }, { status: 400 })

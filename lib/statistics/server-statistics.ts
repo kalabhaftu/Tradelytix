@@ -14,6 +14,7 @@ import {
   calculateExpectancy 
 } from '@/lib/math/performance-metrics'
 import { calculateWinRate, classifyOutcome, DEFAULT_BREAK_EVEN_THRESHOLD, getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import { getTradeNetPnl } from '@/lib/metrics/pnl'
 
 // ===========================================
 // TYPES
@@ -88,7 +89,7 @@ function calculateStreaks(
   // Calculate trade streaks
   for (let i = 0; i < groupedTrades.length; i++) {
     const trade = groupedTrades[i]
-    const netPnl = Number(trade.pnl || 0)
+    const netPnl = getTradeNetPnl(trade)
     const outcome = classifyOutcome(netPnl, breakEvenThreshold)
     
     if (outcome === 'win') {
@@ -129,7 +130,7 @@ function calculateStreaks(
   for (let i = 0; i < sortedDays.length; i++) {
     const dayTrades = tradesByDay[sortedDays[i]]
     const dayPnl = dayTrades.reduce(
-      (sum: number, t: any) => sum + Number(t.pnl || 0),
+      (sum: number, t: any) => sum + getTradeNetPnl(t),
       0
     )
     const dayOutcome = classifyOutcome(dayPnl, breakEvenThreshold)
@@ -246,10 +247,10 @@ async function calculateStatisticsCore(
 
   // Calculate win/loss counts
   const wins = groupedTrades.filter(
-    t => classifyOutcome(Number(t.pnl || 0), breakEvenThreshold) === 'win'
+    t => classifyOutcome(getTradeNetPnl(t), breakEvenThreshold) === 'win'
   )
   const losses = groupedTrades.filter(
-    t => classifyOutcome(Number(t.pnl || 0), breakEvenThreshold) === 'loss'
+    t => classifyOutcome(getTradeNetPnl(t), breakEvenThreshold) === 'loss'
   )
   const breakEvenTradesCount = groupedTrades.length - wins.length - losses.length
 
@@ -264,17 +265,17 @@ async function calculateStatisticsCore(
 
   // Calculate P&L metrics
   const grossProfits = wins.reduce((sum: number, t: any) => {
-    return sum + Number(t.pnl || 0)
+    return sum + getTradeNetPnl(t)
   }, 0)
 
   const grossLosses = Math.abs(
     losses.reduce((sum, t) => {
-      return sum + Number(t.pnl || 0)
+      return sum + getTradeNetPnl(t)
     }, 0)
   )
 
   const totalPnL = groupedTrades.reduce(
-    (sum: number, t: any) => sum + Number(t.pnl || 0),
+    (sum: number, t: any) => sum + getTradeNetPnl(t),
     0
   )
 
@@ -288,10 +289,10 @@ async function calculateStatisticsCore(
   // Find biggest win/loss
   const biggestWin = Math.max(
     0,
-    ...groupedTrades.map(t => Number(t.pnl || 0))
+    ...groupedTrades.map(t => getTradeNetPnl(t))
   )
   const biggestLoss = Math.abs(
-    Math.min(0, ...groupedTrades.map(t => Number(t.pnl || 0)))
+    Math.min(0, ...groupedTrades.map(t => getTradeNetPnl(t)))
   )
 
   // Calculate streaks
@@ -327,8 +328,8 @@ async function calculateStatisticsCore(
   const dailyPnL = new Map<string, number>()
   recentTrades.forEach(trade => {
     const date = new Date(trade.createdAt).toISOString().split('T')[0]
-    const netPnL = Number(trade.pnl || 0)
-    dailyPnL.set(date, (dailyPnL.get(date) || 0) + netPnL)
+    const netPnl = getTradeNetPnl(trade)
+    dailyPnL.set(date, (dailyPnL.get(date) || 0) + netPnl)
   })
 
   const chartData = Array.from(dailyPnL.entries())

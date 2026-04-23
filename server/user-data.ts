@@ -55,10 +55,10 @@ export async function getUserData(): Promise<{
                 isFirstConnection: true,
                 timezone: true,
                 theme: true,
+                pnlDisplayMode: true,
                 firstName: true,
                 lastName: true,
                 accountFilterSettings: true,
-                goalSettings: true,
                 backtestInputMode: true
               }
             })

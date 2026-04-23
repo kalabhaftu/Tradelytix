@@ -34,6 +34,7 @@ import { useUserStore } from "@/store/user-store"
 import { useData } from "@/context/data-provider"
 import { toast } from "sonner"
 import { PNL_TEXT_STYLES } from "@/app/dashboard/constants/calendar-styles"
+import { getTradeNetPnl } from "@/lib/metrics/pnl"
 
 interface CalendarModalProps {
   isOpen: boolean;
@@ -204,7 +205,7 @@ export function CalendarModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleCloseAttempt}>
-        <DialogContent className="w-[min(96vw,72rem)] max-w-[72rem] h-[100dvh] sm:h-[min(90vh,56rem)] p-0 flex flex-col overflow-hidden">
+        <DialogContent className="w-[min(96vw,78rem)] max-w-[78rem] h-[100dvh] sm:h-[min(90vh,56rem)] p-0 flex flex-col overflow-hidden">
           {/* Header - Simple */}
           <div className="flex items-center justify-between p-4 border-b bg-card">
             <div>
@@ -262,8 +263,8 @@ export function CalendarModal({
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right">
-                                <span className={cn("font-mono font-bold", Number(trade.pnl || 0) >= 0 ? "text-long" : "text-short")}>
-                                  {formatCurrency(Number(trade.pnl || 0))}
+                                <span className={cn("font-mono font-bold", getTradeNetPnl(trade) >= 0 ? "text-long" : "text-short")}>
+                                  {formatCurrency(getTradeNetPnl(trade))}
                                 </span>
                               </TableCell>
                               <TableCell className="text-right">

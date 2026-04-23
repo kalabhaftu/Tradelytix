@@ -215,18 +215,16 @@ async function runPreparation(data: any, internalUserId: string) {
   if (data.user) {
     const userUpdateData: any = {
       timezone: data.user.timezone,
-      timeFormat: data.user.timeFormat,
       theme: data.user.theme,
       firstName: data.user.firstName,
       lastName: data.user.lastName,
       accountFilterSettings: data.user.accountFilterSettings,
-      goalSettings: data.user.goalSettings,
       aiSettings: data.user.aiSettings,
       backtestInputMode: data.user.backtestInputMode,
       accentPack: data.user.accentPack,
       autoAdjustAccountDate: data.user.autoAdjustAccountDate,
-      calendarDisplayStats: data.user.calendarDisplayStats,
-      showWeeklySummary: data.user.showWeeklySummary,
+      breakEvenThreshold: data.user.breakEvenThreshold,
+      pnlDisplayMode: data.user.pnlDisplayMode,
     }
 
     await prisma.user.update({

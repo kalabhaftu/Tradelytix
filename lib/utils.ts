@@ -11,6 +11,8 @@ import {
   classifyOutcome,
   DEFAULT_BREAK_EVEN_THRESHOLD,
 } from '@/lib/metrics/outcome'
+import { getTradeGrossPnl, getTradeNetPnl } from '@/lib/metrics/pnl'
+import { calculateTradeRMultiple } from '@/lib/math/performance-metrics'
 
 // Centralized timezone source
 export const DEFAULT_TIMEZONE = "America/New_York";
@@ -153,6 +155,8 @@ export function formatPrice(price: string | number | { toString(): string }, ins
 // Unified trade data formatter - single source of truth for all trade displays
 export function formatTradeData(trade: Trade, timezone?: string) {
   const instrument = trade.instrument || ''
+  const grossPnl = getTradeGrossPnl(trade)
+  const netPnl = getTradeNetPnl(trade)
 
   return {
     // Core trade info
@@ -169,12 +173,14 @@ export function formatTradeData(trade: Trade, timezone?: string) {
     closePriceCurrency: trade.closePrice ? `$${formatPrice(trade.closePrice, instrument)}` : 'Open',
 
     // P&L and commission
-    pnl: trade.pnl || 0,
-    pnlFormatted: formatCurrency(trade.pnl || 0),
+    pnl: grossPnl,
+    pnlFormatted: formatCurrency(grossPnl),
     commission: trade.commission || 0,
     commissionFormatted: formatCurrency(trade.commission || 0),
-    netPnl: trade.pnl || 0,
-    netPnlFormatted: formatCurrency(trade.pnl || 0),
+    grossPnl,
+    grossPnlFormatted: formatCurrency(grossPnl),
+    netPnl,
+    netPnlFormatted: formatCurrency(netPnl),
 
     // Dates and times
     entryDate: trade.entryDate ? new Date(trade.entryDate) : null,
@@ -189,9 +195,9 @@ export function formatTradeData(trade: Trade, timezone?: string) {
     timeInPositionFormatted: parsePositionTime(trade.timeInPosition || 0),
 
     // Trade status helpers
-    isWin: classifyTrade(trade.pnl || 0) === 'win',
-    isLoss: classifyTrade(trade.pnl || 0) === 'loss',
-    isBreakEven: classifyTrade(trade.pnl || 0) === 'breakeven',
+    isWin: classifyTrade(netPnl) === 'win',
+    isLoss: classifyTrade(netPnl) === 'loss',
+    isBreakEven: classifyTrade(netPnl) === 'breakeven',
     isOpen: !trade.closeDate,
     isClosed: !!trade.closeDate,
 
@@ -612,24 +618,6 @@ export function formatCalendarData(trades: Trade[], accounts: Account[] = [], ti
   // PERF: Use pre-grouped trades if provided, otherwise group now
   const groupedTrades = preGrouped ?? groupTradesByExecution(trades)
 
-  const calculateTradeRMultiple = (trade: Partial<Trade>) => {
-    const stopLoss = Number((trade as any).stopLoss ?? 0)
-    const entryPrice = Number(trade.entryPrice ?? 0)
-    const closePrice = Number(trade.closePrice ?? 0)
-
-    if (!stopLoss || !entryPrice || !closePrice) return 0
-
-    const risk = Math.abs(entryPrice - stopLoss)
-    if (!risk) return 0
-
-    const side = String(trade.side || '').toLowerCase()
-    const reward = side === 'short' || side === 'sell'
-      ? entryPrice - closePrice
-      : closePrice - entryPrice
-
-    return reward / risk
-  }
-
   // Create a map of accounts for quick lookup
   const accountMap = new Map(accounts.map(account => [account.number, account]));
 
@@ -651,8 +639,8 @@ export function formatCalendarData(trades: Trade[], accounts: Account[] = [], ti
       }
     }
     acc[date].tradeNumber++
-    acc[date].pnl += trade.pnl || 0;
-    acc[date].dailyRMultiple += calculateTradeRMultiple(trade)
+    acc[date].pnl += getTradeNetPnl(trade);
+    acc[date].dailyRMultiple += calculateTradeRMultiple(trade as any)
 
     const isLong = trade.side
       ? (trade.side.toLowerCase() === 'long' || trade.side.toLowerCase() === 'buy' || trade.side.toLowerCase() === 'b')

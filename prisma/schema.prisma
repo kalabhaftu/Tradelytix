@@ -342,20 +342,17 @@ model User {
   auth_user_id           String                   @unique
   isFirstConnection      Boolean                  @default(true)
   timezone               String                   @default("America/New_York")
-  timeFormat             String                   @default("24h")
   theme                  String                   @default("system")
   firstName              String?
   lastName               String?
   accountFilterSettings  String?
-  goalSettings           Json?
   aiSettings             Json?
   backtestInputMode      String                   @default("manual")
   breakEvenThreshold     Float                    @default(10)
+  pnlDisplayMode         String                   @default("net")
   accentPack             String                   @default("classic")
   role                   UserRole                 @default(user)
   autoAdjustAccountDate  Boolean                  @default(false)
-  calendarDisplayStats   String[]                 @default(["pnl", "trades"])
-  showWeeklySummary      Boolean                  @default(true)
   Account                Account[]
   BacktestTrade          BacktestTrade[]
   DailyNote              DailyNote[]

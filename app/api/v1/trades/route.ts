@@ -35,6 +35,7 @@ import { CacheHeaders } from '@/lib/api-cache-headers'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import { getTradeNetPnl, normalizePnlDisplayMode } from '@/lib/metrics/pnl'
 
 // PERF: Only select fields the dashboard actually uses (~40% smaller payload)
 const TRADE_SELECT = {
@@ -209,11 +210,12 @@ export async function GET(request: NextRequest) {
       }) : Promise.resolve([]),
       prisma.user.findUnique({
         where: { id: internalUserId },
-        select: { breakEvenThreshold: true },
+        select: { breakEvenThreshold: true, pnlDisplayMode: true },
       })
     ])
 
     const breakEvenThreshold = getBreakEvenThreshold(userSettings?.breakEvenThreshold)
+    const pnlDisplayMode = normalizePnlDisplayMode(userSettings?.pnlDisplayMode)
     
     // Combine regular accounts + transform prop firm phases to unified format with startingBalance
     const accounts = [
@@ -260,7 +262,7 @@ export async function GET(request: NextRequest) {
     }
     if (outcome === 'win' || outcome === 'loss' || outcome === 'breakeven') {
       trades = trades.filter((trade: any) => {
-        const pnl = Number(trade.pnl || 0)
+        const pnl = getTradeNetPnl(trade)
         return classifyTrade(pnl, breakEvenThreshold) === outcome
       })
     }
@@ -301,7 +303,7 @@ export async function GET(request: NextRequest) {
       performanceScore: calculatePerformanceScoreResult(trades, breakEvenThreshold),
       sessionAnalysis: calculateSessionAnalysis(trades, breakEvenThreshold),
       calendarData: widgetCalendarData,
-      accountBalancePnl: calculateBalanceInfo(filteredAccounts, trades),
+      accountBalancePnl: calculateBalanceInfo(filteredAccounts, trades, { pnlDisplayMode }),
     } : null
 
     const total = responseTrades.length
@@ -314,6 +316,7 @@ export async function GET(request: NextRequest) {
       total,
       page: pageLimit !== null ? { limit: pageLimit, offset: Math.max(0, pageOffset) } : null,
       breakEvenThreshold,
+      pnlDisplayMode,
       statistics,
       calendarData,
       widgets,

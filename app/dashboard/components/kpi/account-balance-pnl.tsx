@@ -13,6 +13,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useTradeStatistics } from '@/hooks/use-trade-statistics'
+import { getPnlDisplayLabel } from '@/lib/metrics/pnl'
 
 interface AccountBalancePnlProps {
   size?: string
@@ -23,8 +24,9 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
   const { data: balanceInfo } = useWidgetData('accountBalancePnl')
   const { nbTrades } = useTradeStatistics()
 
-  const totalBalance = balanceInfo?.currentBalance || 0
-  const netPnl = balanceInfo?.netPnL || 0
+  const totalBalance = balanceInfo?.displayBalance ?? balanceInfo?.currentBalance ?? 0
+  const displayedPnl = balanceInfo?.displayPnL ?? balanceInfo?.netPnL ?? 0
+  const pnlDisplayLabel = getPnlDisplayLabel(balanceInfo?.pnlDisplayMode)
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -91,12 +93,12 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
             
             {/* Net PnL below */}
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground">PnL:</span>
+              <span className="text-xs text-muted-foreground">{pnlDisplayLabel}:</span>
               <span className={cn(
                 "text-sm font-semibold",
-                netPnl >= 0 ? "text-profit" : "text-loss"
+                displayedPnl >= 0 ? "text-profit" : "text-loss"
               )}>
-                {netPnl >= 0 ? '+' : ''}{formatCompactCurrency(netPnl)}
+                {displayedPnl >= 0 ? '+' : ''}{formatCompactCurrency(displayedPnl)}
               </span>
             </div>
           </div>

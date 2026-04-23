@@ -29,6 +29,7 @@ import { useSupabaseUpload } from "@/hooks/use-supabase-upload"
 import { getTradingSession } from '@/lib/time-utils'
 import { cn, groupTradesByExecution, type GroupedTrade } from '@/lib/utils'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import { getTradeNetPnl } from '@/lib/metrics/pnl'
 import { getWeeklyReview, saveWeeklyReview } from "@/server/weekly-review"
 import { Calendar, BarChart3, CheckCircle2, Loader2, Clock, Image as ImageIcon, Percent, Activity, Target, Trash2, TrendingDown, TrendingUp, Upload, XCircle } from "lucide-react"
 import { type Trade } from '@prisma/client'
@@ -174,29 +175,29 @@ export function WeeklyModal({
 
     // Calculate win rate with user-specific break-even threshold
     const winningTrades = groupedTrades
-      .filter(t => classifyOutcome(Number((t as any).pnl || 0), breakEvenThreshold) === 'win').length
+      .filter(t => classifyOutcome(getTradeNetPnl(t), breakEvenThreshold) === 'win').length
     const losingTrades = groupedTrades
-      .filter(t => classifyOutcome(Number((t as any).pnl || 0), breakEvenThreshold) === 'loss').length
+      .filter(t => classifyOutcome(getTradeNetPnl(t), breakEvenThreshold) === 'loss').length
     const winRate = (winningTrades + losingTrades) > 0 ? (winningTrades / (winningTrades + losingTrades)) * 100 : 0
 
     // Calculate average win/loss
     const avgWin = winningTrades > 0
       ? groupedTrades
-          .filter(t => classifyOutcome(Number((t as any).pnl || 0), breakEvenThreshold) === 'win')
-          .reduce((sum, t) => sum + Number((t as any).pnl || 0), 0) / winningTrades
+          .filter(t => classifyOutcome(getTradeNetPnl(t), breakEvenThreshold) === 'win')
+          .reduce((sum, t) => sum + getTradeNetPnl(t), 0) / winningTrades
       : 0
     const avgLoss = losingTrades > 0
       ? Math.abs(
           groupedTrades
-            .filter(t => classifyOutcome(Number((t as any).pnl || 0), breakEvenThreshold) === 'loss')
-            .reduce((sum, t) => sum + Number((t as any).pnl || 0), 0)
+            .filter(t => classifyOutcome(getTradeNetPnl(t), breakEvenThreshold) === 'loss')
+            .reduce((sum, t) => sum + getTradeNetPnl(t), 0)
         ) / losingTrades
       : 0
 
     return {
       trades: groupedTrades,
       tradeNumber: groupedTrades.length,
-      pnl: groupedTrades.reduce((sum, trade) => sum + (trade as any).pnl, 0),
+      pnl: groupedTrades.reduce((sum, trade) => sum + getTradeNetPnl(trade), 0),
       longNumber,
       shortNumber,
       winRate,
@@ -218,7 +219,7 @@ export function WeeklyModal({
     weeklyData.trades.forEach((trade: any) => {
       // Day Stats
       const day = format(new Date(trade.entryDate), 'EEEE')
-      const netPnL = Number(trade.pnl || 0)
+      const netPnL = getTradeNetPnl(trade)
       if (!dayStats[day]) dayStats[day] = { pnl: 0, trades: 0 }
       dayStats[day].pnl += netPnL
       dayStats[day].trades += 1
@@ -241,13 +242,13 @@ export function WeeklyModal({
     const sortedPairs = Object.entries(pairStats).sort((a, b) => b[1].pnl - a[1].pnl)
     const sortedSessions = Object.entries(sessionStats).sort((a, b) => b[1].pnl - a[1].pnl)
 
-    // Profit factor (canonical `trade.pnl`)
+    // Profit factor uses canonical net realized P&L.
     const grossProfit = weeklyData.trades
-      .map(t => Number((t as any).pnl || 0))
+      .map(t => getTradeNetPnl(t))
       .filter(netPnl => classifyOutcome(netPnl, breakEvenThreshold) === 'win')
       .reduce((sum, netPnl) => sum + netPnl, 0)
     const grossLoss = Math.abs(weeklyData.trades
-      .map(t => Number((t as any).pnl || 0))
+      .map(t => getTradeNetPnl(t))
       .filter(netPnl => classifyOutcome(netPnl, breakEvenThreshold) === 'loss')
       .reduce((sum, netPnl) => sum + netPnl, 0))
     const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0

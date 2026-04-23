@@ -27,6 +27,7 @@ import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 import { toast } from 'sonner'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { stripTradePreviewImageConfig } from '@/lib/trade-preview-image'
+import { getPnlDisplayLabel, getTradeGrossPnl, getTradeNetPnl, getTradePnlByMode, normalizePnlDisplayMode } from '@/lib/metrics/pnl'
 
 interface TradeDetailPanelProps {
   trade: Trade
@@ -59,6 +60,9 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
   const { tags } = useTags()
   const { getNewsById } = useNewsEvents()
   const timezone = useUserStore((state) => state.timezone)
+  const pnlDisplayMode = normalizePnlDisplayMode(
+    useUserStore((state) => state.user?.pnlDisplayMode)
+  )
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const router = useRouter()
@@ -66,7 +70,9 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
 
   const tradeData = trade as any
   const threshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
-  const netPnL = trade.pnl || 0
+  const grossPnL = getTradeGrossPnl(trade)
+  const netPnL = getTradeNetPnl(trade)
+  const displayPnl = getTradePnlByMode(trade, pnlDisplayMode)
   const outcome = classifyTrade(netPnL, threshold)
   const isWin = outcome === 'win'
   const isLoss = outcome === 'loss'
@@ -146,10 +152,10 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
                 variant="outline"
                 className={cn(
                   "text-xs font-mono font-bold px-2 py-0 h-5 shrink-0",
-                  isWin ? "border-long/40 text-long bg-long/5" : isLoss ? "border-short/40 text-short bg-short/5" : "border-border text-muted-foreground"
+                  displayPnl >= 0 ? "border-long/40 text-long bg-long/5" : displayPnl < 0 ? "border-short/40 text-short bg-short/5" : "border-border text-muted-foreground"
                 )}
               >
-                {formatCurrency(netPnL)}
+                {formatCurrency(displayPnl)}
               </Badge>
               {session && (
                 <Badge variant="outline" className="text-[10px] border-primary/20 bg-primary/5 text-primary hidden md:inline-flex shrink-0">
@@ -181,7 +187,7 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
                   { label: 'Entry Price', value: trade.entryPrice },
                   { label: 'Exit Price', value: trade.closePrice ?? '—' },
                   { label: 'Quantity', value: `${trade.quantity} lots` },
-                  { label: 'Net P&L', value: formatCurrency(netPnL), color: isWin ? 'text-long' : isLoss ? 'text-short' : 'text-muted-foreground' },
+                  { label: getPnlDisplayLabel(pnlDisplayMode), value: formatCurrency(displayPnl), color: displayPnl >= 0 ? 'text-long' : displayPnl < 0 ? 'text-short' : 'text-muted-foreground' },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="space-y-1">
                     <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50">{label}</span>
@@ -202,6 +208,12 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
                 )}
                 {trade.commission != null && trade.commission !== 0 && (
                   <span>Commission: <span className="font-mono font-semibold text-foreground">{formatCurrency(trade.commission)}</span></span>
+                )}
+                {trade.commission != null && trade.commission !== 0 && (
+                  <span>Gross P&L: <span className="font-mono font-semibold text-foreground">{formatCurrency(grossPnL)}</span></span>
+                )}
+                {trade.commission != null && trade.commission !== 0 && (
+                  <span>Net P&L: <span className="font-mono font-semibold text-foreground">{formatCurrency(netPnL)}</span></span>
                 )}
                 {tradeData.swap != null && tradeData.swap !== 0 && (
                   <span>Swap: <span className="font-mono font-semibold text-foreground">{formatCurrency(tradeData.swap)}</span></span>

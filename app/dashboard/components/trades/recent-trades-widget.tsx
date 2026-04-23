@@ -5,6 +5,8 @@ import { WidgetCard } from '../widget-card'
 import { useData } from '@/context/data-provider'
 import { cn } from '@/lib/utils'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import { getTradeNetPnl, getTradePnlByMode, normalizePnlDisplayMode } from '@/lib/metrics/pnl'
+import { useUserStore } from '@/store/user-store'
 
 const ROW_HEIGHT = 36 // Approximate height of each trade row in pixels
 
@@ -13,6 +15,9 @@ export default function RecentTradesWidget() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [visibleRowCount, setVisibleRowCount] = useState(10) // Default fallback
   const threshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
+  const pnlDisplayMode = normalizePnlDisplayMode(
+    useUserStore((state) => state.user?.pnlDisplayMode)
+  )
 
   // CRITICAL FIX: Group trades first to handle partial closes correctly
   // This ensures partial closes are shown as single trades, not multiple entries
@@ -107,8 +112,8 @@ export default function RecentTradesWidget() {
             </div>
           ) : (
             recentTrades.map((trade: any, index: number) => {
-              const netPnL = trade.pnl || 0
-              const outcome = classifyOutcome(netPnL, threshold)
+              const displayPnl = getTradePnlByMode(trade, pnlDisplayMode)
+              const outcome = classifyOutcome(getTradeNetPnl(trade), threshold)
               const isProfitable = outcome === 'win'
               const isLoss = outcome === 'loss'
 
@@ -134,7 +139,7 @@ export default function RecentTradesWidget() {
                           : 'text-muted-foreground'
                     )}
                   >
-                    {formatCurrency(netPnL)}
+                    {formatCurrency(displayPnl)}
                   </div>
                 </div>
               )

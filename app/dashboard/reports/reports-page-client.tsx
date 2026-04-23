@@ -38,6 +38,7 @@ import { motion } from 'framer-motion'
 import html2canvas from 'html2canvas'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useUserStore } from '@/store/user-store'
+import { getPnlDisplayLabel, getTradeNetPnl, getTradePnlByMode, normalizePnlDisplayMode } from '@/lib/metrics/pnl'
 import { DateRange } from '@/components/ui/custom-date-range-picker'
 import { toast } from 'sonner'
 import { ReportFilters } from './components/report-filters'
@@ -204,6 +205,7 @@ export default function ReportsPageClient({
 }: ReportsPageClientProps) {
     const { accounts } = useData()
     const user = useUserStore(state => state.user)
+    const pnlDisplayMode = normalizePnlDisplayMode(user?.pnlDisplayMode)
 
     // Filter State
     const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
@@ -815,13 +817,13 @@ export default function ReportsPageClient({
                                             <TableHead className="text-[9px] font-black uppercase tracking-widest h-10">Side</TableHead>
                                             <TableHead className="text-[9px] font-black uppercase tracking-widest h-10">Lots</TableHead>
                                             <TableHead className="text-[9px] font-black uppercase tracking-widest h-10">Result</TableHead>
-                                            <TableHead className="text-[9px] font-black uppercase tracking-widest h-10 text-right">Net P&L</TableHead>
+                                            <TableHead className="text-[9px] font-black uppercase tracking-widest h-10 text-right">{getPnlDisplayLabel(pnlDisplayMode)}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {[...filteredTrades].sort((a, b) => new Date(b.entryDate!).getTime() - new Date(a.entryDate!).getTime()).map((trade: any) => {
-                                            const netPnL = (trade.pnl || 0) + (trade.commission || 0)
-                                            const outcome = classifyTrade(netPnL)
+                                            const displayPnL = getTradePnlByMode(trade, pnlDisplayMode)
+                                            const outcome = classifyTrade(getTradeNetPnl(trade))
                                             return (
                                                 <TableRow key={trade.id} className="border-border/20 hover:bg-muted/5 group transition-colors">
                                                     <TableCell className="text-[10px] font-bold font-mono py-2 opacity-60">
@@ -847,9 +849,9 @@ export default function ReportsPageClient({
                                                     </TableCell>
                                                     <TableCell className={cn(
                                                         "text-[10px] font-bold font-mono text-right py-2",
-                                                        netPnL >= 0 ? "text-long" : "text-short"
+                                                        displayPnL >= 0 ? "text-long" : "text-short"
                                                     )}>
-                                                        ${netPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                        ${displayPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                                     </TableCell>
                                                 </TableRow>
                                             )

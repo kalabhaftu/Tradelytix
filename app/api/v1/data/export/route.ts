@@ -87,18 +87,16 @@ export async function POST(request: NextRequest) {
         where: { id: internalUserId },
         select: {
           timezone: true,
-          timeFormat: true,
           theme: true,
           firstName: true,
           lastName: true,
           accountFilterSettings: true,
-          goalSettings: true,
           aiSettings: true,
           backtestInputMode: true,
           accentPack: true,
           autoAdjustAccountDate: true,
-          calendarDisplayStats: true,
-          showWeeklySummary: true
+          breakEvenThreshold: true,
+          pnlDisplayMode: true
         } as any
       }),
       prisma.account.findMany({ where: { userId: internalUserId } }),

@@ -1,6 +1,8 @@
 
 import { Trade } from "@prisma/client"
 import { calculateWinRate, classifyOutcome, DEFAULT_BREAK_EVEN_THRESHOLD, getBreakEvenThreshold } from "@/lib/metrics/outcome"
+import { getTradeNetPnl } from "@/lib/metrics/pnl"
+import { calculateTradeRMultiple } from "@/lib/math/performance-metrics"
 
 export interface DailyStats {
     pnl: number
@@ -12,33 +14,8 @@ export interface DailyStats {
     isBreakEven: boolean
 }
 
-/**
- * Calculates the R-Multiple for a single trade.
- * Formula: (Exit Price - Entry Price) / (Entry Price - Stop Loss)
- * Returns 0 if no Stop Loss is present.
- */
 export function calculateRMultiple(trade: Trade): number {
-    // Try to find stop loss from extended properties if strictly typed, 
-    // currently we cast to any or use extended interface if available.
-    // Assuming 'stopLoss' might be on the trade object at runtime or added via extended types.
-    const sl = (trade as any).stopLoss
-
-    if (!sl) return 0
-
-    const entry = Number(trade.entryPrice)
-    const exit = Number(trade.closePrice || 0) // Handle open trades? Usually R is realized.
-
-    if (!trade.closePrice) return 0 // Open trades don't have realized R? Or projected?
-    // Let's assume realized R for calendar.
-
-    const risk = Math.abs(entry - Number(sl))
-    if (risk === 0) return 0
-
-    const reward = trade.side?.toLowerCase() === 'short' || trade.side?.toLowerCase() === 'sell'
-        ? entry - exit
-        : exit - entry
-
-    return reward / risk
+    return calculateTradeRMultiple(trade as any)
 }
 
 /**
@@ -56,7 +33,7 @@ export function calculateDailyStats(
     let rMultiple = 0
 
     trades.forEach(t => {
-        const netPnL = Number(t.pnl || 0)
+        const netPnL = getTradeNetPnl(t)
         pnl += netPnL
         tradeCount++
 

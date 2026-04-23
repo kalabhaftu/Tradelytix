@@ -217,12 +217,44 @@ function generateTemporaryPassword(): string {
 interface SupabaseUser {
   id: string;
   email?: string | null;
+  app_metadata?: {
+    provider?: string;
+    providers?: string[];
+  };
   user_metadata?: {
     full_name?: string;
     first_name?: string;
     last_name?: string;
     name?: string;
   };
+}
+
+function hasStoredName(value: string | null | undefined): boolean {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+function buildGeneratedNames(user: SupabaseUser) {
+  const metadata = user.user_metadata
+  const fullName = metadata?.full_name?.trim() || metadata?.name?.trim() || null
+
+  const firstName =
+    metadata?.first_name?.trim() ||
+    (fullName ? fullName.split(/\s+/)[0] : null) ||
+    null
+
+  const lastName =
+    metadata?.last_name?.trim() ||
+    (fullName && fullName.includes(' ')
+      ? fullName.split(/\s+/).slice(1).join(' ').trim() || null
+      : null)
+
+  return { firstName, lastName }
+}
+
+function shouldHydrateNamesFromProvider(user: SupabaseUser) {
+  const provider = user.app_metadata?.provider?.toLowerCase()
+  const providers = (user.app_metadata?.providers || []).map(value => value.toLowerCase())
+  return provider === 'google' || providers.includes('google')
 }
 
 export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) {
@@ -245,34 +277,58 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
       null
     )
 
-    // If user exists by auth_user_id, update email if needed
+    const generatedNames = buildGeneratedNames(user)
+    const shouldHydrateNames = shouldHydrateNamesFromProvider(user)
+
+    // If user exists by auth_user_id, update email and hydrate blank names if needed
     if (existingUserByAuthId) {
-      // If email is different, update it
-      if (existingUserByAuthId.email !== user.email) {
+      const needsEmailUpdate = existingUserByAuthId.email !== user.email
+      const shouldFillFirstName =
+        shouldHydrateNames &&
+        !hasStoredName(existingUserByAuthId.firstName) &&
+        hasStoredName(generatedNames.firstName)
+      const shouldFillLastName =
+        shouldHydrateNames &&
+        !hasStoredName(existingUserByAuthId.lastName) &&
+        hasStoredName(generatedNames.lastName)
+
+      if (needsEmailUpdate || shouldFillFirstName || shouldFillLastName) {
+        const updateData: {
+          email?: string
+          firstName?: string | null
+          lastName?: string | null
+        } = {}
+
+        if (needsEmailUpdate) {
+          updateData.email = user.email || existingUserByAuthId.email
+        }
+
+        if (shouldFillFirstName) {
+          updateData.firstName = generatedNames.firstName
+        }
+
+        if (shouldFillLastName) {
+          updateData.lastName = generatedNames.lastName
+        }
+
         try {
           const updatedUser = await safeDbOperation(
             () => prisma.user.update({
               where: {
                 auth_user_id: user.id // Always use auth_user_id as the unique identifier
               },
-              data: {
-                email: user.email || existingUserByAuthId.email
-              },
+              data: updateData,
             }),
             existingUserByAuthId
           );
-          // User updated successfully
           return JSON.parse(JSON.stringify(updatedUser));
         } catch (updateError) {
-          throw new Error('Failed to update user email address.');
+          throw new Error('Failed to synchronize user profile.');
         }
       }
       // Existing user found, no update needed
       return JSON.parse(JSON.stringify(existingUserByAuthId));
     }
-
-    const generatedFirstName = user.user_metadata?.first_name || user.user_metadata?.name || user.user_metadata?.full_name?.split(' ')[0] || null
-    const generatedLastName = user.user_metadata?.last_name || (user.user_metadata?.full_name?.includes(' ') ? user.user_metadata.full_name.split(' ').slice(1).join(' ') : null)
 
     // If user doesn't exist by auth_user_id, check if email exists
     if (user.email) {
@@ -291,8 +347,12 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
               id: user.id,
               auth_user_id: user.id,
               email: user.email || existingUserByEmail.email,
-              firstName: existingUserByEmail.firstName ?? generatedFirstName,
-              lastName: existingUserByEmail.lastName ?? generatedLastName,
+              firstName: hasStoredName(existingUserByEmail.firstName)
+                ? existingUserByEmail.firstName
+                : (shouldHydrateNames ? generatedNames.firstName : existingUserByEmail.firstName),
+              lastName: hasStoredName(existingUserByEmail.lastName)
+                ? existingUserByEmail.lastName
+                : (shouldHydrateNames ? generatedNames.lastName : existingUserByEmail.lastName),
             },
           }),
           null
@@ -326,8 +386,8 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
             auth_user_id: user.id,
             email: user.email || '',
             id: user.id,
-            firstName: generatedFirstName,
-            lastName: generatedLastName
+            firstName: generatedNames.firstName,
+            lastName: generatedNames.lastName
           },
         }),
         null

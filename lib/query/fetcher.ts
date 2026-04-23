@@ -71,9 +71,6 @@ export const queryKeys = {
   reportStats: (filters?: Record<string, unknown>) =>
     ['report-stats', filters ?? {}] as const,
 
-  // Goals
-  goals: () => ['goals'] as const,
-
   // Trading models
   tradingModels: () => ['trading-models'] as const,
 

@@ -33,6 +33,7 @@ import { useAuth } from '@/context/auth-provider'
 import { createClient } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { formatBreakevenBand } from '@/lib/metrics/outcome'
+import { normalizePnlDisplayMode, type PnlDisplayMode } from '@/lib/metrics/pnl'
 import { signOut } from "@/server/auth"
 import { useUserStore } from '@/store/user-store'
 import {
@@ -117,6 +118,8 @@ function SettingRow({
 export default function SettingsPage() {
   const { theme, setTheme, accentPack, setAccentPack } = useTheme()
   const storeUser = useUserStore(state => state.supabaseUser)
+  const dbUser = useUserStore(state => state.user)
+  const setDbUser = useUserStore(state => state.setUser)
   const { user: authUser } = useAuth()
   const user = storeUser ?? authUser
   const timezone = useUserStore(state => state.timezone)
@@ -134,6 +137,7 @@ export default function SettingsPage() {
     email: user?.email || '',
     autoAdjustAccountDate: false,
     breakEvenThreshold: 10,
+    pnlDisplayMode: 'net' as PnlDisplayMode,
     aiSettings: defaultAiSettings,
   })
   const [breakEvenDraft, setBreakEvenDraft] = useState('10')
@@ -181,6 +185,7 @@ export default function SettingsPage() {
             email: result.data.email || '',
             autoAdjustAccountDate: result.data.autoAdjustAccountDate ?? false,
             breakEvenThreshold: typeof result.data.breakEvenThreshold === 'number' ? result.data.breakEvenThreshold : 10,
+            pnlDisplayMode: normalizePnlDisplayMode(result.data.pnlDisplayMode),
             aiSettings: {
               ...defaultAiSettings,
               ...(result.data.aiSettings || {})
@@ -322,6 +327,50 @@ export default function SettingsPage() {
       })
     } finally {
       setIsUpdatingBreakEven(false)
+    }
+  }
+
+  const handlePnlDisplayModeChange = async (value: string) => {
+    const nextMode = normalizePnlDisplayMode(value)
+    const previous = profileData.pnlDisplayMode
+
+    setProfileData(prev => ({ ...prev, pnlDisplayMode: nextMode }))
+
+    try {
+      const response = await fetch('/api/auth/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pnlDisplayMode: nextMode })
+      })
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to update P&L display mode')
+      }
+
+        setProfileData(prev => ({
+          ...prev,
+          pnlDisplayMode: normalizePnlDisplayMode(result.data?.pnlDisplayMode)
+        }))
+        if (dbUser) {
+          setDbUser({
+            ...dbUser,
+            pnlDisplayMode: normalizePnlDisplayMode(result.data?.pnlDisplayMode)
+          } as typeof dbUser)
+        }
+
+        toast.success('P&L display updated', {
+          description: nextMode === 'gross'
+            ? 'Dashboard and report monetary values now prefer gross P&L before fees.'
+          : 'Dashboard and report monetary values now prefer net P&L after fees.',
+        duration: 2500
+      })
+    } catch (error) {
+      setProfileData(prev => ({ ...prev, pnlDisplayMode: previous }))
+      toast.error('P&L display update failed', {
+        description: error instanceof Error ? error.message : 'Failed to save P&L display preference.',
+        duration: 3000
+      })
     }
   }
 
@@ -767,6 +816,35 @@ export default function SettingsPage() {
                     {isUpdatingBreakEven ? 'Saving...' : 'Save'}
                   </Button>
                 </div>
+              }
+            />
+
+            <Separator />
+
+            <SettingRow
+              icon={Target}
+              label="P&L display"
+              description={profileData.pnlDisplayMode === 'gross'
+                ? 'Show gross P&L before commissions and swap on dashboard/report money surfaces.'
+                : 'Show net P&L after commissions and swap on dashboard/report money surfaces.'}
+              action={
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      {profileData.pnlDisplayMode === 'gross' ? 'Gross' : 'Net'}
+                      <CaretRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuRadioGroup
+                      value={profileData.pnlDisplayMode}
+                      onValueChange={handlePnlDisplayModeChange}
+                    >
+                      <DropdownMenuRadioItem value="net">Net (after fees)</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="gross">Gross (before fees)</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               }
             />
 

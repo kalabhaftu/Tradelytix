@@ -23,6 +23,7 @@ import { useCalendarNotes } from "@/app/dashboard/hooks/use-calendar-notes"
 import { calculateDailyStats } from "./calendar-utils"
 import { useData } from '@/context/data-provider'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import { getTradeNetPnl } from '@/lib/metrics/pnl'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 
@@ -64,7 +65,7 @@ const DayCell = memo(function DayCell({
 
   const winRateValue = useMemo(() => {
     if (!dayData?.trades || dayData.trades.length === 0) return 0
-    const winners = dayData.trades.filter(t => classifyOutcome(Number(t.pnl || 0), breakEvenThreshold) === 'win').length
+    const winners = dayData.trades.filter(t => classifyOutcome(getTradeNetPnl(t), breakEvenThreshold) === 'win').length
     return (winners / dayData.trades.length) * 100
   }, [dayData, breakEvenThreshold])
 

@@ -8,6 +8,7 @@ import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { prisma } from '@/lib/prisma'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
+import { getTradeNetPnl } from '@/lib/metrics/pnl'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -91,7 +92,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       // Calculate net profit since funded
       const netProfit = currentPhase.Trade.reduce(
         (sum: number, trade: { pnl: number | null; commission: number | null }) =>
-          sum + (trade.pnl || 0) - (trade.commission || 0),
+          sum + getTradeNetPnl({
+            pnl: trade.pnl ?? undefined,
+            commission: trade.commission ?? undefined,
+          }),
         0
       )
       

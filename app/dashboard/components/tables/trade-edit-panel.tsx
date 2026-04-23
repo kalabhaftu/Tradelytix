@@ -40,6 +40,7 @@ import {
   normalizeTradePreviewTransform,
   type TradePreviewTransform,
 } from '@/lib/trade-preview'
+import { getTradeNetPnl, getTradePnlByMode, normalizePnlDisplayMode } from '@/lib/metrics/pnl'
 
 interface TradeEditPanelProps {
   trade: ExtendedTrade
@@ -126,6 +127,9 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
 
   const user = useUserStore(state => state.user)
   const supabaseUser = useUserStore(state => state.supabaseUser)
+  const pnlDisplayMode = normalizePnlDisplayMode(
+    useUserStore(state => state.user?.pnlDisplayMode)
+  )
   const { tags } = useTags()
 
   const { control, handleSubmit, setValue, watch, reset, formState: { isDirty } } = useForm<EditTradeFormData>({
@@ -322,7 +326,8 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
   // Trade header info
   const tradeData = trade as any
   const threshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
-  const netPnL = trade.pnl || 0
+  const netPnL = getTradeNetPnl(trade)
+  const displayPnl = getTradePnlByMode(trade, pnlDisplayMode)
   const outcome = classifyTrade(netPnL, threshold)
   const isWin = outcome === 'win'
   const isLoss = outcome === 'loss'
@@ -348,10 +353,10 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
                 variant="outline"
                 className={cn(
                   "text-xs font-mono font-bold px-2 py-0 h-5 shrink-0",
-                  isWin ? "border-long/40 text-long bg-long/5" : isLoss ? "border-short/40 text-short bg-short/5" : "border-border text-muted-foreground"
+                  displayPnl >= 0 ? "border-long/40 text-long bg-long/5" : displayPnl < 0 ? "border-short/40 text-short bg-short/5" : "border-border text-muted-foreground"
                 )}
               >
-                {formatCurrency(netPnL)}
+                {formatCurrency(displayPnl)}
               </Badge>
             </div>
             <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 hidden sm:inline shrink-0">Editing</span>

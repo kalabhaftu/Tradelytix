@@ -4,15 +4,15 @@ import { getTradingSession } from '@/lib/time-utils'
 import { calculateWinRate, classifyOutcome, DEFAULT_BREAK_EVEN_THRESHOLD } from '@/lib/metrics/outcome'
 import { CHART_COLORS } from '@/app/dashboard/components/widget-card'
 import { 
-  calculateRMultiple, 
+  calculateTradeRMultiple,
   calculatePeakToTroughDrawdown,
   calculateExpectancy 
 } from '@/lib/math/performance-metrics'
 import { calculateTotalStartingBalance } from '@/lib/utils/balance-calculator'
+import { getTradeNetPnl } from '@/lib/metrics/pnl'
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-const getTradeNetPnl = (trade: Partial<Trade>) => Number(trade.pnl || 0)
 const isWinningTrade = (pnl: number, threshold: number) => classifyOutcome(pnl, threshold) === 'win'
 const isLosingTrade = (pnl: number, threshold: number) => classifyOutcome(pnl, threshold) === 'loss'
 
@@ -544,7 +544,7 @@ export function calculateCalendarData(
     data[key].pnl += netPnl
     data[key].tradeNumber++
 
-    const r = calculateRMultiple(trade.side, trade.entryPrice || 0, trade.closePrice || 0, trade.stopLoss)
+    const r = calculateTradeRMultiple(trade as any)
     data[key].dailyRMultiple += r
 
     const side = trade.side?.toLowerCase()
@@ -578,9 +578,10 @@ export function calculateSessionAnalysis(
           const session = getTradingSession(trade.entryDate)
 
           if (session && stats[session]) {
+              const netPnl = getTradeNetPnl(trade)
               stats[session].trades++
-              stats[session].pnl += trade.pnl || 0
-              if (isWinningTrade(trade.pnl || 0, breakEvenThreshold)) {
+              stats[session].pnl += netPnl
+              if (isWinningTrade(netPnl, breakEvenThreshold)) {
                   stats[session].wins++
               }
           }

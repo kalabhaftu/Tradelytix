@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { logActivity, getClientIp } from '@/lib/activity-logger'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import { normalizePnlDisplayMode } from '@/lib/metrics/pnl'
 
 const DEFAULT_AI_SETTINGS = {
   autoGenerateInsights: false,
@@ -40,8 +41,7 @@ export async function GET() {
         theme: true,
         autoAdjustAccountDate: true,
         breakEvenThreshold: true,
-        calendarDisplayStats: true,
-        showWeeklySummary: true,
+        pnlDisplayMode: true,
         aiSettings: true,
       }
     })
@@ -90,8 +90,7 @@ export async function PATCH(request: NextRequest) {
       theme,
       autoAdjustAccountDate,
       breakEvenThreshold,
-      calendarDisplayStats,
-      showWeeklySummary,
+      pnlDisplayMode,
       aiSettings
     } = body
 
@@ -117,6 +116,13 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
+    if (pnlDisplayMode !== undefined && pnlDisplayMode !== 'net' && pnlDisplayMode !== 'gross') {
+      return NextResponse.json(
+        { error: 'Invalid pnlDisplayMode format' },
+        { status: 400 }
+      )
+    }
+
     // Build update data — only include fields that were sent
     const updateData: Record<string, any> = {}
     if (firstName !== undefined) updateData.firstName = firstName?.trim() || null
@@ -125,11 +131,7 @@ export async function PATCH(request: NextRequest) {
     if (theme && typeof theme === 'string') updateData.theme = theme
     if (autoAdjustAccountDate !== undefined) updateData.autoAdjustAccountDate = !!autoAdjustAccountDate
     if (breakEvenThreshold !== undefined) updateData.breakEvenThreshold = getBreakEvenThreshold(breakEvenThreshold)
-    if (calendarDisplayStats !== undefined && Array.isArray(calendarDisplayStats)) {
-      const allowed = ['pnl', 'trades', 'winRate', 'rMultiple']
-      updateData.calendarDisplayStats = calendarDisplayStats.filter((s: string) => allowed.includes(s))
-    }
-    if (showWeeklySummary !== undefined) updateData.showWeeklySummary = !!showWeeklySummary
+    if (pnlDisplayMode !== undefined) updateData.pnlDisplayMode = normalizePnlDisplayMode(pnlDisplayMode)
 
     if (aiSettings !== undefined) {
       const existing = await prisma.user.findUnique({
@@ -156,8 +158,7 @@ export async function PATCH(request: NextRequest) {
         theme: true,
         autoAdjustAccountDate: true,
         breakEvenThreshold: true,
-        calendarDisplayStats: true,
-        showWeeklySummary: true,
+        pnlDisplayMode: true,
         aiSettings: true,
       }
     })

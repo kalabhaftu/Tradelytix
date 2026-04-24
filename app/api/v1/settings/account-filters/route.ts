@@ -4,6 +4,7 @@ import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { AccountFilterSettings, DEFAULT_FILTER_SETTINGS } from '@/types/account-filter-settings'
+import { buildSettingsMirrorData } from '@/lib/user-settings'
 
 // GET /api/settings/account-filters - Get user's account filter settings
 export async function GET(request: NextRequest) {
@@ -21,13 +22,19 @@ export async function GET(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: identity.internalUserId },
-      select: { accountFilterSettings: true }
+      select: {
+        accountFilterSettings: true,
+        settings: {
+          select: { accountFilterSettings: true }
+        }
+      }
     })
     
     let settings = DEFAULT_FILTER_SETTINGS
-    if (user?.accountFilterSettings) {
+    const storedValue = user?.settings?.accountFilterSettings ?? user?.accountFilterSettings
+    if (storedValue) {
       try {
-        const savedSettings = JSON.parse(user.accountFilterSettings) as Partial<AccountFilterSettings>
+        const savedSettings = JSON.parse(storedValue) as Partial<AccountFilterSettings>
         settings = {
           ...DEFAULT_FILTER_SETTINGS,
           ...savedSettings
@@ -78,11 +85,46 @@ export async function POST(request: NextRequest) {
     settings.updatedAt = new Date().toISOString()
 
     // Save to database - Prisma handles connection timeout
-    await prisma.user.update({
+    const currentUser = await prisma.user.findUnique({
       where: { id: identity.internalUserId },
-      data: {
-        accountFilterSettings: JSON.stringify(settings)
+      select: {
+        timezone: true,
+        theme: true,
+        accountFilterSettings: true,
+        aiSettings: true,
+        backtestInputMode: true,
+        breakEvenThreshold: true,
+        pnlDisplayMode: true,
+        accentPack: true,
+        autoAdjustAccountDate: true,
       }
+    })
+
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: identity.internalUserId },
+        data: buildSettingsMirrorData(currentUser as any, {
+          accountFilterSettings: JSON.stringify(settings)
+        })
+      })
+
+      await tx.userSettings.upsert({
+        where: { userId: identity.internalUserId },
+        create: {
+          userId: identity.internalUserId,
+          accountFilterSettings: JSON.stringify(settings)
+        },
+        update: {
+          accountFilterSettings: JSON.stringify(settings)
+        }
+      })
     })
 
     return NextResponse.json({

@@ -41,6 +41,7 @@ import {
   type TradePreviewTransform,
 } from '@/lib/trade-preview'
 import { getTradeNetPnl, getTradePnlByMode, normalizePnlDisplayMode } from '@/lib/metrics/pnl'
+import { parseTradeChartLinks, serializeTradeChartLinks } from '@/lib/trade-core'
 
 interface TradeEditPanelProps {
   trade: ExtendedTrade
@@ -179,7 +180,7 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
       setStructureTimeframe((trade as any).structureTimeframe || null)
       setOrderType((trade as any).orderType || null)
 
-      const links = (trade as any).chartLinks ? (trade as any).chartLinks.split(',').filter(Boolean) : []
+      const links = parseTradeChartLinks(trade as any)
       setChartLinks(links.length > 0 ? links : ['', '', '', ''])
 
       const modelId = (trade as any).modelId
@@ -301,7 +302,7 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
         orderType,
         outcome: tradeOutcome,
         ruleBroken,
-        chartLinks: chartLinks.filter(link => link.trim()).join(',') || null,
+        ...serializeTradeChartLinks(chartLinks),
       } as any
       await onSave(updateData)
       toast.success('Trade updated successfully')

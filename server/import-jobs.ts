@@ -1,6 +1,8 @@
 import JSZip from 'jszip'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/server/auth'
+import { buildSettingsMirrorData, buildUserSettingsUpdateData, extractUserSettingsWriteData, pickSettingsPatch } from '@/lib/user-settings'
+import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData } from '@/lib/trade-core'
 
 const TRADE_CHUNK_SIZE = 25
 const BACKTEST_CHUNK_SIZE = 25
@@ -213,24 +215,55 @@ async function resolveLookupMaps(data: any, internalUserId: string) {
 
 async function runPreparation(data: any, internalUserId: string) {
   if (data.user) {
-    const userUpdateData: any = {
-      timezone: data.user.timezone,
-      theme: data.user.theme,
-      firstName: data.user.firstName,
-      lastName: data.user.lastName,
-      accountFilterSettings: data.user.accountFilterSettings,
-      aiSettings: data.user.aiSettings,
-      backtestInputMode: data.user.backtestInputMode,
-      accentPack: data.user.accentPack,
-      autoAdjustAccountDate: data.user.autoAdjustAccountDate,
-      breakEvenThreshold: data.user.breakEvenThreshold,
-      pnlDisplayMode: data.user.pnlDisplayMode,
-    }
-
-    await prisma.user.update({
+    const currentUser = await prisma.user.findUnique({
       where: { id: internalUserId },
-      data: userUpdateData,
+      select: {
+        id: true,
+        timezone: true,
+        theme: true,
+        accountFilterSettings: true,
+        aiSettings: true,
+        backtestInputMode: true,
+        accentPack: true,
+        autoAdjustAccountDate: true,
+        breakEvenThreshold: true,
+        pnlDisplayMode: true,
+      }
     })
+
+    if (currentUser) {
+      const settingsPatch = pickSettingsPatch({
+        timezone: data.user.timezone,
+        theme: data.user.theme,
+        accountFilterSettings: data.user.accountFilterSettings,
+        aiSettings: data.user.aiSettings,
+        backtestInputMode: data.user.backtestInputMode,
+        accentPack: data.user.accentPack,
+        autoAdjustAccountDate: data.user.autoAdjustAccountDate,
+        breakEvenThreshold: data.user.breakEvenThreshold,
+        pnlDisplayMode: data.user.pnlDisplayMode,
+      })
+
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: internalUserId },
+          data: {
+            firstName: data.user.firstName,
+            lastName: data.user.lastName,
+            ...buildSettingsMirrorData(currentUser as any, settingsPatch),
+          },
+        })
+
+        await tx.userSettings.upsert({
+          where: { userId: internalUserId },
+          create: {
+            userId: internalUserId,
+            ...extractUserSettingsWriteData(settingsPatch),
+          },
+          update: buildUserSettingsUpdateData(settingsPatch),
+        })
+      })
+    }
   }
 
   if (data.tradeTags) {
@@ -718,16 +751,18 @@ export async function processImportJobChunk(jobId: string, internalUserId: strin
 
       for (let index = state.tradeIndex; index < endIndex; index++) {
         const trade = trades[index]
+        const preparedTrade = buildTradePersistenceData({
+          ...trade,
+          id: crypto.randomUUID(),
+          userId: internalUserId,
+          quantity: parseFloat(trade.quantity || 0),
+          pnl: parseFloat(trade.pnl || 0),
+        } as any)
 
         const existing = await prisma.trade.findFirst({
           where: {
             userId: internalUserId,
-            accountNumber: trade.accountNumber,
-            instrument: trade.instrument,
-            entryDate: trade.entryDate,
-            entryPrice: trade.entryPrice,
-            side: trade.side,
-            quantity: parseFloat(trade.quantity || 0),
+            tradeIdentityKey: preparedTrade.tradeIdentityKey,
           },
         })
 
@@ -745,18 +780,27 @@ export async function processImportJobChunk(jobId: string, internalUserId: strin
 
         const { id, userId, originalId, modelName, ...rest } = trade
 
-        await prisma.trade.create({
-          data: {
-            ...rest,
-            ...images,
-            id: newId,
-            userId: internalUserId,
-            accountId,
-            phaseAccountId,
-            modelId,
-            quantity: parseFloat(trade.quantity || 0),
-            pnl: parseFloat(trade.pnl || 0),
-          },
+        const tradeToCreate = buildTradePersistenceData({
+          ...rest,
+          ...images,
+          id: newId,
+          userId: internalUserId,
+          accountId,
+          phaseAccountId,
+          modelId,
+          quantity: parseFloat(trade.quantity || 0),
+          pnl: parseFloat(trade.pnl || 0),
+        } as any)
+
+        await prisma.$transaction(async (tx) => {
+          await tx.trade.create({
+            data: tradeToCreate as any,
+          })
+
+          await tx.tradeExecution.createMany({
+            data: buildSyntheticExecutionsFromTrade(tradeToCreate as any) as any,
+            skipDuplicates: true,
+          })
         })
 
         state.imported += 1

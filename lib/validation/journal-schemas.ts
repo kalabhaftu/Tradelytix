@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { JOURNAL_EMOTIONS } from '@/lib/journal-emotions'
 
 /**
  * Schema for daily journal entries
@@ -6,7 +7,7 @@ import { z } from 'zod'
 export const dailyNoteInputSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
   note: z.string().min(1, 'Note cannot be empty').max(10000, 'Note is too long'),
-  emotion: z.string().max(50).optional().nullable(),
+  emotion: z.enum(JOURNAL_EMOTIONS).optional().nullable(),
   accountId: z.string().uuid().optional().nullable(),
 })
 

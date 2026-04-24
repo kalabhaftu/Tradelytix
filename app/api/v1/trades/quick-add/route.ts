@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto'
 import { logActivity, getClientIp } from '@/lib/activity-logger'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
+import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData } from '@/lib/trade-core'
 
 export async function POST(req: NextRequest) {
   const rateLimitResponse = await applyRateLimit(req, apiLimiter)
@@ -45,21 +46,34 @@ export async function POST(req: NextRequest) {
     const now = new Date()
     const dateString = entryDate ? new Date(entryDate).toISOString() : now.toISOString()
 
-    const trade = await prisma.trade.create({
-      data: {
-        id: randomUUID(),
-        instrument: instrument.toUpperCase(),
-        side: side.toLowerCase(),
-        pnl: parseFloat(String(pnl)),
-        entryDate: dateString,
-        closeDate: dateString,
-        accountNumber: targetAccount,
-        quantity: 1,
-        entryPrice: '0',
-        closePrice: '0',
-        commission: 0,
-        userId: internalUserId
-      }
+    const tradePayload = buildTradePersistenceData({
+      id: randomUUID(),
+      instrument: instrument.toUpperCase(),
+      side: side.toLowerCase(),
+      pnl: parseFloat(String(pnl)),
+      entryDate: dateString,
+      closeDate: dateString,
+      entryTime: new Date(dateString),
+      exitTime: new Date(dateString),
+      accountNumber: targetAccount,
+      quantity: 1,
+      entryPrice: '0',
+      closePrice: '0',
+      commission: 0,
+      userId: internalUserId
+    } as any)
+
+    const trade = await prisma.$transaction(async (tx) => {
+      const createdTrade = await tx.trade.create({
+        data: tradePayload as any
+      })
+
+      await tx.tradeExecution.createMany({
+        data: buildSyntheticExecutionsFromTrade(tradePayload as any) as any,
+        skipDuplicates: true,
+      })
+
+      return createdTrade
     })
 
     logActivity({

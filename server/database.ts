@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { unstable_cache } from 'next/cache'
 import { logger } from '@/lib/logger'
 import { convertDecimal } from '@/lib/utils/decimal'
+import { buildTradePersistenceData } from '@/lib/trade-core'
 
 type TradeError =
   | 'DUPLICATE_TRADES'
@@ -64,7 +65,8 @@ export async function saveTradesAction(data: Trade[]): Promise<TradeResponse> {
         Object.entries(trade).filter(([_, value]) => value !== undefined)
       ) as Partial<Trade>
 
-      return {
+      return buildTradePersistenceData({
+        id: cleanTrade.id || crypto.randomUUID(),
         ...cleanTrade,
         // Ensure required fields have default values
         accountNumber: cleanTrade.accountNumber || '',
@@ -83,7 +85,7 @@ export async function saveTradesAction(data: Trade[]): Promise<TradeResponse> {
         comment: cleanTrade.comment || null,
         groupId: cleanTrade.groupId || null,
         createdAt: cleanTrade.createdAt || new Date(),
-      } as Trade
+      } as Trade) as Trade
     })
 
     // Note: We now allow unlinked trades to be saved first, then linked in a separate step
@@ -281,9 +283,34 @@ export async function updateTradesAction(tradesIds: string[], update: Partial<Tr
 
     const internalUserId = userLookup.id
 
+    const normalizedUpdate: Record<string, any> = { ...update }
+    if ('chartLinks' in update || 'chartLinksList' in update) {
+      const normalized = buildTradePersistenceData(update as any)
+      normalizedUpdate.chartLinks = normalized.chartLinks
+      normalizedUpdate.chartLinksList = normalized.chartLinksList
+    }
+    if ('entryTime' in update || 'entryDate' in update) {
+      normalizedUpdate.entryTime = buildTradePersistenceData(update as any).entryTime
+    }
+    if ('exitTime' in update || 'closeDate' in update) {
+      normalizedUpdate.exitTime = buildTradePersistenceData(update as any).exitTime
+    }
+    if ('entryPrice' in update || 'entryPriceValue' in update) {
+      normalizedUpdate.entryPriceValue = buildTradePersistenceData(update as any).entryPriceValue
+    }
+    if ('closePrice' in update || 'closePriceValue' in update) {
+      normalizedUpdate.closePriceValue = buildTradePersistenceData(update as any).closePriceValue
+    }
+    if ('stopLoss' in update || 'stopLossValue' in update) {
+      normalizedUpdate.stopLossValue = buildTradePersistenceData(update as any).stopLossValue
+    }
+    if ('takeProfit' in update || 'takeProfitValue' in update) {
+      normalizedUpdate.takeProfitValue = buildTradePersistenceData(update as any).takeProfitValue
+    }
+
     const result = await prisma.trade.updateMany({
       where: { id: { in: tradesIds }, userId: internalUserId },
-      data: update as any
+      data: normalizedUpdate as any
     })
 
     revalidateTag(`trades-${internalUserId}`, 'max')

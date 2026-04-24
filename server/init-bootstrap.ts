@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { cloneDefaultTemplateLayout } from '@/lib/dashboard/default-template-layout'
 import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
+import { USER_SETTINGS_SELECT, mergeUserSettings } from '@/lib/user-settings'
 
 interface ActiveTemplateShell {
   id: string
@@ -51,6 +52,12 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
         lastName: true,
         accountFilterSettings: true,
         backtestInputMode: true,
+        breakEvenThreshold: true,
+        autoAdjustAccountDate: true,
+        aiSettings: true,
+        settings: {
+          select: USER_SETTINGS_SELECT
+        }
       }
     })
 
@@ -196,7 +203,7 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
 
     return {
       isAuthenticated: true,
-      user: userLookup,
+      user: mergeUserSettings(userLookup as any, (userLookup as any).settings),
       accounts: [...processedLiveAccounts, ...processedPropFirmAccounts],
       calendarNotes,
       activeTemplateShell,

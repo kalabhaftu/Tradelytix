@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { generateTradeHash } from '@/lib/utils'
 import { PhaseEvaluationEngine } from '@/lib/prop-firm/phase-evaluation-engine'
+import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData } from '@/lib/trade-core'
 
 const TRADE_IMPORT_CHUNK_SIZE = 250
 
@@ -131,7 +132,7 @@ function normalizeTrade(rawTrade: any, internalUserId: string, accountNumber: st
   const commission = Number(trade.commission ?? 0)
   const timeInPosition = Number(trade.timeInPosition ?? 0)
 
-  const normalized = {
+  const normalized = buildTradePersistenceData({
     ...trade,
     id: trade.id || generateTradeHash({
       userId: internalUserId,
@@ -187,7 +188,7 @@ function normalizeTrade(rawTrade: any, internalUserId: string, accountNumber: st
     imageFour: trade.imageFour || null,
     imageFive: trade.imageFive || null,
     imageSix: trade.imageSix || null,
-  }
+  })
 
   return normalized
 }
@@ -414,6 +415,14 @@ export async function processTradeImportJobChunk(jobId: string, internalUserId: 
         skipDuplicates: true,
       })
       inserted = createManyResult.count
+
+      const executionRows = preparedRows.flatMap((trade: any) => buildSyntheticExecutionsFromTrade(trade))
+      if (executionRows.length > 0) {
+        await prisma.tradeExecution.createMany({
+          data: executionRows as any,
+          skipDuplicates: true,
+        })
+      }
     }
 
     state.imported += inserted

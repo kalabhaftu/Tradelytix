@@ -5,6 +5,7 @@ import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import archiver from 'archiver'
 import { PassThrough } from 'stream'
+import { USER_SETTINGS_SELECT, mergeUserSettings } from '@/lib/user-settings'
 
 // Helper to sanitize and transform data
 const sanitizeUser = (data: any) => {
@@ -86,6 +87,7 @@ export async function POST(request: NextRequest) {
       prisma.user.findUnique({ 
         where: { id: internalUserId },
         select: {
+          id: true,
           timezone: true,
           theme: true,
           firstName: true,
@@ -96,7 +98,10 @@ export async function POST(request: NextRequest) {
           accentPack: true,
           autoAdjustAccountDate: true,
           breakEvenThreshold: true,
-          pnlDisplayMode: true
+          pnlDisplayMode: true,
+          settings: {
+            select: USER_SETTINGS_SELECT
+          }
         } as any
       }),
       prisma.account.findMany({ where: { userId: internalUserId } }),
@@ -130,7 +135,7 @@ export async function POST(request: NextRequest) {
     const manifest = {
       version: '3.0',
       exportedAt: new Date().toISOString(),
-      user: dbUser,
+      user: dbUser ? mergeUserSettings(dbUser as any, (dbUser as any).settings) : null,
       accounts: accounts.map(sanitizeUser),
       masterAccounts: masterAccounts.map((ma: any) => ({
         ...sanitizeUser(ma),

@@ -13,6 +13,14 @@ import {
 } from '@/lib/metrics/outcome'
 import { getTradeGrossPnl, getTradeNetPnl } from '@/lib/metrics/pnl'
 import { calculateTradeRMultiple } from '@/lib/math/performance-metrics'
+import {
+  buildTradeIdentityKey,
+  getTradeClosePriceValue,
+  getTradeEntryPriceValue,
+  getTradeEntryTimestamp,
+  getTradeExitTimestamp,
+  parseTradeChartLinks,
+} from '@/lib/trade-core'
 
 // Centralized timezone source
 export const DEFAULT_TIMEZONE = "America/New_York";
@@ -24,7 +32,7 @@ export function ensureExtendedTrade(trade: Trade): ExtendedTrade {
     selectedRules: Array.isArray(trade.selectedRules) ? (trade.selectedRules as string[]) : [],
     marketBias: (trade.marketBias as MarketBias) || null,
     selectedNews: (trade.selectedNews as string) || null,
-    chartLinks: (trade.chartLinks as string) || null,
+    chartLinks: parseTradeChartLinks(trade as any),
   } as ExtendedTrade
 }
 
@@ -167,10 +175,10 @@ export function formatTradeData(trade: Trade, timezone?: string) {
     // Quantities and prices - smart formatting based on instrument type
     quantity: formatQuantity(trade.quantity),
     quantityWithUnit: `${formatQuantity(trade.quantity)} lots`,
-    entryPrice: formatPrice(trade.entryPrice, instrument),
-    closePrice: trade.closePrice ? formatPrice(trade.closePrice, instrument) : 'Open',
-    entryPriceCurrency: `$${formatPrice(trade.entryPrice, instrument)}`,
-    closePriceCurrency: trade.closePrice ? `$${formatPrice(trade.closePrice, instrument)}` : 'Open',
+    entryPrice: formatPrice(getTradeEntryPriceValue(trade as any) ?? trade.entryPrice, instrument),
+    closePrice: trade.closePrice ? formatPrice(getTradeClosePriceValue(trade as any) ?? trade.closePrice, instrument) : 'Open',
+    entryPriceCurrency: `$${formatPrice(getTradeEntryPriceValue(trade as any) ?? trade.entryPrice, instrument)}`,
+    closePriceCurrency: trade.closePrice ? `$${formatPrice(getTradeClosePriceValue(trade as any) ?? trade.closePrice, instrument)}` : 'Open',
 
     // P&L and commission
     pnl: grossPnl,
@@ -183,12 +191,12 @@ export function formatTradeData(trade: Trade, timezone?: string) {
     netPnlFormatted: formatCurrency(netPnl),
 
     // Dates and times
-    entryDate: trade.entryDate ? new Date(trade.entryDate) : null,
-    closeDate: trade.closeDate ? new Date(trade.closeDate) : null,
-    entryDateFormatted: trade.entryDate ? formatInTimeZone(new Date(trade.entryDate), timezone || 'America/New_York', 'MMM d, yyyy HH:mm:ss') : 'N/A',
-    closeDateFormatted: trade.closeDate ? formatInTimeZone(new Date(trade.closeDate), timezone || 'America/New_York', 'MMM d, yyyy HH:mm:ss') : 'Open',
-    entryDateShort: trade.entryDate ? formatInTimeZone(new Date(trade.entryDate), timezone || 'America/New_York', 'MMM d, yyyy') : 'N/A',
-    closeDateShort: trade.closeDate ? formatInTimeZone(new Date(trade.closeDate), timezone || 'America/New_York', 'MMM d, yyyy') : 'Open',
+    entryDate: getTradeEntryTimestamp(trade as any),
+    closeDate: getTradeExitTimestamp(trade as any),
+    entryDateFormatted: getTradeEntryTimestamp(trade as any) ? formatInTimeZone(getTradeEntryTimestamp(trade as any)!, timezone || 'America/New_York', 'MMM d, yyyy HH:mm:ss') : 'N/A',
+    closeDateFormatted: getTradeExitTimestamp(trade as any) ? formatInTimeZone(getTradeExitTimestamp(trade as any)!, timezone || 'America/New_York', 'MMM d, yyyy HH:mm:ss') : 'Open',
+    entryDateShort: getTradeEntryTimestamp(trade as any) ? formatInTimeZone(getTradeEntryTimestamp(trade as any)!, timezone || 'America/New_York', 'MMM d, yyyy') : 'N/A',
+    closeDateShort: getTradeExitTimestamp(trade as any) ? formatInTimeZone(getTradeExitTimestamp(trade as any)!, timezone || 'America/New_York', 'MMM d, yyyy') : 'Open',
 
     // Time in position
     timeInPosition: trade.timeInPosition || 0,
@@ -336,7 +344,7 @@ export function groupTradesByExecution(trades: Trade[]): GroupedTrade[] {
       key = `entryId:${trade.entryId}`
     } else {
       // Fallback: group by instrument, entry date (to nearest minute), and side
-      const entryDate = new Date(trade.entryDate)
+      const entryDate = getTradeEntryTimestamp(trade as any) ?? new Date(trade.entryDate)
       const roundedTime = new Date(entryDate)
       roundedTime.setSeconds(0, 0) // Round to nearest minute
       key = `fallback:${trade.instrument}:${roundedTime.toISOString()}:${trade.side}`
@@ -626,7 +634,8 @@ export function formatCalendarData(trades: Trade[], accounts: Account[] = [], ti
 
   return filteredTrades.reduce((acc: any, trade: Trade) => {
     // Parse the date and format it in the specified timezone to ensure consistency
-    const date = formatInTimeZone(new Date(trade.entryDate), timezone, 'yyyy-MM-dd')
+    const entryTimestamp = getTradeEntryTimestamp(trade as any) ?? new Date(trade.entryDate)
+    const date = formatInTimeZone(entryTimestamp, timezone, 'yyyy-MM-dd')
 
     if (!acc[date]) {
       acc[date] = {
@@ -663,7 +672,5 @@ export function groupBy<T>(array: T[], key: keyof T): { [key: string]: T[] } {
 }
 
 export function generateTradeHash(trade: Partial<Trade>): string {
-  // Handle undefined values by converting them to empty strings or default values
-  const hashString = `${trade.userId || ''}-${trade.accountNumber || ''}-${trade.instrument || ''}-${trade.entryDate || ''}-${trade.closeDate || ''}-${trade.quantity || 0}-${trade.entryId || ''}-${trade.timeInPosition || 0}`
-  return hashString
+  return buildTradeIdentityKey(trade as any)
 }

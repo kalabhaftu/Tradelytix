@@ -12,6 +12,7 @@ import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { prisma } from '@/lib/prisma'
 import { format } from 'date-fns'
+import { USER_SETTINGS_SELECT, mergeUserSettings } from '@/lib/user-settings'
 
 export async function GET(request: NextRequest) {
   const rateLimitRes = await applyRateLimit(request, apiLimiter)
@@ -45,7 +46,18 @@ export async function GET(request: NextRequest) {
           id: true,
           email: true,
           timezone: true,
-          isFirstConnection: true
+          isFirstConnection: true,
+          theme: true,
+          accountFilterSettings: true,
+          aiSettings: true,
+          backtestInputMode: true,
+          breakEvenThreshold: true,
+          pnlDisplayMode: true,
+          accentPack: true,
+          autoAdjustAccountDate: true,
+          settings: {
+            select: USER_SETTINGS_SELECT
+          }
         }
       }),
       prisma.account.findMany({
@@ -99,7 +111,7 @@ export async function GET(request: NextRequest) {
       },
       user: user ? {
         email: user.email,
-        timezone: user.timezone
+        ...mergeUserSettings(user as any, (user as any).settings)
       } : null,
       statistics: {
         totalAccounts: accounts.length,

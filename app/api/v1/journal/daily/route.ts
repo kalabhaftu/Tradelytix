@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
+import { isJournalEmotion } from '@/lib/journal-emotions'
 
 export async function GET(request: NextRequest) {
   const rateLimitRes = await applyRateLimit(request, apiLimiter)
@@ -49,6 +50,10 @@ export async function POST(request: NextRequest) {
 
     if (!date || note === undefined) {
       return NextResponse.json({ error: 'Date and note are required' }, { status: 400 })
+    }
+
+    if (emotion !== undefined && emotion !== null && !isJournalEmotion(emotion)) {
+      return NextResponse.json({ error: 'Invalid emotion value' }, { status: 400 })
     }
 
     let validAccountId: string | null = null

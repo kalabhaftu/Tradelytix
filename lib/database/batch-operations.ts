@@ -7,6 +7,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { Trade, Account, Prisma } from '@prisma/client'
+import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData } from '@/lib/trade-core'
 
 /**
  * Batch create trades with transaction
@@ -19,10 +20,21 @@ export async function batchCreateTrades(
   let count = 0
 
   try {
+    const preparedTrades = trades.map((trade) =>
+      buildTradePersistenceData({
+        id: trade.id || crypto.randomUUID(),
+        ...trade,
+      })
+    )
     // Use createMany for bulk insert (much faster)
     const result = await prisma.trade.createMany({
-      data: trades as any,
+      data: preparedTrades as any,
       skipDuplicates: true, // Skip trades that already exist
+    })
+
+    await prisma.tradeExecution.createMany({
+      data: preparedTrades.flatMap((trade: any) => buildSyntheticExecutionsFromTrade(trade)) as any,
+      skipDuplicates: true,
     })
     
     count = result.count
@@ -179,13 +191,19 @@ export async function batchUpsertTrades(
     // Use transaction for atomic upserts
     const results = await prisma.$transaction(
       trades.map((trade) =>
-        prisma.trade.upsert({
-          where: {
-            id: trade.id || `temp-${trade.entryId || Math.random().toString(36)}`,
-          },
-          create: trade,
-          update: trade,
-        })
+        {
+          const preparedTrade = buildTradePersistenceData({
+            id: trade.id || crypto.randomUUID(),
+            ...trade,
+          })
+          return prisma.trade.upsert({
+            where: {
+              id: preparedTrade.id || `temp-${preparedTrade.entryId || Math.random().toString(36)}`,
+            },
+            create: preparedTrade as any,
+            update: preparedTrade as any,
+          })
+        }
       )
     )
     

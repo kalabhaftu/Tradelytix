@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
+import { isJournalEmotion } from '@/lib/journal-emotions'
 
 export async function PUT(
   request: NextRequest,
@@ -22,6 +23,10 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
     const { note, emotion } = body
+
+    if (emotion !== undefined && emotion !== null && !isJournalEmotion(emotion)) {
+      return NextResponse.json({ error: 'Invalid emotion value' }, { status: 400 })
+    }
 
     const existing = await prisma.dailyNote.findUnique({ where: { id } })
     if (!existing) return NextResponse.json({ error: 'Journal not found' }, { status: 404 })

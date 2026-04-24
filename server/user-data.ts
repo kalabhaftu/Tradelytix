@@ -7,6 +7,7 @@ import { prisma, safeDbOperation } from '@/lib/prisma'
 import { createClient, getUserId, getUserIdSafe } from './auth'
 import { Account } from '@/context/data-provider'
 import { revalidateTag, unstable_cache } from 'next/cache'
+import { USER_SETTINGS_SELECT, mergeUserSettings } from '@/lib/user-settings'
 
 
 import { getAccountsAction } from './accounts'
@@ -59,7 +60,14 @@ export async function getUserData(): Promise<{
                 firstName: true,
                 lastName: true,
                 accountFilterSettings: true,
-                backtestInputMode: true
+                backtestInputMode: true,
+                accentPack: true,
+                breakEvenThreshold: true,
+                autoAdjustAccountDate: true,
+                aiSettings: true,
+                settings: {
+                  select: USER_SETTINGS_SELECT
+                }
               }
             })
           } catch (error) {
@@ -107,7 +115,12 @@ export async function getUserData(): Promise<{
         })()
       ])
 
-      return JSON.parse(JSON.stringify({ userData, accounts, groups, calendarNotes }))
+      return JSON.parse(JSON.stringify({
+        userData: userData ? mergeUserSettings(userData as any, (userData as any).settings) : null,
+        accounts,
+        groups,
+        calendarNotes
+      }))
     } catch (error) {
       return {
         userData: null,

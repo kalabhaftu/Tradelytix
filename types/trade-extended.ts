@@ -1,10 +1,10 @@
 import { Trade } from '@prisma/client'
 
-export interface ExtendedTrade extends Trade {
+export interface ExtendedTrade extends Omit<Trade, 'chartLinks'> {
     tags: string[] | any; // Handling the array/string ambiguity from the audit report
     selectedNews: string | null;
     selectedRules: string[] | null;
-    chartLinks: string | null;
+    chartLinks: string[];
     marketBias: MarketBias | null;
     // Add other specific overrides if necessary
 }

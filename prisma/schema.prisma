@@ -196,6 +196,7 @@ model PhaseAccount {
   masterAccountId        String
   phaseNumber            Int
   phaseId                String?
+  accountSize            Float?
   status                 PhaseAccountStatus @default(active)
   profitTargetPercent    Float
   dailyDrawdownPercent   Float
@@ -229,11 +230,14 @@ model Trade {
   accountNumber      String
   quantity           Float         @default(0)
   entryId            String?
+  tradeIdentityKey   String?
   instrument         String
   entryPrice         String
   closePrice         String
   entryDate          String
   closeDate          String
+  entryPriceValue    Float?
+  closePriceValue    Float?
   pnl                Float
   timeInPosition     Float         @default(0)
   userId             String
@@ -257,7 +261,9 @@ model Trade {
   exitTime           DateTime?
   closeReason        String?
   stopLoss           String?
+  stopLossValue      Float?
   takeProfit         String?
+  takeProfitValue    Float?
   tags               String[]
   marketBias         MarketBias?
   modelId            String?
@@ -273,11 +279,13 @@ model Trade {
   structureTimeframe String?
   orderType          String?
   chartLinks         String?
+  chartLinksList     String[]      @default([])
   Account            Account?      @relation(fields: [accountId], references: [id], onDelete: Cascade)
   TradingModel       TradingModel? @relation(fields: [modelId], references: [id])
   PhaseAccount       PhaseAccount? @relation(fields: [phaseAccountId], references: [id], onDelete: Cascade)
+  executions         TradeExecution[]
 
-  @@unique([userId, accountNumber, symbol, entryDate, entryPrice, side, quantity], name: "unique_trade_identification")
+  @@unique([userId, tradeIdentityKey], name: "trade_identity_key")
   @@index([accountId, exitTime])
   @@index([accountId])
   @@index([accountId, phaseAccountId])
@@ -289,6 +297,7 @@ model Trade {
   @@index([phaseAccountId, exitTime])
   @@index([phaseAccountId])
   @@index([symbol])
+  @@index([tradeIdentityKey])
   @@index([userId, accountNumber, id])
   @@index([userId, accountNumber])
   @@index([userId, entryDate(sort: Desc)])
@@ -303,6 +312,32 @@ model Trade {
   @@index([userId, instrument])
   @@index([userId, accountNumber, entryDate])
   @@index([userId, pnl])
+  @@schema("public")
+}
+
+model TradeExecution {
+  id                  String             @id
+  tradeId             String
+  userId              String
+  kind                TradeExecutionKind
+  quantity            Float              @default(0)
+  price               Float?
+  executedAt          DateTime?
+  pnl                 Float              @default(0)
+  commission          Float              @default(0)
+  brokerExecutionId   String?
+  legacySourceTradeId String?
+  closeReason         String?
+  rawSymbol           String?
+  metadata            Json?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  Trade               Trade              @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  @@index([tradeId, kind])
+  @@index([tradeId, executedAt])
+  @@index([userId, brokerExecutionId])
+  @@unique([tradeId, kind, legacySourceTradeId], name: "trade_execution_legacy_source_key")
   @@schema("public")
 }
 
@@ -368,9 +403,28 @@ model User {
   WeeklyReview           WeeklyReview[]
   WeeklyAIReview         WeeklyAIReview[]
   ActivityLog            ActivityLog[]
+  settings               UserSettings?
 
   @@index([auth_user_id])
   @@index([email])
+  @@schema("public")
+}
+
+model UserSettings {
+  userId                String   @id
+  timezone              String   @default("America/New_York")
+  theme                 String   @default("system")
+  accountFilterSettings String?
+  aiSettings            Json?
+  backtestInputMode     String   @default("manual")
+  breakEvenThreshold    Float    @default(10)
+  pnlDisplayMode        String   @default("net")
+  accentPack            String   @default("classic")
+  autoAdjustAccountDate Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  User                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@schema("public")
 }
 
@@ -625,6 +679,13 @@ enum TradeOutcome {
   BREAKEVEN
   GOOD_LOSS
   BAD_LOSS
+
+  @@schema("public")
+}
+
+enum TradeExecutionKind {
+  ENTRY
+  EXIT
 
   @@schema("public")
 }

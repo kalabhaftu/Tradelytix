@@ -11,6 +11,7 @@ import { logger } from '@/lib/logger'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { buildGroupedTradeCountSummary } from '@/lib/trade-counts'
+import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData } from '@/lib/trade-core'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -110,16 +111,27 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Create the trade
-    const trade = await prisma.trade.create({
-      data: {
-        id: crypto.randomUUID(),
-        ...tradeData,
-        userId: internalUserId,
-        phaseAccountId: currentPhase.id,
-        accountNumber: currentPhase.phaseId, // Use the phase account ID as account number
-        entryTime: tradeData.entryTime ? new Date(tradeData.entryTime) : null,
-        exitTime: tradeData.exitTime ? new Date(tradeData.exitTime) : null
-      }
+    const tradePayload = buildTradePersistenceData({
+      id: crypto.randomUUID(),
+      ...tradeData,
+      userId: internalUserId,
+      phaseAccountId: currentPhase.id,
+      accountNumber: currentPhase.phaseId, // Use the phase account ID as account number
+      entryTime: tradeData.entryTime ? new Date(tradeData.entryTime) : null,
+      exitTime: tradeData.exitTime ? new Date(tradeData.exitTime) : null
+    } as any)
+
+    const trade = await prisma.$transaction(async (tx) => {
+      const createdTrade = await tx.trade.create({
+        data: tradePayload as any
+      })
+
+      await tx.tradeExecution.createMany({
+        data: buildSyntheticExecutionsFromTrade(tradePayload as any) as any,
+        skipDuplicates: true,
+      })
+
+      return createdTrade
     })
 
     // CRITICAL: Evaluate phase after trade is added and WAIT for result

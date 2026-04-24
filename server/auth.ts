@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { prisma, safeDbOperation } from '@/lib/prisma'
 import { headers } from "next/headers"
 import { logActivity } from '@/lib/activity-logger'
+import { extractUserSettingsWriteData } from '@/lib/user-settings'
 // Removed locales import - using plain English strings
 
 // Helper function to determine if we're in local development
@@ -313,11 +314,24 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
 
         try {
           const updatedUser = await safeDbOperation(
-            () => prisma.user.update({
-              where: {
-                auth_user_id: user.id // Always use auth_user_id as the unique identifier
-              },
-              data: updateData,
+            () => prisma.$transaction(async (tx) => {
+              const updated = await tx.user.update({
+                where: {
+                  auth_user_id: user.id // Always use auth_user_id as the unique identifier
+                },
+                data: updateData,
+              })
+
+              await tx.userSettings.upsert({
+                where: { userId: updated.id },
+                create: {
+                  userId: updated.id,
+                  ...extractUserSettingsWriteData(updated as any),
+                },
+                update: {},
+              })
+
+              return updated
             }),
             existingUserByAuthId
           );
@@ -341,19 +355,32 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
 
       if (existingUserByEmail && existingUserByEmail.auth_user_id !== user.id) {
         const relinkedUser = await safeDbOperation(
-          () => prisma.user.update({
-            where: { email: user.email! },
-            data: {
-              id: user.id,
-              auth_user_id: user.id,
-              email: user.email || existingUserByEmail.email,
-              firstName: hasStoredName(existingUserByEmail.firstName)
-                ? existingUserByEmail.firstName
-                : (shouldHydrateNames ? generatedNames.firstName : existingUserByEmail.firstName),
-              lastName: hasStoredName(existingUserByEmail.lastName)
-                ? existingUserByEmail.lastName
-                : (shouldHydrateNames ? generatedNames.lastName : existingUserByEmail.lastName),
-            },
+          () => prisma.$transaction(async (tx) => {
+            const updated = await tx.user.update({
+              where: { email: user.email! },
+              data: {
+                id: user.id,
+                auth_user_id: user.id,
+                email: user.email || existingUserByEmail.email,
+                firstName: hasStoredName(existingUserByEmail.firstName)
+                  ? existingUserByEmail.firstName
+                  : (shouldHydrateNames ? generatedNames.firstName : existingUserByEmail.firstName),
+                lastName: hasStoredName(existingUserByEmail.lastName)
+                  ? existingUserByEmail.lastName
+                  : (shouldHydrateNames ? generatedNames.lastName : existingUserByEmail.lastName),
+              },
+            })
+
+            await tx.userSettings.upsert({
+              where: { userId: updated.id },
+              create: {
+                userId: updated.id,
+                ...extractUserSettingsWriteData(updated as any),
+              },
+              update: {},
+            })
+
+            return updated
           }),
           null
         )
@@ -381,14 +408,25 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
     // Create new user if no existing user found
     try {
       const newUser = await safeDbOperation(
-        () => prisma.user.create({
-          data: {
-            auth_user_id: user.id,
-            email: user.email || '',
-            id: user.id,
-            firstName: generatedNames.firstName,
-            lastName: generatedNames.lastName
-          },
+        () => prisma.$transaction(async (tx) => {
+          const created = await tx.user.create({
+            data: {
+              auth_user_id: user.id,
+              email: user.email || '',
+              id: user.id,
+              firstName: generatedNames.firstName,
+              lastName: generatedNames.lastName
+            },
+          })
+
+          await tx.userSettings.create({
+            data: {
+              userId: created.id,
+              ...extractUserSettingsWriteData(created as any),
+            }
+          })
+
+          return created
         }),
         null
       );

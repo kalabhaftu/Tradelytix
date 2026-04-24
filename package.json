@@ -35,8 +35,11 @@
     "diagnose:metrics": "tsx scripts/diagnose-metric-consistency.ts",
     "diagnose:data": "tsx scripts/diagnose-data-integrity.ts",
     "diagnose:trade-counts": "tsx scripts/audit-trade-counts.ts",
+    "diagnose:trade-core": "tsx scripts/audit-trade-core-refactor.ts",
     "diagnose:propfirm": "tsx scripts/audit-propfirm-report.ts",
-    "cleanup:orphaned-users": "tsx scripts/cleanup-orphaned-users.ts"
+    "cleanup:orphaned-users": "tsx scripts/cleanup-orphaned-users.ts",
+    "backfill:trade-core": "tsx scripts/backfill-trade-core-refactor.ts",
+    "backfill:trade-core:apply": "tsx scripts/backfill-trade-core-refactor.ts --apply"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.52",

@@ -11,6 +11,7 @@ import { NotificationType } from '@prisma/client'
 import { logActivity } from '@/lib/activity-logger'
 import { calculateWinRate, classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
+import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData } from '@/lib/trade-core'
 
 /**
  * Helper function to determine if a phase number represents the funded stage
@@ -783,7 +784,8 @@ export async function linkTradesToCurrentPhase(accountId: string, trades: any[])
       }
 
       // Optimized: Create trades with direct phase linking using createMany
-      const tradesToCreate = trades.map(trade => ({
+      const tradesToCreate = trades.map(trade => buildTradePersistenceData({
+        id: trade.id || crypto.randomUUID(),
         ...trade,
         phaseAccountId: currentPhase.id,
         userId
@@ -791,7 +793,12 @@ export async function linkTradesToCurrentPhase(accountId: string, trades: any[])
 
       // Use createMany for batch insert with skipDuplicates
       const result = await prisma.trade.createMany({
-        data: tradesToCreate,
+        data: tradesToCreate as any,
+        skipDuplicates: true
+      })
+
+      await prisma.tradeExecution.createMany({
+        data: tradesToCreate.flatMap((trade: any) => buildSyntheticExecutionsFromTrade(trade)) as any,
         skipDuplicates: true
       })
 
@@ -840,14 +847,20 @@ export async function linkTradesToCurrentPhase(accountId: string, trades: any[])
       }
 
       // Create trades with account linking
-      const tradesToCreate = trades.map(trade => ({
+      const tradesToCreate = trades.map(trade => buildTradePersistenceData({
+        id: trade.id || crypto.randomUUID(),
         ...trade,
         accountId: regularAccount.id,
         userId
       }))
 
       const result = await prisma.trade.createMany({
-        data: tradesToCreate,
+        data: tradesToCreate as any,
+        skipDuplicates: true
+      })
+
+      await prisma.tradeExecution.createMany({
+        data: tradesToCreate.flatMap((trade: any) => buildSyntheticExecutionsFromTrade(trade)) as any,
         skipDuplicates: true
       })
 
@@ -1038,7 +1051,10 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
       cleanTrade.phaseAccountId = isPropFirm ? phaseAccountId : null
       cleanTrade.accountId = isPropFirm ? null : regularAccountId
 
-      return cleanTrade
+      return buildTradePersistenceData({
+        id: cleanTrade.id || crypto.randomUUID(),
+        ...cleanTrade,
+      })
     })
 
     // Process trades in batches without transaction wrapper (createMany is already atomic)
@@ -1049,8 +1065,13 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
 
       // Direct createMany - faster than wrapping in transaction
       const createResult = await prisma.trade.createMany({
-        data: batch,
+        data: batch as any,
         skipDuplicates: true // Extra safety for duplicates
+      })
+
+      await prisma.tradeExecution.createMany({
+        data: batch.flatMap((trade: any) => buildSyntheticExecutionsFromTrade(trade)) as any,
+        skipDuplicates: true
       })
 
       totalCreated += createResult.count

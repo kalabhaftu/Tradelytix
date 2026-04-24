@@ -4,19 +4,16 @@ import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { logActivity, getClientIp } from '@/lib/activity-logger'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { normalizePnlDisplayMode } from '@/lib/metrics/pnl'
-
-const DEFAULT_AI_SETTINGS = {
-  autoGenerateInsights: false,
-  includeAiInsightsInNotifications: false,
-}
-
-function normalizeAiSettings(value: unknown) {
-  const raw = typeof value === 'object' && value ? value as Record<string, unknown> : {}
-  return {
-    autoGenerateInsights: !!raw.autoGenerateInsights,
-    includeAiInsightsInNotifications: raw.includeAiInsightsInNotifications !== false ? !!raw.includeAiInsightsInNotifications : false,
-  }
-}
+import {
+  DEFAULT_AI_SETTINGS,
+  USER_SETTINGS_SELECT,
+  buildSettingsMirrorData,
+  buildUserSettingsUpdateData,
+  extractUserSettingsWriteData,
+  mergeUserSettings,
+  normalizeAiSettings,
+  pickSettingsPatch,
+} from '@/lib/user-settings'
 
 // GET /api/auth/profile - Get user profile information
 export async function GET() {
@@ -43,6 +40,9 @@ export async function GET() {
         breakEvenThreshold: true,
         pnlDisplayMode: true,
         aiSettings: true,
+        settings: {
+          select: USER_SETTINGS_SELECT
+        }
       }
     })
 
@@ -56,8 +56,8 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       data: {
-        ...user,
-        aiSettings: normalizeAiSettings(user.aiSettings ?? DEFAULT_AI_SETTINGS)
+        ...mergeUserSettings(user as any, user.settings),
+        settings: undefined,
       }
     })
 
@@ -124,43 +124,87 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Build update data — only include fields that were sent
-    const updateData: Record<string, any> = {}
-    if (firstName !== undefined) updateData.firstName = firstName?.trim() || null
-    if (lastName !== undefined) updateData.lastName = lastName?.trim() || null
-    if (accentPack && typeof accentPack === 'string') updateData.accentPack = accentPack
-    if (theme && typeof theme === 'string') updateData.theme = theme
-    if (autoAdjustAccountDate !== undefined) updateData.autoAdjustAccountDate = !!autoAdjustAccountDate
-    if (breakEvenThreshold !== undefined) updateData.breakEvenThreshold = getBreakEvenThreshold(breakEvenThreshold)
-    if (pnlDisplayMode !== undefined) updateData.pnlDisplayMode = normalizePnlDisplayMode(pnlDisplayMode)
-
-    if (aiSettings !== undefined) {
-      const existing = await prisma.user.findUnique({
-        where: { id: internalUserId },
-        select: { aiSettings: true }
-      })
-
-      updateData.aiSettings = normalizeAiSettings({
-        ...(existing?.aiSettings && typeof existing.aiSettings === 'object' ? existing.aiSettings as Record<string, unknown> : {}),
-        ...(typeof aiSettings === 'object' && aiSettings ? aiSettings : {})
-      })
-    }
-
-    // Update user profile in database
-    const updatedUser = await prisma.user.update({
+    const currentUser = await prisma.user.findUnique({
       where: { id: internalUserId },
-      data: updateData,
       select: {
         id: true,
         email: true,
         firstName: true,
         lastName: true,
+        timezone: true,
         accentPack: true,
         theme: true,
+        accountFilterSettings: true,
+        backtestInputMode: true,
         autoAdjustAccountDate: true,
         breakEvenThreshold: true,
         pnlDisplayMode: true,
         aiSettings: true,
+        settings: {
+          select: USER_SETTINGS_SELECT
+        }
       }
+    })
+
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    const userUpdateData: Record<string, any> = {}
+    if (firstName !== undefined) userUpdateData.firstName = firstName?.trim() || null
+    if (lastName !== undefined) userUpdateData.lastName = lastName?.trim() || null
+
+    const settingsPatch = pickSettingsPatch({
+      accentPack,
+      theme,
+      autoAdjustAccountDate: autoAdjustAccountDate !== undefined ? !!autoAdjustAccountDate : undefined,
+      breakEvenThreshold: breakEvenThreshold !== undefined ? getBreakEvenThreshold(breakEvenThreshold) : undefined,
+      pnlDisplayMode: pnlDisplayMode !== undefined ? normalizePnlDisplayMode(pnlDisplayMode) : undefined,
+      aiSettings: aiSettings !== undefined
+        ? normalizeAiSettings({
+            ...normalizeAiSettings(currentUser.settings?.aiSettings ?? currentUser.aiSettings ?? DEFAULT_AI_SETTINGS),
+            ...(typeof aiSettings === 'object' && aiSettings ? aiSettings : {})
+          })
+        : undefined,
+    })
+
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      const base = await tx.user.update({
+        where: { id: internalUserId },
+        data: {
+          ...userUpdateData,
+          ...buildSettingsMirrorData(currentUser as any, settingsPatch),
+        },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          timezone: true,
+          accentPack: true,
+          theme: true,
+          accountFilterSettings: true,
+          backtestInputMode: true,
+          autoAdjustAccountDate: true,
+          breakEvenThreshold: true,
+          pnlDisplayMode: true,
+          aiSettings: true,
+        }
+      })
+
+      await tx.userSettings.upsert({
+        where: { userId: internalUserId },
+        create: {
+          userId: internalUserId,
+          ...extractUserSettingsWriteData(mergeUserSettings(currentUser as any, settingsPatch)),
+        },
+        update: buildUserSettingsUpdateData(settingsPatch),
+      })
+
+      return base
     })
 
     const activityUserId =
@@ -172,15 +216,14 @@ export async function PATCH(request: NextRequest) {
       userId: activityUserId,
       action: 'PROFILE_UPDATED',
       entity: 'Profile',
-      metadata: { updatedFields: Object.keys(updateData) },
+      metadata: { updatedFields: [...Object.keys(userUpdateData), ...Object.keys(settingsPatch)] },
       ipAddress: getClientIp(request),
     })
 
     return NextResponse.json({
       success: true,
       data: {
-        ...updatedUser,
-        aiSettings: normalizeAiSettings(updatedUser.aiSettings ?? DEFAULT_AI_SETTINGS)
+        ...mergeUserSettings(updatedUser as any, settingsPatch),
       },
       message: 'Profile updated successfully'
     })

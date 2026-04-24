@@ -28,6 +28,7 @@ import { toast } from 'sonner'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { stripTradePreviewImageConfig } from '@/lib/trade-preview-image'
 import { getPnlDisplayLabel, getTradeGrossPnl, getTradeNetPnl, getTradePnlByMode, normalizePnlDisplayMode } from '@/lib/metrics/pnl'
+import { parseTradeChartLinks } from '@/lib/trade-core'
 
 interface TradeDetailPanelProps {
   trade: Trade
@@ -90,9 +91,7 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
   ].filter((img: any) => img && String(img).trim() !== '')
 
   // Chart links
-  const chartLinks = tradeData.chartLinks
-    ? tradeData.chartLinks.split(',').filter((l: string) => l.trim())
-    : []
+  const chartLinks = parseTradeChartLinks(tradeData)
 
   // News events
   const newsEventIds = tradeData.selectedNews

@@ -1,10 +1,10 @@
 // Deltalytix Service Worker - Optimized for performance
 // Provides offline functionality, caching, and background sync
 
-const CACHE_NAME = 'deltalytix-v1.1.0' // Updated version
-const STATIC_CACHE = 'deltalytix-static-v1.1.0'
-const API_CACHE = 'deltalytix-api-v1.1.0'
-const IMAGE_CACHE = 'deltalytix-images-v1.1.0'
+const CACHE_NAME = 'deltalytix-v1.1.1'
+const STATIC_CACHE = 'deltalytix-static-v1.1.1'
+const API_CACHE = 'deltalytix-api-v1.1.1'
+const IMAGE_CACHE = 'deltalytix-images-v1.1.1'
 
 // Minimal files to cache for performance
 const STATIC_FILES = [
@@ -227,16 +227,26 @@ async function handlePageRequest(request) {
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-            .offline-message { max-width: 400px; margin: 0 auto; }
-            .icon { font-size: 64px; margin-bottom: 20px; }
+            :root { color-scheme: dark; --page-bg: #070b12; --surface: #0d1420; --surface-alt: #131b29; --border: rgba(148, 163, 184, 0.14); --text: #f4f7fb; --muted: #9fb0c7; --accent: #f08a24; }
+            * { box-sizing: border-box; }
+            body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: var(--page-bg); color: var(--text); font-family: Arial, sans-serif; }
+            .offline-message { width: min(100%, 440px); margin: 0 auto; text-align: center; padding: 32px; background: var(--surface); border: 1px solid var(--border); border-radius: 24px; box-shadow: 0 28px 70px rgba(0, 0, 0, 0.45); }
+            .mark { width: 72px; height: 72px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; border-radius: 20px; background: var(--surface-alt); border: 1px solid var(--border); }
+            .mark svg { width: 30px; height: 30px; fill: currentColor; }
+            p { color: var(--muted); line-height: 1.65; margin: 0 0 24px; }
+            button { border: 0; border-radius: 14px; padding: 14px 18px; background: var(--accent); color: #08101a; font-weight: 700; cursor: pointer; }
           </style>
         </head>
         <body>
           <div class="offline-message">
-            <div class="icon">📊</div>
+            <div class="mark" aria-hidden="true">
+              <svg viewBox="0 0 255 255" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M159 63L127.5 0V255H255L236.5 218H159V63Z"></path>
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M0 255L127.5 0L127.5 255L0 255ZM64 217L121 104L121 217L64 217Z"></path>
+              </svg>
+            </div>
             <h1>You're Offline</h1>
-            <p>Deltalytix needs an internet connection to work properly. Please check your connection and try again.</p>
+            <p>Deltalytix needs an internet connection to sync live data. Reconnect and try again.</p>
             <button onclick="window.location.reload()">Retry</button>
           </div>
         </body>

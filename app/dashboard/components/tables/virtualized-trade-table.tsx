@@ -63,7 +63,7 @@ const TradeRow = memo(({ trade, isSelected, onTradeClick, onTradeSelect }: {
       {/* Symbol/Instrument */}
       <div className="flex-shrink-0 w-24">
         <Badge variant="outline" className="font-mono text-xs">
-          {trade.symbol || trade.instrument}
+          {trade.instrument || trade.symbol}
         </Badge>
       </div>
 
@@ -200,4 +200,3 @@ export const VirtualizedTradeTable = memo(function VirtualizedTradeTable({
 })
 
 export default VirtualizedTradeTable
-

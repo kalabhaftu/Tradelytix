@@ -17,6 +17,7 @@ import { getTradingSession } from '@/lib/time-utils'
 import { groupTradesByExecution } from '@/lib/utils'
 import { DEFAULT_BREAK_EVEN_THRESHOLD, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { getTradeNetPnl } from '@/lib/metrics/pnl'
+import { getRuntimeBreakEvenThreshold } from '@/server/user-settings'
 import { 
   calculateTradeRMultiple, 
   hasValidTradeRMultipleData,
@@ -181,7 +182,7 @@ export async function calculateReportStatistics(
 
   // Fetch trades with fields needed for computations + spreadsheet display
   // Fetch filter options separately to ensure they are always populated regardless of current filters
-  const [rawTrades, tradingModels, allPossibleSymbols, userSettings] = await Promise.all([
+  const [rawTrades, tradingModels, allPossibleSymbols, breakEvenThreshold] = await Promise.all([
     prisma.trade.findMany({
       where: whereClause,
       select: {
@@ -225,18 +226,14 @@ export async function calculateReportStatistics(
       },
       select: { symbol: true, instrument: true },
     }),
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { breakEvenThreshold: true },
-    }),
+    getRuntimeBreakEvenThreshold(userId),
   ])
-  const breakEvenThreshold = getBreakEvenThreshold(userSettings?.breakEvenThreshold)
 
   // Extract unique symbols from the separate query for filter options
   // Extract unique symbols from the separate query for filter options
   // Use a Case-Insensitive Set to deduplicate instrument vs symbol
   const symbols = [...new Set(
-    allPossibleSymbols.map(t => (t.symbol || t.instrument || '').trim())
+    allPossibleSymbols.map(t => (t.instrument || t.symbol || '').trim())
       .filter(Boolean)
   )].sort() as string[]
   const strategies = tradingModels.map(m => ({ id: m.id, name: m.name }))
@@ -450,7 +447,7 @@ function computeAllMetrics(
     }
 
     // Pair P&L tracking
-    const pairName = (trade.symbol || trade.instrument || '').trim()
+    const pairName = (trade.instrument || trade.symbol || '').trim()
     if (pairName) {
       pairPnL[pairName] = (pairPnL[pairName] || 0) + netPnL
     }

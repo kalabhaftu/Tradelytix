@@ -13,6 +13,7 @@ import { logger } from '@/lib/logger'
 import { cleanContent } from '@/lib/utils'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns'
+import { getRuntimeBreakEvenThreshold } from '@/server/user-settings'
 
 export async function GET(request: NextRequest) {
   const rateLimitRes = await applyRateLimit(request, apiLimiter)
@@ -136,13 +137,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, data: null, reason: 'no_trades' })
     }
 
-    // Get user settings
-    const userSettings = await prisma.user.findUnique({
-      where: { id: internalUserId },
-      select: { breakEvenThreshold: true },
-    })
-
-    const breakEvenThreshold = getBreakEvenThreshold(userSettings?.breakEvenThreshold)
+    const breakEvenThreshold = await getRuntimeBreakEvenThreshold(internalUserId)
     const getNetPnl = (trade: any) => Number(trade.pnl || 0)
     const getOutcome = (trade: any) => classifyOutcome(getNetPnl(trade), breakEvenThreshold)
 

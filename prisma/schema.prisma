@@ -106,7 +106,7 @@ model DailyNote {
   createdAt DateTime @default(now())
   updatedAt DateTime
   accountId String?
-  emotion   String?
+  emotion   JournalEmotion?
   Account   Account? @relation(fields: [accountId], references: [id], onDelete: Cascade)
   User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -686,6 +686,28 @@ enum TradeOutcome {
 enum TradeExecutionKind {
   ENTRY
   EXIT
+
+  @@schema("public")
+}
+
+enum JournalEmotion {
+  confident
+  anxious
+  focused
+  energetic
+  calm
+  frustrated
+  optimistic
+  pessimistic
+  disciplined
+  impulsive
+  happy
+  sad
+  neutral
+  tired
+  excited
+  stressed
+  relaxed
 
   @@schema("public")
 }

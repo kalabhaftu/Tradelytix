@@ -12,6 +12,7 @@ import { logActivity } from '@/lib/activity-logger'
 import { calculateWinRate, classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData } from '@/lib/trade-core'
+import { getRuntimeAutoAdjustAccountDate, getRuntimeBreakEvenThreshold } from '@/server/user-settings'
 
 /**
  * Helper function to determine if a phase number represents the funded stage
@@ -1388,13 +1389,9 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
         }
 
         if (accountCreatedAt && earliestTradeDate < accountCreatedAt) {
-          // Get user preference
-          const userPref = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { autoAdjustAccountDate: true }
-          })
+          const autoAdjustAccountDate = await getRuntimeAutoAdjustAccountDate(userId)
 
-          if (userPref?.autoAdjustAccountDate) {
+          if (autoAdjustAccountDate) {
             // AUTO ADJUST
             if (isPropFirm && masterAccountId) {
               await prisma.masterAccount.update({
@@ -1619,11 +1616,7 @@ export async function getAccountHistory(accountId: string) {
       throw new Error('Account not found')
     }
 
-    const userSettings = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { breakEvenThreshold: true }
-    })
-    const breakEvenThreshold = getBreakEvenThreshold(userSettings?.breakEvenThreshold)
+    const breakEvenThreshold = await getRuntimeBreakEvenThreshold(userId)
 
     // Get all phases with trade counts and statistics
     const phases = await prisma.phaseAccount.findMany({

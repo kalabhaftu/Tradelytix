@@ -154,7 +154,7 @@ export function CombinedFilters({
     const counts: Record<string, number> = {}
     if (formattedTrades && Array.isArray(formattedTrades)) {
       formattedTrades.forEach(trade => {
-        const inst = trade.symbol || trade.instrument
+        const inst = trade.instrument || trade.symbol
         if (inst) {
           counts[inst] = (counts[inst] || 0) + 1
         }

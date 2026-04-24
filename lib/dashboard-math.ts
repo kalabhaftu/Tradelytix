@@ -243,7 +243,7 @@ export function calculatePnlByInstrument(
   const instrumentMap: Record<string, { pnl: number; trades: number; wins: number; losses: number }> = {}
 
   groupedTrades.forEach((trade: any) => {
-    const instrument = trade.symbol || trade.instrument || 'Unknown'
+    const instrument = trade.instrument || trade.symbol || 'Unknown'
     if (!instrumentMap[instrument]) instrumentMap[instrument] = { pnl: 0, trades: 0, wins: 0, losses: 0 }
     const netPnl = getTradeNetPnl(trade)
     instrumentMap[instrument].pnl += netPnl

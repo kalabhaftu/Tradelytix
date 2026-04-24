@@ -16,6 +16,7 @@ import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { calculateBalanceInfo } from '@/lib/utils/balance-calculator'
 import { normalizePnlDisplayMode } from '@/lib/metrics/pnl'
+import { getRuntimePnlDisplayMode } from '@/server/user-settings'
 
 export async function GET(request: NextRequest) {
   const type = request.nextUrl.searchParams.get('type')
@@ -100,11 +101,7 @@ export async function GET(request: NextRequest) {
       }
       let pnlDisplayMode = 'net'
       if (accountOwnerId) {
-        const userSettings = await prisma.user.findUnique({
-          where: { id: accountOwnerId },
-          select: { pnlDisplayMode: true }
-        })
-        pnlDisplayMode = normalizePnlDisplayMode(userSettings?.pnlDisplayMode)
+        pnlDisplayMode = await getRuntimePnlDisplayMode(accountOwnerId)
       }
       result = calculateBalanceInfo(filteredDbAccounts, trades, {
         pnlDisplayMode: normalizePnlDisplayMode(pnlDisplayMode)

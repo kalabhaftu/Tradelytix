@@ -14,6 +14,7 @@ import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { getTradeNetPnl } from '@/lib/metrics/pnl'
+import { getRuntimeBreakEvenThreshold } from '@/server/user-settings'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // ID is pure masterAccountId (UUID), not composite
 
     // PERFORMANCE OPTIMIZATION: Use parallel queries and database aggregations
-    const [masterAccount, phases, allPhaseTrades, userSettings] = await Promise.all([
+    const [masterAccount, phases, allPhaseTrades, breakEvenThreshold] = await Promise.all([
       // 1. Get master account basic info (no nested relations)
       prisma.masterAccount.findFirst({
         where: {
@@ -101,10 +102,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           exitTime: 'asc'
         }
       }),
-      prisma.user.findUnique({
-        where: { id: internalUserId },
-        select: { breakEvenThreshold: true },
-      })
+      getRuntimeBreakEvenThreshold(internalUserId)
     ])
 
     if (!masterAccount) {
@@ -113,8 +111,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         { status: 404 }
       )
     }
-    const breakEvenThreshold = getBreakEvenThreshold(userSettings?.breakEvenThreshold)
-
     // Get the current active phase
     const currentPhase = phases.find(
       (phase: typeof phases[number]) => phase.phaseNumber === masterAccount.currentPhase

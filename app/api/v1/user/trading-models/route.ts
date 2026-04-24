@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { randomUUID } from 'crypto'
 import { calculateWinRate, classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import { getRuntimeBreakEvenThreshold } from '@/server/user-settings'
 
 const ruleSchema = z.object({
   text: z.string(),
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
     }
     const userId = identity.internalUserId
 
-    const [models, userSettings] = await Promise.all([
+    const [models, breakEvenThreshold] = await Promise.all([
       prisma.tradingModel.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
@@ -43,12 +44,8 @@ export async function GET(request: NextRequest) {
           }
         }
       }),
-      prisma.user.findUnique({
-        where: { id: userId },
-        select: { breakEvenThreshold: true }
-      })
+      getRuntimeBreakEvenThreshold(userId)
     ])
-    const breakEvenThreshold = getBreakEvenThreshold(userSettings?.breakEvenThreshold)
 
     // Parse rules from JSON to array and calculate stats
     const formattedModels = models.map((model: (typeof models)[number]) => {

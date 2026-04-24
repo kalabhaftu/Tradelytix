@@ -15,6 +15,7 @@ import {
 } from '@/lib/math/performance-metrics'
 import { calculateWinRate, classifyOutcome, DEFAULT_BREAK_EVEN_THRESHOLD, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { getTradeNetPnl } from '@/lib/metrics/pnl'
+import { getRuntimeBreakEvenThreshold } from '@/server/user-settings'
 
 // ===========================================
 // TYPES
@@ -191,7 +192,7 @@ async function calculateStatisticsCore(
   }
 
   // Fetch required data in parallel
-  const [accounts, trades, transactions, userSettings] = await Promise.all([
+  const [accounts, trades, transactions, breakEvenThreshold] = await Promise.all([
     prisma.account.findMany({
       where: {
         userId,
@@ -232,15 +233,8 @@ async function calculateStatisticsCore(
         amount: true
       }
     }),
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { breakEvenThreshold: true },
-    }),
+    getRuntimeBreakEvenThreshold(userId),
   ])
-
-  const breakEvenThreshold = getBreakEvenThreshold(
-    userSettings?.breakEvenThreshold ?? DEFAULT_BREAK_EVEN_THRESHOLD
-  )
 
   // Group trades by execution for accurate counting
   const groupedTrades = groupTradesByExecution(trades as any[]) as any[]

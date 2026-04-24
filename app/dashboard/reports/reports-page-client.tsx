@@ -829,7 +829,7 @@ export default function ReportsPageClient({
                                                     <TableCell className="text-[10px] font-bold font-mono py-2 opacity-60">
                                                         {trade.entryDate ? formatTimeInZone(trade.entryDate.includes('Z') ? trade.entryDate : `${trade.entryDate}Z`, 'yyyy-MM-dd HH:mm') : 'N/A'}
                                                     </TableCell>
-                                                    <TableCell className="text-[10px] font-black py-2">{trade.symbol || trade.instrument || '—'}</TableCell>
+                                                    <TableCell className="text-[10px] font-black py-2">{trade.instrument || trade.symbol || '—'}</TableCell>
                                                     <TableCell className="py-2">
                                                         <span className={cn(
                                                             "text-[9px] font-black uppercase px-2 py-0.5 rounded-full",

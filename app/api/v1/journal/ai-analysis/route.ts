@@ -5,6 +5,7 @@ import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { cleanContent } from '@/lib/utils'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import { getRuntimeBreakEvenThreshold } from '@/server/user-settings'
 
 // GET - Generate AI analysis of journals and trades
 export async function GET(request: NextRequest) {
@@ -69,11 +70,7 @@ export async function GET(request: NextRequest) {
       tradesWhere.accountId = accountId
     }
 
-    const userSettings = await prisma.user.findUnique({
-      where: { id: internalUserId },
-      select: { breakEvenThreshold: true }
-    })
-    const breakEvenThreshold = getBreakEvenThreshold(userSettings?.breakEvenThreshold)
+    const breakEvenThreshold = await getRuntimeBreakEvenThreshold(internalUserId)
 
     const trades = await prisma.trade.findMany({
       where: tradesWhere,

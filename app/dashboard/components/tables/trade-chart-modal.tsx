@@ -44,7 +44,7 @@ export function TradeChartModal({ isOpen, onClose, trade }: TradeChartModalProps
   }
 
   // Extract and validate trade information for the chart
-  const symbol = trade.symbol || trade.instrument || 'UNKNOWN'
+  const symbol = trade.instrument || trade.symbol || 'UNKNOWN'
   const entryTime = new Date(trade.entryDate)
   const exitTime = new Date(trade.closeDate)
 

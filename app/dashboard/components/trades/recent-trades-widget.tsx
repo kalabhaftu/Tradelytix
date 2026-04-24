@@ -126,8 +126,8 @@ export default function RecentTradesWidget() {
                   <div className="text-muted-foreground/60 font-medium truncate">
                     {formatDate(trade.entryDate)}
                   </div>
-                  <div className="font-bold truncate" title={trade.symbol || trade.instrument}>
-                    {trade.symbol || trade.instrument}
+                  <div className="font-bold truncate" title={trade.instrument || trade.symbol}>
+                    {trade.instrument || trade.symbol}
                   </div>
                   <div
                     className={cn(

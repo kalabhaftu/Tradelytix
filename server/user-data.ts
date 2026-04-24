@@ -54,17 +54,8 @@ export async function getUserData(): Promise<{
                 email: true,
                 auth_user_id: true,
                 isFirstConnection: true,
-                timezone: true,
-                theme: true,
-                pnlDisplayMode: true,
                 firstName: true,
                 lastName: true,
-                accountFilterSettings: true,
-                backtestInputMode: true,
-                accentPack: true,
-                breakEvenThreshold: true,
-                autoAdjustAccountDate: true,
-                aiSettings: true,
                 settings: {
                   select: USER_SETTINGS_SELECT
                 }

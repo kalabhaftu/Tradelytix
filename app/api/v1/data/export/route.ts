@@ -88,17 +88,8 @@ export async function POST(request: NextRequest) {
         where: { id: internalUserId },
         select: {
           id: true,
-          timezone: true,
-          theme: true,
           firstName: true,
           lastName: true,
-          accountFilterSettings: true,
-          aiSettings: true,
-          backtestInputMode: true,
-          accentPack: true,
-          autoAdjustAccountDate: true,
-          breakEvenThreshold: true,
-          pnlDisplayMode: true,
           settings: {
             select: USER_SETTINGS_SELECT
           }

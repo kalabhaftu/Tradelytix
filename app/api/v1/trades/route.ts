@@ -36,7 +36,6 @@ import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { getTradeNetPnl, normalizePnlDisplayMode } from '@/lib/metrics/pnl'
-import { USER_SETTINGS_SELECT, mergeUserSettings } from '@/lib/user-settings'
 
 // PERF: Only select fields the dashboard actually uses (~40% smaller payload)
 const TRADE_SELECT = {
@@ -215,21 +214,17 @@ export async function GET(request: NextRequest) {
           }
         }
       }) : Promise.resolve([]),
-      prisma.user.findUnique({
-        where: { id: internalUserId },
+      prisma.userSettings.findUnique({
+        where: { userId: internalUserId },
         select: {
           breakEvenThreshold: true,
           pnlDisplayMode: true,
-          settings: {
-            select: USER_SETTINGS_SELECT
-          }
-        },
+        }
       })
     ])
 
-    const mergedSettings = userSettings ? mergeUserSettings(userSettings as any, (userSettings as any).settings) : null
-    const breakEvenThreshold = getBreakEvenThreshold(mergedSettings?.breakEvenThreshold)
-    const pnlDisplayMode = normalizePnlDisplayMode(mergedSettings?.pnlDisplayMode)
+    const breakEvenThreshold = getBreakEvenThreshold(userSettings?.breakEvenThreshold)
+    const pnlDisplayMode = normalizePnlDisplayMode(userSettings?.pnlDisplayMode)
     
     // Combine regular accounts + transform prop firm phases to unified format with startingBalance
     const accounts = [

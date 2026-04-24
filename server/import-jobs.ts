@@ -1,7 +1,7 @@
 import JSZip from 'jszip'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/server/auth'
-import { buildSettingsMirrorData, buildUserSettingsUpdateData, extractUserSettingsWriteData, pickSettingsPatch } from '@/lib/user-settings'
+import { buildUserSettingsUpdateData, extractUserSettingsWriteData, pickSettingsPatch } from '@/lib/user-settings'
 import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData } from '@/lib/trade-core'
 
 const TRADE_CHUNK_SIZE = 25
@@ -215,55 +215,36 @@ async function resolveLookupMaps(data: any, internalUserId: string) {
 
 async function runPreparation(data: any, internalUserId: string) {
   if (data.user) {
-    const currentUser = await prisma.user.findUnique({
-      where: { id: internalUserId },
-      select: {
-        id: true,
-        timezone: true,
-        theme: true,
-        accountFilterSettings: true,
-        aiSettings: true,
-        backtestInputMode: true,
-        accentPack: true,
-        autoAdjustAccountDate: true,
-        breakEvenThreshold: true,
-        pnlDisplayMode: true,
-      }
+    const settingsPatch = pickSettingsPatch({
+      timezone: data.user.timezone,
+      theme: data.user.theme,
+      accountFilterSettings: data.user.accountFilterSettings,
+      aiSettings: data.user.aiSettings,
+      backtestInputMode: data.user.backtestInputMode,
+      accentPack: data.user.accentPack,
+      autoAdjustAccountDate: data.user.autoAdjustAccountDate,
+      breakEvenThreshold: data.user.breakEvenThreshold,
+      pnlDisplayMode: data.user.pnlDisplayMode,
     })
 
-    if (currentUser) {
-      const settingsPatch = pickSettingsPatch({
-        timezone: data.user.timezone,
-        theme: data.user.theme,
-        accountFilterSettings: data.user.accountFilterSettings,
-        aiSettings: data.user.aiSettings,
-        backtestInputMode: data.user.backtestInputMode,
-        accentPack: data.user.accentPack,
-        autoAdjustAccountDate: data.user.autoAdjustAccountDate,
-        breakEvenThreshold: data.user.breakEvenThreshold,
-        pnlDisplayMode: data.user.pnlDisplayMode,
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: internalUserId },
+        data: {
+          firstName: data.user.firstName,
+          lastName: data.user.lastName,
+        },
       })
 
-      await prisma.$transaction(async (tx) => {
-        await tx.user.update({
-          where: { id: internalUserId },
-          data: {
-            firstName: data.user.firstName,
-            lastName: data.user.lastName,
-            ...buildSettingsMirrorData(currentUser as any, settingsPatch),
-          },
-        })
-
-        await tx.userSettings.upsert({
-          where: { userId: internalUserId },
-          create: {
-            userId: internalUserId,
-            ...extractUserSettingsWriteData(settingsPatch),
-          },
-          update: buildUserSettingsUpdateData(settingsPatch),
-        })
+      await tx.userSettings.upsert({
+        where: { userId: internalUserId },
+        create: {
+          userId: internalUserId,
+          ...extractUserSettingsWriteData(settingsPatch),
+        },
+        update: buildUserSettingsUpdateData(settingsPatch),
       })
-    }
+    })
   }
 
   if (data.tradeTags) {

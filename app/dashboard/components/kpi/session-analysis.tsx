@@ -13,7 +13,7 @@ interface SessionAnalysisProps {
 const SESSION_META: Record<MarketSession, { name: string; icon: any; color: string }> = {
   'New York': { name: 'New York', icon: Sun, color: 'text-amber-500' },
   London: { name: 'London', icon: Sunrise, color: 'text-blue-500' },
-  Asia: { name: 'Asia', icon: Moon, color: 'text-purple-500' },
+  Asia: { name: 'Asia', icon: Moon, color: 'text-sky-400' },
 }
 
 export default function SessionAnalysis({ size: _size }: SessionAnalysisProps) {

@@ -38,9 +38,9 @@ export function SeasonalAvatarBadge({ children, className }: SeasonalAvatarBadge
             animationDuration: 3
         },
         VALENTINES: {
-            gradient: "bg-chart-3",
+            gradient: "bg-destructive",
             badge: <Heart size={12} />,
-            shadow: "shadow-pink-500/20",
+            shadow: "shadow-red-500/20",
             animationDuration: 3
         },
     }

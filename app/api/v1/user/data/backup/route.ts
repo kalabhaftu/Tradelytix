@@ -45,16 +45,7 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           email: true,
-          timezone: true,
           isFirstConnection: true,
-          theme: true,
-          accountFilterSettings: true,
-          aiSettings: true,
-          backtestInputMode: true,
-          breakEvenThreshold: true,
-          pnlDisplayMode: true,
-          accentPack: true,
-          autoAdjustAccountDate: true,
           settings: {
             select: USER_SETTINGS_SELECT
           }

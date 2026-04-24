@@ -7,7 +7,6 @@ import { normalizePnlDisplayMode } from '@/lib/metrics/pnl'
 import {
   DEFAULT_AI_SETTINGS,
   USER_SETTINGS_SELECT,
-  buildSettingsMirrorData,
   buildUserSettingsUpdateData,
   extractUserSettingsWriteData,
   mergeUserSettings,
@@ -34,12 +33,6 @@ export async function GET() {
         email: true,
         firstName: true,
         lastName: true,
-        accentPack: true,
-        theme: true,
-        autoAdjustAccountDate: true,
-        breakEvenThreshold: true,
-        pnlDisplayMode: true,
-        aiSettings: true,
         settings: {
           select: USER_SETTINGS_SELECT
         }
@@ -131,15 +124,6 @@ export async function PATCH(request: NextRequest) {
         email: true,
         firstName: true,
         lastName: true,
-        timezone: true,
-        accentPack: true,
-        theme: true,
-        accountFilterSettings: true,
-        backtestInputMode: true,
-        autoAdjustAccountDate: true,
-        breakEvenThreshold: true,
-        pnlDisplayMode: true,
-        aiSettings: true,
         settings: {
           select: USER_SETTINGS_SELECT
         }
@@ -165,51 +149,44 @@ export async function PATCH(request: NextRequest) {
       pnlDisplayMode: pnlDisplayMode !== undefined ? normalizePnlDisplayMode(pnlDisplayMode) : undefined,
       aiSettings: aiSettings !== undefined
         ? normalizeAiSettings({
-            ...normalizeAiSettings(currentUser.settings?.aiSettings ?? currentUser.aiSettings ?? DEFAULT_AI_SETTINGS),
+            ...normalizeAiSettings(currentUser.settings?.aiSettings ?? DEFAULT_AI_SETTINGS),
             ...(typeof aiSettings === 'object' && aiSettings ? aiSettings : {})
           })
         : undefined,
     })
 
-    const updatedUser = await prisma.$transaction(async (tx) => {
-      const base = await tx.user.update({
+    const updated = await prisma.$transaction(async (tx) => {
+      const baseUser = await tx.user.update({
         where: { id: internalUserId },
-        data: {
-          ...userUpdateData,
-          ...buildSettingsMirrorData(currentUser as any, settingsPatch),
-        },
+        data: userUpdateData,
         select: {
           id: true,
           email: true,
           firstName: true,
           lastName: true,
-          timezone: true,
-          accentPack: true,
-          theme: true,
-          accountFilterSettings: true,
-          backtestInputMode: true,
-          autoAdjustAccountDate: true,
-          breakEvenThreshold: true,
-          pnlDisplayMode: true,
-          aiSettings: true,
         }
       })
 
-      await tx.userSettings.upsert({
+      const effectiveSettings = mergeUserSettings({}, {
+        ...(currentUser.settings ?? {}),
+        ...settingsPatch,
+      })
+
+      const storedSettings = await tx.userSettings.upsert({
         where: { userId: internalUserId },
         create: {
           userId: internalUserId,
-          ...extractUserSettingsWriteData(mergeUserSettings(currentUser as any, settingsPatch)),
+          ...extractUserSettingsWriteData(effectiveSettings),
         },
         update: buildUserSettingsUpdateData(settingsPatch),
       })
 
-      return base
+      return { baseUser, storedSettings }
     })
 
     const activityUserId =
-      typeof updatedUser?.id === 'string' && updatedUser.id.length > 0
-        ? updatedUser.id
+      typeof updated.baseUser?.id === 'string' && updated.baseUser.id.length > 0
+        ? updated.baseUser.id
         : internalUserId
 
     logActivity({
@@ -223,7 +200,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        ...mergeUserSettings(updatedUser as any, settingsPatch),
+        ...mergeUserSettings(updated.baseUser as any, updated.storedSettings as any),
       },
       message: 'Profile updated successfully'
     })

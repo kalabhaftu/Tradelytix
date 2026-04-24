@@ -12,7 +12,6 @@ import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { prisma } from '@/lib/prisma'
 import { revalidateTag } from 'next/cache'
-import { buildSettingsMirrorData } from '@/lib/user-settings'
 
 export async function DELETE(request: NextRequest) {
   const rateLimitRes = await applyRateLimit(request, apiLimiter)
@@ -122,43 +121,23 @@ export async function DELETE(request: NextRequest) {
       })
 
       // 12. Reset user settings (keep account)
-      const currentUser = await tx.user.findUnique({
+      await tx.user.update({
         where: { id: internalUserId },
-        select: {
-          timezone: true,
-          theme: true,
-          accountFilterSettings: true,
-          aiSettings: true,
-          backtestInputMode: true,
-          breakEvenThreshold: true,
-          pnlDisplayMode: true,
-          accentPack: true,
-          autoAdjustAccountDate: true,
+        data: {
+          isFirstConnection: true,
         }
       })
 
-      if (currentUser) {
-        await tx.user.update({
-          where: { id: internalUserId },
-          data: {
-            isFirstConnection: true,
-            ...buildSettingsMirrorData(currentUser as any, {
-              accountFilterSettings: null,
-            })
-          }
-        })
-
-        await tx.userSettings.upsert({
-          where: { userId: internalUserId },
-          create: {
-            userId: internalUserId,
-            accountFilterSettings: null,
-          },
-          update: {
-            accountFilterSettings: null,
-          }
-        })
-      }
+      await tx.userSettings.upsert({
+        where: { userId: internalUserId },
+        create: {
+          userId: internalUserId,
+          accountFilterSettings: null,
+        },
+        update: {
+          accountFilterSettings: null,
+        }
+      })
     }, {
       timeout: 60000, // 60 second timeout for large deletions
       maxWait: 65000

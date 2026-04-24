@@ -44,17 +44,8 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
         email: true,
         auth_user_id: true,
         isFirstConnection: true,
-        timezone: true,
-        theme: true,
-        accentPack: true,
-        pnlDisplayMode: true,
         firstName: true,
         lastName: true,
-        accountFilterSettings: true,
-        backtestInputMode: true,
-        breakEvenThreshold: true,
-        autoAdjustAccountDate: true,
-        aiSettings: true,
         settings: {
           select: USER_SETTINGS_SELECT
         }

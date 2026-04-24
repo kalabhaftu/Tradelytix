@@ -60,24 +60,26 @@ export function getDefaultUserSettings(): UserSettingsShape {
   }
 }
 
-export function mergeUserSettings<
-  T extends Pick<User, 'timezone' | 'theme' | 'accountFilterSettings' | 'aiSettings' | 'backtestInputMode' | 'breakEvenThreshold' | 'pnlDisplayMode' | 'accentPack' | 'autoAdjustAccountDate'>
->(
+export function mergeUserSettings<T extends Record<string, unknown>>(
   user: T,
   settings?: Partial<UserSettingsShape> | null
 ) {
   const defaults = getDefaultUserSettings()
+  const resolved = {
+    timezone: settings?.timezone ?? defaults.timezone,
+    theme: settings?.theme ?? defaults.theme,
+    accountFilterSettings: settings?.accountFilterSettings ?? defaults.accountFilterSettings,
+    aiSettings: normalizeAiSettings(settings?.aiSettings ?? defaults.aiSettings),
+    backtestInputMode: settings?.backtestInputMode ?? defaults.backtestInputMode,
+    breakEvenThreshold: settings?.breakEvenThreshold ?? defaults.breakEvenThreshold,
+    pnlDisplayMode: settings?.pnlDisplayMode ?? defaults.pnlDisplayMode,
+    accentPack: settings?.accentPack ?? defaults.accentPack,
+    autoAdjustAccountDate: settings?.autoAdjustAccountDate ?? defaults.autoAdjustAccountDate,
+  }
+
   return {
     ...user,
-    timezone: settings?.timezone ?? user.timezone ?? defaults.timezone,
-    theme: settings?.theme ?? user.theme ?? defaults.theme,
-    accountFilterSettings: settings?.accountFilterSettings ?? user.accountFilterSettings ?? defaults.accountFilterSettings,
-    aiSettings: normalizeAiSettings(settings?.aiSettings ?? user.aiSettings ?? defaults.aiSettings),
-    backtestInputMode: settings?.backtestInputMode ?? user.backtestInputMode ?? defaults.backtestInputMode,
-    breakEvenThreshold: settings?.breakEvenThreshold ?? user.breakEvenThreshold ?? defaults.breakEvenThreshold,
-    pnlDisplayMode: settings?.pnlDisplayMode ?? user.pnlDisplayMode ?? defaults.pnlDisplayMode,
-    accentPack: settings?.accentPack ?? user.accentPack ?? defaults.accentPack,
-    autoAdjustAccountDate: settings?.autoAdjustAccountDate ?? user.autoAdjustAccountDate ?? defaults.autoAdjustAccountDate,
+    ...resolved,
   }
 }
 
@@ -154,24 +156,6 @@ export function buildUserSettingsUpdateData(
   }
 
   return update
-}
-
-export function buildSettingsMirrorData(
-  currentUser: Pick<User, SettingsField>,
-  settingsPatch: Partial<UserSettingsShape>
-): Prisma.UserUpdateInput {
-  const merged = mergeUserSettings(currentUser as any, settingsPatch)
-  return {
-    timezone: merged.timezone,
-    theme: merged.theme,
-    accountFilterSettings: merged.accountFilterSettings,
-    aiSettings: normalizeAiSettings(merged.aiSettings),
-    backtestInputMode: merged.backtestInputMode,
-    breakEvenThreshold: merged.breakEvenThreshold,
-    pnlDisplayMode: merged.pnlDisplayMode,
-    accentPack: merged.accentPack,
-    autoAdjustAccountDate: merged.autoAdjustAccountDate,
-  }
 }
 
 export function pickSettingsPatch(source: Record<string, unknown>) {

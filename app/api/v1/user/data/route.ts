@@ -120,6 +120,11 @@ export async function DELETE(request: NextRequest) {
         where: { userId: internalUserId }
       })
 
+      // 11b. Delete journal templates
+      await tx.journalTemplate.deleteMany({
+        where: { userId: internalUserId }
+      })
+
       // 12. Reset user settings (keep account)
       await tx.user.update({
         where: { id: internalUserId },

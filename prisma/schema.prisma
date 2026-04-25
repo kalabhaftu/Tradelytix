@@ -403,10 +403,25 @@ model User {
   WeeklyReview           WeeklyReview[]
   WeeklyAIReview         WeeklyAIReview[]
   ActivityLog            ActivityLog[]
+  JournalTemplate        JournalTemplate[]
   settings               UserSettings?
 
   @@index([auth_user_id])
   @@index([email])
+  @@schema("public")
+}
+
+model JournalTemplate {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  content   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId, createdAt])
   @@schema("public")
 }
 

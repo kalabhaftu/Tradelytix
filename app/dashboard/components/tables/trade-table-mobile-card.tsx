@@ -3,8 +3,9 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { getKillzoneBadge, getTradingSession } from '@/lib/time-utils'
-import { cn, formatCurrency, formatNumber, formatPrice, parsePositionTime } from '@/lib/utils'
+import { cn, formatNumber, formatPrice, parsePositionTime } from '@/lib/utils'
 import { ChevronDown, ChevronRight, BarChart3, Eye, Pencil } from 'lucide-react'
 import { formatInTimeZone } from 'date-fns-tz'
 import { ExtendedTrade } from './trade-table-review'
@@ -34,6 +35,7 @@ export function TradeTableMobileCard({
   onEdit,
   onViewChart,
 }: TradeTableMobileCardProps) {
+  const { formatValue, getTradeRMultipleInfo, isPrivacyMode, maskSensitiveValue } = useDashboardDisplay()
   const entryDateFormatted = formatInTimeZone(
     new Date(trade.entryDate),
     timezone,
@@ -46,6 +48,7 @@ export function TradeTableMobileCard({
 
   const isProfitable = trade.pnl >= 0
   const positionTime = parsePositionTime(trade.timeInPosition)
+  const tradeRInfo = getTradeRMultipleInfo(trade)
 
   return (
     <div
@@ -107,7 +110,9 @@ export function TradeTableMobileCard({
                 </>
               )}
             </div>
-            <p className="text-sm text-muted-foreground mt-1">{trade.accountNumber}</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {isPrivacyMode ? maskSensitiveValue() : trade.accountNumber}
+            </p>
           </div>
         </div>
         <div className="text-right">
@@ -115,7 +120,7 @@ export function TradeTableMobileCard({
             "font-bold text-lg",
             isProfitable ? "text-long" : "text-short"
           )}>
-            {formatCurrency(trade.pnl)}
+            {formatValue(trade.pnl, { kind: 'money', rValue: tradeRInfo.value })}
           </div>
         </div>
       </div>
@@ -149,7 +154,7 @@ export function TradeTableMobileCard({
         {trade.commission !== 0 && (
           <div>
             <p className="text-muted-foreground text-xs">Commission</p>
-            <p className="font-medium">{formatCurrency(trade.commission)}</p>
+            <p className="font-medium">{formatValue(trade.commission, { kind: 'money' })}</p>
           </div>
         )}
       </div>
@@ -193,7 +198,9 @@ export function TradeTableMobileCard({
           <p className="text-sm font-medium text-muted-foreground">
             Grouped Trades ({trade.trades.length})
           </p>
-          {trade.trades.map((childTrade, idx) => (
+          {trade.trades.map((childTrade, idx) => {
+            const childTradeRInfo = getTradeRMultipleInfo(childTrade)
+            return (
             <div key={idx} className="text-xs border-l-2 border-muted-foreground/30 pl-3 py-1">
               <div className="flex justify-between">
                 <span>{childTrade.instrument}</span>
@@ -201,14 +208,15 @@ export function TradeTableMobileCard({
                   "font-semibold",
                   childTrade.pnl >= 0 ? "text-long" : "text-short"
                 )}>
-                  {formatCurrency(childTrade.pnl)}
+                  {formatValue(childTrade.pnl, { kind: 'money', rValue: childTradeRInfo.value })}
                 </span>
               </div>
               <p className="text-muted-foreground">
                 {formatInTimeZone(new Date(childTrade.entryDate), timezone, 'MMM d, HH:mm')}
               </p>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

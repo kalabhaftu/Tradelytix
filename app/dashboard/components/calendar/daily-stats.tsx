@@ -6,6 +6,7 @@ import { CalendarEntry } from "@/app/dashboard/types/calendar"
 import { groupTradesByExecution } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { STAT_CARD_STYLES, PNL_TEXT_STYLES } from '@/app/dashboard/constants/calendar-styles'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 
 interface DailyStatsProps {
   dayData: CalendarEntry | undefined;
@@ -71,6 +72,7 @@ function StatCard({ icon: Icon, label, value, subtext, trend = 'neutral', classN
 }
 
 export function DailyStats({ dayData, isWeekly = false }: DailyStatsProps) {
+  const { formatValue } = useDashboardDisplay()
   const stats = React.useMemo(() => {
     if (!dayData?.trades?.length) {
       return null
@@ -144,7 +146,7 @@ export function DailyStats({ dayData, isWeekly = false }: DailyStatsProps) {
       <StatCard
         icon={stats.totalPnL >= 0 ? ArrowUpRight : ArrowDownRight}
         label="Net P&L"
-        value={formatCurrency(stats.totalPnL)}
+        value={formatValue(stats.totalPnL, { kind: 'money' })}
         subtext={`${stats.accountCount} ${stats.accountCount > 1 ? "accounts" : "account"}`}
         trend={stats.totalPnL >= 0 ? 'positive' : 'negative'}
       />
@@ -160,14 +162,14 @@ export function DailyStats({ dayData, isWeekly = false }: DailyStatsProps) {
       <StatCard
         icon={ArrowDownRight}
         label="Max Drawdown"
-        value={`-${formatCurrency(stats.maxDrawdown)}`}
+        value={`-${formatValue(stats.maxDrawdown, { kind: 'money' })}`}
         trend={stats.maxDrawdown > 0 ? 'negative' : 'neutral'}
       />
 
       <StatCard
         icon={BarChart3}
         label="Max Profit"
-        value={formatCurrency(stats.maxProfit)}
+        value={formatValue(stats.maxProfit, { kind: 'money' })}
         trend={stats.maxProfit > 0 ? 'positive' : 'neutral'}
       />
     </div>

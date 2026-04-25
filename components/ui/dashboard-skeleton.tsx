@@ -1,57 +1,128 @@
 import React from 'react'
 import { cn } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Card, CardContent } from "@/components/ui/card"
 
 /**
- * Unified skeleton system — clean grid blocks matching the widget layout.
- * No art, no decorative shapes. Just shimmer rectangles in a grid.
+ * Unified skeleton system — uses the same Skeleton component as
+ * Accounts / Data / Journal pages for 1:1 visual parity.
  */
 
-function SkeletonBlock({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return (
-    <div
-      className={cn(
-        "bg-muted/40 rounded-lg relative overflow-hidden",
-        "before:absolute before:inset-0 before:translate-x-[-100%]",
-        "before:bg-gradient-to-r before:from-transparent before:via-muted/30 before:to-transparent",
-        "before:animate-[shimmer_2s_ease-in-out_infinite]",
-        className
-      )}
-      style={style}
-    />
-  )
-}
-
-/** Skeleton for a single widget card — just a titled block */
-function WidgetSkeleton({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return (
-    <div className={cn("bg-muted/10 border border-border/40 rounded-2xl p-5 flex flex-col", className)} style={style}>
-      <SkeletonBlock className="h-2 w-24 mb-4" />
-      <SkeletonBlock className="flex-1 w-full rounded-xl" />
-    </div>
-  )
-}
-
-/** KPI skeleton — compact block */
+/** KPI skeleton — matches the real KPI card layout */
 function KpiSkeleton() {
   return (
-    <div className="bg-muted/10 border border-border/40 rounded-xl min-[1440px]:rounded-2xl p-3 min-[1440px]:p-4 h-[104px] min-[1440px]:h-[100px] flex flex-col justify-between">
-      <SkeletonBlock className="h-2 w-20" />
-      <div className="space-y-2">
-        <SkeletonBlock className="h-6 w-28" />
-        <SkeletonBlock className="h-2 w-16" />
-      </div>
-    </div>
+    <Card className="border-border/24 bg-card/76">
+      <CardContent className="px-4 py-3 min-[1440px]:px-4 min-[1440px]:py-4 h-[104px] min-[1440px]:h-[100px] flex flex-col justify-between">
+        <div className="flex items-start justify-between gap-3">
+          <Skeleton className="h-3 w-28 bg-muted/45" />
+          <Skeleton className="h-4 w-4 rounded-md bg-muted/30" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-24 bg-muted/55" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-3 w-14 bg-muted/30" />
+            <Skeleton className="h-3 w-16 bg-muted/40" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+/** Widget skeleton — matches the WidgetCard layout with title + chart area + footer stats */
+function WidgetSkeleton({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <Card className={cn("border-border/24 bg-card/76 overflow-hidden", className)} style={style}>
+      <CardContent className="p-4 sm:p-5 flex flex-col gap-4 h-full">
+        {/* Header row */}
+        <div className="flex items-center justify-between gap-3 shrink-0">
+          <Skeleton className="h-3 w-20 bg-muted/40" />
+          <Skeleton className="h-7 w-7 rounded-lg bg-muted/25" />
+        </div>
+        {/* Main chart area */}
+        <Skeleton className="flex-1 w-full rounded-xl bg-muted/20 min-h-[120px]" />
+        {/* Footer stats */}
+        <div className="grid grid-cols-2 gap-3 border-t border-border/12 pt-3 shrink-0">
+          <div className="space-y-1.5">
+            <Skeleton className="h-3 w-14 bg-muted/25" />
+            <Skeleton className="h-4 w-20 bg-muted/40" />
+          </div>
+          <div className="space-y-1.5">
+            <Skeleton className="h-3 w-12 bg-muted/25" />
+            <Skeleton className="h-4 w-16 bg-muted/40" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+/** Calendar skeleton — matches the calendar widget shape */
+function CalendarWidgetSkeleton({ className }: { className?: string }) {
+  return (
+    <Card className={cn("border-border/24 bg-card/76 overflow-hidden", className)}>
+      <CardContent className="p-0 flex flex-col h-full">
+        {/* Calendar header */}
+        <div className="flex items-center justify-between border-b border-border/14 px-3 py-2.5">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-7 w-28 rounded-lg bg-muted/30" />
+            <Skeleton className="h-6 w-16 rounded-md bg-muted/25" />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Skeleton className="h-5 w-14 rounded bg-muted/30" />
+            <Skeleton className="h-5 w-8 rounded bg-muted/25" />
+            <Skeleton className="h-6 w-6 rounded-lg bg-muted/20" />
+          </div>
+        </div>
+        {/* Weekday headers */}
+        <div className="grid grid-cols-5 gap-1.5 px-3 py-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={`wk-${i}`} className="h-3 w-8 mx-auto bg-muted/20" />
+          ))}
+        </div>
+        {/* Day grid */}
+        <div className="flex-1 grid grid-cols-5 gap-1.5 p-3 pt-0">
+          {Array.from({ length: 25 }).map((_, i) => (
+            <Skeleton key={`day-${i}`} className="rounded-lg bg-muted/[0.08] min-h-[52px]" />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+/** Table skeleton — matches trade table shape */
+function TradeTableSkeleton({ className }: { className?: string }) {
+  return (
+    <Card className={cn("border-border/24 bg-card/76 overflow-hidden", className)}>
+      <CardContent className="p-0">
+        {/* Search / filter bar */}
+        <div className="flex flex-wrap items-center gap-3 border-b border-border/14 px-4 py-3">
+          <Skeleton className="h-9 flex-1 min-w-[180px] rounded-xl bg-muted/30" />
+          <Skeleton className="h-9 w-28 rounded-xl bg-muted/25" />
+          <Skeleton className="h-9 w-24 rounded-xl bg-muted/25" />
+        </div>
+        {/* Table rows */}
+        <div className="divide-y divide-border/8">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3">
+              <Skeleton className="h-4 w-20 bg-muted/30" />
+              <Skeleton className="h-4 w-16 bg-muted/30" />
+              <Skeleton className="h-4 w-12 bg-muted/25" />
+              <Skeleton className="h-4 w-16 ml-auto bg-muted/35" />
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
 /**
  * Main Dashboard Skeleton — matches the actual widget grid layout.
- * KPI row → big+medium widgets → 3-col row → 3-col row → full width
- * Clean blocks only. No chart bars, no calendar grids, no table rows.
+ * Uses the same Card + Skeleton pattern as Accounts/Data/Journal pages.
  */
 export function MainDashboardSkeleton() {
-  // Legacy generic skeleton kept for non-dashboard reuse.
-  // Dashboard runtime now uses TemplateAwareDashboardSkeleton.
   return (
     <div className="px-4 py-4 space-y-3">
       {/* KPI Row */}
@@ -90,11 +161,6 @@ export function MainDashboardSkeleton() {
       {/* Row 4: 2 equal widgets */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {[0, 1].map(i => <WidgetSkeleton key={`r4-${i}`} className="min-h-[240px]" />)}
-      </div>
-
-      {/* Row 5: 3 equal widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-        {[0, 1, 2].map(i => <WidgetSkeleton key={`r5-${i}`} className="min-h-[240px]" />)}
       </div>
     </div>
   )
@@ -178,7 +244,7 @@ export function TemplateAwareDashboardSkeleton({
             <div
               key={`kpi-empty-${index}`}
               className={cn(
-                "h-[100px] rounded-2xl border border-border/20 bg-transparent",
+                "h-[100px] rounded-2xl border border-border/15 bg-transparent",
                 index === 4 && "min-[768px]:max-[1023px]:col-span-2",
                 index <= 2 && "min-[1024px]:max-[1439px]:col-span-2",
                 index >= 3 && "min-[1024px]:max-[1439px]:col-span-3"
@@ -225,8 +291,8 @@ export function PageSkeleton() {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="space-y-2">
-          <SkeletonBlock className="h-7 w-48" />
-          <SkeletonBlock className="h-4 w-72" />
+          <Skeleton className="h-7 w-48 bg-muted/55" />
+          <Skeleton className="h-4 w-72 bg-muted/30" />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <WidgetSkeleton className="lg:col-span-2 min-h-[400px]" />
@@ -243,12 +309,12 @@ export function CompactSkeleton({ rows = 3 }: { rows?: number }) {
     <div className="space-y-2">
       {Array(rows).fill(0).map((_, i) => (
         <div key={i} className="flex items-center gap-2">
-          <SkeletonBlock className="h-8 w-8 rounded" />
+          <Skeleton className="h-8 w-8 rounded bg-muted/30" />
           <div className="flex-1 space-y-1">
-            <SkeletonBlock className="h-3 w-3/4" />
-            <SkeletonBlock className="h-2 w-1/2" />
+            <Skeleton className="h-3 w-3/4 bg-muted/35" />
+            <Skeleton className="h-2 w-1/2 bg-muted/25" />
           </div>
-          <SkeletonBlock className="h-4 w-12" />
+          <Skeleton className="h-4 w-12 bg-muted/30" />
         </div>
       ))}
     </div>
@@ -260,19 +326,10 @@ export function TableSkeleton() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <SkeletonBlock className="h-7 w-40" />
-        <SkeletonBlock className="h-8 w-32 rounded-lg" />
+        <Skeleton className="h-7 w-40 bg-muted/55" />
+        <Skeleton className="h-8 w-32 rounded-lg bg-muted/35" />
       </div>
-      <div className="bg-muted/10 border border-border/40 rounded-2xl overflow-hidden">
-        <SkeletonBlock className="h-10 w-full rounded-none" />
-        {[0, 1, 2, 3, 4, 5].map(i => (
-          <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-border/20">
-            <SkeletonBlock className="h-3 w-20" />
-            <SkeletonBlock className="h-3 w-16" />
-            <SkeletonBlock className="h-3 w-24 ml-auto" />
-          </div>
-        ))}
-      </div>
+      <TradeTableSkeleton />
     </div>
   )
 }
@@ -282,13 +339,13 @@ export function ReportsSkeleton() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <SkeletonBlock className="h-7 w-48" />
+        <Skeleton className="h-7 w-48 bg-muted/55" />
         <div className="flex gap-2">
-          <SkeletonBlock className="h-8 w-20 rounded-lg" />
-          <SkeletonBlock className="h-8 w-20 rounded-lg" />
+          <Skeleton className="h-8 w-20 rounded-lg bg-muted/35" />
+          <Skeleton className="h-8 w-20 rounded-lg bg-muted/35" />
         </div>
       </div>
-      <SkeletonBlock className="h-10 w-full rounded-xl" />
+      <Skeleton className="h-10 w-full rounded-xl bg-muted/30" />
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
         {[0, 1, 2, 3, 4, 5].map(i => <WidgetSkeleton key={`rep-${i}`} className="min-h-[260px]" />)}
       </div>

@@ -8,6 +8,7 @@ import { CalendarEntry } from "@/app/dashboard/types/calendar"
 import { useTheme } from "@/context/theme-provider"
 import { cn } from "@/lib/utils"
 import { CHART_STYLES, PNL_TEXT_STYLES } from "@/app/dashboard/constants/calendar-styles"
+import { useDashboardDisplay } from "@/hooks/use-dashboard-display"
 
 interface ChartsProps {
   dayData: CalendarEntry | undefined;
@@ -95,6 +96,7 @@ function DistributionTooltip({ active, payload, totalPnL }: any) {
 
 export function Charts({ dayData, isWeekly = false }: ChartsProps) {
   const { effectiveTheme } = useTheme()
+  const { formatValue } = useDashboardDisplay()
   const isDarkMode = effectiveTheme === 'dark'
   const locale = 'en'
 
@@ -200,7 +202,7 @@ export function Charts({ dayData, isWeekly = false }: ChartsProps) {
             {isWeekly ? "Weekly Equity" : "Daily Equity"}
           </CardTitle>
           <CardDescription>
-            Final Balance: {formatCurrency(chartData.equityChartData[chartData.equityChartData.length - 1]?.balance || 0)}
+            Final Balance: {formatValue(chartData.equityChartData[chartData.equityChartData.length - 1]?.balance || 0, { kind: 'money' })}
           </CardDescription>
         </CardHeader>
         <CardContent className="h-[220px] pt-2">
@@ -266,7 +268,7 @@ export function Charts({ dayData, isWeekly = false }: ChartsProps) {
               {isWeekly ? "Weekly Performance" : "Account Distribution"}
             </CardTitle>
             <CardDescription>
-              Total: {formatCurrency(chartData.totalPnL)}
+              Total: {formatValue(chartData.totalPnL, { kind: 'money' })}
             </CardDescription>
           </CardHeader>
           <CardContent className="h-[200px] pt-2">

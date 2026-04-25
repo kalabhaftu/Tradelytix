@@ -15,7 +15,8 @@ import {
   endOfMonth,
   isToday,
 } from "date-fns"
-import { cn, formatCurrency } from "@/lib/utils"
+import { cn } from "@/lib/utils"
+import { useDashboardDisplay } from "@/hooks/use-dashboard-display"
 import { CalendarData } from "@/app/dashboard/types/calendar"
 import { useData } from "@/context/data-provider"
 import { classifyOutcome, getBreakEvenThreshold } from "@/lib/metrics/outcome"
@@ -42,6 +43,7 @@ function MiniMonth({
   year: number
   breakEvenThreshold: number
 }) {
+  const { formatValue } = useDashboardDisplay()
   const stats = useMemo(() => {
     let pnl = 0
     let trades = 0
@@ -82,7 +84,7 @@ function MiniMonth({
                   : "bg-muted/30 border-border/20 text-muted-foreground",
             )}
           >
-            {formatCurrency(stats.pnl, 0)}
+            {formatValue(stats.pnl, { kind: 'money', compact: true, precision: 0, emptyLabel: '$0' })}
           </span>
         )}
       </div>
@@ -174,7 +176,7 @@ function MiniMonth({
                                 : "text-muted-foreground",
                         )}
                       >
-                        {data ? formatCurrency(data.pnl) : '$0.00'}
+                        {data ? formatValue(data.pnl, { kind: 'money', rValue: data.dailyRMultiple ?? null, emptyLabel: '$0.00' }) : '$0.00'}
                       </div>
                     </div>
                   </TooltipContent>

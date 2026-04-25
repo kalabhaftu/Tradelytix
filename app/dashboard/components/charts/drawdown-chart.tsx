@@ -15,6 +15,7 @@ import {
 const AnyAreaChart = AreaChart as any
 import { WidgetCard, ChartTooltip as SharedChartTooltip } from '../widget-card'
 import { useWidgetData } from '@/hooks/use-widget-data'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { formatNumber } from "@/lib/utils"
 import { WidgetSize } from '@/app/dashboard/types/dashboard'
 
@@ -48,6 +49,7 @@ function formatAxisValue(value: number): string {
 export default function DrawdownChart({ size = 'small-long' }: DrawdownChartProps) {
   const { data: rawChartData, isLoading } = useWidgetData('dailyCumulativePnl')
   const chartData = React.useMemo(() => rawChartData ?? [], [rawChartData])
+  const { formatValue, transformValue } = useDashboardDisplay()
 
   // Compute drawdown from cumulative P&L data
   const drawdownData: DrawdownDataPoint[] = React.useMemo(() => {
@@ -61,10 +63,10 @@ export default function DrawdownChart({ size = 'small-long' }: DrawdownChartProp
 
       return {
         date: point.date,
-        drawdown,
+        drawdown: transformValue(drawdown, { kind: 'money' }) ?? 0,
       }
     })
-  }, [chartData])
+  }, [chartData, transformValue])
 
   const isCompact = size === 'small' || size === 'small-long'
 
@@ -128,7 +130,7 @@ export default function DrawdownChart({ size = 'small-long' }: DrawdownChartProp
           />
 
           <YAxis
-            tickFormatter={formatAxisValue}
+            tickFormatter={(value) => formatValue(value, { kind: 'money', compact: true })}
             stroke={COLORS.axis}
             fontSize={isCompact ? 10 : 11}
             tickLine={false}

@@ -6,6 +6,7 @@ import { useData } from '@/context/data-provider'
 import { useWidgetData } from '@/hooks/use-widget-data'
 import { cn } from '@/lib/utils'
 import { Info, Wallet } from "lucide-react"
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import {
   Tooltip,
   TooltipContent,
@@ -20,33 +21,70 @@ interface AccountBalancePnlProps {
 }
 
 const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: AccountBalancePnlProps) {
-  const { accountNumbers } = useData()
+  const { accountNumbers, formattedTrades } = useData()
   const { data: balanceInfo } = useWidgetData('accountBalancePnl')
   const { nbTrades } = useTradeStatistics()
+  const { mode, formatValue, getTradeRMultipleInfo } = useDashboardDisplay()
 
   const totalBalance = balanceInfo?.displayBalance ?? balanceInfo?.currentBalance ?? 0
   const displayedPnl = balanceInfo?.displayPnL ?? balanceInfo?.netPnL ?? 0
   const pnlDisplayLabel = getPnlDisplayLabel(balanceInfo?.pnlDisplayMode)
+  const accountChangePercent = balanceInfo?.changePercent ?? 0
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-    }).format(amount)
-  }
+  const rStats = React.useMemo(() => {
+    let totalR = 0
+    let validTrades = 0
 
-  const formatCompactCurrency = (amount: number) => {
-    if (Math.abs(amount) >= 1000000) {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        notation: 'compact',
-        minimumFractionDigits: 2,
-      }).format(amount)
+    for (const trade of formattedTrades || []) {
+      const rInfo = getTradeRMultipleInfo(trade)
+      if (!rInfo.hasData || rInfo.value === null) continue
+      totalR += rInfo.value
+      validTrades += 1
     }
-    return formatCurrency(amount)
-  }
+
+    return {
+      totalR,
+      validTrades,
+      totalTrades: formattedTrades?.length || 0,
+    }
+  }, [formattedTrades, getTradeRMultipleInfo])
+
+  const primaryValue = React.useMemo(() => {
+    if (mode === 'percentage') {
+      return formatValue(totalBalance, { kind: 'balance', precision: 2, sensitive: true })
+    }
+    if (mode === 'rMultiple') {
+      return formatValue(rStats.totalR, {
+        kind: 'rMultiple',
+        precision: 2,
+        sensitive: false,
+        emptyLabel: '--',
+      })
+    }
+    return formatValue(totalBalance, { kind: 'balance', compact: true, sensitive: true })
+  }, [formatValue, mode, rStats.totalR, totalBalance])
+
+  const secondaryValue = React.useMemo(() => {
+    if (mode === 'percentage') {
+      return {
+        label: 'Performance:',
+        value: formatValue(displayedPnl, { kind: 'money', precision: 2, sensitive: true }),
+        tone: displayedPnl >= 0 ? 'text-profit' : 'text-loss',
+      }
+    }
+    if (mode === 'rMultiple') {
+      return {
+        label: 'R coverage:',
+        value: `${rStats.validTrades}/${rStats.totalTrades}`,
+        tone: rStats.validTrades > 0 ? 'text-foreground' : 'text-muted-foreground',
+      }
+    }
+    return {
+      label: `${pnlDisplayLabel}:`,
+      value: formatValue(displayedPnl, { kind: 'money', compact: true, sensitive: true }),
+      tone: displayedPnl >= 0 ? 'text-profit' : 'text-loss',
+    }
+  }, [displayedPnl, formatValue, mode, pnlDisplayLabel, rStats.totalTrades, rStats.validTrades])
 
   return (
     <WidgetCard isKpi>
@@ -88,17 +126,18 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
           <div className="flex flex-col gap-1">
             {/* Large balance number */}
             <span className="text-[1.65rem] min-[768px]:text-[1.85rem] min-[1440px]:text-3xl font-bold tracking-tight text-foreground">
-              {formatCompactCurrency(totalBalance)}
+              {primaryValue}
             </span>
             
             {/* Net PnL below */}
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground">{pnlDisplayLabel}:</span>
+              <span className="text-xs text-muted-foreground">{secondaryValue.label}</span>
               <span className={cn(
                 "text-sm font-semibold",
-                displayedPnl >= 0 ? "text-profit" : "text-loss"
+                secondaryValue.tone
               )}>
-                {displayedPnl >= 0 ? '+' : ''}{formatCompactCurrency(displayedPnl)}
+                {mode === 'percentage' && accountChangePercent >= 0 ? '+' : ''}
+                {secondaryValue.value}
               </span>
             </div>
           </div>

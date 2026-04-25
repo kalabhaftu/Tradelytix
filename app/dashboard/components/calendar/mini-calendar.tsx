@@ -15,6 +15,7 @@ import { WidgetCard } from '../widget-card'
 import { Button } from "@/components/ui/button"
 import { CalendarData } from "@/app/dashboard/types/calendar"
 import { useData } from "@/context/data-provider"
+import { useDashboardDisplay } from "@/hooks/use-dashboard-display"
 import MonthlyView from "./monthly-view"
 import {
   type CalendarGradientPresetId,
@@ -34,6 +35,7 @@ interface MiniCalendarProps {
 
 function MiniCalendar({ calendarData }: MiniCalendarProps) {
   const { isLoading } = useData()
+  const { formatValue } = useDashboardDisplay()
   const [currentDate, setCurrentDate] = useState(new Date())
   const calendarRef = useRef<HTMLDivElement>(null)
 
@@ -210,7 +212,7 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
               "px-1.5 py-0.5 rounded border text-[10px] font-black " +
               (isPositive ? "bg-long/10 border-long/20 text-long" : "bg-short/10 border-short/20 text-short")
             }>
-              {formatCompact(displayTotal)}
+              {formatValue(displayTotal, { kind: 'money', compact: true, emptyLabel: '$0' })}
             </div>
             <div className="px-1.5 py-0.5 rounded bg-chart-4/10 border border-chart-4/20 text-chart-4 text-[10px] font-black">
               {tradedDaysCount}d

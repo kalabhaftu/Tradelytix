@@ -15,8 +15,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { LexicalEditor } from '@/components/ui/editor/lexical-editor'
 import { useData } from '@/context/data-provider'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { useFilteredTrades } from '@/hooks/use-filtered-trades'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { cn, formatCurrency, formatQuantity, parsePositionTime } from '@/lib/utils'
@@ -40,7 +40,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { formatInTimeZone } from 'date-fns-tz'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import React from 'react'
 import { DataTableColumnHeader } from './column-header'
 import TradeChartModal from './trade-chart-modal'
@@ -188,7 +188,10 @@ type ColumnFactoryParams = {
   onRowSelectionChange: (ids: string[], value: boolean) => void
   onViewDetails: (trade: ExtendedTrade) => void
   onEditTrade: (trade: Trade | ExtendedTrade) => void
-  onViewChart: (trade: ExtendedTrade) => void
+  formatValue: ReturnType<typeof useDashboardDisplay>['formatValue']
+  isPrivacyMode: boolean
+  maskSensitiveValue: ReturnType<typeof useDashboardDisplay>['maskSensitiveValue']
+  getTradeRMultipleInfo: ReturnType<typeof useDashboardDisplay>['getTradeRMultipleInfo']
 }
 
 const useTradeTableColumns = ({
@@ -196,7 +199,10 @@ const useTradeTableColumns = ({
   onRowSelectionChange,
   onViewDetails,
   onEditTrade,
-  onViewChart,
+  formatValue,
+  isPrivacyMode,
+  maskSensitiveValue,
+  getTradeRMultipleInfo,
 }: ColumnFactoryParams) => {
   return React.useMemo<ColumnDef<ExtendedTrade>[]>(() => [
     {
@@ -267,7 +273,7 @@ const useTradeTableColumns = ({
                   title={accounts.join(', ')}
                 >
                   {accounts.length <= 1
-                    ? accounts[0] ?? '--'
+                    ? (isPrivacyMode ? maskSensitiveValue() : (accounts[0] ?? '--'))
                     : `+${accounts.length}`}
                 </div>
               </PopoverTrigger>
@@ -275,7 +281,7 @@ const useTradeTableColumns = ({
                   <ScrollArea className="h-36 rounded-md border">
                     {accounts.map((account: string) => (
                       <div key={account} className="px-3 py-2 text-sm hover:bg-muted/50 cursor-default">
-                        {account}
+                        {isPrivacyMode ? maskSensitiveValue() : account}
                       </div>
                     ))}
                   </ScrollArea>
@@ -356,10 +362,11 @@ const useTradeTableColumns = ({
       header: ({ column }) => <DataTableColumnHeader column={column} title="PnL" tableId="trade-table" className="justify-end px-0" />,
       cell: ({ row }) => {
         const value = row.original.pnl
+        const rInfo = getTradeRMultipleInfo(row.original)
         return (
           <div className="text-right font-bold font-mono">
             <span className={cn(value >= 0 ? 'text-profit' : 'text-loss')}>
-              {value >= 0 ? '+' : ''}{formatCurrency(value)}
+              {formatValue(value, { kind: 'money', rValue: rInfo.value })}
             </span>
           </div>
         )
@@ -370,7 +377,7 @@ const useTradeTableColumns = ({
     {
       accessorKey: 'commission',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Comm." tableId="trade-table" className="justify-end px-0" />,
-      cell: ({ row }) => <div className="text-right font-mono text-muted-foreground">{formatCurrency(row.original.commission)}</div>,
+      cell: ({ row }) => <div className="text-right font-mono text-muted-foreground">{formatValue(row.original.commission, { kind: 'money' })}</div>,
       size: 90,
     },
     {
@@ -402,7 +409,7 @@ const useTradeTableColumns = ({
       enableHiding: false,
       size: 100,
     },
-  ], [timezone, onRowSelectionChange, onViewDetails, onEditTrade])
+  ], [timezone, onRowSelectionChange, onViewDetails, onEditTrade, formatValue, isPrivacyMode, maskSensitiveValue, getTradeRMultipleInfo])
 }
 
 export function TradeTableReview() {
@@ -418,9 +425,9 @@ export function TradeTableReview() {
   } = useData() as any
   const timezone = useUserStore((state) => state.timezone)
   const isMobile = useMediaQuery('(max-width: 768px)')
+  const { formatValue, isPrivacyMode, maskSensitiveValue, getTradeRMultipleInfo } = useDashboardDisplay()
 
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   const tableConfig = useTableConfigStore((state) => state.tables['trade-table'])
   const updateSorting = useTableConfigStore((state) => state.updateSorting)
@@ -515,7 +522,7 @@ export function TradeTableReview() {
   )
 
   // Server-paginated trades (prevents multi-MB payloads on \"All time\")
-  const { data: pagedTradesData, isLoading: isTradesLoading } = useFilteredTrades({
+  const { data: pagedTradesData } = useFilteredTrades({
     accounts: accountNumbers?.length ? accountNumbers : undefined,
     dateFrom: dateRange?.from?.toISOString?.(),
     dateTo: dateRange?.to?.toISOString?.(),
@@ -566,7 +573,10 @@ export function TradeTableReview() {
     onRowSelectionChange: handleSelectTrade,
     onViewDetails: handleViewDetails,
     onEditTrade: handleEditTrade,
-    onViewChart: handleViewChart,
+    formatValue,
+    isPrivacyMode,
+    maskSensitiveValue,
+    getTradeRMultipleInfo,
   })
 
   const groupedTrades = React.useMemo(
@@ -662,128 +672,39 @@ export function TradeTableReview() {
 
       <div className="rounded-2xl sm:rounded-3xl border border-border bg-background shadow-md w-full">
         {isMobile ? (
-          <div className="overflow-hidden w-full">
-            <Table noWrapper className="w-full text-sm table-fixed">
-              <TableHeader className="sticky top-0 z-20 bg-background border-b shadow-sm">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-10 px-3 text-[10px] uppercase tracking-wider font-bold text-muted-foreground" style={{ width: '28%' }}>Instr.</TableHead>
-                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-center" style={{ width: '18%' }}>Side</TableHead>
-                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-right" style={{ width: '27%' }}>PnL</TableHead>
-                  <TableHead className="h-10 px-2 text-[10px] uppercase tracking-wider font-bold text-muted-foreground text-center" style={{ width: '27%' }}></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows.length > 0 ? (
-                  table.getRowModel().rows.map((row) => {
-                    const trade = row.original
-                    const isLong = trade.side?.toUpperCase() === 'BUY' || trade.side?.toUpperCase() === 'LONG'
-                    const pnlValue = trade.pnl
-                    const isExpanded = row.getIsExpanded()
-
-                    return (
-                      <React.Fragment key={row.id}>
-                        <TableRow
-                          className="hover:bg-muted/30 active:bg-muted/50 transition-colors cursor-pointer touch-manipulation"
-                          onClick={() => row.toggleExpanded()}
-                        >
-                          <TableCell className="px-3 py-3">
-                            <span className="font-bold tracking-tight text-sm">{trade.instrument}</span>
-                          </TableCell>
-                          <TableCell className="px-2 py-3 text-center">
-                            <Badge variant={isLong ? 'default' : 'destructive'} className="text-[10px] uppercase font-bold px-2 py-0.5">
-                              {trade.side?.toUpperCase().slice(0, 4)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="px-2 py-3 text-right">
-                            <span className={cn('font-bold font-mono text-sm', pnlValue >= 0 ? 'text-profit' : 'text-loss')}>
-                              {pnlValue >= 0 ? '+' : ''}{formatCurrency(pnlValue)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="px-2 py-3 text-center">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              className="h-8 px-3 text-xs touch-manipulation"
-                              onClick={(e) => { e.stopPropagation(); handleViewDetails(trade) }}
-                            >
-                              View
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                        {/* Accordion detail row */}
-                        {isExpanded && (
-                          <TableRow className="bg-muted/5 border-b border-border/30">
-                            <TableCell colSpan={4} className="px-3 py-4">
-                              <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Date</span>
-                                  <span className="font-mono">{formatInTimeZone(new Date(trade.entryDate), timezone, 'yyyy-MM-dd')}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Entry</span>
-                                  <span className="font-mono">{formatCurrency(parseFloat(String(trade.entryPrice)), getDecimalPlaces(trade.instrument, parseFloat(String(trade.entryPrice))))}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Close</span>
-                                  <span className="font-mono">{formatCurrency(parseFloat(String(trade.closePrice)), getDecimalPlaces(trade.instrument, parseFloat(String(trade.closePrice))))}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Duration</span>
-                                  <span className="font-mono">{parsePositionTime(trade.timeInPosition || 0)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Comm.</span>
-                                  <span className="font-mono">{formatCurrency(trade.commission)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Qty</span>
-                                  <span className="font-mono">{formatQuantity(trade.quantity)}</span>
-                                </div>
-                              </div>
-                              <div className="mt-4 pt-3 border-t border-border/20">
-                                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 font-bold">Trade Notes</p>
-                                <div className="max-h-[120px] overflow-y-auto bg-background/30 rounded-lg p-2 text-xs">
-                                  {trade.comment && trade.comment.trim() !== '' && trade.comment !== '<p></p>' && !trade.comment.includes('"children":[]') && !trade.comment.includes('"text":""') ? (
-                                    <div className="pointer-events-none scale-[0.95] origin-top-left w-[105%]">
-                                      <LexicalEditor
-                                        value={trade.comment}
-                                        minHeight="60px"
-                                      />
-                                    </div>
-                                  ) : (
-                                    <p className="text-muted-foreground italic py-2">No notes attached.</p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/20">
-                                <Button variant="outline" size="sm" className="h-10 text-xs flex-1 touch-manipulation font-medium" onClick={() => handleEditTrade(trade)}>
-                                  Edit Trade
-                                </Button>
-                                <Button variant="outline" size="sm" className="h-10 text-xs flex-1 touch-manipulation font-medium" onClick={() => handleViewChart(trade)}>
-                                  <BarChart3 className="h-4 w-4 mr-1.5" /> View Chart
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </React.Fragment>
-                    )
-                  })
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={4} className="h-48 text-center p-0">
-                      <div className="flex flex-col items-center justify-center h-full w-full text-muted-foreground gap-2">
-                        <div className="p-3 bg-muted/30 rounded-full">
-                          <BarChart3 className="h-6 w-6 opacity-40" />
-                        </div>
-                        <p className="text-sm font-semibold">No trades found</p>
-                        <p className="text-xs text-muted-foreground/70">Adjust filters or import trades</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+          <div className="w-full px-3 py-3 sm:px-4">
+            {table.getRowModel().rows.length > 0 ? (
+              <div className="space-y-3">
+                {table.getRowModel().rows.map((row) => (
+                  <TradeTableMobileCard
+                    key={row.id}
+                    trade={row.original}
+                    timezone={timezone}
+                    isSelected={row.getIsSelected()}
+                    isExpanded={row.getIsExpanded()}
+                    canExpand={(row.original.trades?.length || 0) > 1}
+                    onToggleSelect={() => {
+                      const tradeIds = [row.original.id, ...(row.original.trades?.map((t) => t.id) || [])].filter(Boolean) as string[]
+                      const nextValue = !row.getIsSelected()
+                      row.toggleSelected(nextValue)
+                      handleSelectTrade(tradeIds, nextValue)
+                    }}
+                    onToggleExpand={() => row.toggleExpanded()}
+                    onViewDetails={() => handleViewDetails(row.original)}
+                    onEdit={() => handleEditTrade(row.original)}
+                    onViewChart={() => handleViewChart(row.original)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex min-h-[280px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border/40 bg-muted/10 text-muted-foreground">
+                <div className="rounded-full bg-muted/30 p-3">
+                  <BarChart3 className="h-6 w-6 opacity-40" />
+                </div>
+                <p className="text-sm font-semibold">No trades found</p>
+                <p className="text-xs text-muted-foreground/70">Adjust filters or import trades</p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="relative w-full overflow-x-auto rounded-3xl max-h-[800px] overflow-y-auto">
@@ -830,17 +751,22 @@ export function TradeTableReview() {
                           <TableCell colSpan={columns.length} className="px-10 py-4">
                             <div className="space-y-2 text-xs text-muted-foreground">
                               {row.original.trades?.map((trade) => (
-                                <div
-                                  key={trade.id}
-                                  className="grid grid-cols-2 md:grid-cols-4 gap-2 border border-dashed border-border/40 rounded-lg p-3 bg-background/50"
-                                >
-                                  <span className="font-semibold text-foreground">
-                                    {trade.instrument} ({trade.side})
-                                  </span>
-                                  <span>Entry: {formatCurrency(parseFloat(String(trade.entryPrice)))}</span>
-                                  <span>Exit: {formatCurrency(parseFloat(String(trade.closePrice)))}</span>
-                                  <span>PnL: {formatCurrency(trade.pnl)}</span>
-                                </div>
+                                (() => {
+                                  const tradeRInfo = getTradeRMultipleInfo(trade)
+                                  return (
+                                    <div
+                                      key={trade.id}
+                                      className="grid grid-cols-2 md:grid-cols-4 gap-2 border border-dashed border-border/40 rounded-lg p-3 bg-background/50"
+                                    >
+                                      <span className="font-semibold text-foreground">
+                                        {trade.instrument} ({trade.side})
+                                      </span>
+                                      <span>Entry: {formatCurrency(parseFloat(String(trade.entryPrice)))}</span>
+                                      <span>Exit: {formatCurrency(parseFloat(String(trade.closePrice)))}</span>
+                                      <span>PnL: {formatValue(trade.pnl, { kind: 'money', rValue: tradeRInfo.value })}</span>
+                                    </div>
+                                  )
+                                })()
                               ))}
                             </div>
                           </TableCell>
@@ -866,11 +792,11 @@ export function TradeTableReview() {
                   </TableCell>
                   <TableCell className="text-right font-bold font-mono">
                     <span className={cn(table.getCoreRowModel().rows.reduce((sum, row) => sum + (row.original.pnl || 0), 0) >= 0 ? "text-profit" : "text-loss")}>
-                      {table.getCoreRowModel().rows.reduce((sum, row) => sum + (row.original.pnl || 0), 0) >= 0 ? '+' : ''}{formatCurrency(table.getCoreRowModel().rows.reduce((sum, row) => sum + (row.original.pnl || 0), 0))}
+                      {formatValue(table.getCoreRowModel().rows.reduce((sum, row) => sum + (row.original.pnl || 0), 0), { kind: 'money' })}
                     </span>
                   </TableCell>
                   <TableCell className="text-right font-mono text-muted-foreground">
-                    {formatCurrency(table.getCoreRowModel().rows.reduce((sum, row) => sum + (row.original.commission || 0), 0))}
+                    {formatValue(table.getCoreRowModel().rows.reduce((sum, row) => sum + (row.original.commission || 0), 0), { kind: 'money' })}
                   </TableCell>
                   <TableCell colSpan={2}></TableCell>
                 </TableRow>
@@ -944,4 +870,3 @@ export function TradeTableReview() {
     </section>
   )
 }
-

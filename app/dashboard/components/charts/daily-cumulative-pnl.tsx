@@ -81,15 +81,16 @@ function formatAxisValue(value: number): string {
 
 export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulativePnLProps) {
   const { data: rawChartData, isLoading } = useWidgetData('dailyCumulativePnl')
-  const { formatValue, transformValue } = useDashboardDisplay()
+  const { mode, formatValue, transformValue } = useDashboardDisplay()
+  const displayMode = mode === 'rMultiple' ? 'dollars' : mode
   const chartData = React.useMemo(
     () =>
       (rawChartData ?? []).map((item: any) => ({
         ...item,
-        cumulativePnL: transformValue(item.cumulativePnL, { kind: 'money' }) ?? 0,
-        dailyPnL: transformValue(item.dailyPnL, { kind: 'money' }) ?? 0,
+        cumulativePnL: transformValue(item.cumulativePnL, { kind: 'money', forceMode: displayMode }) ?? 0,
+        dailyPnL: transformValue(item.dailyPnL, { kind: 'money', forceMode: displayMode }) ?? 0,
       })),
-    [rawChartData, transformValue]
+    [rawChartData, transformValue, displayMode]
   )
 
   // ---------------------------------------------------------------------------
@@ -185,7 +186,7 @@ export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulat
 
               {/* Y Axis - Currency */}
               <YAxis
-                tickFormatter={(value) => formatValue(value, { kind: 'money', compact: true })}
+                tickFormatter={(value) => formatValue(value, { kind: 'money', forceMode: displayMode, compact: true })}
                 stroke={COLORS.axis}
                 fontSize={isCompact ? 10 : 11}
                 tickLine={false}

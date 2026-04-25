@@ -4,7 +4,7 @@ import React from 'react'
 import { cn } from '@/lib/utils'
 import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { inferMetricKind } from '@/lib/dashboard/display-mode'
-import { useDashboardDisplayStore } from '@/store/dashboard-display-store'
+import { useTheme } from '@/context/theme-provider'
 
 interface WidgetCardProps {
   children: React.ReactNode
@@ -32,7 +32,7 @@ export function WidgetCard({
   className,
   noPadding = false,
 }: WidgetCardProps) {
-  const widgetStyle = useDashboardDisplayStore((s) => s.widgetStyle)
+  const { widgetStyle } = useTheme()
   const isGlass = widgetStyle === 'glass'
 
   if (isKpi) {

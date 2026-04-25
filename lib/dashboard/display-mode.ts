@@ -72,7 +72,7 @@ export function transformDisplayValue({
 
   if (mode === 'rMultiple') {
     if (kind === 'rMultiple') return value
-    if (rValue === null || rValue === undefined || Number.isNaN(rValue)) return null
+    if (rValue === null || rValue === undefined || Number.isNaN(rValue)) return value // fallback to dollar
     return rValue
   }
 

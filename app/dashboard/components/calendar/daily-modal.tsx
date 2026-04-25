@@ -207,7 +207,7 @@ export function CalendarModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleCloseAttempt}>
-        <DialogContent className="w-[min(96vw,78rem)] max-w-[78rem] h-[100dvh] sm:h-[min(90vh,56rem)] p-0 flex flex-col overflow-hidden">
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-[56rem] h-[100dvh] sm:h-[min(90vh,56rem)] p-0 flex flex-col overflow-hidden">
           {/* Header - Simple */}
           <div className="flex items-center justify-between p-4 border-b bg-card">
             <div>

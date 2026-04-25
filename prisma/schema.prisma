@@ -99,16 +99,16 @@ model DailyAnchor {
 }
 
 model DailyNote {
-  id        String   @id
+  id        String          @id
   userId    String
-  date      DateTime @db.Date
+  date      DateTime        @db.Date
   note      String
-  createdAt DateTime @default(now())
+  createdAt DateTime        @default(now())
   updatedAt DateTime
   accountId String?
   emotion   JournalEmotion?
-  Account   Account? @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Account   Account?        @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  User      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, accountId, date])
   @@index([accountId])
@@ -207,7 +207,7 @@ model PhaseAccount {
   consistencyRulePercent Float              @default(0)
   profitSplitPercent     Float?
   payoutCycleDays        Int?
-  minProfitForPayout     Float?             // Min profit (in $) required to request payout (funded phases only)
+  minProfitForPayout     Float? // Min profit (in $) required to request payout (funded phases only)
   startDate              DateTime           @default(now())
   endDate                DateTime?
   BreachRecord           BreachRecord[]
@@ -226,64 +226,64 @@ model PhaseAccount {
 }
 
 model Trade {
-  id                 String        @id
-  accountNumber      String
-  quantity           Float         @default(0)
-  entryId            String?
-  tradeIdentityKey   String?
-  instrument         String
-  entryPrice         String
-  closePrice         String
-  entryDate          String
-  closeDate          String
-  entryPriceValue    Float?
-  closePriceValue    Float?
-  pnl                Float
-  timeInPosition     Float         @default(0)
-  userId             String
-  side               String?
-  commission         Float         @default(0)
-  createdAt          DateTime      @default(now())
-  comment            String?
-  groupId            String?
-  cardPreviewImage   String?
+  id                   String           @id
+  accountNumber        String
+  quantity             Float            @default(0)
+  entryId              String?
+  tradeIdentityKey     String?
+  instrument           String
+  entryPrice           String
+  closePrice           String
+  entryDate            String
+  closeDate            String
+  entryPriceValue      Float?
+  closePriceValue      Float?
+  pnl                  Float
+  timeInPosition       Float            @default(0)
+  userId               String
+  side                 String?
+  commission           Float            @default(0)
+  createdAt            DateTime         @default(now())
+  comment              String?
+  groupId              String?
+  cardPreviewImage     String?
   cardPreviewTransform Json?
-  imageOne           String?
-  imageTwo           String?
-  imageThree         String?
-  imageFour          String?
-  imageFive          String?
-  imageSix           String?
-  accountId          String?
-  phaseAccountId     String?
-  symbol             String?
-  entryTime          DateTime?
-  exitTime           DateTime?
-  closeReason        String?
-  stopLoss           String?
-  stopLossValue      Float?
-  takeProfit         String?
-  takeProfitValue    Float?
-  tags               String[]
-  marketBias         MarketBias?
-  modelId            String?
-  selectedRules      Json?
-  outcome            TradeOutcome?
-  ruleBroken         Boolean?      @default(false)
-  newsDay            Boolean?      @default(false)
-  selectedNews       String?
-  newsTraded         Boolean?      @default(false)
-  biasTimeframe      String?
-  narrativeTimeframe String?
-  entryTimeframe     String?
-  structureTimeframe String?
-  orderType          String?
-  chartLinks         String?
-  chartLinksList     String[]      @default([])
-  Account            Account?      @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  TradingModel       TradingModel? @relation(fields: [modelId], references: [id])
-  PhaseAccount       PhaseAccount? @relation(fields: [phaseAccountId], references: [id], onDelete: Cascade)
-  executions         TradeExecution[]
+  imageOne             String?
+  imageTwo             String?
+  imageThree           String?
+  imageFour            String?
+  imageFive            String?
+  imageSix             String?
+  accountId            String?
+  phaseAccountId       String?
+  symbol               String?
+  entryTime            DateTime?
+  exitTime             DateTime?
+  closeReason          String?
+  stopLoss             String?
+  stopLossValue        Float?
+  takeProfit           String?
+  takeProfitValue      Float?
+  tags                 String[]
+  marketBias           MarketBias?
+  modelId              String?
+  selectedRules        Json?
+  outcome              TradeOutcome?
+  ruleBroken           Boolean?         @default(false)
+  newsDay              Boolean?         @default(false)
+  selectedNews         String?
+  newsTraded           Boolean?         @default(false)
+  biasTimeframe        String?
+  narrativeTimeframe   String?
+  entryTimeframe       String?
+  structureTimeframe   String?
+  orderType            String?
+  chartLinks           String?
+  chartLinksList       String[]         @default([])
+  Account              Account?         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  TradingModel         TradingModel?    @relation(fields: [modelId], references: [id])
+  PhaseAccount         PhaseAccount?    @relation(fields: [phaseAccountId], references: [id], onDelete: Cascade)
+  executions           TradeExecution[]
 
   @@unique([userId, tradeIdentityKey], name: "trade_identity_key")
   @@index([accountId, exitTime])
@@ -334,10 +334,10 @@ model TradeExecution {
   updatedAt           DateTime           @updatedAt
   Trade               Trade              @relation(fields: [tradeId], references: [id], onDelete: Cascade)
 
+  @@unique([tradeId, kind, legacySourceTradeId], name: "trade_execution_legacy_source_key")
   @@index([tradeId, kind])
   @@index([tradeId, executedAt])
   @@index([userId, brokerExecutionId])
-  @@unique([tradeId, kind, legacySourceTradeId], name: "trade_execution_legacy_source_key")
   @@schema("public")
 }
 
@@ -386,6 +386,7 @@ model User {
   breakEvenThreshold     Float                    @default(10)
   pnlDisplayMode         String                   @default("net")
   accentPack             String                   @default("classic")
+  widgetStyle            String                   @default("default")
   role                   UserRole                 @default(user)
   autoAdjustAccountDate  Boolean                  @default(false)
   Account                Account[]
@@ -435,6 +436,7 @@ model UserSettings {
   breakEvenThreshold    Float    @default(10)
   pnlDisplayMode        String   @default("net")
   accentPack            String   @default("classic")
+  widgetStyle           String   @default("default")
   autoAdjustAccountDate Boolean  @default(false)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -473,10 +475,10 @@ model ImportJob {
 model ActivityLog {
   id        String   @id @default(cuid())
   userId    String
-  action    String   // e.g. TRADE_CREATED, ACCOUNT_RENAMED, BACKUP_RESTORED
-  entity    String   // e.g. Trade, Account, Profile
-  entityId  String?  // ID of affected resource (nullable for bulk ops)
-  metadata  Json?    // Additional context (old/new values, counts, etc.)
+  action    String // e.g. TRADE_CREATED, ACCOUNT_RENAMED, BACKUP_RESTORED
+  entity    String // e.g. Trade, Account, Profile
+  entityId  String? // ID of affected resource (nullable for bulk ops)
+  metadata  Json? // Additional context (old/new values, counts, etc.)
   ipAddress String?
   createdAt DateTime @default(now())
   User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -495,7 +497,7 @@ model Notification {
   data            Json?
   isRead          Boolean              @default(false)
   actionRequired  Boolean              @default(false)
-  invalidationKey String?              // Smart deduplication key
+  invalidationKey String? // Smart deduplication key
   priority        NotificationPriority @default(MEDIUM)
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
@@ -613,7 +615,7 @@ enum NotificationType {
   FUNDED_PENDING_APPROVAL
   FUNDED_APPROVED
   FUNDED_DECLINED
-  PHASE_TRANSITION_PENDING  // Waiting for user to enter next phase ID
+  PHASE_TRANSITION_PENDING // Waiting for user to enter next phase ID
   PAYOUT_APPROVED
   PAYOUT_REJECTED
   SYSTEM
@@ -625,20 +627,20 @@ enum NotificationType {
   TRADE_STATUS
 
   // Granular risk alert types for smart invalidation
-  RISK_DAILY_LOSS_80        // Daily loss limit at 80%
-  RISK_DAILY_LOSS_95        // Daily loss limit at 95%
-  RISK_MAX_DRAWDOWN_80      // Max drawdown at 80%
-  RISK_MAX_DRAWDOWN_95      // Max drawdown at 95%
+  RISK_DAILY_LOSS_80 // Daily loss limit at 80%
+  RISK_DAILY_LOSS_95 // Daily loss limit at 95%
+  RISK_MAX_DRAWDOWN_80 // Max drawdown at 80%
+  RISK_MAX_DRAWDOWN_95 // Max drawdown at 95%
 
   // Import lifecycle tracking
-  IMPORT_PROCESSING         // Import in progress
-  IMPORT_COMPLETE           // Import finished
+  IMPORT_PROCESSING // Import in progress
+  IMPORT_COMPLETE // Import finished
 
   // Strategy compliance
   STRATEGY_SESSION_VIOLATION // Trade outside allowed sessions
 
   // Admin feedback reply
-  FEEDBACK_REPLY            // Admin replied to user feedback
+  FEEDBACK_REPLY // Admin replied to user feedback
 
   @@schema("public")
 }
@@ -739,7 +741,7 @@ model Feedback {
   category    FeedbackCategory
   subject     String
   message     String
-  attachments Json?            // Array of {url, name, size, type}
+  attachments Json? // Array of {url, name, size, type}
   status      FeedbackStatus   @default(OPEN)
   ipAddress   String?
   userAgent   String?
@@ -793,8 +795,8 @@ enum FeedbackStatus {
 
 model DonationAddress {
   id        String   @id @default(cuid())
-  token     String   // e.g. "BTC", "ETH", "USDT"
-  network   String   // e.g. "Bitcoin", "ERC-20", "TRC-20"
+  token     String // e.g. "BTC", "ETH", "USDT"
+  network   String // e.g. "Bitcoin", "ERC-20", "TRC-20"
   address   String
   isActive  Boolean  @default(true)
   sortOrder Int      @default(0)
@@ -810,16 +812,16 @@ model DonationAddress {
 // =============================================
 
 model ErrorLog {
-  id        String     @id @default(cuid())
+  id        String      @id @default(cuid())
   source    ErrorSource
-  level     ErrorLevel @default(ERROR)
+  level     ErrorLevel  @default(ERROR)
   message   String
   stack     String?
   url       String?
   userId    String?
   metadata  Json?
   ipAddress String?
-  createdAt DateTime   @default(now())
+  createdAt DateTime    @default(now())
 
   @@index([source])
   @@index([level])
@@ -868,18 +870,18 @@ model UserGeoLog {
 }
 
 model WeeklyAIReview {
-  id        String   @id @default(cuid())
-  userId    String
-  weekStart DateTime @db.Date
-  weekEnd   DateTime @db.Date
-  summary   String   @db.Text
-  highlights Json    @default("[]")
-  lowlights  Json    @default("[]")
-  stats     Json     @default("{}")
-  grade     String   @default("")
-  focusNextWeek String? @db.Text
-  createdAt DateTime @default(now())
-  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  userId        String
+  weekStart     DateTime @db.Date
+  weekEnd       DateTime @db.Date
+  summary       String   @db.Text
+  highlights    Json     @default("[]")
+  lowlights     Json     @default("[]")
+  stats         Json     @default("{}")
+  grade         String   @default("")
+  focusNextWeek String?  @db.Text
+  createdAt     DateTime @default(now())
+  User          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, weekStart])
   @@index([userId, createdAt])

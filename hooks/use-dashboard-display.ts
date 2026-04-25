@@ -30,10 +30,11 @@ export function useDashboardDisplay() {
       rValue: number | null
       basis: number
       emptyLabel: string
+      forceMode: DashboardDisplayMode
     }>) =>
       formatDisplayValue({
         value,
-        mode,
+        mode: options?.forceMode ?? mode,
         basis: options?.basis ?? startingBalance,
         kind: options?.kind ?? 'money',
         precision: options?.precision ?? 2,
@@ -50,10 +51,11 @@ export function useDashboardDisplay() {
       kind: DashboardMetricKind
       basis: number
       rValue: number | null
+      forceMode: DashboardDisplayMode
     }>) =>
       transformDisplayValue({
         value,
-        mode,
+        mode: options?.forceMode ?? mode,
         basis: options?.basis ?? startingBalance,
         kind: options?.kind ?? 'money',
         rValue: options?.rValue ?? null,

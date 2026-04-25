@@ -5,13 +5,16 @@ import { useUserStore } from '@/store/user-store'
 
 type Theme = 'light' | 'dark' | 'system'
 type AccentPack = 'classic' | 'reports'
+type WidgetSurfaceStyle = 'default' | 'glass'
 
 type ThemeContextType = {
   theme: Theme
   effectiveTheme: 'light' | 'dark'
   accentPack: AccentPack
+  widgetStyle: WidgetSurfaceStyle
   setTheme: (theme: Theme) => void
   setAccentPack: (pack: AccentPack) => void
+  setWidgetStyle: (style: WidgetSurfaceStyle) => void
   toggleTheme: () => void
 }
 
@@ -19,8 +22,10 @@ const ThemeContext = createContext<ThemeContextType>({
   theme: 'dark',
   effectiveTheme: 'dark',
   accentPack: 'classic',
+  widgetStyle: 'default',
   setTheme: () => {},
   setAccentPack: () => {},
+  setWidgetStyle: () => {},
   toggleTheme: () => {},
 })
 
@@ -43,6 +48,7 @@ function applyAccentClass(pack: AccentPack) {
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('dark')
   const [accentPack, setAccentPackState] = useState<AccentPack>('classic')
+  const [widgetStyle, setWidgetStyleState] = useState<WidgetSurfaceStyle>('default')
   const [mounted, setMounted] = useState(false)
   const user = useUserStore(state => state.user)
 
@@ -83,6 +89,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setAccentPackState(resolvedAccent)
     applyAccentClass(resolvedAccent)
 
+    // Restore widget style from localStorage
+    const savedWidget = localStorage.getItem('widgetStyle') as WidgetSurfaceStyle | null
+    const validWidgets: WidgetSurfaceStyle[] = ['default', 'glass']
+    const resolvedWidget = savedWidget && validWidgets.includes(savedWidget) ? savedWidget : 'default'
+    setWidgetStyleState(resolvedWidget)
+
     // Listen for system preference changes when in system mode
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
     const handler = () => {
@@ -115,6 +127,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('accentPack', dbAccent)
         }
       }
+
+      if (user.widgetStyle) {
+        const dbWidget = user.widgetStyle as WidgetSurfaceStyle
+        const currentWidget = localStorage.getItem('widgetStyle') as WidgetSurfaceStyle | null
+        if (dbWidget !== currentWidget) {
+          setWidgetStyleState(dbWidget)
+          localStorage.setItem('widgetStyle', dbWidget)
+        }
+      }
     }
   }, [user, mounted, applyTheme])
 
@@ -131,6 +152,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('accentPack', accentPack)
     }
   }, [accentPack, mounted])
+
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem('widgetStyle', widgetStyle)
+    }
+  }, [widgetStyle, mounted])
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme)
@@ -152,6 +179,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }).catch(() => {})
   }
 
+  const setWidgetStyle = (style: WidgetSurfaceStyle) => {
+    setWidgetStyleState(style)
+    fetch('/api/auth/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ widgetStyle: style }),
+    }).catch(() => {})
+  }
+
   const toggleTheme = () => {
     const nextTheme = resolveEffective(theme) === 'dark' ? 'light' : 'dark'
     setTheme(nextTheme)
@@ -161,8 +197,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     theme,
     effectiveTheme: resolveEffective(theme),
     accentPack,
+    widgetStyle,
     setTheme,
     setAccentPack,
+    setWidgetStyle,
     toggleTheme,
   }
 

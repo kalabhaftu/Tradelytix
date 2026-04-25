@@ -13,6 +13,21 @@ import { logger } from '@/lib/logger'
 import { prisma } from '@/lib/prisma'
 import { revalidateTag } from 'next/cache'
 
+function isMissingJournalTemplateTableError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const maybePrismaError = error as {
+    code?: string
+    meta?: { modelName?: string; table?: string }
+  }
+
+  if (maybePrismaError.code !== 'P2021') return false
+
+  return (
+    maybePrismaError.meta?.modelName === 'JournalTemplate' ||
+    maybePrismaError.meta?.table === 'public.JournalTemplate'
+  )
+}
+
 export async function DELETE(request: NextRequest) {
   const rateLimitRes = await applyRateLimit(request, apiLimiter)
   if (rateLimitRes) return rateLimitRes
@@ -121,9 +136,15 @@ export async function DELETE(request: NextRequest) {
       })
 
       // 11b. Delete journal templates
-      await tx.journalTemplate.deleteMany({
-        where: { userId: internalUserId }
-      })
+      try {
+        await tx.journalTemplate.deleteMany({
+          where: { userId: internalUserId }
+        })
+      } catch (error) {
+        if (!isMissingJournalTemplateTableError(error)) {
+          throw error
+        }
+      }
 
       // 12. Reset user settings (keep account)
       await tx.user.update({

@@ -20,6 +20,21 @@ const createTemplateSchema = z.object({
 
 const MAX_CUSTOM_TEMPLATES = 3
 
+function isMissingJournalTemplateTableError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const maybePrismaError = error as {
+    code?: string
+    meta?: { modelName?: string; table?: string }
+  }
+
+  if (maybePrismaError.code !== 'P2021') return false
+
+  return (
+    maybePrismaError.meta?.modelName === 'JournalTemplate' ||
+    maybePrismaError.meta?.table === 'public.JournalTemplate'
+  )
+}
+
 export async function GET(request: NextRequest) {
   const rateLimitRes = await applyRateLimit(request, apiLimiter)
   if (rateLimitRes) return rateLimitRes
@@ -29,19 +44,29 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const templates = await prisma.journalTemplate.findMany({
-    where: { userId: identity.internalUserId },
-    orderBy: [{ createdAt: 'asc' }],
-    select: {
-      id: true,
-      name: true,
-      content: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  })
+  try {
+    const templates = await prisma.journalTemplate.findMany({
+      where: { userId: identity.internalUserId },
+      orderBy: [{ createdAt: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        content: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    })
 
-  return NextResponse.json({ templates })
+    return NextResponse.json({ templates })
+  } catch (error) {
+    if (isMissingJournalTemplateTableError(error)) {
+      return NextResponse.json({
+        templates: [],
+        migrationRequired: true,
+      })
+    }
+    throw error
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -62,15 +87,44 @@ export async function POST(request: NextRequest) {
   const { name, content } = parsed.data
   const userId = identity.internalUserId
 
-  const existingByName = await prisma.journalTemplate.findUnique({
-    where: { userId_name: { userId, name } },
-    select: { id: true },
-  })
+  try {
+    const existingByName = await prisma.journalTemplate.findUnique({
+      where: { userId_name: { userId, name } },
+      select: { id: true },
+    })
 
-  if (existingByName) {
-    const updated = await prisma.journalTemplate.update({
-      where: { id: existingByName.id },
-      data: { content },
+    if (existingByName) {
+      const updated = await prisma.journalTemplate.update({
+        where: { id: existingByName.id },
+        data: { content },
+        select: {
+          id: true,
+          name: true,
+          content: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      })
+      return NextResponse.json({ template: updated, updated: true })
+    }
+
+    const count = await prisma.journalTemplate.count({
+      where: { userId },
+    })
+
+    if (count >= MAX_CUSTOM_TEMPLATES) {
+      return NextResponse.json(
+        { error: `Maximum ${MAX_CUSTOM_TEMPLATES} custom templates allowed` },
+        { status: 409 }
+      )
+    }
+
+    const created = await prisma.journalTemplate.create({
+      data: {
+        userId,
+        name,
+        content,
+      },
       select: {
         id: true,
         name: true,
@@ -79,34 +133,18 @@ export async function POST(request: NextRequest) {
         updatedAt: true,
       },
     })
-    return NextResponse.json({ template: updated, updated: true })
+
+    return NextResponse.json({ template: created, created: true }, { status: 201 })
+  } catch (error) {
+    if (isMissingJournalTemplateTableError(error)) {
+      return NextResponse.json(
+        {
+          error: 'Custom templates are temporarily unavailable until the latest database migration is applied.',
+          migrationRequired: true,
+        },
+        { status: 503 }
+      )
+    }
+    throw error
   }
-
-  const count = await prisma.journalTemplate.count({
-    where: { userId },
-  })
-
-  if (count >= MAX_CUSTOM_TEMPLATES) {
-    return NextResponse.json(
-      { error: `Maximum ${MAX_CUSTOM_TEMPLATES} custom templates allowed` },
-      { status: 409 }
-    )
-  }
-
-  const created = await prisma.journalTemplate.create({
-    data: {
-      userId,
-      name,
-      content,
-    },
-    select: {
-      id: true,
-      name: true,
-      content: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  })
-
-  return NextResponse.json({ template: created, created: true }, { status: 201 })
 }

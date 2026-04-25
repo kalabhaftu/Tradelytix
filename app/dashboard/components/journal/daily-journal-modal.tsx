@@ -209,7 +209,7 @@ export function DailyJournalModal({
   return (
     <>
       <Dialog open={isOpen && !showConfirmClose} onOpenChange={handleClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[min(94vw,72rem)] max-w-none max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-primary" />
@@ -240,7 +240,7 @@ export function DailyJournalModal({
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                         <div className="text-center p-2 rounded-md bg-muted/50">
                           <div className="text-muted-foreground">Total Trades</div>
                           <div className="text-lg font-semibold mt-1">{trades.length}</div>

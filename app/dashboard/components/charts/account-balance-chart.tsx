@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/tooltip"
 import { WidgetCard, ChartTooltip as SharedChartTooltip } from '../widget-card'
 import { useWidgetData } from '@/hooks/use-widget-data'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { useUserStore } from "@/store/user-store"
 import { formatNumber } from "@/lib/utils"
 import { WidgetSize } from '@/app/dashboard/types/dashboard'
@@ -106,7 +107,17 @@ function formatAxisValue(value: number): string {
 // ============================================================================
 
 function AccountBalanceChart({ size = 'small-long' }: AccountBalanceChartProps) {
-  const { data: chartData, isLoading } = useWidgetData('accountBalanceChart')
+  const { data: rawChartData, isLoading } = useWidgetData('accountBalanceChart')
+  const { formatValue, transformValue } = useDashboardDisplay()
+  const chartData = React.useMemo(
+    () =>
+      (rawChartData ?? []).map((item: any) => ({
+        ...item,
+        balance: transformValue(item.balance, { kind: 'balance' }) ?? 0,
+        change: transformValue(item.change, { kind: 'money' }) ?? 0,
+      })),
+    [rawChartData, transformValue]
+  )
 
   if (isLoading) {
     return (
@@ -179,7 +190,7 @@ function AccountBalanceChart({ size = 'small-long' }: AccountBalanceChartProps) 
 
               {/* Y Axis - Currency */}
               <YAxis
-                tickFormatter={formatAxisValue}
+                tickFormatter={(value) => formatValue(value, { kind: 'balance', compact: true })}
                 stroke={COLORS.axis}
                 fontSize={isCompact ? 10 : 11}
                 tickLine={false}

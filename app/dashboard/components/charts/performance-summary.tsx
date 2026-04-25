@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { useWidgetData } from '@/hooks/use-widget-data'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { useData } from '@/context/data-provider'
 import { WidgetCard, ChartTooltip } from '../widget-card'
 import { cn } from '@/lib/utils'
@@ -43,6 +44,7 @@ function StatItem({ label, value, negative }: StatItemProps) {
 export default function PerformanceSummaryWidget() {
   const { data: chartData, isLoading: chartLoading } = useWidgetData('equityCurve')
   const { statistics, formattedTrades } = useData()
+  const { mode, formatValue, getTradeRMultipleInfo } = useDashboardDisplay()
 
   // Split gradient offset — green above zero, red below zero
   const gradientOffset = useMemo(() => {
@@ -85,6 +87,19 @@ export default function PerformanceSummaryWidget() {
       ? drawdowns.reduce((sum, d) => sum + d, 0) / drawdowns.length
       : 0
 
+    const rCoverage = formattedTrades.reduce(
+      (acc, trade) => {
+        const rInfo = getTradeRMultipleInfo(trade)
+        if (rInfo.hasData && rInfo.value !== null) {
+          acc.total += rInfo.value
+          acc.valid += 1
+        }
+        acc.all += 1
+        return acc
+      },
+      { total: 0, valid: 0, all: 0 }
+    )
+
     return {
       totalTrades,
       profitFactor,
@@ -93,8 +108,9 @@ export default function PerformanceSummaryWidget() {
       avgDrawdown,
       fees,
       net: netPnl,
+      rCoverage,
     }
-  }, [statistics, formattedTrades, chartData])
+  }, [statistics, formattedTrades, chartData, getTradeRMultipleInfo])
 
   if (chartLoading) {
     return (
@@ -172,27 +188,32 @@ export default function PerformanceSummaryWidget() {
               <StatItem label="Profit factor" value={stats.profitFactor.toFixed(2)} negative={stats.profitFactor < 1} />
               <StatItem
                 label="Trade expectancy"
-                value={formatCurrency(stats.expectancy)}
+                value={formatValue(stats.expectancy, {
+                  kind: mode === 'rMultiple' ? 'rMultiple' : 'money',
+                  rValue: mode === 'rMultiple' ? stats.rCoverage.total / Math.max(stats.totalTrades, 1) : null,
+                })}
                 negative={stats.expectancy < 0 ? true : stats.expectancy > 0 ? false : undefined}
               />
               <StatItem
                 label="Max drawdown"
-                value={`-${formatCurrency(stats.maxDrawdown)}`}
+                value={formatValue(stats.maxDrawdown * -1, { kind: 'money' })}
                 negative={stats.maxDrawdown > 0 ? true : undefined}
               />
               <StatItem
                 label="Avg drawdown"
-                value={`-${formatCurrency(stats.avgDrawdown)}`}
+                value={formatValue(stats.avgDrawdown * -1, { kind: 'money' })}
                 negative={stats.avgDrawdown > 0 ? true : undefined}
               />
               <StatItem
                 label="Fees"
-                value={`-${formatCurrency(Math.abs(stats.fees))}`}
+                value={formatValue(Math.abs(stats.fees) * -1, { kind: 'money' })}
                 negative={stats.fees !== 0 ? true : undefined}
               />
               <StatItem
-                label="Net"
-                value={formatCurrency(stats.net)}
+                label={mode === 'rMultiple' ? 'Total R' : 'Net'}
+                value={mode === 'rMultiple'
+                  ? formatValue(stats.rCoverage.total, { kind: 'rMultiple', sensitive: false })
+                  : formatValue(stats.net, { kind: 'money' })}
                 negative={stats.net < 0 ? true : stats.net > 0 ? false : undefined}
               />
             </>

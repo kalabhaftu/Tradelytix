@@ -3,9 +3,10 @@
 import dynamic from 'next/dynamic'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useData } from '@/context/data-provider'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import TradeReplay from '../components/trades/trade-replay'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft } from 'lucide-react'
 import { Suspense } from 'react'
 import { cn, classifyTrade, ensureExtendedTrade } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -14,18 +15,16 @@ import { TradeEditPanel } from '../components/tables/trade-edit-panel'
 import { TablePageSkeleton } from './components/table-page-skeleton'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 
-// Lazy load the trade table component
 const TradeTableReview = dynamic(
-  () => import('../components/tables/trade-table-review').then(mod => ({ default: mod.TradeTableReview })),
+  () => import('../components/tables/trade-table-review').then((mod) => ({ default: mod.TradeTableReview })),
   { ssr: false }
 )
-
-
 
 function TableView() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { formattedTrades = [], updateTrades, statistics } = useData()
+  const { formatValue, getTradeRMultipleInfo } = useDashboardDisplay()
   const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
 
   const view = searchParams.get('view')
@@ -39,12 +38,11 @@ function TableView() {
       const isLong = trade.side?.toLowerCase() === 'long' || trade.side?.toLowerCase() === 'buy'
       const outcome = classifyTrade(trade.pnl, breakEvenThreshold)
       const isProfit = outcome === 'win'
-      const isLoss = outcome === 'loss'
+      const tradeRInfo = getTradeRMultipleInfo(trade)
 
       return (
-        <div className="flex flex-col h-[calc(100vh-120px)] bg-background border border-border/40 rounded-xl overflow-hidden shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between px-3 py-2 border-b shrink-0 bg-muted gap-2">
-            {/* Left: Back + Symbol */}
+        <div className="flex h-[calc(100vh-120px)] flex-col overflow-hidden rounded-xl border border-border/40 bg-background shadow-sm">
+          <div className="flex flex-col justify-between gap-2 border-b bg-muted px-3 py-2 shrink-0 sm:flex-row sm:items-center">
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
@@ -61,39 +59,49 @@ function TableView() {
                 <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Back</span>
               </Button>
-              <div className="h-4 w-px bg-border/60 hidden sm:block" />
-              <h1 className="text-xs font-bold tracking-tight uppercase text-muted-foreground mr-2">
+              <div className="hidden h-4 w-px bg-border/60 sm:block" />
+              <h1 className="mr-2 text-xs font-bold uppercase tracking-tight text-muted-foreground">
                 {trade.instrument}
               </h1>
-              <Badge variant={isLong ? 'default' : 'destructive'} className="text-[10px] px-1.5 py-0 h-4 uppercase font-bold">
+              <Badge
+                variant={isLong ? 'default' : 'destructive'}
+                className="h-4 px-1.5 py-0 text-[10px] font-bold uppercase"
+              >
                 {isLong ? 'Buy' : 'Sell'}
               </Badge>
             </div>
 
-            {/* Right: Trade Info - Responsive grid on mobile */}
-            <div className="flex items-center gap-3 sm:gap-6 text-[10px] sm:text-xs overflow-x-auto">
-              <div className="flex flex-col items-start sm:items-end shrink-0">
-                <span className="text-[9px] uppercase font-bold text-muted-foreground leading-none mb-0.5">Entry/Exit</span>
+            <div className="flex items-center gap-3 overflow-x-auto text-[10px] sm:gap-6 sm:text-xs">
+              <div className="flex shrink-0 flex-col items-start sm:items-end">
+                <span className="mb-0.5 text-[9px] font-bold uppercase leading-none text-muted-foreground">
+                  Entry/Exit
+                </span>
                 <span className="font-mono font-medium leading-none">
-                  ${Number(trade.entryPrice).toFixed(2)} → ${trade.closePrice ? Number(trade.closePrice).toFixed(2) : 'OPEN'}
+                  ${Number(trade.entryPrice).toFixed(2)} -&gt; {trade.closePrice ? `$${Number(trade.closePrice).toFixed(2)}` : 'OPEN'}
                 </span>
               </div>
-              <div className="flex flex-col items-start sm:items-end shrink-0 hidden xs:flex">
-                <span className="text-[9px] uppercase font-bold text-muted-foreground leading-none mb-0.5">Size</span>
+              <div className="hidden shrink-0 flex-col items-start xs:flex sm:items-end">
+                <span className="mb-0.5 text-[9px] font-bold uppercase leading-none text-muted-foreground">
+                  Size
+                </span>
                 <span className="font-mono font-medium leading-none">{trade.quantity}</span>
               </div>
-              <div className="flex flex-col items-start sm:items-end shrink-0">
-                <span className="text-[9px] uppercase font-bold text-muted-foreground leading-none mb-0.5">P&L</span>
-                <span className={cn(
-                  "font-mono font-bold leading-none",
-                  isProfit ? "text-profit" : "text-loss"
-                )}>
-                  {isProfit ? '+' : ''}${trade.pnl.toFixed(2)}
+              <div className="flex shrink-0 flex-col items-start sm:items-end">
+                <span className="mb-0.5 text-[9px] font-bold uppercase leading-none text-muted-foreground">
+                  P&amp;L
+                </span>
+                <span
+                  className={cn(
+                    'font-mono font-bold leading-none',
+                    isProfit ? 'text-profit' : 'text-loss'
+                  )}
+                >
+                  {formatValue(trade.pnl, { kind: 'money', rValue: tradeRInfo.value })}
                 </span>
               </div>
             </div>
           </div>
-          <div className="flex-1 overflow-hidden relative bg-card">
+          <div className="relative flex-1 overflow-hidden bg-card">
             <TradeReplay trade={trade} />
           </div>
         </div>
@@ -137,11 +145,8 @@ function TableView() {
 }
 
 export default function TablePage() {
-  const searchParams = useSearchParams()
-  const isReplay = searchParams.get('view') === 'replay'
-
   return (
-    <div className="w-full px-3 sm:px-4 md:px-6 py-4">
+    <div className="w-full px-3 py-4 sm:px-4 md:px-6">
       <Suspense fallback={<TablePageSkeleton />}>
         <TableView />
       </Suspense>

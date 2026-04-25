@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/tooltip"
 import { WidgetCard, ChartTooltip as SharedChartTooltip } from '../widget-card'
 import { useWidgetData } from '@/hooks/use-widget-data'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { formatNumber } from "@/lib/utils"
 import { WidgetSize } from '@/app/dashboard/types/dashboard'
 
@@ -80,7 +81,16 @@ function formatAxisValue(value: number): string {
 
 export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulativePnLProps) {
   const { data: rawChartData, isLoading } = useWidgetData('dailyCumulativePnl')
-  const chartData = React.useMemo(() => rawChartData ?? [], [rawChartData])
+  const { formatValue, transformValue } = useDashboardDisplay()
+  const chartData = React.useMemo(
+    () =>
+      (rawChartData ?? []).map((item: any) => ({
+        ...item,
+        cumulativePnL: transformValue(item.cumulativePnL, { kind: 'money' }) ?? 0,
+        dailyPnL: transformValue(item.dailyPnL, { kind: 'money' }) ?? 0,
+      })),
+    [rawChartData, transformValue]
+  )
 
   // ---------------------------------------------------------------------------
   // GRADIENT OFFSET CALCULATION (PRESERVED - DO NOT MODIFY)
@@ -175,7 +185,7 @@ export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulat
 
               {/* Y Axis - Currency */}
               <YAxis
-                tickFormatter={formatAxisValue}
+                tickFormatter={(value) => formatValue(value, { kind: 'money', compact: true })}
                 stroke={COLORS.axis}
                 fontSize={isCompact ? 10 : 11}
                 tickLine={false}

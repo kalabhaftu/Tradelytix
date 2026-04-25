@@ -17,6 +17,7 @@ import ProfitFactor from '../components/kpi/profit-factor'
 import AvgWinLoss from '../components/kpi/avg-win-loss'
 
 import SessionAnalysis from '../components/kpi/session-analysis'
+import StreakKpi from '../components/kpi/streak-kpi'
 
 // Chart components
 import NetDailyPnL from '../components/charts/net-daily-pnl'
@@ -621,6 +622,17 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetConfig> = {
         </CardContent>
       </Card>
     )
+  },
+  streakKpi: {
+    type: 'streakKpi',
+    defaultSize: 'kpi',
+    allowedSizes: ['kpi'],
+    category: 'statistics',
+    description: 'Current trade streak with longest win/loss records',
+    previewHeight: 80,
+    kpiRowOnly: true,
+    getComponent: ({ size }) => <StreakKpi size={size} />,
+    getPreview: () => <StreakKpi size="kpi" />
   },
 }
 

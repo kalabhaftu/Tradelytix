@@ -25,7 +25,8 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Spinner } from "@/components/ui/spinner"
 import { BarChart3, BookOpen, PenLine, Save, X } from "lucide-react"
-import { cn, parsePositionTime, formatCurrency, formatNoteContent } from "@/lib/utils"
+import { cn, parsePositionTime, formatNoteContent } from "@/lib/utils"
+import { useDashboardDisplay } from "@/hooks/use-dashboard-display"
 import { Trade } from "@prisma/client"
 import { CalendarEntry } from "@/app/dashboard/types/calendar"
 import { DailyStats } from "./daily-stats"
@@ -53,6 +54,7 @@ export function CalendarModal({
 }: CalendarModalProps) {
   const timezone = useUserStore(state => state.timezone)
   const dateLocale = enUS
+  const { formatValue } = useDashboardDisplay()
   const [formattedDate, setFormattedDate] = useState<string>("")
   const { accounts } = useData()
 
@@ -264,7 +266,7 @@ export function CalendarModal({
                               </TableCell>
                               <TableCell className="text-right">
                                 <span className={cn("font-mono font-bold", getTradeNetPnl(trade) >= 0 ? "text-long" : "text-short")}>
-                                  {formatCurrency(getTradeNetPnl(trade))}
+                                  {formatValue(getTradeNetPnl(trade), { kind: 'money' })}
                                 </span>
                               </TableCell>
                               <TableCell className="text-right">

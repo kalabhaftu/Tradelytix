@@ -22,6 +22,7 @@ export type WidgetType =
   | 'dayOfWeekPerformance'
   | 'drawdown'
   | 'performanceSummary'
+  | 'streakKpi'
 export type WidgetSize = 'tiny' | 'small' | 'small-long' | 'medium' | 'large' | 'extra-large' | 'kpi'
 
 

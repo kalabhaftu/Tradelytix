@@ -13,8 +13,9 @@ import {
   getISOWeek,
 } from "date-fns"
 import { BookOpen } from "lucide-react"
-import { cn, formatCurrency } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import { useMediaQuery } from "@/hooks/use-media-query"
+import { useDashboardDisplay } from "@/hooks/use-dashboard-display"
 
 import { CalendarData } from "@/app/dashboard/types/calendar"
 import { useCalendarViewStore } from "@/store/calendar-view"
@@ -53,6 +54,7 @@ const DayCell = memo(function DayCell({
   onClick?: () => void
 }) {
   const { visibleStats } = useCalendarViewStore()
+  const { formatValue } = useDashboardDisplay()
   const isTodayDate = isToday(date)
   const { statistics } = useData()
   const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
@@ -131,11 +133,7 @@ const DayCell = memo(function DayCell({
               isProfit ? "text-long" : isLoss ? "text-short" : "text-muted-foreground"
             )}
           >
-            {dayData && dayData.pnl !== undefined && (
-              dayData.pnl < 0 
-                ? `-$${Math.abs(dayData.pnl) >= 1000 ? (Math.abs(dayData.pnl) / 1000).toFixed(1) + 'k' : Math.abs(dayData.pnl).toFixed(0)}`
-                : `$${dayData.pnl >= 1000 ? (dayData.pnl / 1000).toFixed(1) + 'k' : dayData.pnl.toFixed(0)}`
-            )}
+            {dayData && dayData.pnl !== undefined && formatValue(dayData.pnl, { kind: 'money', compact: true, rValue: dayData.dailyRMultiple ?? null, emptyLabel: '$0' })}
           </span>
         )}
       </div>
@@ -176,7 +174,7 @@ const DayCell = memo(function DayCell({
                 isProfit ? "text-long" : isLoss ? "text-short" : "text-foreground"
               )}
             >
-              {dayData.pnl < 0 ? `-$${Math.abs(dayData.pnl).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : `$${dayData.pnl.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`}
+              {formatValue(dayData.pnl, { kind: 'money', rValue: dayData.dailyRMultiple ?? null, emptyLabel: '$0' })}
             </div>
           )}
 
@@ -230,6 +228,7 @@ function WeeklySummary({
   currentDate: Date
   onReviewWeek?: (date: Date) => void
 }) {
+  const { formatValue } = useDashboardDisplay()
   const stats = useMemo(() => {
     let pnl = 0
     let tradedDays = 0
@@ -270,7 +269,7 @@ function WeeklySummary({
               : "text-short",
         )}
       >
-        {stats.tradedDays === 0 ? "$0" : (stats.pnl < 0 ? `-$${Math.abs(stats.pnl).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : `$${stats.pnl.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`)}
+        {stats.tradedDays === 0 ? "$0" : formatValue(stats.pnl, { kind: 'money', compact: true, emptyLabel: '$0' })}
       </span>
       <div className={cn(
         "text-[9px] font-bold mt-1.5 px-1.5 py-0.5 rounded",

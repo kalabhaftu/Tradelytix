@@ -2,13 +2,9 @@
 
 import React from 'react'
 import { cn } from '@/lib/utils'
-import { Info } from 'lucide-react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
+import { inferMetricKind } from '@/lib/dashboard/display-mode'
+import { useDashboardDisplayStore } from '@/store/dashboard-display-store'
 
 interface WidgetCardProps {
   children: React.ReactNode
@@ -36,12 +32,17 @@ export function WidgetCard({
   className,
   noPadding = false,
 }: WidgetCardProps) {
+  const widgetStyle = useDashboardDisplayStore((s) => s.widgetStyle)
+  const isGlass = widgetStyle === 'glass'
+
   if (isKpi) {
     return (
       <div
         className={cn(
           'w-full h-full overflow-hidden widget-card',
-          'bg-muted/10 border border-border/40 rounded-xl min-[1440px]:rounded-2xl',
+          isGlass
+            ? 'bg-card/80 border border-border/30 rounded-2xl shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]'
+            : 'bg-muted/10 border border-border/40 rounded-xl min-[1440px]:rounded-2xl',
           'p-3 min-[1440px]:p-4',
           className
         )}
@@ -55,7 +56,9 @@ export function WidgetCard({
     <div
       className={cn(
         'w-full h-full overflow-hidden flex flex-col widget-card',
-        'bg-muted/10 border border-border/40 rounded-xl sm:rounded-2xl',
+        isGlass
+          ? 'bg-card/80 border border-border/30 rounded-2xl shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]'
+          : 'bg-muted/10 border border-border/40 rounded-xl sm:rounded-2xl',
         !noPadding && 'p-3 sm:p-5',
         className
       )}
@@ -81,6 +84,8 @@ export function WidgetCard({
  * Shared chart tooltip — matches the reports page tooltip design
  */
 export function ChartTooltip({ active, payload, label }: any) {
+  const { formatValue, mode, startingBalance } = useDashboardDisplay()
+
   if (!active || !payload || !payload.length) return null
 
   return (
@@ -100,8 +105,13 @@ export function ChartTooltip({ active, payload, label }: any) {
             {entry.name}:
           </span>
           <span className="text-xs font-mono font-bold">
-            {typeof entry.value === 'number' && entry.value % 1 !== 0
-              ? `$${entry.value.toFixed(2)}`
+            {typeof entry.value === 'number'
+              ? formatValue(entry.value, {
+                  kind: inferMetricKind(entry.dataKey, entry.name),
+                  basis: startingBalance,
+                  precision: mode === 'percentage' ? 2 : 2,
+                  sensitive: inferMetricKind(entry.dataKey, entry.name) !== 'count',
+                })
               : entry.value}
           </span>
         </div>

@@ -4,6 +4,7 @@ import * as React from "react"
 import * as RechartsPrimitive from "recharts"
 import { WidgetCard, ChartTooltip as SharedChartTooltip } from '../widget-card'
 import { useWidgetData } from '@/hooks/use-widget-data'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { formatNumber } from "@/lib/utils"
 import { WidgetSize } from '@/app/dashboard/types/dashboard'
 import {
@@ -100,7 +101,16 @@ export default function NetDailyPnL({ size = 'small-long' }: NetDailyPnLProps) {
   const { statistics } = useData()
   const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
   const { data: rawChartData, isLoading } = useWidgetData('netDailyPnl')
-  const chartData = React.useMemo(() => rawChartData ?? [], [rawChartData])
+  const { formatValue, transformValue } = useDashboardDisplay()
+  const chartData = React.useMemo(
+    () =>
+      (rawChartData ?? []).map((item: any) => ({
+        ...item,
+        originalPnl: item.pnl,
+        pnl: transformValue(item.pnl, { kind: 'money' }) ?? 0,
+      })),
+    [rawChartData, transformValue]
+  )
 
   // ---------------------------------------------------------------------------
   // Y-AXIS DOMAIN CALCULATION (PRESERVED - DO NOT MODIFY)
@@ -186,7 +196,7 @@ export default function NetDailyPnL({ size = 'small-long' }: NetDailyPnLProps) {
             tickMargin={8}
           />
           <YAxis
-            tickFormatter={formatAxisValue}
+            tickFormatter={(value) => formatValue(value, { kind: 'money', compact: true })}
             stroke={COLORS.axis}
             fontSize={10}
             tickLine={false}
@@ -214,9 +224,9 @@ export default function NetDailyPnL({ size = 'small-long' }: NetDailyPnLProps) {
               <Cell
                 key={`cell-${index}`}
                 fill={
-                  classifyOutcome(entry.pnl, breakEvenThreshold) === 'win'
+                  classifyOutcome(entry.originalPnl, breakEvenThreshold) === 'win'
                     ? COLORS.profit
-                    : classifyOutcome(entry.pnl, breakEvenThreshold) === 'loss'
+                    : classifyOutcome(entry.originalPnl, breakEvenThreshold) === 'loss'
                       ? COLORS.loss
                       : 'hsl(var(--muted-foreground)/0.4)'
                 }

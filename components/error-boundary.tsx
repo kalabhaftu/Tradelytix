@@ -32,6 +32,7 @@ interface ErrorBoundaryState {
   hasError: boolean
   error: Error | null
   errorInfo: ErrorInfo | null
+  isChunkError: boolean
 }
 
 /**
@@ -51,12 +52,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     this.state = {
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
+      isChunkError: false
     }
   }
 
   static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
-    return { hasError: true, error }
+    const message = error?.message?.toLowerCase?.() || ''
+    const isChunkError = message.includes('chunkloaderror') || message.includes('failed to load chunk')
+    return { hasError: true, error, isChunkError }
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
@@ -70,12 +74,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   handleRetry = (): void => {
-    this.setState({ hasError: false, error: null, errorInfo: null })
+    this.setState({ hasError: false, error: null, errorInfo: null, isChunkError: false })
     this.props.onRetry?.()
   }
 
   render(): ReactNode {
-    const { hasError, error } = this.state
+    const { hasError, error, isChunkError } = this.state
     const {
       children,
       fallback,
@@ -101,7 +105,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              {errorMessage || 'An unexpected error occurred. Please try again.'}
+              {isChunkError
+                ? 'A dashboard chunk failed to load. Retry first, or refresh the page if the widget bundle changed during navigation.'
+                : errorMessage || 'An unexpected error occurred. Please try again.'}
             </p>
             {process.env.NODE_ENV === 'development' && error && (
               <pre className="mt-4 p-3 bg-muted rounded-md text-xs overflow-auto max-h-32">
@@ -111,15 +117,28 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           </CardContent>
           {showRetry && (
             <CardFooter>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={this.handleRetry}
-                className="gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Try Again
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={this.handleRetry}
+                  className="gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Try Again
+                </Button>
+                {isChunkError && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => window.location.reload()}
+                    className="gap-2"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Refresh Page
+                  </Button>
+                )}
+              </div>
             </CardFooter>
           )}
         </Card>

@@ -15,6 +15,7 @@ import { AccountSelector } from './navbar-filters/account-selector'
 import { useUserStore } from '@/store/user-store'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { TemplateSelector } from './template-selector'
+import { DashboardDisplayModeSelector } from './navbar-display-mode'
 import { signOut } from '@/server/auth'
 import { Settings, LogOut, Wallet } from 'lucide-react'
 import {
@@ -99,6 +100,10 @@ export default function Navbar() {
               <AccountSelector onSave={() => setAccountPopoverOpen(false)} />
             </PopoverContent>
           </Popover>
+
+          <div className="hidden sm:block">
+            <DashboardDisplayModeSelector />
+          </div>
 
           {/* Filters — hidden on mobile */}
           <div className="hidden sm:block">
@@ -188,6 +193,13 @@ export default function Navbar() {
               </DropdownMenuItem>
 
               <DropdownMenuSeparator className="sm:hidden" />
+
+              <div className="sm:hidden px-2 py-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">View</span>
+                  <DashboardDisplayModeSelector mobile />
+                </div>
+              </div>
 
               <DropdownMenuItem asChild>
                 <Link

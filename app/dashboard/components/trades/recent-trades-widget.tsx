@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState } from 'react'
 import { WidgetCard } from '../widget-card'
 import { useData } from '@/context/data-provider'
 import { cn } from '@/lib/utils'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { getTradeNetPnl, getTradePnlByMode, normalizePnlDisplayMode } from '@/lib/metrics/pnl'
 import { useUserStore } from '@/store/user-store'
@@ -18,6 +19,7 @@ export default function RecentTradesWidget() {
   const pnlDisplayMode = normalizePnlDisplayMode(
     useUserStore((state) => state.user?.pnlDisplayMode)
   )
+  const { formatValue, getTradeRMultipleInfo } = useDashboardDisplay()
 
   // CRITICAL FIX: Group trades first to handle partial closes correctly
   // This ensures partial closes are shown as single trades, not multiple entries
@@ -57,15 +59,6 @@ export default function RecentTradesWidget() {
   const recentTrades = React.useMemo(() => {
     return allRecentTrades.slice(0, visibleRowCount)
   }, [allRecentTrades, visibleRowCount])
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount)
-  }
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -113,6 +106,7 @@ export default function RecentTradesWidget() {
           ) : (
             recentTrades.map((trade: any, index: number) => {
               const displayPnl = getTradePnlByMode(trade, pnlDisplayMode)
+              const tradeRInfo = getTradeRMultipleInfo(trade)
               const outcome = classifyOutcome(getTradeNetPnl(trade), threshold)
               const isProfitable = outcome === 'win'
               const isLoss = outcome === 'loss'
@@ -139,7 +133,12 @@ export default function RecentTradesWidget() {
                           : 'text-muted-foreground'
                     )}
                   >
-                    {formatCurrency(displayPnl)}
+                    {formatValue(displayPnl, {
+                      kind: 'money',
+                      compact: true,
+                      rValue: tradeRInfo.value,
+                      emptyLabel: '--',
+                    })}
                   </div>
                 </div>
               )

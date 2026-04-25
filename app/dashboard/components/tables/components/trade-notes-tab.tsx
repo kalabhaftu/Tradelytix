@@ -2,16 +2,35 @@ import { Spinner } from '@/components/ui/spinner'
 
 
 import React from 'react'
-import { Control, Controller, FieldValues, Path } from 'react-hook-form'
+import { Control, Controller, FieldValues, Path, useController } from 'react-hook-form'
 import { Input } from '@/components/ui/input'
 import { LexicalEditor } from '@/components/ui/editor/lexical-editor'
 import { Button } from '@/components/ui/button'
-import { Pencil, Trash2, Plus, X } from 'lucide-react'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Pencil, Trash2, Plus, X, LayoutTemplate, Loader2 } from 'lucide-react'
 import { FileDropzone } from '@/components/ui/file-dropzone'
 import { TradeImagesGallery } from './trade-images-gallery'
 import { parseTradePreviewImageValue } from '@/lib/trade-preview-image'
 import { DEFAULT_TRADE_PREVIEW_TRANSFORM, type TradePreviewTransform } from '@/lib/trade-preview'
 import { TradePreviewCropEditor } from './trade-preview-crop-editor'
+import { toast } from 'sonner'
+import { BUILT_IN_JOURNAL_TEMPLATES } from '@/lib/journal-note-templates'
 
 type TradeNotesFieldValues = FieldValues & {
     comment?: string
@@ -61,6 +80,16 @@ const EMPTY_LEXICAL_STATE = {
         type: "root",
         version: 1,
     },
+}
+
+const MAX_CUSTOM_TEMPLATES = 3
+
+type CustomJournalTemplate = {
+    id: string
+    name: string
+    content: any
+    createdAt: string
+    updatedAt: string
 }
 
 function normalizeToLexicalState(value?: string) {
@@ -182,7 +211,121 @@ export function TradeNotesTab<TFieldValues extends TradeNotesFieldValues = Trade
     isSubmitting = false,
     onPreviewTransformChange,
 }: TradeNotesTabProps<TFieldValues>) {
+    const { field: commentField } = useController({
+        name: 'comment' as Path<TFieldValues>,
+        control,
+    })
+
+    const currentCommentValue = typeof commentField.value === 'string' ? commentField.value : ''
+    const noteHasContent = hasMeaningfulContent(currentCommentValue)
     const normalizedCardPreviewImage = parseTradePreviewImageValue(cardPreviewImage).src
+    const [customTemplates, setCustomTemplates] = React.useState<CustomJournalTemplate[]>([])
+    const [isLoadingTemplates, setIsLoadingTemplates] = React.useState(false)
+    const [isSavingTemplate, setIsSavingTemplate] = React.useState(false)
+    const [deletingTemplateId, setDeletingTemplateId] = React.useState<string | null>(null)
+    const [isTemplateNameDialogOpen, setIsTemplateNameDialogOpen] = React.useState(false)
+    const [templateName, setTemplateName] = React.useState('')
+
+    const loadCustomTemplates = React.useCallback(async () => {
+        try {
+            setIsLoadingTemplates(true)
+            const response = await fetch('/api/v1/journal/templates', { cache: 'no-store' })
+            const payload = await response.json().catch(() => null)
+
+            if (!response.ok) {
+                throw new Error(payload?.error || 'Failed to load custom templates')
+            }
+
+            const templates = Array.isArray(payload?.templates) ? payload.templates : []
+            setCustomTemplates(templates)
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to load custom templates')
+        } finally {
+            setIsLoadingTemplates(false)
+        }
+    }, [])
+
+    React.useEffect(() => {
+        void loadCustomTemplates()
+    }, [loadCustomTemplates])
+
+    const getUniqueTemplateName = React.useCallback((baseName: string) => {
+        const existingNames = new Set(customTemplates.map((template) => template.name.trim().toLowerCase()))
+        if (!existingNames.has(baseName.trim().toLowerCase())) return baseName
+
+        let counter = 2
+        while (existingNames.has(`${baseName} ${counter}`.toLowerCase())) {
+            counter += 1
+        }
+        return `${baseName} ${counter}`
+    }, [customTemplates])
+
+    const applyTemplate = React.useCallback((templateContent: any) => {
+        commentField.onChange(insertTemplateIntoNote(currentCommentValue, templateContent))
+    }, [commentField, currentCommentValue])
+
+    const openSaveTemplateDialog = React.useCallback(() => {
+        if (!noteHasContent) return
+        setTemplateName(getUniqueTemplateName('My Template'))
+        setIsTemplateNameDialogOpen(true)
+    }, [getUniqueTemplateName, noteHasContent])
+
+    const handleSaveCurrentAsTemplate = React.useCallback(async () => {
+        const trimmedName = templateName.trim()
+        if (!trimmedName || !noteHasContent) return
+
+        try {
+            setIsSavingTemplate(true)
+            const response = await fetch('/api/v1/journal/templates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: trimmedName,
+                    content: normalizeToLexicalState(currentCommentValue),
+                }),
+            })
+
+            const payload = await response.json().catch(() => null)
+            if (!response.ok) {
+                throw new Error(payload?.error || 'Failed to save template')
+            }
+
+            toast.success(payload?.updated ? 'Template updated' : 'Template saved')
+            setIsTemplateNameDialogOpen(false)
+            setTemplateName('')
+            await loadCustomTemplates()
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to save template')
+        } finally {
+            setIsSavingTemplate(false)
+        }
+    }, [currentCommentValue, loadCustomTemplates, noteHasContent, templateName])
+
+    const handleDeleteCustomTemplate = React.useCallback(async (templateId: string) => {
+        try {
+            setDeletingTemplateId(templateId)
+            const response = await fetch(`/api/v1/journal/templates/${templateId}`, {
+                method: 'DELETE',
+            })
+            const payload = await response.json().catch(() => null)
+            if (!response.ok) {
+                throw new Error(payload?.error || 'Failed to delete template')
+            }
+
+            setCustomTemplates((prev) => prev.filter((template) => template.id !== templateId))
+            toast.success('Template deleted')
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to delete template')
+        } finally {
+            setDeletingTemplateId(null)
+        }
+    }, [])
+
+    const trimmedTemplateName = templateName.trim()
+    const templateNameTaken = customTemplates.some(
+        (template) => template.name.trim().toLowerCase() === trimmedTemplateName.toLowerCase()
+    )
+    const canSaveTemplate = trimmedTemplateName.length > 0 && noteHasContent && !isSavingTemplate
 
     return (
         <div className="relative space-y-8 px-1">
@@ -201,11 +344,120 @@ export function TradeNotesTab<TFieldValues extends TradeNotesFieldValues = Trade
                         <h3 className="text-sm font-semibold text-foreground">Trade Notes</h3>
                         <p className="text-xs text-muted-foreground">Document your thoughts, market conditions, and key takeaways.</p>
                     </div>
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto shrink-0">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 px-3 text-xs font-semibold bg-muted/20 shrink-0"
+                                >
+                                    <LayoutTemplate className="h-3.5 w-3.5 mr-2" />
+                                    Templates
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-80">
+                                <DropdownMenuLabel>Built-in</DropdownMenuLabel>
+                                {BUILT_IN_JOURNAL_TEMPLATES.map((template) => (
+                                    <DropdownMenuItem
+                                        key={template.id}
+                                        className="cursor-pointer py-2"
+                                        onSelect={(event) => {
+                                            event.preventDefault()
+                                            applyTemplate(template.content)
+                                        }}
+                                    >
+                                        <div className="space-y-0.5">
+                                            <div className="text-xs font-semibold text-foreground">{template.name}</div>
+                                            <div className="text-[11px] leading-tight text-muted-foreground">{template.description}</div>
+                                        </div>
+                                    </DropdownMenuItem>
+                                ))}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuLabel>My Templates ({customTemplates.length}/{MAX_CUSTOM_TEMPLATES})</DropdownMenuLabel>
+                                {isLoadingTemplates ? (
+                                    <div className="px-2 py-2 text-xs text-muted-foreground flex items-center gap-2">
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        Loading custom templates...
+                                    </div>
+                                ) : customTemplates.length === 0 ? (
+                                    <div className="px-2 py-2 text-xs text-muted-foreground">
+                                        No custom templates yet. Use the + button to save one.
+                                    </div>
+                                ) : (
+                                    customTemplates.map((template) => (
+                                        <DropdownMenuItem
+                                            key={template.id}
+                                            className="cursor-pointer py-2 group"
+                                            onSelect={(event) => {
+                                                event.preventDefault()
+                                                applyTemplate(template.content)
+                                            }}
+                                        >
+                                            <div className="flex w-full items-center justify-between gap-2">
+                                                <div className="min-w-0">
+                                                    <div className="truncate text-xs font-semibold text-foreground">{template.name}</div>
+                                                    <div className="truncate text-[11px] text-muted-foreground">Saved custom template</div>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                                    disabled={deletingTemplateId === template.id}
+                                                    onClick={(event) => {
+                                                        event.preventDefault()
+                                                        event.stopPropagation()
+                                                        void handleDeleteCustomTemplate(template.id)
+                                                    }}
+                                                >
+                                                    {deletingTemplateId === template.id ? (
+                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                    ) : (
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        </DropdownMenuItem>
+                                    ))
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-8 w-8 shrink-0 bg-muted/20 disabled:opacity-40"
+                                        disabled={isSubmitting || isSavingTemplate || !noteHasContent}
+                                        onClick={openSaveTemplateDialog}
+                                    >
+                                        {isSavingTemplate ? (
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        ) : (
+                                            <Plus className="h-3.5 w-3.5" />
+                                        )}
+                                    </Button>
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {noteHasContent
+                                    ? `Save this note as a custom template (${customTemplates.length}/${MAX_CUSTOM_TEMPLATES})`
+                                    : 'Write or insert template content first'}
+                            </TooltipContent>
+                        </Tooltip>
+                    </div>
+                    {/* Legacy button templates kept only for quick rollback reference.
+                        New dropdown template system above is the active path. */}
+                    {/*
                     <Controller
                         name={'comment' as Path<TFieldValues>}
                         control={control}
                         render={({ field }) => (
-                            <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto shrink-0">
+                            <div className="hidden">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -276,6 +528,7 @@ export function TradeNotesTab<TFieldValues extends TradeNotesFieldValues = Trade
                             </div>
                         )}
                     />
+                    */}
                 </div>
                 <Controller
                     name={'comment' as Path<TFieldValues>}
@@ -284,11 +537,83 @@ export function TradeNotesTab<TFieldValues extends TradeNotesFieldValues = Trade
                         <LexicalEditor
                             value={field.value || ''}
                             onChange={field.onChange}
-                            placeholder="What did you see? What did you learn?"
+                            placeholder="Use the prompts as labels and type your answers after each one."
                         />
                     )}
                 />
             </div>
+
+            <Dialog
+                open={isTemplateNameDialogOpen}
+                onOpenChange={(open) => {
+                    if (isSavingTemplate) return
+                    setIsTemplateNameDialogOpen(open)
+                    if (!open) {
+                        setTemplateName('')
+                    }
+                }}
+            >
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Save Custom Template</DialogTitle>
+                        <DialogDescription>
+                            Save the current note structure as a reusable template. You can keep up to {MAX_CUSTOM_TEMPLATES} custom templates.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Input
+                        placeholder="Template name"
+                        value={templateName}
+                        maxLength={60}
+                        onChange={(event) => setTemplateName(event.target.value)}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Enter' && canSaveTemplate) {
+                                event.preventDefault()
+                                void handleSaveCurrentAsTemplate()
+                            }
+                        }}
+                    />
+                    {templateNameTaken && (
+                        <p className="text-xs text-muted-foreground">
+                            A template with this name exists. Saving will update it.
+                        </p>
+                    )}
+                    {!templateNameTaken && customTemplates.length >= MAX_CUSTOM_TEMPLATES && (
+                        <p className="text-xs text-destructive">
+                            You reached the 3-template limit. Use an existing name to replace one.
+                        </p>
+                    )}
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                setIsTemplateNameDialogOpen(false)
+                                setTemplateName('')
+                            }}
+                            disabled={isSavingTemplate}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            disabled={
+                                !canSaveTemplate ||
+                                (!templateNameTaken && customTemplates.length >= MAX_CUSTOM_TEMPLATES)
+                            }
+                            onClick={() => void handleSaveCurrentAsTemplate()}
+                        >
+                            {isSavingTemplate ? (
+                                <>
+                                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                'Save Template'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Card Preview Image */}

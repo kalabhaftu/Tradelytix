@@ -56,7 +56,8 @@ import {
   User,
   AlertCircle as WarningCircle,
   Calendar,
-  Target
+  Target,
+  LayoutGrid
 } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from 'next/link'
@@ -116,7 +117,7 @@ function SettingRow({
 }
 
 export default function SettingsPage() {
-  const { theme, setTheme, accentPack, setAccentPack } = useTheme()
+  const { theme, setTheme, accentPack, setAccentPack, widgetStyle, setWidgetStyle } = useTheme()
   const storeUser = useUserStore(state => state.supabaseUser)
   const dbUser = useUserStore(state => state.user)
   const setDbUser = useUserStore(state => state.setUser)
@@ -157,6 +158,14 @@ export default function SettingsPage() {
     setTheme(value as "light" | "dark" | "system")
     toast.success("Theme updated", {
       description: `Theme changed to ${value === 'system' ? 'system default' : value} mode.`,
+      duration: 2000
+    })
+  }
+
+  const handleWidgetStyleChange = (value: 'default' | 'glass') => {
+    setWidgetStyle(value)
+    toast.success("Widget style updated", {
+      description: `Widget style changed to ${value === 'glass' ? 'Glassmorphism' : 'Standard'}.`,
       duration: 2000
     })
   }
@@ -843,6 +852,34 @@ export default function SettingsPage() {
                       <DropdownMenuRadioItem value="net">Net (after fees)</DropdownMenuRadioItem>
                       <DropdownMenuRadioItem value="gross">Gross (before fees)</DropdownMenuRadioItem>
                     </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              }
+            />
+
+            <Separator />
+
+            {/* Widget Style */}
+            <SettingRow
+              icon={LayoutGrid}
+              label="Widget Style"
+              description={widgetStyle === 'glass' ? 'Glassmorphism with distinct borders' : 'Standard muted panel style'}
+              action={
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2 min-w-[120px]">
+                      {widgetStyle === 'glass' ? 'Glassmorphism' : 'Standard'}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleWidgetStyleChange('default')}>
+                      Standard
+                      {widgetStyle === 'default' && <Check className="ml-auto h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleWidgetStyleChange('glass')}>
+                      Glassmorphism
+                      {widgetStyle === 'glass' && <Check className="ml-auto h-4 w-4" />}
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               }

@@ -3,24 +3,21 @@ import hotkeys from 'hotkeys-js';
 import { useRouter } from 'next/navigation';
 import { signOut } from '@/server/auth';
 import { toast } from 'sonner';
+import { SHORTCUTS_MODAL_EVENT } from '@/components/ui/keyboard-shortcuts-modal';
 
 export function useKeyboardShortcuts() {
   const router = useRouter();
 
   useEffect(() => {
-    // Configure hotkeys to work properly
     hotkeys.filter = function(event) {
       const target = (event.target || event.srcElement) as HTMLElement;
       const tagName = target.tagName;
-      
-      // Allow shortcuts in input fields for specific shortcuts only
       if (tagName === 'INPUT' || tagName === 'TEXTAREA' || target.isContentEditable) {
         return ['ctrl+k', 'cmd+k', 'ctrl+/', 'cmd+/', 'shift+ctrl+q', 'shift+cmd+q'].includes(hotkeys.getPressedKeyCodes().join('+').toLowerCase());
       }
       return true;
     };
 
-    // Quick navigation shortcuts
     hotkeys('ctrl+d, cmd+d', (event) => {
       event.preventDefault();
       router.push('/dashboard');
@@ -51,21 +48,16 @@ export function useKeyboardShortcuts() {
       toast.success('Settings', { description: 'Navigated to settings' });
     });
 
-    // Keyboard shortcuts help
+    // Open command palette
     hotkeys('ctrl+k, cmd+k, ctrl+/, cmd+/', (event) => {
       event.preventDefault();
-      toast.info('Keyboard Shortcuts', {
-        description: `
-          ⌘+D: Dashboard
-          ⌘+A: Accounts
-          ⌘+S: Data Management
-          ⌘+P: Prop Firm
-          ⌘+T: Settings
-          ⌘+R: Refresh Page
-          ⇧⌘+Q: Logout
-        `,
-        duration: 8000,
-      });
+      // Dispatch event for command palette (handled by command-palette component)
+    });
+
+    // Open keyboard shortcuts modal
+    hotkeys('?', (event) => {
+      event.preventDefault();
+      window.dispatchEvent(new CustomEvent(SHORTCUTS_MODAL_EVENT));
     });
 
     // Refresh page
@@ -82,7 +74,6 @@ export function useKeyboardShortcuts() {
     });
 
     return () => {
-      // Cleanup all shortcuts
       hotkeys.unbind();
     };
   }, [router]);

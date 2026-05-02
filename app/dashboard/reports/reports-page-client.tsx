@@ -781,6 +781,30 @@ export default function ReportsPageClient({
                                                             {parseFloat(psychMetrics.totalRMultiple) > 0 ? '+' : ''}{psychMetrics.totalRMultiple}R
                                                         </p>
                                                     </div>
+                                                    {psychMetrics.sharpeRatio !== undefined && (
+                                                        <div className="space-y-1">
+                                                            <p className="text-[8px] uppercase font-bold text-muted-foreground/50 tracking-widest">Sharpe Ratio</p>
+                                                            <p className={cn("text-xl font-black font-mono tracking-tighter", parseFloat(psychMetrics.sharpeRatio) >= 0 ? "text-long" : "text-short")}>
+                                                                {psychMetrics.sharpeRatio}
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                    {psychMetrics.sortinoRatio !== undefined && (
+                                                        <div className="space-y-1">
+                                                            <p className="text-[8px] uppercase font-bold text-muted-foreground/50 tracking-widest">Sortino Ratio</p>
+                                                            <p className={cn("text-xl font-black font-mono tracking-tighter", parseFloat(psychMetrics.sortinoRatio) >= 0 ? "text-long" : "text-short")}>
+                                                                {psychMetrics.sortinoRatio}
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                    {psychMetrics.calmarRatio !== undefined && (
+                                                        <div className="space-y-1">
+                                                            <p className="text-[8px] uppercase font-bold text-muted-foreground/50 tracking-widest">Calmar Ratio</p>
+                                                            <p className={cn("text-xl font-black font-mono tracking-tighter", parseFloat(psychMetrics.calmarRatio) >= 0 ? "text-long" : "text-short")}>
+                                                                {psychMetrics.calmarRatio}
+                                                            </p>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

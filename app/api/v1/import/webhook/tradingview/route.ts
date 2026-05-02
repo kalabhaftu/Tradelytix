@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     const defaultAccount = await prisma.account.findFirst({
       where: { userId },
       orderBy: { createdAt: 'asc' },
-      select: { id: true, accountNumber: true },
+      select: { id: true, number: true },
     })
 
     if (!defaultAccount) {
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
         id: tradeId,
         userId,
         accountId: defaultAccount.id,
-        accountNumber: defaultAccount.accountNumber,
+        accountNumber: defaultAccount.number,
         instrument: String(symbol).toUpperCase(),
         symbol: String(symbol).toUpperCase(),
         side: String(side).toUpperCase(),

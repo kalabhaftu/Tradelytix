@@ -90,9 +90,9 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
     }
   }, [displayedPnl, formatValue, mode, pnlDisplayLabel, rStats.totalTrades, rStats.validTrades])
 
-  // Determine if we should use NumberFlow (default $ mode only)
-  const useNumberFlowBalance = mode === 'default' && typeof totalBalance === 'number'
-  const useNumberFlowPnl = (mode === 'default' || mode === 'percentage') && typeof secondaryValue.rawNumber === 'number'
+  // Determine if we should use NumberFlow (dollars $ mode only)
+  const useNumberFlowBalance = mode === 'dollars' && typeof totalBalance === 'number'
+  const useNumberFlowPnl = (mode === 'dollars' || mode === 'percentage') && typeof secondaryValue.rawNumber === 'number'
 
   return (
     <WidgetCard isKpi>

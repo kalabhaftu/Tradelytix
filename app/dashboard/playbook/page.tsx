@@ -136,6 +136,19 @@ function StrategyBlock({
             {model.stats?.avgAdherence?.toFixed(0) || '0'}%
           </span>
         </div>
+        <div>
+          <span className="text-[9px] font-black uppercase tracking-[0.1em] text-muted-foreground/60 block mb-1">Avg P&amp;L / Trade</span>
+          {(model.stats?.tradeCount || 0) > 0 ? (
+            <span className={cn(
+              "text-xl font-bold tracking-tight",
+              (model.stats?.totalPnL || 0) >= 0 ? "text-long" : "text-short"
+            )}>
+              {(model.stats?.totalPnL || 0) >= 0 ? '+' : ''}${((model.stats?.totalPnL || 0) / model.stats!.tradeCount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          ) : (
+            <span className="text-xl font-bold tracking-tight text-muted-foreground">—</span>
+          )}
+        </div>
       </div>
 
       <div className="mt-4 border-t border-border/12 pt-4">

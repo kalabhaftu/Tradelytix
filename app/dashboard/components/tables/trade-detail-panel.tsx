@@ -469,7 +469,7 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
       {selectedImage && (
         <Dialog open={!!selectedImage} onOpenChange={(open) => { if (!open) setSelectedImage(null) }} modal>
           <DialogContent
-            className="max-w-[95vw] max-h-[95vh] p-0 gap-0 z-[100]"
+            className="max-w-[95vw] sm:max-w-[90vw] max-h-[95vh] p-0 gap-0 z-[100]"
             onInteractOutside={(e) => { e.preventDefault(); setSelectedImage(null) }}
             onEscapeKeyDown={(e) => { e.preventDefault(); setSelectedImage(null) }}
             onPointerDownOutside={(e) => { e.preventDefault(); setSelectedImage(null) }}

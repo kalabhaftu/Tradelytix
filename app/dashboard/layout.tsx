@@ -10,6 +10,7 @@ import { QuickAddFAB } from "@/components/quick-add-fab";
 import { CommandPalette } from "@/components/command-palette";
 import { GlobalTradeController } from "./components/global-trade-controller";
 import { WeeklyReviewTrigger } from "@/components/weekly-review-trigger";
+import { KeyboardShortcutsModal } from "@/components/ui/keyboard-shortcuts-modal";
 import { getInitBootstrapData } from "@/server/init-bootstrap";
 
 export default async function RootLayout({ children }: { children: ReactElement }) {
@@ -30,6 +31,7 @@ export default async function RootLayout({ children }: { children: ReactElement 
                 <MobileBottomNav />
                 <QuickAddFAB />
                 <CommandPalette />
+                <KeyboardShortcutsModal />
                 <Suspense fallback={null}>
                   <GlobalTradeController />
                 </Suspense>

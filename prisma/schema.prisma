@@ -280,6 +280,13 @@ model Trade {
   orderType            String?
   chartLinks           String?
   chartLinksList       String[]         @default([])
+  plannedEntry         String?
+  plannedStopLoss      String?
+  plannedTakeProfit    String?
+  plannedSize          Float?
+  planNotes            String?
+  mae                  Float?
+  mfe                  Float?
   Account              Account?         @relation(fields: [accountId], references: [id], onDelete: Cascade)
   TradingModel         TradingModel?    @relation(fields: [modelId], references: [id])
   PhaseAccount         PhaseAccount?    @relation(fields: [phaseAccountId], references: [id], onDelete: Cascade)
@@ -405,6 +412,8 @@ model User {
   WeeklyAIReview         WeeklyAIReview[]
   ActivityLog            ActivityLog[]
   JournalTemplate        JournalTemplate[]
+  UserGoal               UserGoal[]
+  SharedReport           SharedReport[]
   settings               UserSettings?
 
   @@index([auth_user_id])
@@ -438,6 +447,7 @@ model UserSettings {
   accentPack            String   @default("classic")
   widgetStyle           String   @default("default")
   autoAdjustAccountDate Boolean  @default(false)
+  webhookToken          String?  @unique
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   User                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -885,5 +895,56 @@ model WeeklyAIReview {
 
   @@unique([userId, weekStart])
   @@index([userId, createdAt])
+  @@schema("public")
+}
+
+// =============================================
+// GOAL TRACKING
+// =============================================
+
+model UserGoal {
+  id          String    @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  metric      String    // "pnl" | "winRate" | "trades" | "streak" | "drawdown" | "custom"
+  targetValue Float
+  currentValue Float   @default(0)
+  period      String    // "daily" | "weekly" | "monthly" | "all-time"
+  startDate   DateTime
+  endDate     DateTime?
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  User        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isCompleted])
+  @@schema("public")
+}
+
+// =============================================
+// SHAREABLE REPORTS
+// =============================================
+
+model SharedReport {
+  id          String   @id @default(cuid())
+  userId      String
+  slug        String   @unique
+  title       String   @default("Trading Report")
+  dateFrom    String?
+  dateTo      String?
+  accountId   String?
+  snapshot    Json
+  isPublic    Boolean  @default(true)
+  viewCount   Int      @default(0)
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  User        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([slug])
   @@schema("public")
 }

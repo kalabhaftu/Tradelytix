@@ -26,6 +26,9 @@ vi.mock('@/lib/prisma', () => ({
     user: {
       findUnique: vi.fn().mockResolvedValue({ breakEvenThreshold: 10 }),
     },
+    userSettings: {
+      findUnique: vi.fn().mockResolvedValue({ breakEvenThreshold: 10, pnlDisplayMode: 'net' }),
+    },
   },
 }))
 
@@ -87,7 +90,7 @@ describe('GET /api/v1/trades', () => {
       { id: 'a1', number: '123', _count: { Trade: 1 } } as any,
     ])
     vi.mocked(prisma.masterAccount.findMany).mockResolvedValueOnce([])
-    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({ breakEvenThreshold: 12 } as any)
+    vi.mocked(prisma.userSettings.findUnique).mockResolvedValueOnce({ breakEvenThreshold: 12, pnlDisplayMode: 'net' } as any)
 
     const { GET } = await import('@/app/api/v1/trades/route')
     const url = new URL('http://localhost/api/v1/trades')

@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import NumberFlow from '@number-flow/react'
 import { WidgetCard } from '../widget-card'
 import { useData } from '@/context/data-provider'
 import { useWidgetData } from '@/hooks/use-widget-data'
@@ -70,6 +71,7 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
         label: 'Performance:',
         value: formatValue(displayedPnl, { kind: 'money', precision: 2, sensitive: true }),
         tone: displayedPnl >= 0 ? 'text-profit' : 'text-loss',
+        rawNumber: displayedPnl,
       }
     }
     if (mode === 'rMultiple') {
@@ -77,19 +79,25 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
         label: 'R coverage:',
         value: `${rStats.validTrades}/${rStats.totalTrades}`,
         tone: rStats.validTrades > 0 ? 'text-foreground' : 'text-muted-foreground',
+        rawNumber: null,
       }
     }
     return {
       label: `${pnlDisplayLabel}:`,
       value: formatValue(displayedPnl, { kind: 'money', compact: true, sensitive: true }),
       tone: displayedPnl >= 0 ? 'text-profit' : 'text-loss',
+      rawNumber: displayedPnl,
     }
   }, [displayedPnl, formatValue, mode, pnlDisplayLabel, rStats.totalTrades, rStats.validTrades])
+
+  // Determine if we should use NumberFlow (dollars $ mode only)
+  const useNumberFlowBalance = mode === 'dollars' && typeof totalBalance === 'number'
+  const useNumberFlowPnl = (mode === 'dollars' || mode === 'percentage') && typeof secondaryValue.rawNumber === 'number'
 
   return (
     <WidgetCard isKpi>
       <div className="h-full flex flex-col justify-between">
-        {/* Header row with title, info, and trade count badge */}
+        {/* Header row */}
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="flex min-w-0 items-center gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">
@@ -112,11 +120,13 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
               </Tooltip>
             </TooltipProvider>
           </div>
-          
-          {/* Trade count badge */}
+
           {nbTrades > 0 && (
             <div className="ml-auto flex items-center gap-1 rounded-full bg-muted/50 px-2 py-0.5">
-              <span className="text-xxs font-semibold text-muted-foreground">{nbTrades}</span>
+              <NumberFlow
+                value={nbTrades}
+                className="text-xxs font-semibold text-muted-foreground"
+              />
             </div>
           )}
         </div>
@@ -125,20 +135,33 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
         <div className="flex items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
             {/* Large balance number */}
-            <span className="text-[1.65rem] min-[768px]:text-[1.85rem] min-[1440px]:text-3xl font-bold tracking-tight text-foreground">
-              {primaryValue}
-            </span>
-            
+            {useNumberFlowBalance ? (
+              <NumberFlow
+                value={totalBalance}
+                format={{ style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 2 }}
+                className="text-[1.65rem] min-[768px]:text-[1.85rem] min-[1440px]:text-3xl font-bold tracking-tight text-foreground"
+              />
+            ) : (
+              <span className="text-[1.65rem] min-[768px]:text-[1.85rem] min-[1440px]:text-3xl font-bold tracking-tight text-foreground">
+                {primaryValue}
+              </span>
+            )}
+
             {/* Net PnL below */}
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-muted-foreground">{secondaryValue.label}</span>
-              <span className={cn(
-                "text-sm font-semibold",
-                secondaryValue.tone
-              )}>
-                {mode === 'percentage' && accountChangePercent >= 0 ? '+' : ''}
-                {secondaryValue.value}
-              </span>
+              {useNumberFlowPnl && secondaryValue.rawNumber !== null ? (
+                <NumberFlow
+                  value={secondaryValue.rawNumber}
+                  format={{ style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 2, signDisplay: 'always' }}
+                  className={cn('text-sm font-semibold', secondaryValue.tone)}
+                />
+              ) : (
+                <span className={cn('text-sm font-semibold', secondaryValue.tone)}>
+                  {mode === 'percentage' && accountChangePercent >= 0 ? '+' : ''}
+                  {secondaryValue.value}
+                </span>
+              )}
             </div>
           </div>
 

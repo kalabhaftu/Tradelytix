@@ -18,6 +18,7 @@ import {
   PanelLeftOpen,
   MessageSquare,
   Heart,
+  Trophy,
 } from 'lucide-react'
 
 import {
@@ -43,6 +44,7 @@ const navItems = [
   { id: 'table', label: 'Trades', icon: Table2, href: '/dashboard/table' },
   { id: 'journal', label: 'Journal', icon: BookOpen, href: '/dashboard/journal' },
   { id: 'playbook', label: 'Playbook', icon: Target, href: '/dashboard/playbook' },
+  { id: 'goals', label: 'Goals', icon: Trophy, href: '/dashboard/goals' },
   { id: 'accounts', label: 'Accounts', icon: Users, href: '/dashboard/accounts' },
   { id: 'backtesting', label: 'Backtesting', icon: FlaskConical, href: '/dashboard/backtesting' },
 ]
@@ -68,6 +70,7 @@ export function DashboardSidebar() {
     if (pathname?.startsWith('/dashboard/journal')) return 'journal'
     if (pathname?.startsWith('/dashboard/backtesting')) return 'backtesting'
     if (pathname?.startsWith('/dashboard/playbook')) return 'playbook'
+    if (pathname?.startsWith('/dashboard/goals')) return 'goals'
     if (pathname?.startsWith('/dashboard/reports')) return 'reports'
     if (pathname?.startsWith('/dashboard/settings')) return 'settings'
     if (pathname?.startsWith('/dashboard/data')) return 'data'

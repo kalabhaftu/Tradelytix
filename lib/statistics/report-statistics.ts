@@ -25,7 +25,11 @@ import {
   calculatePeakToTroughDrawdown,
   calculateExpectancy,
   calculateProfitFactor,
-  calculateRecoveryFactor
+  calculateRecoveryFactor,
+  calculateSharpeRatio,
+  calculateSortinoRatio,
+  calculateCalmarRatio,
+  buildDailyReturns,
 } from '@/lib/math/performance-metrics'
 
 export { calculateTradeRMultiple as calculateRMultiple }
@@ -63,6 +67,9 @@ export interface PsychMetricsDTO {
   consistencyScore: string
   recoveryFactor: string
   totalRMultiple: string
+  sharpeRatio: string
+  sortinoRatio: string
+  calmarRatio: string
 }
 
 export interface SessionPerformanceDTO {
@@ -598,6 +605,9 @@ function computeAllMetrics(
       consistencyScore,
       recoveryFactor: recoveryFactor.toFixed(2),
       totalRMultiple: totalRMultipleDelta.toFixed(2),
+      sharpeRatio: calculateSharpeRatio(buildDailyReturns(sorted)).toFixed(2),
+      sortinoRatio: calculateSortinoRatio(buildDailyReturns(sorted)).toFixed(2),
+      calmarRatio: calculateCalmarRatio(cumulativePnL, maxDD).toFixed(2),
     },
     sessionPerformance: sessions,
     rMultipleDistribution: rDistribution,

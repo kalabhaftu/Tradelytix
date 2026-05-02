@@ -218,9 +218,8 @@ export function GoalsPageClient() {
     <div className="flex flex-col gap-8 p-6 max-w-4xl mx-auto">
       <PageHeader
         title="Goals"
-        description="Track progress towards your trading objectives"
-        icon={<Target className="h-5 w-5" />}
-        action={
+        meta="Track progress towards your trading objectives"
+        actions={
           <Button size="sm" onClick={() => setIsCreateOpen(true)} className="gap-1.5">
             <Plus className="h-3.5 w-3.5" />
             New Goal

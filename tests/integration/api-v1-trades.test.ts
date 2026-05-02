@@ -26,6 +26,9 @@ vi.mock('@/lib/prisma', () => ({
     user: {
       findUnique: vi.fn().mockResolvedValue({ breakEvenThreshold: 10 }),
     },
+    userSettings: {
+      findUnique: vi.fn().mockResolvedValue({ breakEvenThreshold: 10, pnlDisplayMode: 'net' }),
+    },
   },
 }))
 

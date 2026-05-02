@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   getResolvedUserIdentitySafe: vi.fn(),
   findUnique: vi.fn(),
   update: vi.fn(),
+  upsert: vi.fn(),
   logActivity: vi.fn(),
   getClientIp: vi.fn().mockReturnValue('127.0.0.1'),
 }))
@@ -18,6 +19,16 @@ vi.mock('@/lib/prisma', () => ({
       findUnique: mocks.findUnique,
       update: mocks.update,
     },
+    userSettings: {
+      upsert: mocks.upsert,
+    },
+    $transaction: vi.fn().mockImplementation(async (cb: any) => {
+      const tx = {
+        user: { update: mocks.update },
+        userSettings: { upsert: mocks.upsert },
+      }
+      return cb(tx)
+    }),
   },
 }))
 
@@ -87,7 +98,21 @@ describe('GET/PATCH /api/auth/profile', () => {
       if (args?.where?.id !== userRow.id) {
         return null
       }
-      return pickSelected(userRow as Record<string, unknown>, args?.select)
+      const base = pickSelected(userRow as Record<string, unknown>, args?.select)
+      if (args?.select?.settings) {
+        base.settings = {
+          timezone: 'America/New_York',
+          theme: userRow.theme,
+          accountFilterSettings: null,
+          aiSettings: userRow.aiSettings,
+          backtestInputMode: 'manual',
+          breakEvenThreshold: userRow.breakEvenThreshold,
+          pnlDisplayMode: 'net',
+          accentPack: userRow.accentPack,
+          autoAdjustAccountDate: userRow.autoAdjustAccountDate,
+        }
+      }
+      return base
     })
 
     mocks.update.mockImplementation(async (args: any) => {
@@ -101,6 +126,22 @@ describe('GET/PATCH /api/auth/profile', () => {
       }
 
       return pickSelected(userRow as Record<string, unknown>, args?.select)
+    })
+
+    mocks.upsert.mockImplementation(async (args: any) => {
+      const patch = args?.update ?? {}
+      userRow = { ...userRow, ...patch }
+      return {
+        timezone: 'America/New_York',
+        theme: userRow.theme,
+        accountFilterSettings: null,
+        aiSettings: userRow.aiSettings,
+        backtestInputMode: 'manual',
+        breakEvenThreshold: userRow.breakEvenThreshold,
+        pnlDisplayMode: 'net',
+        accentPack: userRow.accentPack,
+        autoAdjustAccountDate: userRow.autoAdjustAccountDate,
+      }
     })
   })
 

@@ -213,3 +213,57 @@ export function calculateRecoveryFactor(netProfit: number, maxDrawdown: number):
   if (maxDrawdown === 0) return netProfit > 0 ? 5 : 0
   return netProfit / maxDrawdown
 }
+
+/**
+ * Calculates Sharpe Ratio.
+ * Uses daily returns. Risk-free rate assumed 0.
+ * Formula: mean(returns) / stddev(returns) * sqrt(252)
+ */
+export function calculateSharpeRatio(dailyReturns: number[]): number {
+  if (dailyReturns.length < 2) return 0
+  const mean = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length
+  const variance = dailyReturns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / (dailyReturns.length - 1)
+  const stdDev = Math.sqrt(variance)
+  if (stdDev === 0) return 0
+  return parseFloat(((mean / stdDev) * Math.sqrt(252)).toFixed(2))
+}
+
+/**
+ * Calculates Sortino Ratio.
+ * Penalises downside deviation only (negative returns).
+ * Formula: mean(returns) / downside_deviation * sqrt(252)
+ */
+export function calculateSortinoRatio(dailyReturns: number[]): number {
+  if (dailyReturns.length < 2) return 0
+  const mean = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length
+  const negativeReturns = dailyReturns.filter(r => r < 0)
+  if (negativeReturns.length === 0) return mean > 0 ? 5 : 0
+  const downsideVariance = negativeReturns.reduce((sum, r) => sum + Math.pow(r, 2), 0) / dailyReturns.length
+  const downsideDev = Math.sqrt(downsideVariance)
+  if (downsideDev === 0) return 0
+  return parseFloat(((mean / downsideDev) * Math.sqrt(252)).toFixed(2))
+}
+
+/**
+ * Calculates Calmar Ratio.
+ * Formula: net profit / max drawdown
+ */
+export function calculateCalmarRatio(netProfit: number, maxDrawdown: number): number {
+  if (maxDrawdown === 0) return netProfit > 0 ? 5 : 0
+  return parseFloat((netProfit / maxDrawdown).toFixed(2))
+}
+
+/**
+ * Build an array of daily P&L returns from trades.
+ */
+export function buildDailyReturns(
+  trades: Array<{ entryDate?: string | Date | null; pnl?: number | null }>
+): number[] {
+  const dailyMap: Record<string, number> = {}
+  for (const t of trades) {
+    if (!t.entryDate) continue
+    const date = new Date(t.entryDate).toISOString().split('T')[0]
+    dailyMap[date] = (dailyMap[date] || 0) + (t.pnl || 0)
+  }
+  return Object.values(dailyMap)
+}

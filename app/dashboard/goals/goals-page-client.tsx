@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, type ComponentType } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { cn } from "@/lib/utils"
 import { PageHeader } from "@/components/ui/page-header"
@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { toast } from "sonner"
-import { Target, Plus, Trash2, CheckCircle2, TrendingUp, Trophy } from "lucide-react"
+import { Target, Plus, Trash2, CheckCircle2, TrendingUp, Trophy, DollarSign, Flame, BarChart2, TrendingDown, Star } from "lucide-react"
 
 type GoalMetric = "pnl" | "winRate" | "trades" | "streak" | "drawdown" | "custom"
 type GoalPeriod = "daily" | "weekly" | "monthly" | "all-time"
@@ -54,13 +54,13 @@ const METRIC_LABELS: Record<GoalMetric, string> = {
   custom: "Custom",
 }
 
-const METRIC_ICONS: Record<GoalMetric, string> = {
-  pnl: "💰",
-  winRate: "🎯",
-  trades: "📊",
-  streak: "🔥",
-  drawdown: "📉",
-  custom: "⭐",
+const METRIC_ICONS: Record<GoalMetric, ComponentType<{ className?: string }>> = {
+  pnl: DollarSign,
+  winRate: Target,
+  trades: BarChart2,
+  streak: Flame,
+  drawdown: TrendingDown,
+  custom: Star,
 }
 
 async function fetchGoals(): Promise<{ goals: Goal[] }> {
@@ -86,6 +86,7 @@ async function deleteGoal(id: string): Promise<void> {
 
 function GoalCard({ goal, onDelete }: { goal: Goal; onDelete: (id: string) => void }) {
   const progressPct = Math.min((goal.currentValue / goal.targetValue) * 100, 100)
+  const MetricIcon = METRIC_ICONS[goal.metric as GoalMetric]
 
   return (
     <div className={cn(
@@ -96,7 +97,9 @@ function GoalCard({ goal, onDelete }: { goal: Goal; onDelete: (id: string) => vo
     )}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <span className="text-2xl">{METRIC_ICONS[goal.metric as GoalMetric]}</span>
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+            <MetricIcon className="h-4 w-4 text-muted-foreground" />
+          </span>
           <div>
             <p className="text-sm font-bold leading-tight">{goal.title}</p>
             {goal.description && (
@@ -298,9 +301,17 @@ export function GoalsPageClient() {
                 <Select value={form.metric} onValueChange={v => setForm(f => ({ ...f, metric: v as GoalMetric }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {Object.entries(METRIC_LABELS).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{METRIC_ICONS[k as GoalMetric]} {v}</SelectItem>
-                    ))}
+                    {Object.entries(METRIC_LABELS).map(([k, v]) => {
+                      const ItemIcon = METRIC_ICONS[k as GoalMetric]
+                      return (
+                        <SelectItem key={k} value={k}>
+                          <span className="flex items-center gap-1.5">
+                            <ItemIcon className="h-3.5 w-3.5" />
+                            {v}
+                          </span>
+                        </SelectItem>
+                      )
+                    })}
                   </SelectContent>
                 </Select>
               </div>

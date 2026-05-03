@@ -193,6 +193,7 @@ export default function SettingsPage() {
         const data = await res.json()
         if (data.token) setWebhookToken(data.token)
       } catch {
+        // webhook feature unavailable (migration may not be applied yet)
       } finally {
         setIsLoadingWebhook(false)
       }
@@ -222,7 +223,7 @@ export default function SettingsPage() {
 
   const copyWebhookUrl = async () => {
     if (!webhookToken) return
-    const url = `${window.location.origin}/api/v1/trades/webhook/${webhookToken}`
+    const url = `${window.location.origin}/api/v1/import/webhook/tradingview`
     await navigator.clipboard.writeText(url)
     setWebhookCopied(true)
     setTimeout(() => setWebhookCopied(false), 2500)
@@ -982,7 +983,7 @@ export default function SettingsPage() {
                 {isLoadingWebhook ? (
                   <Skeleton className="h-3.5 w-full" />
                 ) : webhookToken ? (
-                  `${typeof window !== 'undefined' ? window.location.origin : ''}/api/v1/trades/webhook/${webhookToken}`
+                  `${typeof window !== 'undefined' ? window.location.origin : ''}/api/v1/import/webhook/tradingview`
                 ) : (
                   'Loading...'
                 )}

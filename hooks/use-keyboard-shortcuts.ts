@@ -48,13 +48,9 @@ export function useKeyboardShortcuts() {
       toast.success('Settings', { description: 'Navigated to settings' });
     });
 
-    // Open command palette
-    hotkeys('ctrl+k, cmd+k, ctrl+/, cmd+/', (event) => {
-      event.preventDefault();
-      // Dispatch event for command palette (handled by command-palette component)
-    });
 
-    // Open keyboard shortcuts modal
+    // Keyboard shortcuts modal
+
     hotkeys('?', (event) => {
       event.preventDefault();
       window.dispatchEvent(new CustomEvent(SHORTCUTS_MODAL_EVENT));

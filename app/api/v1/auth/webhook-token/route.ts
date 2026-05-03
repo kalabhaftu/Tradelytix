@@ -9,22 +9,16 @@ export async function GET() {
   try {
     const { internalUserId } = await getResolvedUserIdentity()
 
-    let settings = await prisma.userSettings.findUnique({
+    const settings = await prisma.userSettings.findUnique({
       where: { userId: internalUserId },
       select: { webhookToken: true },
     })
 
-    if (!settings?.webhookToken) {
-      const token = randomUUID()
-      settings = await prisma.userSettings.upsert({
-        where: { userId: internalUserId },
-        create: { userId: internalUserId, webhookToken: token },
-        update: { webhookToken: token },
-        select: { webhookToken: true },
-      })
-    }
-
-    return NextResponse.json({ token: settings!.webhookToken })
+    const token = settings?.webhookToken ?? null
+    return NextResponse.json({
+      hasToken: Boolean(token),
+      token,
+    })
   } catch (err) {
     console.error('[webhook-token GET]', err)
     return NextResponse.json({ error: 'Failed to fetch webhook token' }, { status: 500 })
@@ -48,3 +42,4 @@ export async function POST() {
     return NextResponse.json({ error: 'Failed to regenerate webhook token' }, { status: 500 })
   }
 }
+

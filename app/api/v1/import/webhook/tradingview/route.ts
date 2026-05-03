@@ -24,10 +24,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { nanoid } from 'nanoid'
+import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
+  const rl = await applyRateLimit(req, apiLimiter)
+  if (rl) return rl
+
   try {
     const body = await req.json().catch(() => null)
     if (!body || typeof body !== 'object') {

@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { nanoid } from 'nanoid'
+import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const rl = await applyRateLimit(req, apiLimiter)
+  if (rl) return rl
+
   try {
     const { internalUserId } = await getResolvedUserIdentity()
     const goals = await prisma.userGoal.findMany({
@@ -20,6 +24,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const rl = await applyRateLimit(req, apiLimiter)
+  if (rl) return rl
+
   try {
     const { internalUserId } = await getResolvedUserIdentity()
     const body = await req.json()

@@ -651,9 +651,13 @@ export async function getUserId(): Promise<string> {
 }
 
 export async function getUserEmail(): Promise<string> {
-  const headersList = await headers()
-  const userEmail = headersList.get('x-user-email')
-  return userEmail || ""
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    return user?.email || ""
+  } catch {
+    return ""
+  }
 }
 
 /**

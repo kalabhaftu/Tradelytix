@@ -31,7 +31,7 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
 
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live",
     "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
     "font-src 'self' fonts.gstatic.com",
     "img-src 'self' data: blob: *.supabase.co https://lh3.googleusercontent.com",
@@ -161,9 +161,9 @@ export default async function proxy(request: NextRequest) {
 
     if (isAuthenticated && user) {
       authResponse.headers.set("x-user-id", user.id)
-      if (user.email) {
-        authResponse.headers.set("x-user-email", user.email)
-      }
+      // NOTE: x-user-email intentionally omitted from response headers
+      // to avoid leaking PII in browser DevTools Network tab.
+      // Server-side auth reads email directly from Supabase session.
     }
 
     return addSecurityHeaders(authResponse)

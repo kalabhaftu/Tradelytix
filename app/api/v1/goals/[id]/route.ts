@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentity } from '@/server/user-identity'
+import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 
 export const dynamic = 'force-dynamic'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const rl = await applyRateLimit(req, apiLimiter)
+  if (rl) return rl
+
   try {
     const { internalUserId } = await getResolvedUserIdentity()
     const { id } = await params
@@ -34,7 +38,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const rl = await applyRateLimit(req, apiLimiter)
+  if (rl) return rl
+
   try {
     const { internalUserId } = await getResolvedUserIdentity()
     const { id } = await params

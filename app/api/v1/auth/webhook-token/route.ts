@@ -1,11 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { randomUUID } from 'crypto'
+import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const rl = await applyRateLimit(req, apiLimiter)
+  if (rl) return rl
+
   try {
     const { internalUserId } = await getResolvedUserIdentity()
 
@@ -25,7 +29,10 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const rl = await applyRateLimit(req, apiLimiter)
+  if (rl) return rl
+
   try {
     const { internalUserId } = await getResolvedUserIdentity()
     const token = randomUUID()

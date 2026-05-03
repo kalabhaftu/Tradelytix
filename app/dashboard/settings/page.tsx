@@ -40,11 +40,13 @@ import {
   ChevronRight as CaretRight,
   Check,
   Clock,
+  Copy,
   Database,
   Pencil,
   Laptop,
   Moon,
   Palette,
+  RefreshCw,
   Settings as SettingsIcon,
   Bot,
   Shield,
@@ -57,7 +59,8 @@ import {
   AlertCircle as WarningCircle,
   Calendar,
   Target,
-  LayoutGrid
+  LayoutGrid,
+  Zap,
 } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from 'next/link'
@@ -153,6 +156,10 @@ export default function SettingsPage() {
   })
   const avatarUrl = getUserAvatarUrl(user)
 
+  const [webhookToken, setWebhookToken] = useState<string | null>(null)
+  const [isLoadingWebhook, setIsLoadingWebhook] = useState(false)
+  const [isRegeneratingWebhook, setIsRegeneratingWebhook] = useState(false)
+  const [webhookCopied, setWebhookCopied] = useState(false)
 
   const handleThemeChange = (value: string) => {
     setTheme(value as "light" | "dark" | "system")
@@ -176,6 +183,49 @@ export default function SettingsPage() {
       description: `Accent changed to ${value === 'reports' ? 'Sage & Amber' : 'Classic'}.`,
       duration: 2000
     })
+  }
+
+  useEffect(() => {
+    const fetchWebhookToken = async () => {
+      try {
+        setIsLoadingWebhook(true)
+        const res = await fetch('/api/v1/auth/webhook-token')
+        const data = await res.json()
+        if (data.token) setWebhookToken(data.token)
+      } catch {
+      } finally {
+        setIsLoadingWebhook(false)
+      }
+    }
+    fetchWebhookToken()
+  }, [])
+
+  const regenerateWebhookToken = async () => {
+    try {
+      setIsRegeneratingWebhook(true)
+      const res = await fetch('/api/v1/auth/webhook-token', { method: 'POST' })
+      const data = await res.json()
+      if (data.token) {
+        setWebhookToken(data.token)
+        setWebhookCopied(false)
+        toast.success('Token regenerated', {
+          description: 'Your TradingView webhook token has been regenerated. Update your TradingView alert.',
+          duration: 4000,
+        })
+      }
+    } catch {
+      toast.error('Failed to regenerate token')
+    } finally {
+      setIsRegeneratingWebhook(false)
+    }
+  }
+
+  const copyWebhookUrl = async () => {
+    if (!webhookToken) return
+    const url = `${window.location.origin}/api/v1/trades/webhook/${webhookToken}`
+    await navigator.clipboard.writeText(url)
+    setWebhookCopied(true)
+    setTimeout(() => setWebhookCopied(false), 2500)
   }
 
   useEffect(() => {
@@ -909,6 +959,65 @@ export default function SettingsPage() {
 
         {/* Linked Accounts */}
         <LinkedAccounts />
+
+        {/* TradingView Webhook Integration */}
+        <Card>
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                <Zap className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <CardTitle className="text-base">TradingView Webhook</CardTitle>
+                <CardDescription className="text-xs">Auto-import trades via TradingView alerts</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Paste this URL into a TradingView alert action. Each alert fires an import of the trade data you configure in the message body.
+            </p>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0 rounded-lg border border-border/40 bg-muted/30 px-3 py-2 font-mono text-[11px] text-muted-foreground truncate">
+                {isLoadingWebhook ? (
+                  <Skeleton className="h-3.5 w-full" />
+                ) : webhookToken ? (
+                  `${typeof window !== 'undefined' ? window.location.origin : ''}/api/v1/trades/webhook/${webhookToken}`
+                ) : (
+                  'Loading...'
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0 h-9 w-9"
+                disabled={!webhookToken || isLoadingWebhook}
+                onClick={copyWebhookUrl}
+              >
+                {webhookCopied ? (
+                  <Check className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <div className="flex items-center justify-between pt-1">
+              <p className="text-[10px] text-muted-foreground/60">
+                Regenerating creates a new URL and invalidates the old one.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 text-xs shrink-0"
+                disabled={isRegeneratingWebhook}
+                onClick={regenerateWebhookToken}
+              >
+                <RefreshCw className={cn('h-3.5 w-3.5', isRegeneratingWebhook && 'animate-spin')} />
+                Regenerate
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Account Management Section */}
         <Card>

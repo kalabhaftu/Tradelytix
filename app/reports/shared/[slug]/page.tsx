@@ -4,12 +4,13 @@ import { prisma } from '@/lib/prisma'
 import { SharedReportView } from './shared-report-view'
 
 interface Props {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params
   const report = await prisma.sharedReport.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     select: { title: true },
   })
   return {
@@ -19,8 +20,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function SharedReportPage({ params }: Props) {
+  const { slug } = await params
   const report = await prisma.sharedReport.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
   })
 
   if (!report || !report.isPublic) {
@@ -33,9 +35,10 @@ export default async function SharedReportPage({ params }: Props) {
 
   // Increment view count
   await prisma.sharedReport.update({
-    where: { slug: params.slug },
+    where: { slug },
     data: { viewCount: { increment: 1 } },
   }).catch(() => {})
 
   return <SharedReportView report={report as any} />
 }
+

@@ -4,18 +4,19 @@ import { getResolvedUserIdentity } from '@/server/user-identity'
 
 export const dynamic = 'force-dynamic'
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { internalUserId } = await getResolvedUserIdentity()
+    const { id } = await params
     const body = await req.json()
 
     const goal = await prisma.userGoal.findFirst({
-      where: { id: params.id, userId: internalUserId },
+      where: { id, userId: internalUserId },
     })
     if (!goal) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
     const updated = await prisma.userGoal.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(body.currentValue !== undefined && { currentValue: Number(body.currentValue) }),
         ...(body.isCompleted !== undefined && {
@@ -33,14 +34,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { internalUserId } = await getResolvedUserIdentity()
+    const { id } = await params
     const goal = await prisma.userGoal.findFirst({
-      where: { id: params.id, userId: internalUserId },
+      where: { id, userId: internalUserId },
     })
     if (!goal) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    await prisma.userGoal.delete({ where: { id: params.id } })
+    await prisma.userGoal.delete({ where: { id } })
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[Goals DELETE]', err)

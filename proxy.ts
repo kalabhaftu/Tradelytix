@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient, type CookieOptions } from "@supabase/ssr"
 
-const publicRoutes = ["/", "/app-launch", "/not-found", "/api/auth", "/docs", "/privacy", "/feedback", "/donate", "/changelog", "/about", "/contact"]
+const publicRoutes = ["/", "/app-launch", "/not-found", "/api/auth", "/docs", "/privacy", "/feedback", "/donate", "/changelog", "/about", "/contact", "/reports/shared"]
 const protectedRoutes = ["/dashboard", "/admin"]
 
 function isProtectedPath(pathname: string) {
@@ -36,7 +36,7 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
     "font-src 'self' fonts.gstatic.com",
     "img-src 'self' data: blob: *.supabase.co https://lh3.googleusercontent.com",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co api.x.ai ip-api.com",
-    "frame-src 'self'",
+    "frame-src 'self' https://vercel.live",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

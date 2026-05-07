@@ -11,7 +11,7 @@ import { NotificationType } from '@prisma/client'
 import { logActivity } from '@/lib/activity-logger'
 import { calculateWinRate, classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
-import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData } from '@/lib/trade-core'
+import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData, buildTradeIdentityKey } from '@/lib/trade-core'
 import { getRuntimeAutoAdjustAccountDate, getRuntimeBreakEvenThreshold } from '@/server/user-settings'
 
 /**
@@ -462,11 +462,11 @@ export async function savePayoutAction(payout: {
     const userId = await getUserId()
 
     // Validate required fields
-    if (!payout.masterAccountId || !payout.phaseAccountId || !payout.amount) {
+    if (!payout.masterAccountId || !payout.phaseAccountId || payout.amount === undefined || payout.amount === null) {
       throw new Error('Missing required payout fields: masterAccountId, phaseAccountId, and amount are required')
     }
 
-    if (payout.amount <= 0) {
+    if (!Number.isFinite(payout.amount) || payout.amount <= 0) {
       throw new Error('Payout amount must be greater than 0')
     }
 
@@ -986,39 +986,48 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
 
     // STEP 2: DUPLICATE DETECTION (SCOPED TO SPECIFIC ACCOUNT)
     // Check for duplicates WITHIN the specific account being imported to
-    const tradesWithIds = cleanedData.filter(t => t.entryId)
-    const tradesWithoutIds = cleanedData.filter(t => !t.entryId)
+    const candidateIdentityKeys = cleanedData
+      .map((trade) => buildTradeIdentityKey({
+        ...trade,
+        userId,
+        accountNumber: trade.accountNumber || '',
+      } as any))
+      .filter(Boolean)
 
-    let newTrades = [...tradesWithoutIds] // Assume trades without IDs are new
-
-    if (tradesWithIds.length > 0) {
-      // Only query for trades that have IDs (much faster)
-      const entryIds = tradesWithIds.filter(t => t.entryId).map(t => t.entryId!)
-
-      // CRITICAL FIX: Check duplicates WITHIN the specific account, not across all accounts
+    let existingIdentityKeys = new Set<string>()
+    if (candidateIdentityKeys.length > 0) {
       const existingTrades = await prisma.trade.findMany({
         where: {
           userId,
-          entryId: { in: entryIds },
-          // Scope to the specific account being imported to
+          tradeIdentityKey: { in: candidateIdentityKeys },
           ...(isPropFirm
             ? { phaseAccountId: phaseAccountId! }
             : { accountId: regularAccountId! }
           )
         },
         select: {
-          entryId: true
+          tradeIdentityKey: true
         }
       })
 
-      const existingEntryIds = new Set(existingTrades.map(t => t.entryId).filter(Boolean))
-
-      // Filter out duplicates
-      newTrades.push(...tradesWithIds.filter(trade => {
-        if (trade.entryId && existingEntryIds.has(trade.entryId)) return false
-        return true
-      }))
+      existingIdentityKeys = new Set(existingTrades.map(t => t.tradeIdentityKey).filter(Boolean) as string[])
     }
+
+    const seenIncomingIdentityKeys = new Set<string>()
+    const newTrades = cleanedData.filter((trade) => {
+      const identityKey = buildTradeIdentityKey({
+        ...trade,
+        userId,
+        accountNumber: trade.accountNumber || '',
+      } as any)
+
+      if (!identityKey) return true
+      if (existingIdentityKeys.has(identityKey)) return false
+      if (seenIncomingIdentityKeys.has(identityKey)) return false
+
+      seenIncomingIdentityKeys.add(identityKey)
+      return true
+    })
 
     if (newTrades.length === 0) {
       return {

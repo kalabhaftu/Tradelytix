@@ -236,7 +236,7 @@ export function calculateTotalEquity(
 }
 
 /**
- * ⚠️ CRITICAL FUNCTION: Calculate total starting balance with prop firm phase deduplication
+ * Critical function: Calculate total starting balance with prop firm phase deduplication
  * 
  * PROBLEM: Prop firms have multiple phases (Phase 1, 2, Funded) but they all represent
  * the SAME capital. If we sum all starting balances, we'd count the same money 2-3 times.
@@ -318,6 +318,7 @@ export function calculateTotalStartingBalance(
 export function calculateBalanceInfo(
   accounts: (Account | any)[],
   trades: (Trade | any)[],
+  transactions: any[] = [],
   options: BalanceCalculationOptions = {}
 ): BalanceResult {
   const pnlDisplayMode = normalizePnlDisplayMode(options.pnlDisplayMode)
@@ -328,11 +329,22 @@ export function calculateBalanceInfo(
   const totalPnL = trades.reduce((sum, trade) => sum + getTradeGrossPnl(trade), 0)
   const totalCommissions = trades.reduce((sum, trade) => sum + getTradeFees(trade), 0)
   const netPnL = trades.reduce((sum, trade) => sum + getTradeNetPnl(trade), 0)
+  const liveAccountIds = new Set(
+    accounts
+      .filter((account) => account?.accountType === 'live')
+      .map((account) => account?.id)
+      .filter(Boolean)
+  )
+  const transactionDelta = transactions.reduce((sum, tx) => {
+    if (!liveAccountIds.has(tx?.accountId)) return sum
+    const amount = Number(tx?.amount)
+    return Number.isFinite(amount) ? sum + amount : sum
+  }, 0)
 
-  const currentBalance = startingBalance + netPnL
-  const currentGrossBalance = startingBalance + totalPnL
+  const currentBalance = startingBalance + netPnL + transactionDelta
+  const currentGrossBalance = startingBalance + totalPnL + transactionDelta
   const displayPnL = pnlDisplayMode === 'gross' ? totalPnL : netPnL
-  const displayBalance = getBalanceByMode(startingBalance, totalPnL, netPnL, pnlDisplayMode)
+  const displayBalance = getBalanceByMode(startingBalance, totalPnL, netPnL, pnlDisplayMode) + transactionDelta
   const changeAmount = currentBalance - startingBalance
   const changePercent = startingBalance > 0 ? (changeAmount / startingBalance) * 100 : 0
 
@@ -415,4 +427,3 @@ export function calculateBalanceHistory(
     return point
   })
 }
-

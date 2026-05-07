@@ -18,18 +18,19 @@ interface ProfitFactorProps {
 
 const ProfitFactor = React.memo(function ProfitFactor({ size }: ProfitFactorProps) {
   const { profitFactor, grossWin, grossLosses } = useTradeStatistics()
+  const safeProfitFactor = Number.isFinite(profitFactor) ? profitFactor : 0
 
   // Memoize expensive calculations
   const { progressValue, color } = React.useMemo(() => {
     // Convert profit factor to percentage for circular progress
     // Map 0-3.0 to 0-100% for better visualization
-    const progress = Math.min((profitFactor / 3.0) * 100, 100)
-    const colorValue = profitFactor >= 1.0
+    const progress = Math.min((safeProfitFactor / 3.0) * 100, 100)
+    const colorValue = safeProfitFactor >= 1.0
       ? 'hsl(var(--chart-profit))'
       : 'hsl(var(--chart-loss))'
 
     return { progressValue: progress, color: colorValue }
-  }, [profitFactor])
+  }, [safeProfitFactor])
 
   return (
     <WidgetCard isKpi>
@@ -56,7 +57,7 @@ const ProfitFactor = React.memo(function ProfitFactor({ size }: ProfitFactorProp
         {/* Main content: large value + bi-color gauge */}
         <div className="flex items-center justify-between gap-3">
           <span className="text-[1.65rem] min-[768px]:text-[1.85rem] min-[1440px]:text-3xl font-bold tracking-tight text-foreground">
-            {profitFactor.toFixed(2)}
+            {safeProfitFactor.toFixed(2)}
           </span>
 
           {/* Bi-color full circle (green/red) */}

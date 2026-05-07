@@ -25,7 +25,8 @@ import {
     FileText,
     Image as ImageIcon,
     LayoutDashboard,
-    AlertCircle
+    AlertCircle,
+    Link as LinkIcon
 } from 'lucide-react'
 import {
     format,
@@ -74,6 +75,7 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -83,6 +85,13 @@ import {
     TooltipTrigger
 } from '@/components/ui/tooltip'
 import { DiverseCharts } from './components/diverse-charts'
+import { MonthlyReturnsMatrix } from './components/monthly-returns-matrix'
+import { InstrumentBreakdown } from './components/instrument-breakdown'
+import { TradeDurationChart } from './components/trade-duration-chart'
+import { TimeOfDayHeatmap } from './components/time-of-day-heatmap'
+import { MaeMfeScatter } from './components/mae-mfe-scatter'
+import { CommissionAnalysis } from './components/commission-analysis'
+import { StatementView } from './components/statement-view'
 import { PerformanceCard } from './components/performance-card'
 import { PropFirmTab } from './components/propfirm-tab'
 import { PropFirmReportsSkeleton, ReportsContentSkeleton } from './components/reports-page-skeleton'
@@ -424,6 +433,47 @@ export default function ReportsPageClient({
         }
     }, [])
 
+    const handleGenerateLink = useCallback(async () => {
+        if (!tradingActivity || !psychMetrics) {
+            toast.error('No data available to share.')
+            return
+        }
+
+        setIsExporting(true)
+        try {
+            const payload = {
+                title: 'Performance Report',
+                dateFrom: dateRange?.from?.toISOString(),
+                dateTo: dateRange?.to?.toISOString(),
+                accountId: selectedAccountId,
+                symbol: advancedFilters.symbol !== 'all' ? advancedFilters.symbol : undefined,
+                session: advancedFilters.session !== 'all' ? advancedFilters.session : undefined,
+                outcome: advancedFilters.outcome !== 'all' ? advancedFilters.outcome : undefined,
+                strategy: advancedFilters.strategy !== 'all' ? advancedFilters.strategy : undefined,
+                ruleBroken: advancedFilters.ruleBroken !== 'all' ? advancedFilters.ruleBroken : undefined,
+                expiresInDays: 30
+            }
+
+            const res = await fetch('/api/v1/reports/share', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+
+            if (!res.ok) throw new Error('Failed to generate link')
+            const data = await res.json()
+            
+            // Copy to clipboard
+            await navigator.clipboard.writeText(data.url || `${window.location.origin}/reports/shared/${data.slug}`)
+            toast.success('Shareable link copied to clipboard!')
+        } catch (error) {
+            console.error('[Reports] Error generating link:', error)
+            toast.error('Failed to create shareable link.')
+        } finally {
+            setIsExporting(false)
+        }
+    }, [tradingActivity, psychMetrics, dateRange, selectedAccountId, advancedFilters])
+
     const handleFilterChange = (key: string, value: string) => {
         setAdvancedFilters(prev => ({ ...prev, [key]: value }))
     }
@@ -437,7 +487,7 @@ export default function ReportsPageClient({
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
                 {/* Header */}
                 <PageHeader
-                    title="Reports"
+                    title="Analytics"
                     meta={<span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/75">{periodLabel}</span>}
                     className="mb-4"
                     actions={
@@ -497,6 +547,11 @@ export default function ReportsPageClient({
                                     <ImageIcon className="h-3.5 w-3.5" />
                                     Page Snapshot
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={handleGenerateLink} disabled={isExporting} className="gap-2 text-xs font-medium">
+                                    <LinkIcon className="h-3.5 w-3.5" />
+                                    Generate Public Link
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -545,6 +600,10 @@ export default function ReportsPageClient({
                             <TabsTrigger value="spreadsheet" className="px-3 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap">
                                 <List className="h-3.5 w-3.5 shrink-0" />
                                 Spreadsheet
+                            </TabsTrigger>
+                            <TabsTrigger value="statement" className="px-3 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap">
+                                <FileText className="h-3.5 w-3.5 shrink-0" />
+                                Statement
                             </TabsTrigger>
                             <TabsTrigger value="propfirm" className="px-3 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap">
                                 <Building2 className="h-3.5 w-3.5 shrink-0" />
@@ -815,6 +874,36 @@ export default function ReportsPageClient({
                                 {reportData?.chartData && (
                                     <DiverseCharts chartData={reportData.chartData} />
                                 )}
+
+                                {/* Monthly Returns Matrix */}
+                                {reportData?.chartData?.equityCurve && reportData.chartData.equityCurve.length > 0 && (
+                                    <MonthlyReturnsMatrix equityCurve={reportData.chartData.equityCurve} />
+                                )}
+
+                                {/* Trade Duration Performance */}
+                                {filteredTrades && filteredTrades.length > 0 && (
+                                    <TradeDurationChart trades={filteredTrades} />
+                                )}
+
+                                {/* Time of Day Heatmap */}
+                                {filteredTrades && filteredTrades.length > 0 && (
+                                    <TimeOfDayHeatmap trades={filteredTrades} />
+                                )}
+
+                                {/* MAE vs MFE Analysis */}
+                                {filteredTrades && filteredTrades.length > 0 && (
+                                    <MaeMfeScatter trades={filteredTrades} />
+                                )}
+
+                                {/* Instrument Performance Breakdown */}
+                                {filteredTrades && filteredTrades.length > 0 && (
+                                    <InstrumentBreakdown trades={filteredTrades} />
+                                )}
+
+                                {/* Commission & Fee Impact */}
+                                {filteredTrades && filteredTrades.length > 0 && (
+                                    <CommissionAnalysis trades={filteredTrades} />
+                                )}
                             </div>
                         </TabsContent>
 
@@ -884,6 +973,12 @@ export default function ReportsPageClient({
                                 </Table>
                               </div>
                             </div>
+                        </TabsContent>
+
+                        <TabsContent value="statement" className="focus-visible:outline-none">
+                            {filteredTrades && filteredTrades.length > 0 && (
+                                <StatementView trades={filteredTrades} />
+                            )}
                         </TabsContent>
 
                         <TabsContent value="propfirm" className="focus-visible:outline-none">

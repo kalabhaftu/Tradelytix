@@ -87,6 +87,7 @@ export async function GET(request: NextRequest) {
       break
     case 'accountBalancePnl':
       let userAccounts = []
+      let transactions: any[] = []
       const accountOwnerId = await getInternalUserId()
       if (accountOwnerId) {
         userAccounts = await prisma.account.findMany({
@@ -99,11 +100,30 @@ export async function GET(request: NextRequest) {
       if (accountNumbers.length > 0) {
         filteredDbAccounts = userAccounts.filter(acc => accountNumbers.includes(acc.number))
       }
+      try {
+        if ('transaction' in prisma) {
+          const liveAccountIds = filteredDbAccounts
+            .filter((account: any) => account.accountType === 'live')
+            .map((account: any) => account.id)
+            .filter(Boolean)
+          if (liveAccountIds.length > 0 && accountOwnerId) {
+            transactions = await (prisma as any).transaction.findMany({
+              where: {
+                userId: accountOwnerId,
+                accountId: { in: liveAccountIds },
+              },
+              select: { accountId: true, amount: true },
+            })
+          }
+        }
+      } catch {
+        transactions = []
+      }
       let pnlDisplayMode = 'net'
       if (accountOwnerId) {
         pnlDisplayMode = await getRuntimePnlDisplayMode(accountOwnerId)
       }
-      result = calculateBalanceInfo(filteredDbAccounts, trades, {
+      result = calculateBalanceInfo(filteredDbAccounts, trades, transactions, {
         pnlDisplayMode: normalizePnlDisplayMode(pnlDisplayMode)
       })
       break

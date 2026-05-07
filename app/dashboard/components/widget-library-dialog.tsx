@@ -42,7 +42,7 @@ export default function WidgetLibraryDialog({
     const query = searchQuery.toLowerCase()
     return Object.entries(WIDGET_REGISTRY).filter(([type, config]) => {
       // Exclude KPI-only widgets - they can only be added/swapped in the 5 KPI slots
-      if (config.kpiRowOnly) {
+      if (config.kpiRowOnly || config.hiddenFromLibrary) {
         return false
       }
 

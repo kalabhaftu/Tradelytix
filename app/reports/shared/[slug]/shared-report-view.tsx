@@ -1,7 +1,8 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
-import { TrendingUp, Calendar, Eye, Share2 } from "lucide-react"
+import { TrendingUp, Calendar, Eye, Share2, Activity, ShieldCheck, Clock3 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 interface SharedReport {
@@ -34,12 +35,42 @@ function StatCard({ label, value, positive }: { label: string; value: string; po
 }
 
 export function SharedReportView({ report }: Props) {
+  const [viewCount, setViewCount] = useState(report.viewCount)
   const snap = report.snapshot as any
-  const activity = snap?.tradingActivity
-  const psych = snap?.psychMetrics
+  const reportData = snap?.reportData ?? snap
+  const activity = reportData?.tradingActivity ?? snap?.tradingActivity
+  const psych = reportData?.psychMetrics ?? snap?.psychMetrics
+  const sessions = reportData?.sessionPerformance ?? null
+  const rDataQuality = reportData?.rMultipleDataQuality ?? null
   const dateRange = report.dateFrom && report.dateTo
     ? `${new Date(report.dateFrom).toLocaleDateString()} — ${new Date(report.dateTo).toLocaleDateString()}`
     : 'All Time'
+
+  useEffect(() => {
+    let cancelled = false
+
+    const recordView = async () => {
+      try {
+        const response = await fetch(`/api/v1/reports/shared/${report.slug}/view`, {
+          method: 'POST',
+          cache: 'no-store',
+        })
+        if (!response.ok) return
+        const data = await response.json()
+        if (!cancelled && typeof data.viewCount === 'number') {
+          setViewCount(data.viewCount)
+        }
+      } catch {
+        // Ignore analytics failures for public views.
+      }
+    }
+
+    recordView()
+
+    return () => {
+      cancelled = true
+    }
+  }, [report.slug])
 
   return (
     <div className="min-h-screen bg-background">
@@ -57,7 +88,7 @@ export function SharedReportView({ report }: Props) {
                 {dateRange}
                 <span className="opacity-40">·</span>
                 <Eye className="h-3 w-3" />
-                {report.viewCount} views
+                {viewCount} views
               </p>
             </div>
           </div>
@@ -70,7 +101,7 @@ export function SharedReportView({ report }: Props) {
 
       {/* Content */}
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
-        {psych && (
+        {psych && activity && (
           <>
             {/* Key Metrics */}
             <div>
@@ -108,6 +139,8 @@ export function SharedReportView({ report }: Props) {
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <StatCard label="Total Trades" value={String(activity?.totalTrades || '—')} />
+                <StatCard label="Trading Days" value={String(activity?.tradingDaysActive || '—')} />
+                <StatCard label="Avg Trades / Month" value={String(activity?.avgTradesPerMonth || '—')} />
                 <StatCard label="Avg Win" value={`$${psych.avgWin}`} positive={true} />
                 <StatCard label="Avg Loss" value={`$${psych.avgLoss}`} positive={false} />
                 <StatCard label="Expectancy" value={`$${psych.expectancy}`} positive={parseFloat(psych.expectancy) >= 0} />
@@ -118,6 +151,122 @@ export function SharedReportView({ report }: Props) {
                 {psych.calmarRatio && <StatCard label="Calmar Ratio" value={psych.calmarRatio} positive={parseFloat(psych.calmarRatio) >= 0} />}
               </div>
             </div>
+
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className="rounded-2xl border border-border/20 bg-card/50 p-4">
+                <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+                  <Activity className="h-3.5 w-3.5" />
+                  Trade Behavior
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Most traded day</span>
+                    <span className="font-mono font-bold">{activity.mostTradedDay || '—'}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Best day</span>
+                    <span className="font-mono font-bold text-green-500">{activity.mostProfitableDay || '—'}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Worst day</span>
+                    <span className="font-mono font-bold text-red-500">{activity.mostLosingDay || '—'}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Best instrument</span>
+                    <span className="font-mono font-bold">{activity.mostProfitablePair || '—'}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Worst instrument</span>
+                    <span className="font-mono font-bold">{activity.mostLosingPair || '—'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border/20 bg-card/50 p-4">
+                <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Streaks
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Longest win streak</span>
+                    <span className="font-mono font-bold text-green-500">{psych.longestWinStreak}W</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Longest loss streak</span>
+                    <span className="font-mono font-bold text-red-500">{psych.longestLoseStreak}L</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Total R</span>
+                    <span className="font-mono font-bold">{psych.totalRMultiple}R</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Peak equity</span>
+                    <span className="font-mono font-bold">${psych.peakEquity}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border/20 bg-card/50 p-4">
+                <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+                  <Clock3 className="h-3.5 w-3.5" />
+                  Execution Quality
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Avg hold time</span>
+                    <span className="font-mono font-bold">{psych.avgHoldingTime}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">R:R efficiency</span>
+                    <span className="font-mono font-bold">{psych.rrEfficiency}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">R data coverage</span>
+                    <span className="font-mono font-bold">
+                      {rDataQuality ? `${rDataQuality.tradesWithStopLoss}/${rDataQuality.totalTrades} (${rDataQuality.percentageComplete}%)` : '—'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {sessions && (
+              <div>
+                <h2 className="mb-4 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                  Session Performance
+                </h2>
+                <div className="grid gap-3 md:grid-cols-3">
+                  {Object.entries(sessions).map(([key, session]: [string, any]) => (
+                    <div key={key} className="rounded-2xl border border-border/20 bg-card/50 p-4">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-black">{session.name}</p>
+                          <p className="text-[10px] text-muted-foreground">{session.range}</p>
+                        </div>
+                        <p className={cn("font-mono font-bold", session.pnl >= 0 ? "text-green-500" : "text-red-500")}>
+                          ${Number(session.pnl || 0).toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                        <div>
+                          <p className="text-muted-foreground">Trades</p>
+                          <p className="font-mono font-bold">{session.trades}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Wins</p>
+                          <p className="font-mono font-bold">{session.wins}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Max DD</p>
+                          <p className="font-mono font-bold">${Number(session.maxDD || 0).toFixed(2)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
 

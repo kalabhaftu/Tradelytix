@@ -41,6 +41,7 @@ export interface WidgetConfig {
   allowedSizes: WidgetSize[]
   category: 'charts' | 'statistics' | 'tables' | 'other'
   description?: string
+  hiddenFromLibrary?: boolean
   requiresFullWidth?: boolean
   minWidth?: number
   minHeight?: number
@@ -526,6 +527,7 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetConfig> = {
     allowedSizes: ['medium', 'large', 'extra-large'],
     category: 'charts',
     description: 'Cumulative equity curve over time',
+    hiddenFromLibrary: true,
     previewHeight: 250,
     getComponent: () => <EquityCurveWidget />,
     getPreview: () => (
@@ -556,6 +558,7 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetConfig> = {
     allowedSizes: ['medium', 'large'],
     category: 'charts',
     description: 'P&L performance by day of week',
+    hiddenFromLibrary: true,
     previewHeight: 250,
     getComponent: () => <DayOfWeekPerformanceWidget />,
     getPreview: () => (
@@ -605,6 +608,7 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetConfig> = {
     allowedSizes: ['medium', 'large', 'extra-large'],
     category: 'charts',
     description: 'Performance overview with equity curve, stats, fees & net',
+    hiddenFromLibrary: true,
     previewHeight: 200,
     getComponent: ({ size }) => <PerformanceSummaryWidget />,
     getPreview: () => (

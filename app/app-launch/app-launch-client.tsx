@@ -10,6 +10,34 @@ interface AppLaunchClientProps {
   nextPath: string
 }
 
+const restoreInFlight = new Map<string, Promise<Response>>()
+
+function buildRestoreSessionKey(accessToken: string, refreshToken: string) {
+  return `${accessToken.slice(-12)}:${refreshToken.slice(-12)}`
+}
+
+async function restoreSession(accessToken: string, refreshToken: string) {
+  const sessionKey = buildRestoreSessionKey(accessToken, refreshToken)
+  const existing = restoreInFlight.get(sessionKey)
+  if (existing) {
+    return existing
+  }
+
+  const request = fetch("/api/auth/restore", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      accessToken,
+      refreshToken,
+    }),
+  }).finally(() => {
+    restoreInFlight.delete(sessionKey)
+  })
+
+  restoreInFlight.set(sessionKey, request)
+  return request
+}
+
 export function AppLaunchClient({ nextPath }: AppLaunchClientProps) {
   const router = useRouter()
   const [status, setStatus] = useState("Checking your session...")
@@ -17,7 +45,17 @@ export function AppLaunchClient({ nextPath }: AppLaunchClientProps) {
   useEffect(() => {
     let cancelled = false
 
-    const redirectToLogin = () => {
+    const clearStaleLocalSession = async () => {
+      try {
+        const supabase = createClient()
+        await supabase.auth.signOut({ scope: "local" })
+      } catch {
+        // Ignore local sign-out failures and continue to login.
+      }
+    }
+
+    const redirectToLogin = async () => {
+      await clearStaleLocalSession()
       if (!cancelled) {
         router.replace(`/?next=${encodeURIComponent(nextPath)}`)
       }
@@ -47,21 +85,17 @@ export function AppLaunchClient({ nextPath }: AppLaunchClientProps) {
         } = await supabase.auth.getSession()
 
         if (error || !session?.access_token || !session.refresh_token) {
-          redirectToLogin()
+          await redirectToLogin()
           return
         }
 
-        const restoreResponse = await fetch("/api/auth/restore", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            accessToken: session.access_token,
-            refreshToken: session.refresh_token,
-          }),
-        })
+        const restoreResponse = await restoreSession(
+          session.access_token,
+          session.refresh_token
+        )
 
         if (!restoreResponse.ok) {
-          redirectToLogin()
+          await redirectToLogin()
           return
         }
 
@@ -70,7 +104,7 @@ export function AppLaunchClient({ nextPath }: AppLaunchClientProps) {
           router.replace(nextPath)
         }
       } catch {
-        redirectToLogin()
+        await redirectToLogin()
       }
     }
 

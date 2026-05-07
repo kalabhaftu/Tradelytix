@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { nanoid } from 'nanoid'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
+import { calculateReportStatistics } from '@/lib/statistics/report-statistics'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,11 +19,38 @@ export async function POST(req: NextRequest) {
   try {
     const { internalUserId } = await getResolvedUserIdentity()
     const body = await req.json()
-    const { title, dateFrom, dateTo, accountId, snapshot, expiresInDays } = body
+    const { title, dateFrom, dateTo, accountId, accountNumbers, snapshot, expiresInDays } = body
 
-    if (!snapshot || typeof snapshot !== 'object') {
-      return NextResponse.json({ error: 'snapshot payload is required' }, { status: 400 })
-    }
+    const serverSnapshot = await calculateReportStatistics({
+      userId: internalUserId,
+      accountId: accountId || undefined,
+      accountNumbers: Array.isArray(accountNumbers) ? accountNumbers : undefined,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+      symbol: body.symbol || undefined,
+      session: body.session || undefined,
+      outcome: body.outcome || undefined,
+      strategy: body.strategy || undefined,
+      ruleBroken: body.ruleBroken || undefined,
+    })
+
+    const snapshotPayload = JSON.parse(JSON.stringify({
+      version: 2,
+      generatedAt: new Date().toISOString(),
+      filters: {
+        accountId: accountId || null,
+        accountNumbers: Array.isArray(accountNumbers) ? accountNumbers : [],
+        dateFrom: dateFrom || null,
+        dateTo: dateTo || null,
+        symbol: body.symbol || null,
+        session: body.session || null,
+        outcome: body.outcome || null,
+        strategy: body.strategy || null,
+        ruleBroken: body.ruleBroken || null,
+      },
+      reportData: serverSnapshot,
+      legacySnapshot: snapshot && typeof snapshot === 'object' ? snapshot : null,
+    }))
 
     const slug = generateSlug()
     const expiresAt = expiresInDays
@@ -38,7 +66,7 @@ export async function POST(req: NextRequest) {
         dateFrom: dateFrom || null,
         dateTo: dateTo || null,
         accountId: accountId || null,
-        snapshot,
+        snapshot: snapshotPayload,
         isPublic: true,
         expiresAt,
       },

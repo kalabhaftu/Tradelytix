@@ -119,6 +119,23 @@ function SettingRow({
   )
 }
 
+function buildTradingViewWebhookExample(token: string | null) {
+  return JSON.stringify({
+    token: token || "your_webhook_token",
+    symbol: "EURUSD",
+    side: "BUY",
+    entry_price: 1.085,
+    close_price: 1.092,
+    quantity: 0.1,
+    pnl: 70,
+    entry_time: "2026-05-07T14:30:00Z",
+    close_time: "2026-05-07T18:45:00Z",
+    stop_loss: 1.08,
+    take_profit: 1.095,
+    comment: "Imported via TradingView alert"
+  }, null, 2)
+}
+
 export default function SettingsPage() {
   const { theme, setTheme, accentPack, setAccentPack, widgetStyle, setWidgetStyle } = useTheme()
   const storeUser = useUserStore(state => state.supabaseUser)
@@ -976,7 +993,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-xs text-muted-foreground">
-              Paste this URL into a TradingView alert action. Each alert fires an import of the trade data you configure in the message body.
+              Paste this URL into the TradingView alert webhook field. The secret token does not go in the URL; it goes inside the JSON message body shown below.
             </p>
             <div className="flex items-center gap-2">
               <div className="flex-1 min-w-0 rounded-lg border border-border/40 bg-muted/30 px-3 py-2 font-mono text-[11px] text-muted-foreground truncate">
@@ -1016,6 +1033,30 @@ export default function SettingsPage() {
                 <RefreshCw className={cn('h-3.5 w-3.5', isRegeneratingWebhook && 'animate-spin')} />
                 Regenerate
               </Button>
+            </div>
+            <div className="space-y-2 rounded-xl border border-border/40 bg-muted/20 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[11px] font-semibold">TradingView alert message body</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs"
+                  disabled={!webhookToken || isLoadingWebhook}
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(buildTradingViewWebhookExample(webhookToken))
+                    toast.success('Webhook example copied')
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  Copy JSON
+                </Button>
+              </div>
+              <pre className="overflow-x-auto rounded-lg border border-border/30 bg-background/60 p-3 text-[11px] leading-5 text-muted-foreground">
+                {buildTradingViewWebhookExample(webhookToken)}
+              </pre>
+              <p className="text-[10px] text-muted-foreground/70">
+                Required fields: `token`, `symbol`, `side`, `entry_price`, `close_price`. If `quantity`, `pnl`, `entry_time`, or `close_time` are missing, the webhook still imports but with weaker trade detail.
+              </p>
             </div>
           </CardContent>
         </Card>

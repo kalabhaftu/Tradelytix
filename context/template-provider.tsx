@@ -33,6 +33,14 @@ interface TemplateProviderProps {
   initialActiveTemplate?: DashboardTemplate | null
 }
 
+type TemplateBootstrapCache = {
+  templates: DashboardTemplate[]
+  activeTemplate: DashboardTemplate | null
+} | null
+
+let templateBootstrapCache: TemplateBootstrapCache = null
+let templateBootstrapInFlight: Promise<TemplateBootstrapCache> | null = null
+
 const buildFallbackTemplate = (): DashboardTemplate => ({
   id: 'fallback',
   userId: 'temp',
@@ -64,34 +72,67 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
     hasLoadedRef.current = true
 
     try {
-      // Try to load user's saved template first
-      const [allTemplates, active] = await Promise.all([
-        getUserTemplates(),
-        getActiveTemplate(),
-      ])
-
-      // If we got templates, use them immediately
-      if (allTemplates.length > 0 && active) {
-        setTemplates(allTemplates)
-        setActiveTemplate(active)
+      if (templateBootstrapCache) {
+        setTemplates(templateBootstrapCache.templates)
+        setActiveTemplate(templateBootstrapCache.activeTemplate)
         setIsLoading(false)
         return
       }
 
+      if (templateBootstrapInFlight) {
+        const cachedResult = await templateBootstrapInFlight
+        if (cachedResult) {
+          setTemplates(cachedResult.templates)
+          setActiveTemplate(cachedResult.activeTemplate)
+          setIsLoading(false)
+          return
+        }
+      }
+
+      templateBootstrapInFlight = (async () => {
+      // Try to load user's saved template first
+        const [allTemplates, active] = await Promise.all([
+          getUserTemplates(),
+          getActiveTemplate(),
+        ])
+
+      // If we got templates, use them immediately
+        if (allTemplates.length > 0 && active) {
+          return {
+            templates: allTemplates,
+            activeTemplate: active,
+          }
+        }
+
       // No templates yet - create default for new users
-      await ensureDefaultTemplate()
+        await ensureDefaultTemplate()
 
       // Reload after creating default
-      const [newTemplates, newActive] = await Promise.all([
-        getUserTemplates(),
-        getActiveTemplate(),
-      ])
+        const [newTemplates, newActive] = await Promise.all([
+          getUserTemplates(),
+          getActiveTemplate(),
+        ])
 
-      if (newTemplates.length > 0 && newActive) {
-        setTemplates(newTemplates)
-        setActiveTemplate(newActive)
+        if (newTemplates.length > 0 && newActive) {
+          return {
+            templates: newTemplates,
+            activeTemplate: newActive,
+          }
+        }
+
+        return {
+          templates: [],
+          activeTemplate: buildFallbackTemplate(),
+        }
+      })()
+
+      const result = await templateBootstrapInFlight
+      templateBootstrapCache = result
+
+      if (result) {
+        setTemplates(result.templates)
+        setActiveTemplate(result.activeTemplate)
       } else {
-        // Fallback to default layout if something went wrong
         setActiveTemplate(buildFallbackTemplate())
       }
     } catch (error) {
@@ -102,9 +143,11 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
       setActiveTemplate(buildFallbackTemplate())
 
       hasLoadedRef.current = false // Allow retry on error
+      templateBootstrapCache = null
     } finally {
       setIsLoading(false)
       isLoadingRef.current = false
+      templateBootstrapInFlight = null
     }
   }, [])
 
@@ -130,6 +173,7 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
     try {
       const newTemplate = await createTemplateAction(name)
       setTemplates(prev => [...prev, newTemplate])
+      templateBootstrapCache = null
       setTimeout(() => toast.success(`Template "${name}" created successfully`), 0)
       return newTemplate
     } catch (error) {
@@ -144,6 +188,7 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
     try {
       await deleteTemplateAction(templateId)
       setTemplates(prev => prev.filter(t => t.id !== templateId))
+      templateBootstrapCache = null
 
       // If deleted template was active, reload to get new active template
       if (activeTemplate?.id === templateId) {
@@ -168,6 +213,7 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
         ...t,
         isActive: t.id === templateId,
       })))
+      templateBootstrapCache = null
       // Toast removed - template-selector shows "Template updated" text instead
       // setTimeout(() => toast.success('Template switched successfully'), 0)
       return updated
@@ -186,6 +232,7 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
       if (activeTemplate?.id === templateId) {
         setActiveTemplate(updated)
       }
+      templateBootstrapCache = null
       return updated
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update layout'
@@ -215,6 +262,5 @@ export function useTemplates() {
   }
   return context
 }
-
 
 

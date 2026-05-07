@@ -297,6 +297,27 @@ export async function GET(request: NextRequest) {
       ? (calendarData || formatCalendarData(trades as any, accounts as any, timezone, grouped as any))
       : null
 
+    let relevantTransactions: any[] = []
+    try {
+      if ('transaction' in prisma) {
+        const liveAccountIds = filteredAccounts
+          .filter((account: any) => account.accountType === 'live')
+          .map((account: any) => account.id)
+          .filter(Boolean)
+        if (liveAccountIds.length > 0) {
+          relevantTransactions = await (prisma as any).transaction.findMany({
+            where: {
+              userId: internalUserId,
+              accountId: { in: liveAccountIds },
+            },
+            select: { accountId: true, amount: true },
+          })
+        }
+      }
+    } catch {
+      relevantTransactions = []
+    }
+
     const widgets = includeWidgets ? {
       equityCurve: calculateEquityCurve(trades),
       netDailyPnl: calculateNetDailyPnl(trades, breakEvenThreshold),
@@ -312,7 +333,7 @@ export async function GET(request: NextRequest) {
       performanceScore: calculatePerformanceScoreResult(trades, breakEvenThreshold),
       sessionAnalysis: calculateSessionAnalysis(trades, breakEvenThreshold),
       calendarData: widgetCalendarData,
-      accountBalancePnl: calculateBalanceInfo(filteredAccounts, trades, { pnlDisplayMode }),
+      accountBalancePnl: calculateBalanceInfo(filteredAccounts, trades, relevantTransactions, { pnlDisplayMode }),
     } : null
 
     const total = responseTrades.length

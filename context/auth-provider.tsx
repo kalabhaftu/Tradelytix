@@ -1,7 +1,7 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import { createContext, useContext, useEffect, useState, useCallback, useRef, startTransition } from 'react'
 import { toast } from 'sonner'
 import { Session } from '@supabase/supabase-js'
 import { signOut } from '@/server/auth'
@@ -31,8 +31,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [session, setSession] = useState<Session | null>(null)
   const router = useRouter()
+  const pathname = usePathname()
   const [authCheckCache, setAuthCheckCache] = useState<{timestamp: number, isAuthenticated: boolean} | null>(null)
   const lastSyncedSessionRef = useRef<string | null>(null)
+  const syncInFlightRef = useRef<Map<string, Promise<boolean>>>(new Map())
+  const lastRefreshKeyRef = useRef<string | null>(null)
 
   // Get user store setters
   const setUser = useUserStore(state => state.setUser)
@@ -73,6 +76,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     )
   }, [])
 
+  const shouldSyncSessionForPath = useCallback((path: string | null) => {
+    if (!path) return false
+    return path === '/dashboard' || path.startsWith('/dashboard/') || path === '/admin' || path.startsWith('/admin/')
+  }, [])
+
   const syncSessionToServer = useCallback(async (nextSession: Session | null) => {
     if (!nextSession?.access_token || !nextSession.refresh_token || !nextSession.user?.id) {
       lastSyncedSessionRef.current = null
@@ -89,7 +97,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return true
     }
 
-    try {
+    const inFlight = syncInFlightRef.current.get(sessionKey)
+    if (inFlight) {
+      return inFlight
+    }
+
+    const syncPromise = (async () => {
+      try {
       const response = await fetch('/api/auth/restore', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -104,10 +118,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       lastSyncedSessionRef.current = sessionKey
+      setAuthCheckCache({
+        timestamp: Date.now(),
+        isAuthenticated: true
+      })
       return true
     } catch {
       return false
-    }
+      } finally {
+        syncInFlightRef.current.delete(sessionKey)
+      }
+    })()
+
+    syncInFlightRef.current.set(sessionKey, syncPromise)
+    return syncPromise
   }, [])
 
   // Check if auth status is still valid (cache for 30 seconds)
@@ -172,6 +196,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearBrowserAuthStorage()
   }, [clearBrowserAuthStorage, resetUser, setSupabaseUser])
 
+  const refreshOnceForAuthEvent = useCallback((event: string, nextSession: Session | null) => {
+    if (event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') {
+      return
+    }
+
+    const tokenMarker = nextSession?.access_token?.slice(-12) || 'signed-out'
+    const refreshKey = `${event}:${pathname || ''}:${tokenMarker}`
+    if (lastRefreshKeyRef.current === refreshKey) {
+      return
+    }
+
+    lastRefreshKeyRef.current = refreshKey
+    startTransition(() => {
+      router.refresh()
+    })
+  }, [pathname, router])
+
   useEffect(() => {
     const supabase = createClient()
 
@@ -198,7 +239,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Synchronize with user store
         if (session?.user) {
           setSupabaseUser(session.user)
-          await syncSessionToServer(session)
+          if (shouldSyncSessionForPath(pathname)) {
+            await syncSessionToServer(session)
+          }
           // Note: We don't set the database user here as it requires a database call
           // The database user will be set when the user data is loaded
         } else {
@@ -233,13 +276,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event: any, session: any) => {
+      async (event: any, session: any) => {
         setSession(session)
 
         // Synchronize with user store
         if (session?.user) {
           setSupabaseUser(session.user)
-          void syncSessionToServer(session)
+          if (shouldSyncSessionForPath(pathname)) {
+            void syncSessionToServer(session)
+          }
           // Note: We don't set the database user here as it requires a database call
           // The database user will be set when the user data is loaded
         } else {
@@ -248,19 +293,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           lastSyncedSessionRef.current = null
         }
 
-        // Add error handling for router refresh
-        try {
-          router.refresh()
-        } catch (refreshError) {
-          // Don't throw - let the app continue working
-        }
+        refreshOnceForAuthEvent(String(event || ''), session)
       }
     )
 
     return () => {
       subscription.unsubscribe()
     }
-  }, [router, forceClearAuth, setSupabaseUser, setUser, clearBrowserAuthStorage, isRecoverableSessionError, syncSessionToServer])
+  }, [router, pathname, forceClearAuth, setSupabaseUser, setUser, clearBrowserAuthStorage, isRecoverableSessionError, syncSessionToServer, shouldSyncSessionForPath, refreshOnceForAuthEvent])
 
   return (
     <AuthContext.Provider

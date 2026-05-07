@@ -33,12 +33,5 @@ export default async function SharedReportPage({ params }: Props) {
     notFound()
   }
 
-  // Increment view count
-  await prisma.sharedReport.update({
-    where: { slug },
-    data: { viewCount: { increment: 1 } },
-  }).catch(() => {})
-
   return <SharedReportView report={report as any} />
 }
-

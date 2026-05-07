@@ -85,6 +85,8 @@ export function buildTradeIdentityKey(trade: TradeLike): string {
   const closeTimestamp = getTradeExitTimestamp(trade)?.toISOString() || normalizeString(trade.closeDate)
   const entryPrice = getTradeEntryPriceValue(trade)?.toFixed(8) ?? normalizeString(trade.entryPrice)
   const closePrice = getTradeClosePriceValue(trade)?.toFixed(8) ?? normalizeString(trade.closePrice)
+  const pnl = Number(trade.pnl ?? 0).toFixed(8)
+  const commission = Number(trade.commission ?? 0).toFixed(8)
 
   if (normalizeString(trade.entryId)) {
     return [
@@ -94,6 +96,13 @@ export function buildTradeIdentityKey(trade: TradeLike): string {
       instrument,
       side,
       normalizeString(trade.entryId),
+      quantity.toFixed(8),
+      entryTimestamp,
+      closeTimestamp,
+      entryPrice,
+      closePrice,
+      pnl,
+      commission,
     ].join('|')
   }
 

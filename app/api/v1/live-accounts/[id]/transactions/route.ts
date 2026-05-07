@@ -27,7 +27,7 @@ export async function POST(
     const { type, amount, description } = body
 
     // Validate input
-    if (!type || !amount) {
+    if (!type || amount === undefined || amount === null || amount === '') {
       return NextResponse.json(
         { success: false, error: 'Type and amount are required' },
         { status: 400 }
@@ -41,8 +41,8 @@ export async function POST(
       )
     }
 
-    const numericAmount = parseFloat(amount)
-    if (isNaN(numericAmount) || numericAmount <= 0) {
+    const numericAmount = Number(amount)
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
       return NextResponse.json(
         { success: false, error: 'Amount must be a positive number' },
         { status: 400 }

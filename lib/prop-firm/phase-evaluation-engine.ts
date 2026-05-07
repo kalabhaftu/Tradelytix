@@ -204,7 +204,7 @@ export class PhaseEvaluationEngine {
 
     if (historicalMaxDDCheck.isBreached) {
       // Historical max drawdown breach detected
-      this.log(`[EVAL] ⚠️ Historical MAX DRAWDOWN breach detected`, {
+      this.log(`[EVAL] Historical MAX DRAWDOWN breach detected`, {
         lowestBalance: historicalMaxDDCheck.lowestBalance,
         minAllowed: historicalMaxDDCheck.minAllowedBalance,
         breachAmount: historicalMaxDDCheck.breachAmount
@@ -459,7 +459,7 @@ export class PhaseEvaluationEngine {
       const dayEndBalance = dayStartBalance + dayPnL
       const dayLoss = dayPnL < 0 ? Math.abs(dayPnL) : 0
 
-      this.log(`[EVAL] 📅 Day: ${dayStr}`, {
+      this.log(`[EVAL] Day: ${dayStr}`, {
         dayStartBalance: `$${dayStartBalance.toFixed(2)}`,
         dayPnL: `$${dayPnL.toFixed(2)}`,
         dayEndBalance: `$${dayEndBalance.toFixed(2)}`,
@@ -474,7 +474,7 @@ export class PhaseEvaluationEngine {
         const breachAmount = dayLoss - dailyDrawdownLimit
 
         // Historical daily drawdown breach detected
-        this.log(`[EVAL] ⚠️ Historical daily drawdown breach detected`, {
+        this.log(`[EVAL] Historical daily drawdown breach detected`, {
           breachAmount,
           tradesOnDay: dayTrades.length
         })

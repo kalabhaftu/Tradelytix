@@ -289,6 +289,7 @@ model Trade {
   mfe                  Float?
   Account              Account?         @relation(fields: [accountId], references: [id], onDelete: Cascade)
   TradingModel         TradingModel?    @relation(fields: [modelId], references: [id])
+  setup                String?
   PhaseAccount         PhaseAccount?    @relation(fields: [phaseAccountId], references: [id], onDelete: Cascade)
   executions           TradeExecution[]
 
@@ -367,6 +368,7 @@ model TradingModel {
   userId    String
   name      String
   rules     Json     @default("[]")
+  setups    Json     @default("[]")
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -2,11 +2,11 @@
 
 import { cn } from "@/lib/utils"
 import {
-  BookOpen,
-  BarChart3,
-  LayoutGrid,
-  Table2,
-  Users
+  LayoutDashboard,
+  CalendarDays,
+  LineChart,
+  ListTodo,
+  Briefcase
 } from "lucide-react"
 import { usePathname, useRouter } from 'next/navigation'
 
@@ -20,32 +20,32 @@ interface MobileNavItem {
 const mobileNavItems: MobileNavItem[] = [
   {
     id: 'widgets',
-    label: 'Dashboard',
-    icon: LayoutGrid,
+    label: 'Overview',
+    icon: LayoutDashboard,
     href: '/dashboard'
   },
   {
+    id: 'journal',
+    label: 'Journal',
+    icon: CalendarDays,
+    href: '/dashboard/journal'
+  },
+  {
     id: 'reports',
-    label: 'Reports',
-    icon: BarChart3,
+    label: 'Analytics',
+    icon: LineChart,
     href: '/dashboard/reports'
   },
   {
     id: 'table',
-    label: 'Trades',
-    icon: Table2,
+    label: 'Log',
+    icon: ListTodo,
     href: '/dashboard/table'
   },
   {
-    id: 'playbook',
-    label: 'Playbook',
-    icon: BookOpen,
-    href: '/dashboard/playbook'
-  },
-  {
     id: 'accounts',
-    label: 'Accounts',
-    icon: Users,
+    label: 'Portfolios',
+    icon: Briefcase,
     href: '/dashboard/accounts'
   }
 ]

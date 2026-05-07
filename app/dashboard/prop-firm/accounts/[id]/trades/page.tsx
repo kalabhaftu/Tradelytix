@@ -115,7 +115,7 @@ export default function AccountTradesPage() {
       const data = await response.json()
       if (data.success) {
         setTrades(data.data.trades)
-        setAvailablePhases(data.data.filter?.availablePhases || []) // ✅ NEW: Store available phases
+        setAvailablePhases(data.data.filter?.availablePhases || [])
       } else {
         throw new Error(data.error || 'Failed to fetch trades')
       }
@@ -128,7 +128,7 @@ export default function AccountTradesPage() {
     }
   }
 
-  // ✅ NEW: Refetch when phase filter changes
+  // Refetch when phase filter changes
   useEffect(() => {
     if (user && accountId) {
       fetchTrades(phaseFilter)

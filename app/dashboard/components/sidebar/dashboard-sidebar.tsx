@@ -4,11 +4,11 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
   LayoutDashboard,
-  TrendingUp,
+  LineChart,
+  CalendarDays,
+  Briefcase,
+  ListTodo,
   BookOpen,
-  Users,
-  Table2,
-  Target,
   FlaskConical,
   Settings,
   Database,
@@ -38,15 +38,18 @@ import { Logo } from '@/components/logo'
 import { cn } from '@/lib/utils'
 import { useData } from '@/context/data-provider'
 
-const navItems = [
-  { id: 'widgets', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-  { id: 'reports', label: 'Reports', icon: TrendingUp, href: '/dashboard/reports' },
-  { id: 'table', label: 'Trades', icon: Table2, href: '/dashboard/table' },
-  { id: 'journal', label: 'Journal', icon: BookOpen, href: '/dashboard/journal' },
-  { id: 'playbook', label: 'Playbook', icon: Target, href: '/dashboard/playbook' },
-  { id: 'goals', label: 'Goals', icon: Trophy, href: '/dashboard/goals' },
-  { id: 'accounts', label: 'Accounts', icon: Users, href: '/dashboard/accounts' },
+const coreNavItems = [
+  { id: 'widgets', label: 'Overview', icon: LayoutDashboard, href: '/dashboard' },
+  { id: 'journal', label: 'Daily Journal', icon: CalendarDays, href: '/dashboard/journal' },
+  { id: 'reports', label: 'Analytics', icon: LineChart, href: '/dashboard/reports' },
+  { id: 'table', label: 'Trade Log', icon: ListTodo, href: '/dashboard/table' },
+  { id: 'accounts', label: 'Portfolios', icon: Briefcase, href: '/dashboard/accounts' },
+]
+
+const toolItems = [
+  { id: 'playbook', label: 'Playbook', icon: BookOpen, href: '/dashboard/playbook' },
   { id: 'backtesting', label: 'Backtesting', icon: FlaskConical, href: '/dashboard/backtesting' },
+  { id: 'goals', label: 'Goals', icon: Trophy, href: '/dashboard/goals' },
 ]
 
 const utilityItems = [
@@ -126,7 +129,35 @@ export function DashboardSidebar() {
               <SidebarGroupLabel className={cn(isOverlay && 'h-7 px-1 text-[11px] tracking-wide')}>Navigation</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu className={cn(isOverlay && 'gap-1')}>
-                  {navItems.map((item) => (
+                  {coreNavItems.map((item) => (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton
+                        size={isOverlay ? 'lg' : 'default'}
+                        variant={isCollapsed ? 'icon' : 'default'}
+                        tooltip={item.label}
+                        isActive={activeId === item.id}
+                        asChild
+                        className={cn(
+                          isOverlay && 'h-11 rounded-2xl px-4 text-[15px] [&>svg]:size-[17px]',
+                          !isOverlay && !isCollapsed && 'px-3'
+                        )}
+                      >
+                        <Link href={item.href} onClick={handleMobileClose}>
+                          <item.icon />
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarGroup className={cn('pt-4', isOverlay ? 'px-0' : 'px-0')}>
+              <SidebarGroupLabel className={cn(isOverlay && 'h-7 px-1 text-[11px] tracking-wide')}>Tools</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className={cn(isOverlay && 'gap-1')}>
+                  {toolItems.map((item) => (
                     <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton
                         size={isOverlay ? 'lg' : 'default'}

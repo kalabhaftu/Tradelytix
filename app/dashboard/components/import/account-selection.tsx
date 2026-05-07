@@ -82,7 +82,11 @@ export default function AccountSelection({
   selectedAccountId,
   setSelectedAccountId
 }: AccountSelectionProps) {
-  const { accounts, isLoading, error, refetch } = useAccounts()
+  const { accounts, isLoading, error, refetch } = useAccounts({
+    status: 'all',
+    type: 'all',
+    limit: 200,
+  })
   const [hasError, setHasError] = useState(false)
   const [accountsWithPhases, setAccountsWithPhases] = useState<UnifiedAccount[]>([])
   const [isLoadingPhases, setIsLoadingPhases] = useState(false)
@@ -120,8 +124,8 @@ export default function AccountSelection({
       try {
         // For import: only show active phases for prop-firm accounts
         const filteredAccounts = accounts.filter(acc => {
-          // Show all live accounts
-          if (acc.accountType === 'live') return true
+          // Show all non-archived live accounts; live accounts do not have phases.
+          if (acc.accountType === 'live') return !acc.isArchived
           
           // For prop-firm accounts: only show active phases (NOT passed or failed)
           if (acc.accountType === 'prop-firm') {

@@ -36,6 +36,7 @@ interface TradingModel {
   id: string
   name: string
   rules: any[]
+  setups?: string[]
   notes?: string | null
   createdAt: string
   updatedAt: string
@@ -83,6 +84,16 @@ function StrategyBlock({
               {model.stats?.tradeCount || 0} Trades logged
             </span>
           </div>
+          {/* Setups */}
+          {model.setups && model.setups.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {model.setups.map((setup: string, i: number) => (
+                <Badge key={i} variant="outline" className="text-[9px] font-bold uppercase tracking-tighter border-primary/15 bg-primary/5 text-primary/80 px-2 py-0">
+                  {setup}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
 
         <DropdownMenu>
@@ -201,7 +212,7 @@ export default function PlaybookPage() {
     setIsModalOpen(true)
   }
 
-  const handleSaveModel = async (data: { name: string; rules: any[]; notes?: string | null }) => {
+  const handleSaveModel = async (data: { name: string; rules: any[]; setups?: string[]; notes?: string | null }) => {
     const url = modalMode === 'add'
       ? '/api/v1/user/trading-models'
       : `/api/v1/user/trading-models/${selectedModel?.id}`

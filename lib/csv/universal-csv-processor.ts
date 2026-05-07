@@ -133,6 +133,7 @@ const FIELD_MAPPINGS: Record<keyof MappedFields, string[]> = {
     'pnl', 'profit', 'p&l', 'profit_loss', 'profitloss', 'net_pnl', 'gross_pnl',
     // Platform-specific
     'gross p&l', 'realized_pnl', 'realized_profit', 'net_profit', 'trade_result',
+    'profit_usd', 'net_profit_usd', 'gross_profit_usd',
     // French
     'bénéfice', 'résultat',
     // Variations
@@ -142,7 +143,7 @@ const FIELD_MAPPINGS: Record<keyof MappedFields, string[]> = {
     // Common
     'commission', 'fee', 'fees', 'commissions', 'trading_fee', 'broker_fee',
     // Platform-specific
-    'comm', 'order_fee', 'transaction_fee', 'brokerage',
+    'comm', 'commission_usd', 'order_fee', 'transaction_fee', 'brokerage',
     // Variations
     'cost', 'charges', 'expense', 'total_fee'
   ],
@@ -166,7 +167,7 @@ const FIELD_MAPPINGS: Record<keyof MappedFields, string[]> = {
     // Common
     'swap', 'overnight', 'rollover', 'financing', 'interest',
     // Platform-specific
-    'swap_fee', 'overnight_fee', 'carry_cost',
+    'swap_usd', 'swap_fee', 'overnight_fee', 'carry_cost',
     // Variations
     'funding', 'financing_cost'
   ],
@@ -261,18 +262,28 @@ function normalizeHeader(header: string): string {
  */
 function findFieldMatch(header: string): keyof MappedFields | null {
   const normalizedHeader = normalizeHeader(header)
+
+  // Prefer exact matches across every field first. This prevents generic aliases
+  // like "open", "close", or "position" from stealing platform-specific headers
+  // such as "opening_time_utc", "close_reason", or "original_position_size".
+  for (const [field, patterns] of Object.entries(FIELD_MAPPINGS)) {
+    for (const pattern of patterns) {
+      if (normalizedHeader === normalizeHeader(pattern)) {
+        return field as keyof MappedFields
+      }
+    }
+  }
   
   for (const [field, patterns] of Object.entries(FIELD_MAPPINGS)) {
     for (const pattern of patterns) {
       const normalizedPattern = normalizeHeader(pattern)
-      
-      // Exact match
-      if (normalizedHeader === normalizedPattern) {
-        return field as keyof MappedFields
-      }
-      
-      // Contains match (for compound headers)
-      if (normalizedHeader.includes(normalizedPattern) || normalizedPattern.includes(normalizedHeader)) {
+
+      // Contains match for specific compound headers only. Very short aliases are
+      // too broad for universal parsing ("open" matches "opening_time_utc").
+      if (
+        normalizedPattern.length >= 8 &&
+        (normalizedHeader.includes(normalizedPattern) || normalizedPattern.includes(normalizedHeader))
+      ) {
         return field as keyof MappedFields
       }
     }
@@ -291,7 +302,10 @@ function parseDate(value: string, fallbackTimezone: string = 'America/New_York')
   
   // Try ISO format first
   if (/^\d{4}-\d{2}-\d{2}T/.test(trimmed)) {
-    const date = new Date(trimmed)
+    // Most broker CSVs that use bare ISO timestamps (notably Exness) export UTC.
+    // Native Date treats bare ISO datetimes as local time, so mark them as UTC.
+    const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(trimmed)
+    const date = new Date(hasTimezone ? trimmed : `${trimmed}Z`)
     if (!isNaN(date.getTime())) {
       return date.toISOString()
     }
@@ -422,17 +436,17 @@ function parseDuration(value: string): number | null {
 /**
  * Normalize side value to 'long' or 'short'
  */
-function parseSide(value: string): 'long' | 'short' | null {
+function parseSide(value: string): 'BUY' | 'SELL' | null {
   if (!value || value.trim() === '') return null
   
   const normalized = value.toLowerCase().trim()
   
-  if (LONG_VALUES.includes(normalized)) return 'long'
-  if (SHORT_VALUES.includes(normalized)) return 'short'
+  if (LONG_VALUES.includes(normalized)) return 'BUY'
+  if (SHORT_VALUES.includes(normalized)) return 'SELL'
   
   // Partial matches
-  if (LONG_VALUES.some(v => normalized.includes(v))) return 'long'
-  if (SHORT_VALUES.some(v => normalized.includes(v))) return 'short'
+  if (LONG_VALUES.some(v => normalized.includes(v))) return 'BUY'
+  if (SHORT_VALUES.some(v => normalized.includes(v))) return 'SELL'
   
   return null
 }
@@ -543,7 +557,7 @@ export function processUniversalCSV(
   
   headers.forEach((header, index) => {
     const field = findFieldMatch(header)
-    if (field) {
+    if (field && !result.mappedFields[field]) {
       headerMapping[index] = field
       result.mappedFields[field] = header
     }
@@ -719,9 +733,9 @@ export function processUniversalCSV(
       const entryNum = parseFloat(trade.entryPrice)
       const closeNum = parseFloat(trade.closePrice)
       if (trade.pnl > 0) {
-        trade.side = closeNum > entryNum ? 'long' : 'short'
+        trade.side = closeNum > entryNum ? 'BUY' : 'SELL'
       } else if (trade.pnl < 0) {
-        trade.side = closeNum < entryNum ? 'long' : 'short'
+        trade.side = closeNum < entryNum ? 'BUY' : 'SELL'
       }
     }
     
@@ -774,7 +788,7 @@ export function validateCSV(headers: string[]): {
   
   headers.forEach(header => {
     const field = findFieldMatch(header)
-    if (field) {
+    if (field && !mappedFields[field]) {
       mappedFields[field] = header
     }
   })

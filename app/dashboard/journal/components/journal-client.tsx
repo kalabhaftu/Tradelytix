@@ -17,7 +17,9 @@ import {
   TrendingDown,
   BarChart3,
   Clock,
-  BookOpen
+  BookOpen,
+  LayoutGrid,
+  Calendar as CalendarIcon
 } from "lucide-react"
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -60,6 +62,11 @@ import { cn, ensureExtendedTrade } from '@/lib/utils'
 import { useJournal } from '@/hooks/use-journal'
 import { formatBreakevenBand, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { PageHeader } from '@/components/ui/page-header'
+import { JournalCalendar } from './journal-calendar'
+import { DailyNotePanel } from './daily-note-panel'
+import { format } from 'date-fns'
+import { getTradeNetPnl } from '@/lib/metrics/pnl'
+import { classifyOutcome } from '@/lib/metrics/outcome'
 
 const ITEMS_PER_PAGE = 21
 
@@ -199,6 +206,8 @@ export function JournalClient() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [tradeToDelete, setTradeToDelete] = useState<Trade | null>(null)
   const [showAIAnalysis, setShowAIAnalysis] = useState(false)
+  const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid')
+  const [notePanelDate, setNotePanelDate] = useState<Date | null>(null)
 
   // URL State
   const view = searchParams.get('view')
@@ -352,6 +361,33 @@ export function JournalClient() {
             </>
           }
         />
+      </motion.div>
+
+      {/* View Toggle */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.02 }}
+        className="flex items-center gap-1 bg-muted/30 p-1 rounded-xl w-fit"
+      >
+        <Button
+          variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+          size="sm"
+          className="h-8 gap-2 rounded-lg"
+          onClick={() => setViewMode('grid')}
+        >
+          <LayoutGrid className="h-4 w-4" />
+          <span className="text-[10px] uppercase font-black tracking-widest">Cards</span>
+        </Button>
+        <Button
+          variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
+          size="sm"
+          className="h-8 gap-2 rounded-lg"
+          onClick={() => setViewMode('calendar')}
+        >
+          <CalendarIcon className="h-4 w-4" />
+          <span className="text-[10px] uppercase font-black tracking-widest">Calendar</span>
+        </Button>
       </motion.div>
 
       {/* Stats */}
@@ -539,7 +575,29 @@ export function JournalClient() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            {/* Trade cards grid */}
+            {viewMode === 'calendar' ? (
+              <JournalCalendar 
+                trades={formattedTrades || []} 
+                onDayClick={(date, dayTrades) => {
+                  if (dayTrades.length === 0) {
+                    // Open daily note panel for days with no trades too
+                    setNotePanelDate(date)
+                    return
+                  }
+                  if (dayTrades.length === 1) {
+                    handleViewTrade(dayTrades[0])
+                  } else {
+                    // Filter cards view to this specific date
+                    const dateStr = date.toISOString().split('T')[0]
+                    setSearchTerm(dateStr)
+                    setViewMode('grid')
+                  }
+                }}
+                onDayNoteClick={(date) => setNotePanelDate(date)}
+              />
+            ) : (
+              <>
+                {/* Trade cards grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginatedTrades.map((trade, index) => (
                 <motion.div
@@ -619,6 +677,8 @@ export function JournalClient() {
                 </div>
               </motion.div>
             )}
+            </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -658,6 +718,26 @@ export function JournalClient() {
         onClose={() => setShowAIAnalysis(false)}
         accountId={null}
       />
+
+      {/* Daily Note Panel */}
+      {notePanelDate && (
+        <DailyNotePanel
+          date={notePanelDate}
+          onClose={() => setNotePanelDate(null)}
+          dailyStats={(() => {
+            const dateStr = format(notePanelDate, 'yyyy-MM-dd')
+            const dayTrades = (formattedTrades || []).filter((t: any) => {
+              if (!t.entryDate) return false
+              return t.entryDate.toString().split('T')[0] === dateStr
+            })
+            if (dayTrades.length === 0) return undefined
+            const pnl = dayTrades.reduce((sum: number, t: any) => sum + getTradeNetPnl(t), 0)
+            const wins = dayTrades.filter((t: any) => classifyOutcome(getTradeNetPnl(t), activeBreakEvenThreshold) === 'win').length
+            const losses = dayTrades.filter((t: any) => classifyOutcome(getTradeNetPnl(t), activeBreakEvenThreshold) === 'loss').length
+            return { pnl, trades: dayTrades.length, wins, losses }
+          })()}
+        />
+      )}
     </div>
   )
 }

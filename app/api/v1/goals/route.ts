@@ -32,8 +32,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { title, description, metric, targetValue, period, startDate, endDate } = body
 
-    if (!title || !metric || targetValue === undefined || !period || !startDate) {
+    if (!title || !metric || targetValue === undefined || targetValue === null || !period || !startDate) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    const numericTargetValue = Number(targetValue)
+    if (!Number.isFinite(numericTargetValue)) {
+      return NextResponse.json({ error: 'Target value must be a valid number' }, { status: 400 })
     }
 
     const goal = await prisma.userGoal.create({
@@ -43,7 +48,7 @@ export async function POST(req: NextRequest) {
         title,
         description: description || null,
         metric,
-        targetValue: Number(targetValue),
+        targetValue: numericTargetValue,
         currentValue: 0,
         period,
         startDate: new Date(startDate),

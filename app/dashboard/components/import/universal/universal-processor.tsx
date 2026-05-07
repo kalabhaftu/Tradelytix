@@ -65,6 +65,11 @@ const formatDuration = (seconds: number): string => {
   return parts.join(' ')
 }
 
+const toFiniteNumber = (value: unknown, fallback = 0) => {
+  const numeric = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(numeric) ? numeric : fallback
+}
+
 export default function UniversalProcessor({ 
   headers, 
   csvData, 
@@ -190,18 +195,35 @@ export default function UniversalProcessor({
     processTrades()
   }, [processTrades])
 
-  const processedTrades = useMemo(() => 
-    (processingResult?.trades as Trade[]) || [], 
-    [processingResult?.trades]
-  )
+  const processedTrades = useMemo(() => {
+    const trades = (processingResult?.trades as Trade[]) || []
+    return trades.map((trade) => ({
+      ...trade,
+      id: crypto.randomUUID(),
+      accountNumber: trade.accountNumber || accountNumber,
+      symbol: trade.symbol || trade.instrument,
+      entryTime: trade.entryTime || (trade.entryDate ? new Date(trade.entryDate) : null),
+      exitTime: trade.exitTime || (trade.closeDate ? new Date(trade.closeDate) : null),
+      pnl: toFiniteNumber(trade.pnl, 0),
+      commission: toFiniteNumber(trade.commission, 0),
+      quantity: toFiniteNumber(trade.quantity, 1),
+      timeInPosition: toFiniteNumber(trade.timeInPosition, 0),
+    })) as Trade[]
+  }, [accountNumber, processingResult?.trades])
+
+  useEffect(() => {
+    if (processedTrades.length > 0) {
+      setProcessedTrades(processedTrades)
+    }
+  }, [processedTrades, setProcessedTrades])
 
   const totalPnL = useMemo(() => 
-    processedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0), 
+    processedTrades.reduce((sum, trade) => sum + toFiniteNumber(trade.pnl, 0), 0), 
     [processedTrades]
   )
   
   const totalCommission = useMemo(() => 
-    processedTrades.reduce((sum, trade) => sum + (trade.commission || 0), 0), 
+    processedTrades.reduce((sum, trade) => sum + toFiniteNumber(trade.commission, 0), 0), 
     [processedTrades]
   )
   
@@ -368,7 +390,7 @@ export default function UniversalProcessor({
                       <TableCell className="whitespace-nowrap px-3 py-2 text-sm">
                         <Badge 
                           variant="outline" 
-                          className={trade.side === 'long' ? 'border-long/50 text-long' : 'border-short/50 text-short'}
+                          className={String(trade.side || '').toUpperCase() === 'BUY' || trade.side === 'long' ? 'border-long/50 text-long' : 'border-short/50 text-short'}
                         >
                           {trade.side || '-'}
                         </Badge>
@@ -389,15 +411,15 @@ export default function UniversalProcessor({
                         {trade.closeDate ? new Date(trade.closeDate).toLocaleString() : '-'}
                       </TableCell>
                       <TableCell className={`whitespace-nowrap px-3 py-2 text-sm font-semibold ${
-                        trade.pnl && trade.pnl >= 0 ? 'text-long' : 'text-short'
+                        toFiniteNumber(trade.pnl, 0) >= 0 ? 'text-long' : 'text-short'
                       }`}>
-                        {trade.pnl !== undefined ? `$${trade.pnl.toFixed(2)}` : '-'}
+                        ${toFiniteNumber(trade.pnl, 0).toFixed(2)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap px-3 py-2 text-sm text-muted-foreground">
                         {formatDuration(trade.timeInPosition || 0)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap px-3 py-2 text-sm text-muted-foreground">
-                        {trade.commission ? `$${Math.abs(trade.commission).toFixed(2)}` : '-'}
+                        {toFiniteNumber(trade.commission, 0) ? `$${Math.abs(toFiniteNumber(trade.commission, 0)).toFixed(2)}` : '-'}
                       </TableCell>
                       <TableCell className="whitespace-nowrap px-3 py-2 text-sm text-muted-foreground">
                         {trade.stopLoss || '-'}

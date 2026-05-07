@@ -36,7 +36,7 @@ function validateEnv() {
     if (error instanceof z.ZodError) {
       const missingVars = error.errors.map(err => `${err.path.join('.')}: ${err.message}`)
       throw new Error(
-        `❌ Invalid environment variables:\n${missingVars.join('\n')}\n\nPlease check your .env file.`
+        `Invalid environment variables:\n${missingVars.join('\n')}\n\nPlease check your .env file.`
       )
     }
     throw error
@@ -48,4 +48,3 @@ export const env = validateEnv()
 
 // Type-safe access to environment variables
 export type Env = z.infer<typeof envSchema>
-

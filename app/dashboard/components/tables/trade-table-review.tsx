@@ -22,8 +22,9 @@ import { useMediaQuery } from '@/hooks/use-media-query'
 import { cn, formatCurrency, formatQuantity, parsePositionTime } from '@/lib/utils'
 import { useTableConfigStore } from '@/store/table-config-store'
 import { useUserStore } from '@/store/user-store'
-import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, BarChart3, Info } from 'lucide-react'
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, BarChart3, Info, Tag } from 'lucide-react'
 import { Trade } from '@prisma/client'
+import { useTags, TradeTag } from '@/hooks/use-tags'
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -426,6 +427,7 @@ export function TradeTableReview() {
   const timezone = useUserStore((state) => state.timezone)
   const isMobile = useMediaQuery('(max-width: 768px)')
   const { formatValue, isPrivacyMode, maskSensitiveValue, getTradeRMultipleInfo } = useDashboardDisplay()
+  const { tags: availableTags } = useTags()
 
   const router = useRouter()
 
@@ -636,6 +638,18 @@ export function TradeTableReview() {
     setSelectedTrades([])
   }, [selectedTrades, updateTrades])
 
+  const handleBulkTag = React.useCallback(async (tagId: string) => {
+    if (selectedTrades.length === 0) return
+    try {
+      // For each selected trade, add the tag (append to existing tags)
+      await updateTrades(selectedTrades, { tags: [tagId] } as any)
+      tableRef.current?.resetRowSelection()
+      setSelectedTrades([])
+    } catch (error) {
+      console.error('Failed to bulk tag trades:', error)
+    }
+  }, [selectedTrades, updateTrades])
+
   return (
     <section className="w-full max-w-full space-y-6 py-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -665,6 +679,31 @@ export function TradeTableReview() {
             <Button variant="ghost" size="sm" onClick={handleUngroupTrades} className="text-xs sm:text-sm">
               Ungroup
             </Button>
+          )}
+          {selectedTrades.length > 0 && availableTags.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="text-xs sm:text-sm gap-1.5">
+                  <Tag className="h-3.5 w-3.5" />
+                  Tag ({selectedTrades.length})
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {availableTags.map((tag: TradeTag) => (
+                  <DropdownMenuItem
+                    key={tag.id}
+                    onClick={() => handleBulkTag(tag.id)}
+                    className="gap-2 text-xs"
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full shrink-0"
+                      style={{ backgroundColor: tag.color }}
+                    />
+                    {tag.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           <ColumnConfigDialog tableId="trade-table" />
         </div>

@@ -232,9 +232,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, number, startingBalance, broker } = body
 
-    if (!name || !number || !startingBalance || !broker) {
+    if (!name || !number || startingBalance === undefined || startingBalance === null || !broker) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields: name, number, startingBalance, broker' },
+        { status: 400 }
+      )
+    }
+
+    const numericStartingBalance = Number(startingBalance)
+    if (!Number.isFinite(numericStartingBalance)) {
+      return NextResponse.json(
+        { success: false, error: 'Starting balance must be a valid number' },
         { status: 400 }
       )
     }
@@ -258,7 +266,7 @@ export async function POST(request: NextRequest) {
         id: crypto.randomUUID(),
         number,
         name,
-        startingBalance: parseFloat(startingBalance),
+        startingBalance: numericStartingBalance,
         broker,
         userId: internalUserId
       }

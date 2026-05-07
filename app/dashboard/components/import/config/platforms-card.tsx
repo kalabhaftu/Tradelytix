@@ -108,9 +108,9 @@ const processExnessCsv = (data: string[][]): ProcessedData => {
   const headers = data[0].filter(header => header && header.trim() !== '')
   
   // Verify this is an Exness CSV by checking for key columns
-  const hasRequiredHeaders = ['ticket', 'opening_time_utc', 'closing_time_utc', 'type', 'lots', 'symbol', 'opening_price', 'closing_price', 'profit_usd'].every(
+  const hasRequiredHeaders = ['ticket', 'opening_time_utc', 'closing_time_utc', 'type', 'lots', 'symbol', 'opening_price', 'closing_price'].every(
     requiredHeader => headers.some(header => header.includes(requiredHeader))
-  )
+  ) && headers.some(header => header.includes('profit'))
   
   if (!hasRequiredHeaders) {
     throw new Error("This doesn't appear to be a valid Exness CSV file. Please ensure it contains the expected columns.")

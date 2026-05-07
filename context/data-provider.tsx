@@ -534,7 +534,7 @@ export const DataProvider: React.FC<{
       if (!mounted) return;
       
       try {
-        // ✅ Just load main data - account filter settings are handled by the hook
+        // Load main data; account filter settings are handled by the hook.
         await loadData()
       } catch (error) {
         // Handle Next.js redirect errors (these are normal and expected)

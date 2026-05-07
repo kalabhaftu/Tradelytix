@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { LexicalEditor } from '@/components/ui/editor/lexical-editor'
-import { Plus, X, AlertTriangle as Warning } from 'lucide-react'
+import { Plus, X, AlertTriangle as Warning, Layers } from 'lucide-react'
 import { toast } from 'sonner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
@@ -29,6 +29,7 @@ interface TradingModel {
   id: string
   name: string
   rules: (Rule | string)[]
+  setups?: string[]
   notes?: string | null
   createdAt: string
   updatedAt: string
@@ -37,7 +38,7 @@ interface TradingModel {
 interface AddEditModelModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (data: { name: string; rules: Rule[]; notes?: string | null }) => Promise<void>
+  onSave: (data: { name: string; rules: Rule[]; setups?: string[]; notes?: string | null }) => Promise<void>
   model?: TradingModel | null
   mode: 'add' | 'edit'
 }
@@ -49,6 +50,8 @@ export function AddEditModelModal({ isOpen, onClose, onSave, model, mode }: AddE
     { text: '', category: 'exit' },
     { text: '', category: 'risk' }
   ])
+  const [setups, setSetups] = useState<string[]>([])
+  const [newSetup, setNewSetup] = useState('')
   const [notes, setNotes] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false)
@@ -70,6 +73,7 @@ export function AddEditModelModal({ isOpen, onClose, onSave, model, mode }: AddE
           { text: '', category: 'exit' },
           { text: '', category: 'risk' }
         ])
+        setSetups(Array.isArray(model.setups) ? [...model.setups] : [])
         setNotes(model.notes || '')
       } else {
         setName('')
@@ -78,6 +82,8 @@ export function AddEditModelModal({ isOpen, onClose, onSave, model, mode }: AddE
           { text: '', category: 'exit' },
           { text: '', category: 'risk' }
         ])
+        setSetups([])
+        setNewSetup('')
         setNotes('')
       }
       setHasChanges(false)
@@ -140,6 +146,7 @@ export function AddEditModelModal({ isOpen, onClose, onSave, model, mode }: AddE
       await onSave({
         name: name.trim(),
         rules: filteredRules,
+        setups: setups.filter(s => s.trim()),
         notes: notes.trim() || null,
       })
       toast.success(mode === 'add' ? 'Model created successfully' : 'Model updated successfully')
@@ -234,6 +241,69 @@ export function AddEditModelModal({ isOpen, onClose, onSave, model, mode }: AddE
               <p className="text-[10px] text-muted-foreground/50 font-medium italic">
                 Structured protocols ensure consistency. Define criteria for entry, exit, and risk management.
               </p>
+            </div>
+
+            {/* Setups */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Layers className="h-3.5 w-3.5 text-muted-foreground/50" />
+                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/70">Trade Setups</Label>
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground/50 font-medium italic">
+                Define specific setups within this strategy (e.g., &quot;A+ Breakout&quot;, &quot;Failed Reversal&quot;, &quot;Liquidity Grab&quot;). You can tag trades with these setups later.
+              </p>
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="e.g., A+ Breakout"
+                  className="font-medium text-sm h-9 bg-muted/10 border-border/40"
+                  value={newSetup}
+                  onChange={(e) => setNewSetup(e.target.value)}
+                  maxLength={50}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newSetup.trim()) {
+                      e.preventDefault()
+                      if (!setups.includes(newSetup.trim())) {
+                        setSetups([...setups, newSetup.trim()])
+                      }
+                      setNewSetup('')
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (newSetup.trim() && !setups.includes(newSetup.trim())) {
+                      setSetups([...setups, newSetup.trim()])
+                      setNewSetup('')
+                    }
+                  }}
+                  disabled={!newSetup.trim()}
+                  className="h-9 px-3 font-black uppercase tracking-tighter text-[10px] shrink-0"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add
+                </Button>
+              </div>
+              {setups.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {setups.map((setup, i) => (
+                    <div key={i} className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1">
+                      <span className="text-[11px] font-bold text-primary">{setup}</span>
+                      <button
+                        type="button"
+                        onClick={() => setSetups(setups.filter((_, idx) => idx !== i))}
+                        className="text-muted-foreground/40 hover:text-destructive transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

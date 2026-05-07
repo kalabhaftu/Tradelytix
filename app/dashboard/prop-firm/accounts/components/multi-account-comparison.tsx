@@ -40,7 +40,12 @@ function AccountRow({ account, rank, maxPnL }: { account: AccountSummary; rank: 
         rank === 3 ? "bg-amber-700/10 text-amber-700" :
         "bg-muted/20 text-muted-foreground/40"
       )}>
-        {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank}
+        {rank <= 3 ? (
+          <span className="relative inline-flex items-center justify-center">
+            <Trophy className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="sr-only">Rank {rank}</span>
+          </span>
+        ) : rank}
       </div>
 
       {/* Account info */}

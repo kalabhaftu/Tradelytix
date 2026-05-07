@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -15,7 +15,9 @@ import {
   TrendingUp,
   Building2,
   Plus,
-  Minus
+  Minus,
+  Calendar,
+  BarChart3
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { EditLiveAccountDialog } from "@/components/edit-live-account-dialog"
@@ -24,6 +26,12 @@ import { TransactionHistory } from "@/app/dashboard/components/accounts/transact
 import { useUserStore } from '@/store/user-store'
 import { useDatabaseRealtime } from '@/lib/realtime/database-realtime'
 import { LiveAccountDetailSkeleton } from '../components/live-account-detail-skeleton'
+import { useData } from '@/context/data-provider'
+import { getTradeNetPnl } from '@/lib/metrics/pnl'
+import { TradeDurationChart } from '@/app/dashboard/reports/components/trade-duration-chart'
+import { InstrumentBreakdown } from '@/app/dashboard/reports/components/instrument-breakdown'
+import { CommissionAnalysis } from '@/app/dashboard/reports/components/commission-analysis'
+import { format } from 'date-fns'
 
 interface LiveAccountData {
   id: string
@@ -41,6 +49,137 @@ interface LiveAccountData {
   createdAt: string
 }
 
+// --- Account Trades Tab ---
+function AccountTradesTab({ accountNumber, trades }: { accountNumber: string; trades: any[] }) {
+  const accountTrades = useMemo(() => {
+    return trades
+      .filter((t: any) => t.accountNumber === accountNumber)
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.closeDate || a.entryDate || 0).getTime()
+        const dateB = new Date(b.closeDate || b.entryDate || 0).getTime()
+        return dateB - dateA
+      })
+  }, [trades, accountNumber])
+
+  if (accountTrades.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-16">
+          <Calendar className="h-12 w-12 text-muted-foreground/30 mb-4" />
+          <h3 className="text-lg font-semibold mb-1">No Trades Yet</h3>
+          <p className="text-sm text-muted-foreground">Import trades to see them here</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const totalPnl = accountTrades.reduce((s: number, t: any) => s + getTradeNetPnl(t), 0)
+  const wins = accountTrades.filter((t: any) => getTradeNetPnl(t) > 0).length
+  const winRate = accountTrades.length > 0 ? (wins / accountTrades.length) * 100 : 0
+
+  return (
+    <div className="space-y-4">
+      {/* Quick Stats */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-xl border bg-card p-3">
+          <p className="text-[9px] uppercase font-bold text-muted-foreground/50 tracking-widest">Total Trades</p>
+          <p className="text-xl font-black font-mono mt-1">{accountTrades.length}</p>
+        </div>
+        <div className="rounded-xl border bg-card p-3">
+          <p className="text-[9px] uppercase font-bold text-muted-foreground/50 tracking-widest">Net P&L</p>
+          <p className={cn("text-xl font-black font-mono mt-1", totalPnl >= 0 ? "text-long" : "text-short")}>
+            {totalPnl >= 0 ? '+' : ''}${Math.abs(totalPnl).toFixed(2)}
+          </p>
+        </div>
+        <div className="rounded-xl border bg-card p-3">
+          <p className="text-[9px] uppercase font-bold text-muted-foreground/50 tracking-widest">Win Rate</p>
+          <p className="text-xl font-black font-mono mt-1">{winRate.toFixed(1)}%</p>
+        </div>
+      </div>
+
+      {/* Trade Table */}
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/30">
+                  <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Date</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Instrument</th>
+                  <th className="text-center px-4 py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Side</th>
+                  <th className="text-right px-4 py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground">P&L</th>
+                  <th className="text-right px-4 py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Commission</th>
+                  <th className="text-right px-4 py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Net</th>
+                </tr>
+              </thead>
+              <tbody>
+                {accountTrades.slice(0, 50).map((trade: any, i: number) => {
+                  const netPnl = getTradeNetPnl(trade)
+                  const tradeDate = trade.closeDate || trade.entryDate
+                  return (
+                    <tr key={trade.id || i} className="border-b border-border/20 hover:bg-muted/20 transition-colors">
+                      <td className="px-4 py-2.5 text-xs text-muted-foreground font-mono">
+                        {tradeDate ? format(new Date(tradeDate), 'MMM dd, yyyy') : '—'}
+                      </td>
+                      <td className="px-4 py-2.5 font-semibold text-xs">{trade.instrument || trade.symbol || '—'}</td>
+                      <td className="px-4 py-2.5 text-center">
+                        <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded", trade.side === 'LONG' || trade.side === 'BUY' ? "bg-long/10 text-long" : "bg-short/10 text-short")}>
+                          {trade.side || '—'}
+                        </span>
+                      </td>
+                      <td className={cn("px-4 py-2.5 text-right font-mono text-xs font-bold", (trade.pnl || 0) >= 0 ? "text-long" : "text-short")}>
+                        {(trade.pnl || 0) >= 0 ? '+' : ''}{(trade.pnl || 0).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-mono text-xs text-muted-foreground">
+                        {Math.abs(trade.commission || 0).toFixed(2)}
+                      </td>
+                      <td className={cn("px-4 py-2.5 text-right font-mono text-xs font-bold", netPnl >= 0 ? "text-long" : "text-short")}>
+                        {netPnl >= 0 ? '+' : ''}{netPnl.toFixed(2)}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          {accountTrades.length > 50 && (
+            <div className="px-4 py-3 text-center text-xs text-muted-foreground border-t">
+              Showing 50 of {accountTrades.length} trades
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// --- Account Analytics Tab ---
+function AccountAnalyticsTab({ accountNumber, trades }: { accountNumber: string; trades: any[] }) {
+  const accountTrades = useMemo(() => {
+    return trades.filter((t: any) => t.accountNumber === accountNumber)
+  }, [trades, accountNumber])
+
+  if (accountTrades.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-16">
+          <BarChart3 className="h-12 w-12 text-muted-foreground/30 mb-4" />
+          <h3 className="text-lg font-semibold mb-1">No Data Yet</h3>
+          <p className="text-sm text-muted-foreground">Import trades to see analytics</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <TradeDurationChart trades={accountTrades} />
+      <InstrumentBreakdown trades={accountTrades} />
+      <CommissionAnalysis trades={accountTrades} />
+    </div>
+  )
+}
+
 export default function LiveAccountDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -52,6 +191,7 @@ export default function LiveAccountDetailPage() {
 
   const accountId = params.id as string
   const user = useUserStore(state => state.user)
+  const { formattedTrades } = useData()
   const storeAccounts = useUserStore(state => state.accounts)
 
   // Fetch account data with calculated metrics
@@ -377,30 +517,11 @@ export default function LiveAccountDetailPage() {
           </TabsContent>
 
           <TabsContent value="trades">
-            <Card>
-              <CardHeader>
-                <CardTitle>All Trades</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-center py-8">
-                  Trade management interface for live accounts will be implemented here.
-                  This will show all trades for account {account.number}.
-                </p>
-              </CardContent>
-            </Card>
+            <AccountTradesTab accountNumber={account.number} trades={formattedTrades || []} />
           </TabsContent>
 
           <TabsContent value="analytics">
-            <Card>
-              <CardHeader>
-                <CardTitle>Performance Analytics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-center py-8">
-                  Performance charts and analytics for this live account will be displayed here.
-                </p>
-              </CardContent>
-            </Card>
+            <AccountAnalyticsTab accountNumber={account.number} trades={formattedTrades || []} />
           </TabsContent>
 
           <TabsContent value="settings">
@@ -409,9 +530,21 @@ export default function LiveAccountDetailPage() {
                 <CardTitle>Account Settings</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground text-center py-8">
-                  Account configuration and settings will be available here.
-                </p>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Account ID</label>
+                      <p className="text-sm font-mono font-semibold mt-1">{account.id}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Account Number</label>
+                      <p className="text-sm font-mono font-semibold mt-1">{account.number}</p>
+                    </div>
+                  </div>
+                  <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
+                    <SettingsIcon className="h-4 w-4 mr-2" /> Edit Account Details
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

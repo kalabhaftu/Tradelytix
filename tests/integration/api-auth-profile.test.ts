@@ -46,8 +46,6 @@ type MockUser = {
   theme: string
   autoAdjustAccountDate: boolean
   breakEvenThreshold: number
-  calendarDisplayStats: string[]
-  showWeeklySummary: boolean
   aiSettings: Record<string, unknown> | null
 }
 
@@ -81,8 +79,6 @@ describe('GET/PATCH /api/auth/profile', () => {
       theme: 'system',
       autoAdjustAccountDate: false,
       breakEvenThreshold: 10,
-      calendarDisplayStats: ['pnl', 'trades'],
-      showWeeklySummary: true,
       aiSettings: {
         autoGenerateInsights: false,
         includeAiInsightsInNotifications: false,
@@ -215,5 +211,42 @@ describe('GET/PATCH /api/auth/profile', () => {
     const getBody = await getResponse.json()
     expect(getResponse.status).toBe(200)
     expect(getBody.data.breakEvenThreshold).toBe(23.5)
+  })
+
+  it('preserves AI settings when updating unrelated profile fields', async () => {
+    userRow.aiSettings = {
+      autoGenerateInsights: true,
+      includeAiInsightsInNotifications: true,
+    }
+
+    const { PATCH, GET } = await import('@/app/api/auth/profile/route')
+
+    const patchResponse = await PATCH(
+      new Request('http://localhost/api/auth/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: 'Marshall',
+          lastName: 'Mathers',
+          autoAdjustAccountDate: true,
+        }),
+      }) as any
+    )
+
+    const patchBody = await patchResponse.json()
+    expect(patchResponse.status).toBe(200)
+    expect(patchBody.data.aiSettings).toEqual({
+      autoGenerateInsights: true,
+      includeAiInsightsInNotifications: true,
+    })
+
+    const getResponse = await GET()
+    const getBody = await getResponse.json()
+
+    expect(getResponse.status).toBe(200)
+    expect(getBody.data.aiSettings).toEqual({
+      autoGenerateInsights: true,
+      includeAiInsightsInNotifications: true,
+    })
   })
 })

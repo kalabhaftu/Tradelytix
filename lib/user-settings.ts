@@ -162,7 +162,7 @@ export function pickSettingsPatch(source: Record<string, unknown>) {
   const patch: Partial<UserSettingsShape> = {}
 
   for (const field of USER_SETTINGS_FIELDS) {
-    if (field in source) {
+    if (field in source && source[field] !== undefined) {
       ;(patch as any)[field] = source[field]
     }
   }

@@ -17,9 +17,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { masterAccountId, phaseAccountId, amount, notes } = body
 
-    if (!masterAccountId || !phaseAccountId || !amount) {
+    if (!masterAccountId || !phaseAccountId || amount === undefined || amount === null || amount === '') {
       return NextResponse.json(
         { success: false, error: 'Missing required fields: masterAccountId, phaseAccountId, and amount' },
+        { status: 400 }
+      )
+    }
+
+    const numericAmount = Number(amount)
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      return NextResponse.json(
+        { success: false, error: 'Amount must be a positive number' },
         { status: 400 }
       )
     }
@@ -27,7 +35,7 @@ export async function POST(request: NextRequest) {
     const result = await savePayoutAction({
       masterAccountId,
       phaseAccountId,
-      amount: parseFloat(amount),
+      amount: numericAmount,
       notes: notes || undefined
     })
 
@@ -47,4 +55,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

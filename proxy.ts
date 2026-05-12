@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient, type CookieOptions } from "@supabase/ssr"
 
-const publicRoutes = ["/", "/app-launch", "/not-found", "/api/auth", "/docs", "/privacy", "/feedback", "/donate", "/changelog", "/about", "/contact", "/reports/shared"]
+const publicRoutes = ["/", "/subscribe", "/app-launch", "/not-found", "/api/auth", "/docs", "/privacy", "/feedback", "/donate", "/changelog", "/about", "/contact", "/reports/shared"]
 const protectedRoutes = ["/dashboard", "/admin"]
 
 function isProtectedPath(pathname: string) {

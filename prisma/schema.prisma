@@ -417,6 +417,7 @@ model User {
   UserGoal               UserGoal[]
   SharedReport           SharedReport[]
   settings               UserSettings?
+  Subscription           Subscription?
 
   @@index([auth_user_id])
   @@index([email])
@@ -653,6 +654,17 @@ enum NotificationType {
 
   // Admin feedback reply
   FEEDBACK_REPLY // Admin replied to user feedback
+
+  // Subscription & Payment lifecycle
+  PAYMENT_DUE_SOON           // Payment due in 3 or 1 days
+  PAYMENT_DUE_TODAY          // Payment due today, invoice created
+  PAYMENT_OVERDUE            // Past due, within grace period
+  SUBSCRIPTION_EXPIRED       // Access revoked after grace period
+  PAYMENT_RECEIVED           // Payment confirmed via IPN
+  PAYMENT_FAILED             // Payment failed or expired
+  ACCESS_RESTORED            // Access restored after payment
+  ADMIN_FREE_ACCESS_GRANTED  // Admin granted free access
+  ADMIN_FREE_ACCESS_REVOKED  // Admin revoked free access
 
   @@schema("public")
 }
@@ -948,5 +960,177 @@ model SharedReport {
 
   @@index([userId])
   @@index([slug])
+  @@schema("public")
+}
+
+// =============================================
+// SUBSCRIPTION & PAYMENT SYSTEM
+// =============================================
+
+enum SubscriptionStatus {
+  active
+  past_due
+  unpaid
+  expired
+  cancelled
+  free_access
+  invited_free
+  promo_active
+
+  @@schema("public")
+}
+
+enum PaymentStatus {
+  pending
+  waiting
+  confirming
+  confirmed
+  sending
+  finished
+  partially_paid
+  failed
+  refunded
+  expired
+
+  @@schema("public")
+}
+
+enum FreeAccessType {
+  lifetime
+  until_date
+  one_time_signup
+
+  @@schema("public")
+}
+
+enum PromoType {
+  percentage_discount
+  fixed_discount
+  free_months
+  lifetime_free
+
+  @@schema("public")
+}
+
+enum PromoApplicability {
+  signup_only
+  renewal_only
+  any
+
+  @@schema("public")
+}
+
+model Subscription {
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  status             SubscriptionStatus @default(unpaid)
+  planId             String             @default("pro")
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  nextPaymentDue     DateTime?
+  cancelledAt        DateTime?
+  promoCodeId        String?
+  freeAccessId       String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  User               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  PromoCode          PromoCode?         @relation(fields: [promoCodeId], references: [id])
+  FreeAccess         FreeAccessInvite?  @relation(fields: [freeAccessId], references: [id])
+  PaymentRecord      PaymentRecord[]
+
+  @@index([status])
+  @@index([nextPaymentDue])
+  @@schema("public")
+}
+
+model PaymentRecord {
+  id                      String    @id @default(cuid())
+  userId                  String
+  subscriptionId          String
+  planId                  String    @default("pro")
+  amountUsd               Float
+  provider                String    @default("nowpayments")
+  providerPaymentId       String?   @unique
+  providerInvoiceId       String?   @unique
+  providerStatus          String?
+  payCurrency             String?
+  payAmount               Float?
+  paymentUrl              String?
+  invoiceUrl              String?
+  subscriptionPeriodStart DateTime?
+  subscriptionPeriodEnd   DateTime?
+  dueDate                 DateTime?
+  paidAt                  DateTime?
+  expiredAt               DateTime?
+  rawProviderPayload      Json?
+  promoCodeId             String?
+  discountAmount          Float     @default(0)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  Subscription            Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  PromoCode               PromoCode?   @relation(fields: [promoCodeId], references: [id])
+
+  @@index([userId])
+  @@index([subscriptionId])
+  @@index([providerPaymentId])
+  @@index([providerInvoiceId])
+  @@index([dueDate])
+  @@schema("public")
+}
+
+model PromoCode {
+  id              String            @id @default(cuid())
+  code            String            @unique
+  type            PromoType
+  applicability   PromoApplicability @default(signup_only)
+  value           Float
+  maxUses         Int?
+  usesCount       Int               @default(0)
+  validFrom       DateTime          @default(now())
+  validUntil      DateTime?
+  isActive        Boolean           @default(true)
+  appliesToPlan   String            @default("pro")
+  createdBy       String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  Subscription    Subscription[]
+  PaymentRecord   PaymentRecord[]
+  PromoRedemption PromoRedemption[]
+
+  @@index([code])
+  @@index([isActive])
+  @@schema("public")
+}
+
+model PromoRedemption {
+  id          String    @id @default(cuid())
+  promoCodeId String
+  userId      String
+  redeemedAt  DateTime  @default(now())
+  PromoCode   PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+
+  @@unique([promoCodeId, userId])
+  @@index([userId])
+  @@schema("public")
+}
+
+model FreeAccessInvite {
+  id               String         @id @default(cuid())
+  email            String         @unique
+  type             FreeAccessType
+  expiresAt        DateTime?
+  note             String?
+  grantedBy        String?
+  grantedAt        DateTime       @default(now())
+  revokedAt        DateTime?
+  isActive         Boolean        @default(true)
+  registeredAt     DateTime?
+  registeredUserId String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  Subscription     Subscription[]
+
+  @@index([email])
+  @@index([isActive])
   @@schema("public")
 }

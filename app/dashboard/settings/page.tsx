@@ -41,6 +41,7 @@ import {
   Check,
   Clock,
   Copy,
+  CreditCard,
   Database,
   Pencil,
   Laptop,
@@ -173,6 +174,15 @@ export default function SettingsPage() {
   })
   const avatarUrl = getUserAvatarUrl(user)
 
+  const [subscriptionData, setSubscriptionData] = useState<{
+    hasAccess: boolean
+    status: string
+    reason?: string
+    currentPeriodEnd?: string
+    nextPaymentDue?: string
+  } | null>(null)
+  const [isLoadingSubscription, setIsLoadingSubscription] = useState(true)
+
   const [webhookToken, setWebhookToken] = useState<string | null>(null)
   const [isLoadingWebhook, setIsLoadingWebhook] = useState(false)
   const [isRegeneratingWebhook, setIsRegeneratingWebhook] = useState(false)
@@ -216,6 +226,22 @@ export default function SettingsPage() {
       }
     }
     fetchWebhookToken()
+  }, [])
+
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      try {
+        setIsLoadingSubscription(true)
+        const res = await fetch('/api/v1/subscription/status')
+        const data = await res.json()
+        if (data.success) setSubscriptionData(data.data)
+      } catch {
+        // subscription check unavailable
+      } finally {
+        setIsLoadingSubscription(false)
+      }
+    }
+    fetchSubscription()
   }, [])
 
   const regenerateWebhookToken = async () => {
@@ -565,7 +591,7 @@ export default function SettingsPage() {
         transition={{ duration: 0.4 }}
         className="space-y-6"
       >
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:items-start">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           <div className="flex min-w-0 flex-col gap-6">
         {/* Profile Section */}
         <Card>
@@ -666,6 +692,79 @@ export default function SettingsPage() {
                   Save Profile
                 </PrimaryButton>
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Subscription Status */}
+        <Card>
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                <CreditCard className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <CardTitle className="text-base">Subscription</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground/85">Your plan details</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoadingSubscription ? (
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+            ) : subscriptionData ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                  <div>
+                    <p className="text-sm font-medium">Status</p>
+                    <p className="text-xs text-muted-foreground">
+                      {subscriptionData.reason || subscriptionData.status}
+                    </p>
+                  </div>
+                  <Badge variant={subscriptionData.hasAccess ? 'secondary' : 'destructive'} className="shrink-0">
+                    {subscriptionData.hasAccess ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+                {subscriptionData.currentPeriodEnd && (
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                    <div>
+                      <p className="text-sm font-medium">Current Period Ends</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(subscriptionData.currentPeriodEnd).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </p>
+                    </div>
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {(() => {
+                        const days = Math.ceil((new Date(subscriptionData.currentPeriodEnd!).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                        return days > 0 ? `${days} day${days !== 1 ? 's' : ''} left` : 'Expired'
+                      })()}
+                    </span>
+                  </div>
+                )}
+                {subscriptionData.nextPaymentDue && (
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                    <div>
+                      <p className="text-sm font-medium">Next Payment</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(subscriptionData.nextPaymentDue).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {!subscriptionData.hasAccess && (
+                  <Link href="/subscribe">
+                    <Button size="sm" className="gap-2 w-full">
+                      <CreditCard className="h-3.5 w-3.5" />
+                      Subscribe
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Unable to load subscription info</p>
             )}
           </CardContent>
         </Card>

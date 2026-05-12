@@ -97,7 +97,7 @@ export function NotificationCenter() {
         setUnreadCount(result.data.unreadCount)
       }
     } catch (error) {
-      console.error('Failed to fetch notifications:', error)
+      // Silently fail — user sees empty notification state
     } finally {
       setIsLoading(false)
     }

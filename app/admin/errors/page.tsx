@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ChevronLeft, ChevronRight, ChevronDown, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Trash2, Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 
@@ -24,6 +24,7 @@ export default function AdminErrorsPage() {
   const [loading, setLoading] = useState(true)
   const [sourceFilter, setSourceFilter] = useState('all')
   const [levelFilter, setLevelFilter] = useState('all')
+  const [exporting, setExporting] = useState(false)
   const limit = 30
 
   const fetchErrors = useCallback(() => {
@@ -45,12 +46,40 @@ export default function AdminErrorsPage() {
 
   useEffect(() => { fetchErrors() }, [fetchErrors])
 
-  const handleCleanup = async (days: number) => {
-    const res = await fetch(`/api/v1/admin/errors?olderThan=${days}`, { method: 'DELETE' })
+  const handleCleanup = async (days: number | 'all') => {
+    const isAll = days === 'all'
+    if (isAll && !confirm('Are you sure you want to clear ALL error logs? This cannot be undone.')) return
+    
+    const params = isAll ? 'all=true' : `olderThan=${days}`
+    const res = await fetch(`/api/v1/admin/errors?${params}`, { method: 'DELETE' })
     const data = await res.json()
     if (data.success) {
-      toast.success(`Cleaned up ${data.deleted} old entries`)
+      toast.success(isAll ? `Cleared all ${data.deleted} entries` : `Cleaned up ${data.deleted} old entries`)
       fetchErrors()
+    }
+  }
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const res = await fetch('/api/v1/admin/errors?export=true')
+      const data = await res.json()
+      if (data.success) {
+        const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `error-logs-${new Date().toISOString().split('T')[0]}.json`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+        toast.success('Logs exported successfully')
+      }
+    } catch (err) {
+      toast.error('Failed to export logs')
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -81,8 +110,15 @@ export default function AdminErrorsPage() {
                 <SelectItem value="CRITICAL">Critical</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" className="text-xs" onClick={() => handleCleanup(30)}>
-              <Trash2 className="h-3 w-3 mr-1" />Cleanup 30d+
+            <Button variant="outline" size="sm" className="text-xs h-8" onClick={handleExport} disabled={exporting}>
+              <Download className="h-3.5 w-3.5 mr-1" />
+              {exporting ? 'Exporting...' : 'Export JSON'}
+            </Button>
+            <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => handleCleanup(30)}>
+              <Trash2 className="h-3.5 w-3.5 mr-1" />30d+
+            </Button>
+            <Button variant="destructive" size="sm" className="text-xs h-8" onClick={() => handleCleanup('all')}>
+              <Trash2 className="h-3.5 w-3.5 mr-1" />Clear All
             </Button>
           </div>
         </div>

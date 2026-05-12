@@ -920,7 +920,7 @@ export function WeeklyModal({
                               }
                             } catch (error) {
                               // Silent fail - will be saved when user clicks save button
-                              console.error('Failed to auto-save expectation:', error)
+                              // Silent fail - will be saved when user clicks save button
                             }
                           }
                           saveExpectation()

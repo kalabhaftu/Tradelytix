@@ -189,7 +189,7 @@ export function LexicalEditor({
       AutoLinkNode
     ],
     onError: (error: Error) => {
-      console.error('Lexical Editor Error:', error)
+      // Editor error handled silently
     },
   }
 

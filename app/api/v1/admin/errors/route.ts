@@ -12,6 +12,18 @@ export async function GET(req: NextRequest) {
     await requireAdmin()
 
     const url = new URL(req.url)
+    const isExport = url.searchParams.get('export') === 'true'
+
+    if (isExport) {
+      const allLogs = await prisma.errorLog.findMany({
+        orderBy: { createdAt: 'desc' },
+      })
+      
+      const response = NextResponse.json({ success: true, data: allLogs })
+      response.headers.set('Content-Disposition', `attachment; filename=error-logs-${new Date().toISOString().split('T')[0]}.json`)
+      return response
+    }
+
     const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'))
     const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '50')))
     const source = url.searchParams.get('source') || undefined
@@ -49,13 +61,20 @@ export async function DELETE(req: NextRequest) {
     await requireAdmin()
 
     const url = new URL(req.url)
-    const olderThanDays = parseInt(url.searchParams.get('olderThan') || '30')
-    const cutoff = new Date()
-    cutoff.setDate(cutoff.getDate() - olderThanDays)
+    const clearAll = url.searchParams.get('all') === 'true'
+    
+    let result;
+    if (clearAll) {
+      result = await prisma.errorLog.deleteMany({})
+    } else {
+      const olderThanDays = parseInt(url.searchParams.get('olderThan') || '30')
+      const cutoff = new Date()
+      cutoff.setDate(cutoff.getDate() - olderThanDays)
 
-    const result = await prisma.errorLog.deleteMany({
-      where: { createdAt: { lt: cutoff } },
-    })
+      result = await prisma.errorLog.deleteMany({
+        where: { createdAt: { lt: cutoff } },
+      })
+    }
 
     return NextResponse.json({ success: true, deleted: result.count })
   } catch (error: any) {

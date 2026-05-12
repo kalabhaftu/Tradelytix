@@ -406,25 +406,32 @@ export async function setupAccountAction(account: Account) {
   })
 }
 
-export async function deleteAccountAction(account: Account) {
-  // 1. Fetch image URLs for all trades associated with this account
-  const tradesWithImages = await prisma.trade.findMany({
-    where: {
-      accountId: account.id,
-      userId: account.userId
-    },
-    select: {
-      imageOne: true,
-      imageTwo: true,
-      imageThree: true,
-      imageFour: true,
-      imageFive: true,
-      imageSix: true,
-      cardPreviewImage: true
+export async function deleteAccountAction(accountId: string) {
+  const userId = await getUserId()
+
+  // 1. Fetch the account and associated trades with images
+  const account = await prisma.account.findUnique({
+    where: { id: accountId, userId },
+    include: {
+      Trade: {
+        select: {
+          imageOne: true,
+          imageTwo: true,
+          imageThree: true,
+          imageFour: true,
+          imageFive: true,
+          imageSix: true,
+          cardPreviewImage: true
+        }
+      }
     }
   })
 
-  const imageUrls = tradesWithImages.flatMap(trade => [
+  if (!account) {
+    throw new Error('Account not found')
+  }
+
+  const imageUrls = account.Trade.flatMap(trade => [
     trade.imageOne,
     trade.imageTwo,
     trade.imageThree,
@@ -443,13 +450,83 @@ export async function deleteAccountAction(account: Account) {
     }
   }
 
-  // 3. Delete from database (Trade cascade delete should handle trades, but we do it explicitly if needed)
-  // Actually Trade relation has onDelete: Cascade in schema.prisma, so deleting Account is enough for DB.
+  // 3. Delete from database
   await prisma.account.delete({
     where: {
-      id: account.id,
+      id: accountId,
+      userId
     }
   })
+
+  await invalidateUserCaches(userId)
+  logActivity({ userId, action: 'ACCOUNT_DELETED', entity: 'Account', entityId: accountId })
+  
+  return { success: true }
+}
+
+export async function deleteMasterAccountAction(masterAccountId: string) {
+  const userId = await getUserId()
+
+  // 1. Fetch the master account and all associated phases and trades with images
+  const masterAccount = await prisma.masterAccount.findUnique({
+    where: { id: masterAccountId, userId },
+    include: {
+      PhaseAccount: {
+        include: {
+          Trade: {
+            select: {
+              imageOne: true,
+              imageTwo: true,
+              imageThree: true,
+              imageFour: true,
+              imageFive: true,
+              imageSix: true,
+              cardPreviewImage: true
+            }
+          }
+        }
+      }
+    }
+  })
+
+  if (!masterAccount) {
+    throw new Error('Prop firm account not found')
+  }
+
+  // 2. Collect all image URLs from all trades across all phases
+  const imageUrls = masterAccount.PhaseAccount.flatMap(phase => 
+    phase.Trade.flatMap(trade => [
+      trade.imageOne,
+      trade.imageTwo,
+      trade.imageThree,
+      trade.imageFour,
+      trade.imageFive,
+      trade.imageSix,
+      trade.cardPreviewImage
+    ])
+  ).filter((url): url is string => !!url)
+
+  // 3. Delete from storage
+  if (imageUrls.length > 0) {
+    try {
+      await deletePublicStorageUrls(imageUrls)
+    } catch (error) {
+      console.error('[Delete Master Account] Storage deletion failed:', error)
+    }
+  }
+
+  // 4. Delete from database (Cascades handle Payouts, PhaseAccounts, Trades, etc.)
+  await prisma.masterAccount.delete({
+    where: {
+      id: masterAccountId,
+      userId
+    }
+  })
+
+  await invalidateUserCaches(userId)
+  logActivity({ userId, action: 'MASTER_ACCOUNT_DELETED', entity: 'MasterAccount', entityId: masterAccountId })
+
+  return { success: true }
 }
 
 export async function getAccountsAction(options?: { includeArchived?: boolean }) {

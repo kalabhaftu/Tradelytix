@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { CreditCard, Shield, Zap, BarChart3, ArrowRight, Tag, CheckCircle2, Loader2 } from 'lucide-react'
+import { CreditCard, Shield, Zap, BarChart3, ArrowRight, Tag, CheckCircle2, Loader2, LogOut } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Logo } from '@/components/logo'
@@ -170,15 +170,23 @@ export default function SubscribePage() {
           </p>
         </motion.div>
 
-        {/* Back to login */}
+        {/* Sign out */}
         <div className="text-center mt-6">
           <Button
             variant="ghost"
             size="sm"
-            className="text-xs text-muted-foreground"
-            onClick={() => router.push('/login')}
+            className="text-xs text-muted-foreground gap-2"
+            onClick={async () => {
+              const { createClient } = await import('@/lib/supabase')
+              const supabase = createClient()
+              await supabase.auth.signOut()
+              localStorage.clear()
+              sessionStorage.clear()
+              window.location.href = '/'
+            }}
           >
-            ← Back to login
+            <LogOut className="h-3.5 w-3.5" />
+            Sign Out
           </Button>
         </div>
       </motion.div>

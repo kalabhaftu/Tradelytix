@@ -40,6 +40,7 @@ import {
 import {
   deletePayoutAction,
   deleteAccountAction,
+  deleteMasterAccountAction,
   setupAccountAction,
   savePayoutAction,
 } from '@/server/accounts';
@@ -772,8 +773,13 @@ export const DataProvider: React.FC<{
     try {
       // Update local state
       setAccounts(accounts.filter(acc => acc.id !== account.id));
-      // Delete from database
-      await deleteAccountAction(account);
+      
+      // Delete from database based on type
+      if (account.accountType === 'prop-firm') {
+        await deleteMasterAccountAction(account.id);
+      } else {
+        await deleteAccountAction(account.id);
+      }
     } catch (error) {
       // Error deleting account
       if (handleServerActionError(error, { context: 'Delete Account' })) {

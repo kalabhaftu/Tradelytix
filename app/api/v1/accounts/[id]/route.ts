@@ -215,6 +215,43 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
     }
 
+    // Fetch all trade images for the account before deleting
+    const accountTrades = await prisma.trade.findMany({
+      where: {
+        accountId: accountId,
+        userId: internalUserId,
+      },
+      select: {
+        imageOne: true,
+        imageTwo: true,
+        imageThree: true,
+        imageFour: true,
+        imageFive: true,
+        imageSix: true,
+        cardPreviewImage: true,
+      },
+    })
+
+    const imageUrls = accountTrades.flatMap((t) => [
+      t.imageOne,
+      t.imageTwo,
+      t.imageThree,
+      t.imageFour,
+      t.imageFive,
+      t.imageSix,
+      t.cardPreviewImage,
+    ]).filter((url): url is string => !!url)
+
+    if (imageUrls.length > 0) {
+      try {
+        const { deletePublicStorageUrls } = await import('@/server/storage-admin')
+        await deletePublicStorageUrls(imageUrls)
+      } catch (err) {
+        console.error('Failed to delete account trade images from storage:', err)
+        // We continue with DB deletion even if storage cleanup fails
+      }
+    }
+
     await prisma.account.delete({
       where: {
         id: accountId,

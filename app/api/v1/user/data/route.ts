@@ -51,6 +51,40 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
+    // 0. Collect all trade and backtest images for storage cleanup
+    const [trades, backtestTrades] = await Promise.all([
+      prisma.trade.findMany({
+        where: { userId: internalUserId },
+        select: {
+          imageOne: true, imageTwo: true, imageThree: true,
+          imageFour: true, imageFive: true, imageSix: true,
+          cardPreviewImage: true
+        }
+      }),
+      prisma.backtestTrade.findMany({
+        where: { userId: internalUserId },
+        select: {
+          imageOne: true, imageTwo: true, imageThree: true,
+          imageFour: true, imageFive: true, imageSix: true,
+          cardPreviewImage: true
+        }
+      })
+    ])
+
+    const imageUrls = [
+      ...trades.flatMap(t => [t.imageOne, t.imageTwo, t.imageThree, t.imageFour, t.imageFive, t.imageSix, t.cardPreviewImage]),
+      ...backtestTrades.flatMap(t => [t.imageOne, t.imageTwo, t.imageThree, t.imageFour, t.imageFive, t.imageSix, t.cardPreviewImage])
+    ].filter((url): url is string => !!url)
+
+    if (imageUrls.length > 0) {
+      try {
+        const { deletePublicStorageUrls } = await import('@/server/storage-admin')
+        await deletePublicStorageUrls(imageUrls)
+      } catch (err) {
+        console.error('Failed to cleanup storage during user data wipe:', err)
+      }
+    }
+
     // Delete all user data in a transaction
     // Order matters due to foreign key constraints
     await prisma.$transaction(async (tx) => {

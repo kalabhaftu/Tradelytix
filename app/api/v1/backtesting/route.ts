@@ -3,6 +3,7 @@ import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { prisma } from '@/lib/prisma'
+import { deletePublicStorageUrls } from '@/server/storage-admin'
 
 // GET - Fetch all backtests for user
 export async function GET(request: NextRequest) {
@@ -206,17 +207,51 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Backtest ID required' }, { status: 400 })
     }
 
-    // Verify ownership and delete
-    const backtest = await prisma.backtestTrade.deleteMany({
-      where: { id, userId: internalUserId }
+    // 1. Fetch backtest to get image URLs
+    const backtestTrade = await prisma.backtestTrade.findFirst({
+      where: { id, userId: internalUserId },
+      select: {
+        imageOne: true,
+        imageTwo: true,
+        imageThree: true,
+        imageFour: true,
+        imageFive: true,
+        imageSix: true,
+        cardPreviewImage: true
+      }
     })
 
-    if (backtest.count === 0) {
+    if (!backtestTrade) {
       return NextResponse.json(
         { error: 'Backtest not found or unauthorized' },
         { status: 404 }
       )
     }
+
+    // 2. Collect image URLs
+    const imageUrls = [
+      backtestTrade.imageOne,
+      backtestTrade.imageTwo,
+      backtestTrade.imageThree,
+      backtestTrade.imageFour,
+      backtestTrade.imageFive,
+      backtestTrade.imageSix,
+      backtestTrade.cardPreviewImage
+    ].filter((url): url is string => !!url)
+
+    // 3. Delete from storage
+    if (imageUrls.length > 0) {
+      try {
+        await deletePublicStorageUrls(imageUrls)
+      } catch (error) {
+        console.error('[Delete Backtest] Storage deletion failed:', error)
+      }
+    }
+
+    // 4. Delete from database
+    await prisma.backtestTrade.delete({
+      where: { id }
+    })
 
     return NextResponse.json({ success: true }, { status: 200 })
   } catch (error) {

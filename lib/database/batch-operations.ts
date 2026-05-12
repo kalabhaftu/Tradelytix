@@ -8,6 +8,7 @@
 import { prisma } from '@/lib/prisma'
 import { Trade, Account, Prisma } from '@prisma/client'
 import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData } from '@/lib/trade-core'
+import { deletePublicStorageUrls } from '@/server/storage-admin'
 
 /**
  * Batch create trades with transaction
@@ -84,7 +85,43 @@ export async function batchDeleteTrades(
   let count = 0
 
   try {
-    // Use deleteMany for bulk delete with user filtering for security
+    // 1. Fetch image URLs for these trades
+    const tradesWithImages = await prisma.trade.findMany({
+      where: {
+        id: { in: tradeIds },
+        userId: userId
+      },
+      select: {
+        imageOne: true,
+        imageTwo: true,
+        imageThree: true,
+        imageFour: true,
+        imageFive: true,
+        imageSix: true,
+        cardPreviewImage: true
+      }
+    })
+
+    const imageUrls = tradesWithImages.flatMap(trade => [
+      trade.imageOne,
+      trade.imageTwo,
+      trade.imageThree,
+      trade.imageFour,
+      trade.imageFive,
+      trade.imageSix,
+      trade.cardPreviewImage
+    ]).filter((url): url is string => !!url)
+
+    // 2. Delete from storage
+    if (imageUrls.length > 0) {
+      try {
+        await deletePublicStorageUrls(imageUrls)
+      } catch (error) {
+        console.error('[Batch Delete Trades] Storage deletion failed:', error)
+      }
+    }
+
+    // 3. Use deleteMany for bulk delete with user filtering for security
     const result = await prisma.trade.deleteMany({
       where: {
         id: {

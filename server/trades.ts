@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { getUserIdSafe } from '@/server/auth'
 import { ImageCompressor } from '@/lib/image-compression'
+import { deletePublicStorageUrls } from '@/server/storage-admin'
 
 /**
  * Delete a trade by ID
@@ -18,7 +19,47 @@ export async function deleteTrade(tradeId: string) {
       }
     }
 
-    // Delete the trade (ensure it belongs to the user)
+    // 1. Fetch the trade to get image URLs
+    const trade = await prisma.trade.findUnique({
+      where: {
+        id: tradeId,
+        userId: userId
+      },
+      select: {
+        imageOne: true,
+        imageTwo: true,
+        imageThree: true,
+        imageFour: true,
+        imageFive: true,
+        imageSix: true,
+        cardPreviewImage: true
+      }
+    })
+
+    if (trade) {
+      // 2. Collect all non-null image URLs
+      const imageUrls = [
+        trade.imageOne,
+        trade.imageTwo,
+        trade.imageThree,
+        trade.imageFour,
+        trade.imageFive,
+        trade.imageSix,
+        trade.cardPreviewImage
+      ].filter((url): url is string => !!url)
+
+      // 3. Delete from storage if any URLs found
+      if (imageUrls.length > 0) {
+        try {
+          await deletePublicStorageUrls(imageUrls)
+        } catch (storageError) {
+          console.error('[Delete Trade] Storage deletion failed:', storageError)
+          // Continue with DB deletion even if storage fails
+        }
+      }
+    }
+
+    // 4. Delete the trade from database
     await prisma.trade.delete({
       where: {
         id: tradeId,

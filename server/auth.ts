@@ -426,6 +426,17 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
             }
           })
 
+          // Auto-assign a default trading account to the new user
+          await tx.account.create({
+            data: {
+              id: crypto.randomUUID(),
+              number: 'Default',
+              name: 'Main Trading Account',
+              startingBalance: 0,
+              userId: created.id
+            }
+          })
+
           return created
         }),
         null

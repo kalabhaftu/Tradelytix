@@ -64,8 +64,19 @@ function buildTemplateContent(sections: TemplateSection[]) {
   for (const section of sections) {
     children.push(headingNode(section.title))
     for (const prompt of section.prompts) {
-      // Keep prompts clean and answer-ready; do not pre-fill hint text as content.
-      children.push(paragraphNode([textNode(`${prompt.label}: `, 1), textNode("")]))
+      // Bold label followed by placeholder hint text (styled muted so users know to replace it)
+      children.push(paragraphNode([
+        textNode(`${prompt.label}: `, 1),
+        {
+          detail: 0,
+          format: 0,
+          mode: "normal",
+          style: "color: #9ca3af;",
+          text: prompt.placeholder,
+          type: "text",
+          version: 1,
+        },
+      ]))
     }
     children.push(paragraphNode([textNode("")]))
   }

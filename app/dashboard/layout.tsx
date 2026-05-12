@@ -12,9 +12,21 @@ import { GlobalTradeController } from "./components/global-trade-controller";
 import { WeeklyReviewTrigger } from "@/components/weekly-review-trigger";
 import { KeyboardShortcutsModal } from "@/components/ui/keyboard-shortcuts-modal";
 import { getInitBootstrapData } from "@/server/init-bootstrap";
+import { checkSubscriptionAccess } from "@/lib/services/subscription-guard";
+import { redirect } from "next/navigation";
 
 export default async function RootLayout({ children }: { children: ReactElement }) {
   const initialBootstrapData = await getInitBootstrapData()
+
+  // Subscription access gate — admins bypass, unpaid users redirect to /subscribe
+  if (initialBootstrapData.isAuthenticated && initialBootstrapData.user?.id) {
+    const access = await checkSubscriptionAccess(initialBootstrapData.user.id)
+    if (!access.hasAccess && access.redirectTo) {
+      redirect(access.redirectTo)
+    }
+  } else if (!initialBootstrapData.isAuthenticated) {
+    redirect("/login")
+  }
 
   return (
     <TooltipProvider>

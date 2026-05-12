@@ -74,7 +74,9 @@ INSERT INTO "public"."UserSettings" (
   "breakEvenThreshold",
   "pnlDisplayMode",
   "accentPack",
-  "autoAdjustAccountDate"
+  "autoAdjustAccountDate",
+  "createdAt",
+  "updatedAt"
 )
 SELECT
   "id",
@@ -86,7 +88,8 @@ SELECT
   "breakEvenThreshold",
   "pnlDisplayMode",
   "accentPack",
-  "autoAdjustAccountDate"
+  "autoAdjustAccountDate",
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP
 FROM "public"."User"
 ON CONFLICT ("userId") DO NOTHING;
-

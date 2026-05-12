@@ -26,6 +26,21 @@ const envSchema = z.object({
 
   // Cron job authentication (required in production for /api/cron/*)
   CRON_SECRET: z.string().optional(),
+
+  // NOWPayments
+  NOWPAYMENTS_API_KEY: z.string().optional(),
+  NOWPAYMENTS_PUBLIC_KEY: z.string().optional(),
+  NOWPAYMENTS_IPN_SECRET: z.string().optional(),
+  NOWPAYMENTS_API_BASE_URL: z.string().url().optional(),
+  NOWPAYMENTS_SUCCESS_URL: z.string().url().optional(),
+  NOWPAYMENTS_CANCEL_URL: z.string().url().optional(),
+  NOWPAYMENTS_IPN_CALLBACK_URL: z.string().url().optional(),
+  APP_BASE_URL: z.string().url().optional(),
+
+  // Subscription
+  SUBSCRIPTION_PRICE_USD: z.string().optional(),
+  SUBSCRIPTION_BILLING_INTERVAL: z.string().optional(),
+  SUBSCRIPTION_GRACE_DAYS: z.string().optional(),
 })
 
 // Parse and validate environment variables

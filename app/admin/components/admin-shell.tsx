@@ -13,6 +13,10 @@ import {
   ArrowLeft,
   Shield,
   PanelLeftClose,
+  CreditCard,
+  Receipt,
+  Ticket,
+  Gift,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -42,6 +46,10 @@ const adminNavItems = [
   { id: 'activity', label: 'Activity', icon: Activity, href: '/admin/activity' },
   { id: 'analytics', label: 'Analytics', icon: Globe, href: '/admin/analytics' },
   { id: 'donations', label: 'Donations', icon: Heart, href: '/admin/donations' },
+  { id: 'subscriptions', label: 'Subscriptions', icon: CreditCard, href: '/admin/subscriptions' },
+  { id: 'payments', label: 'Payments', icon: Receipt, href: '/admin/payments' },
+  { id: 'promo-codes', label: 'Promo Codes', icon: Ticket, href: '/admin/promo-codes' },
+  { id: 'free-access', label: 'Free Access', icon: Gift, href: '/admin/free-access' },
 ]
 
 function AdminSidebarContent() {

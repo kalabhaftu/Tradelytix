@@ -51,7 +51,16 @@ const notificationIcons: Record<NotificationType, React.ReactNode> = {
   IMPORT_PROCESSING: <Download className="h-4 w-4 text-primary animate-pulse" />,
   IMPORT_COMPLETE: <Download className="h-4 w-4 text-long" />,
   STRATEGY_SESSION_VIOLATION: <TrendingUp className="h-4 w-4 text-warning" />,
-  FEEDBACK_REPLY: <Bell className="h-4 w-4 text-primary" />
+  FEEDBACK_REPLY: <Bell className="h-4 w-4 text-primary" />,
+  PAYMENT_DUE_SOON: <DollarSign className="h-4 w-4 text-warning" />,
+  PAYMENT_DUE_TODAY: <DollarSign className="h-4 w-4 text-warning" />,
+  PAYMENT_OVERDUE: <AlertTriangle className="h-4 w-4 text-destructive" />,
+  SUBSCRIPTION_EXPIRED: <XCircle className="h-4 w-4 text-destructive" />,
+  PAYMENT_RECEIVED: <Check className="h-4 w-4 text-long" />,
+  PAYMENT_FAILED: <XCircle className="h-4 w-4 text-destructive" />,
+  ACCESS_RESTORED: <Check className="h-4 w-4 text-long" />,
+  ADMIN_FREE_ACCESS_GRANTED: <Check className="h-4 w-4 text-long" />,
+  ADMIN_FREE_ACCESS_REVOKED: <XCircle className="h-4 w-4 text-warning" />
 }
 
 const notificationColors: Record<NotificationType, string> = {
@@ -75,7 +84,16 @@ const notificationColors: Record<NotificationType, string> = {
   IMPORT_PROCESSING: 'border-l-primary',
   IMPORT_COMPLETE: 'border-l-long',
   STRATEGY_SESSION_VIOLATION: 'border-l-orange-500',
-  FEEDBACK_REPLY: 'border-l-primary'
+  FEEDBACK_REPLY: 'border-l-primary',
+  PAYMENT_DUE_SOON: 'border-l-orange-500',
+  PAYMENT_DUE_TODAY: 'border-l-orange-500',
+  PAYMENT_OVERDUE: 'border-l-destructive',
+  SUBSCRIPTION_EXPIRED: 'border-l-destructive',
+  PAYMENT_RECEIVED: 'border-l-long',
+  PAYMENT_FAILED: 'border-l-destructive',
+  ACCESS_RESTORED: 'border-l-long',
+  ADMIN_FREE_ACCESS_GRANTED: 'border-l-long',
+  ADMIN_FREE_ACCESS_REVOKED: 'border-l-orange-500'
 }
 
 export function NotificationItem({

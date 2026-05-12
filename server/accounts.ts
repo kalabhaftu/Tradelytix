@@ -13,6 +13,7 @@ import { calculateWinRate, classifyOutcome, getBreakEvenThreshold } from '@/lib/
 import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData, buildTradeIdentityKey } from '@/lib/trade-core'
 import { getRuntimeAutoAdjustAccountDate, getRuntimeBreakEvenThreshold } from '@/server/user-settings'
+import { deletePublicStorageUrls } from '@/server/storage-admin'
 
 /**
  * Helper function to determine if a phase number represents the funded stage
@@ -87,6 +88,44 @@ export async function fetchGroupedTradesAction(userId: string): Promise<FetchTra
 
 export async function removeAccountsFromTradesAction(accountNumbers: string[]): Promise<void> {
   const userId = await getUserId()
+  
+  // 1. Fetch image URLs for all trades associated with these accounts
+  const tradesWithImages = await prisma.trade.findMany({
+    where: {
+      accountNumber: { in: accountNumbers },
+      userId: userId
+    },
+    select: {
+      imageOne: true,
+      imageTwo: true,
+      imageThree: true,
+      imageFour: true,
+      imageFive: true,
+      imageSix: true,
+      cardPreviewImage: true
+    }
+  })
+
+  const imageUrls = tradesWithImages.flatMap(trade => [
+    trade.imageOne,
+    trade.imageTwo,
+    trade.imageThree,
+    trade.imageFour,
+    trade.imageFive,
+    trade.imageSix,
+    trade.cardPreviewImage
+  ]).filter((url): url is string => !!url)
+
+  // 2. Delete from storage
+  if (imageUrls.length > 0) {
+    try {
+      await deletePublicStorageUrls(imageUrls)
+    } catch (error) {
+      console.error('[Remove Accounts] Storage deletion failed:', error)
+    }
+  }
+
+  // 3. Delete from database
   await prisma.trade.deleteMany({
     where: {
       accountNumber: { in: accountNumbers },
@@ -103,6 +142,44 @@ export async function removeAccountsFromTradesAction(accountNumbers: string[]): 
 
 export async function removeAccountFromTradesAction(accountNumber: string): Promise<void> {
   const userId = await getUserId()
+
+  // 1. Fetch image URLs for all trades associated with this account
+  const tradesWithImages = await prisma.trade.findMany({
+    where: {
+      accountNumber: accountNumber,
+      userId: userId
+    },
+    select: {
+      imageOne: true,
+      imageTwo: true,
+      imageThree: true,
+      imageFour: true,
+      imageFive: true,
+      imageSix: true,
+      cardPreviewImage: true
+    }
+  })
+
+  const imageUrls = tradesWithImages.flatMap(trade => [
+    trade.imageOne,
+    trade.imageTwo,
+    trade.imageThree,
+    trade.imageFour,
+    trade.imageFive,
+    trade.imageSix,
+    trade.cardPreviewImage
+  ]).filter((url): url is string => !!url)
+
+  // 2. Delete from storage
+  if (imageUrls.length > 0) {
+    try {
+      await deletePublicStorageUrls(imageUrls)
+    } catch (error) {
+      console.error('[Remove Account From Trades] Storage deletion failed:', error)
+    }
+  }
+
+  // 3. Delete from database
   await prisma.trade.deleteMany({
     where: {
       accountNumber: accountNumber,
@@ -112,10 +189,48 @@ export async function removeAccountFromTradesAction(accountNumber: string): Prom
 }
 
 export async function deleteInstrumentGroupAction(accountNumber: string, instrumentGroup: string, userId: string): Promise<void> {
+  // 1. Fetch image URLs for trades in this instrument group
+  const tradesWithImages = await prisma.trade.findMany({
+    where: {
+      accountNumber: accountNumber,
+      instrument: instrumentGroup,
+      userId: userId
+    },
+    select: {
+      imageOne: true,
+      imageTwo: true,
+      imageThree: true,
+      imageFour: true,
+      imageFive: true,
+      imageSix: true,
+      cardPreviewImage: true
+    }
+  })
+
+  const imageUrls = tradesWithImages.flatMap(trade => [
+    trade.imageOne,
+    trade.imageTwo,
+    trade.imageThree,
+    trade.imageFour,
+    trade.imageFive,
+    trade.imageSix,
+    trade.cardPreviewImage
+  ]).filter((url): url is string => !!url)
+
+  // 2. Delete from storage
+  if (imageUrls.length > 0) {
+    try {
+      await deletePublicStorageUrls(imageUrls)
+    } catch (error) {
+      console.error('[Delete Instrument Group] Storage deletion failed:', error)
+    }
+  }
+
+  // 3. Delete from database
   await prisma.trade.deleteMany({
     where: {
       accountNumber: accountNumber,
-      instrument: { startsWith: instrumentGroup },
+      instrument: instrumentGroup,
       userId: userId
     }
   })
@@ -202,31 +317,54 @@ export async function renameAccountAction(oldAccountNumber: string, newAccountNu
 }
 
 export async function deleteTradesByIdsAction(tradeIds: string[]): Promise<void> {
-  try {
-    const userId = await getUserId()
-
-    // Batch delete for large sets to avoid timeout
-    const BATCH_SIZE = 500
-    const totalBatches = Math.ceil(tradeIds.length / BATCH_SIZE)
-
-    for (let i = 0; i < totalBatches; i++) {
-      const start = i * BATCH_SIZE
-      const end = Math.min(start + BATCH_SIZE, tradeIds.length)
-      const batch = tradeIds.slice(start, end)
-
-      await prisma.trade.deleteMany({
-        where: {
-          id: { in: batch },
-          userId: userId
-        }
-      })
+  const userId = await getUserId()
+  
+  // 1. Fetch image URLs for these trades
+  const tradesWithImages = await prisma.trade.findMany({
+    where: {
+      id: { in: tradeIds },
+      userId: userId
+    },
+    select: {
+      imageOne: true,
+      imageTwo: true,
+      imageThree: true,
+      imageFour: true,
+      imageFive: true,
+      imageSix: true,
+      cardPreviewImage: true
     }
+  })
 
-    // Invalidate caches after all deletes complete
-    await invalidateUserCaches(userId)
+  const imageUrls = tradesWithImages.flatMap(trade => [
+    trade.imageOne,
+    trade.imageTwo,
+    trade.imageThree,
+    trade.imageFour,
+    trade.imageFive,
+    trade.imageSix,
+    trade.cardPreviewImage
+  ]).filter((url): url is string => !!url)
 
-  } catch (error) {
-    throw error
+  // 2. Delete from storage
+  if (imageUrls.length > 0) {
+    try {
+      await deletePublicStorageUrls(imageUrls)
+    } catch (error) {
+      console.error('[Delete Trades By IDs] Storage deletion failed:', error)
+    }
+  }
+
+  // 3. Batch delete from database
+  const BATCH_SIZE = 100
+  for (let i = 0; i < tradeIds.length; i += BATCH_SIZE) {
+    const batch = tradeIds.slice(i, i + BATCH_SIZE)
+    await prisma.trade.deleteMany({
+      where: {
+        id: { in: batch },
+        userId: userId
+      }
+    })
   }
 }
 
@@ -269,11 +407,47 @@ export async function setupAccountAction(account: Account) {
 }
 
 export async function deleteAccountAction(account: Account) {
-  const userId = await getUserId()
+  // 1. Fetch image URLs for all trades associated with this account
+  const tradesWithImages = await prisma.trade.findMany({
+    where: {
+      accountId: account.id,
+      userId: account.userId
+    },
+    select: {
+      imageOne: true,
+      imageTwo: true,
+      imageThree: true,
+      imageFour: true,
+      imageFive: true,
+      imageSix: true,
+      cardPreviewImage: true
+    }
+  })
+
+  const imageUrls = tradesWithImages.flatMap(trade => [
+    trade.imageOne,
+    trade.imageTwo,
+    trade.imageThree,
+    trade.imageFour,
+    trade.imageFive,
+    trade.imageSix,
+    trade.cardPreviewImage
+  ]).filter((url): url is string => !!url)
+
+  // 2. Delete from storage
+  if (imageUrls.length > 0) {
+    try {
+      await deletePublicStorageUrls(imageUrls)
+    } catch (error) {
+      console.error('[Delete Account] Storage deletion failed:', error)
+    }
+  }
+
+  // 3. Delete from database (Trade cascade delete should handle trades, but we do it explicitly if needed)
+  // Actually Trade relation has onDelete: Cascade in schema.prisma, so deleting Account is enough for DB.
   await prisma.account.delete({
     where: {
       id: account.id,
-      userId: userId
     }
   })
 }

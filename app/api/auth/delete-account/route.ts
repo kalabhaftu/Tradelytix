@@ -23,16 +23,50 @@ export async function DELETE(request: NextRequest) {
       select: { id: true },
     })
 
-    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId)
-
-    if (authError) {
-      return NextResponse.json(
-        { error: 'Failed to delete auth account. Please try again.' },
-        { status: 502 }
-      )
-    }
-
     if (dbUser?.id) {
+      // 0. Collect all trade and backtest images for storage cleanup
+      const [trades, backtestTrades] = await Promise.all([
+        prisma.trade.findMany({
+          where: { userId: dbUser.id },
+          select: {
+            imageOne: true, imageTwo: true, imageThree: true,
+            imageFour: true, imageFive: true, imageSix: true,
+            cardPreviewImage: true
+          }
+        }),
+        prisma.backtestTrade.findMany({
+          where: { userId: dbUser.id },
+          select: {
+            imageOne: true, imageTwo: true, imageThree: true,
+            imageFour: true, imageFive: true, imageSix: true,
+            cardPreviewImage: true
+          }
+        })
+      ])
+
+      const imageUrls = [
+        ...trades.flatMap(t => [t.imageOne, t.imageTwo, t.imageThree, t.imageFour, t.imageFive, t.imageSix, t.cardPreviewImage]),
+        ...backtestTrades.flatMap(t => [t.imageOne, t.imageTwo, t.imageThree, t.imageFour, t.imageFive, t.imageSix, t.cardPreviewImage])
+      ].filter((url): url is string => !!url)
+
+      if (imageUrls.length > 0) {
+        try {
+          const { deletePublicStorageUrls } = await import('@/server/storage-admin')
+          await deletePublicStorageUrls(imageUrls)
+        } catch (err) {
+          console.error('Failed to cleanup storage during user account deletion:', err)
+        }
+      }
+
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId)
+
+      if (authError) {
+        return NextResponse.json(
+          { error: 'Failed to delete auth account. Please try again.' },
+          { status: 502 }
+        )
+      }
+
       try {
         await prisma.user.delete({
           where: { id: dbUser.id }

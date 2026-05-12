@@ -377,7 +377,7 @@ export default function ReportsPageClient({
             URL.revokeObjectURL(url)
             toast.success('Metrics exported successfully!')
         } catch (err) {
-            console.error('[Reports] CSV export error:', err)
+            // Error shown via toast
             toast.error('Failed to export metrics')
         } finally {
             setIsExporting(false)
@@ -426,7 +426,7 @@ export default function ReportsPageClient({
                 toast.success('Page snapshot saved!')
             }, 'image/png')
         } catch (err) {
-            console.error('[Reports] snapshot error:', err)
+            // Error shown via toast
             toast.error('Failed to capture snapshot')
         } finally {
             setIsExporting(false)
@@ -467,7 +467,7 @@ export default function ReportsPageClient({
             await navigator.clipboard.writeText(data.url || `${window.location.origin}/reports/shared/${data.slug}`)
             toast.success('Shareable link copied to clipboard!')
         } catch (error) {
-            console.error('[Reports] Error generating link:', error)
+            // Error shown via toast
             toast.error('Failed to create shareable link.')
         } finally {
             setIsExporting(false)

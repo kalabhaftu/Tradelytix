@@ -24,7 +24,7 @@ export default function DonatePage() {
     fetch('/api/v1/donations')
       .then(r => r.json())
       .then(data => { if (data.success) setAddresses(data.data) })
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 

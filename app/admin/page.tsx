@@ -38,7 +38,7 @@ export default function AdminOverviewPage() {
       .then((data) => {
         if (data.success) setStats(data.data)
       })
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 

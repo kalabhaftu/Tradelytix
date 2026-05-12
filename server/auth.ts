@@ -294,11 +294,7 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
         hasStoredName(generatedNames.lastName)
 
       if (needsEmailUpdate || shouldFillFirstName || shouldFillLastName) {
-        const updateData: {
-          email?: string
-          firstName?: string | null
-          lastName?: string | null
-        } = {}
+        const updateData: any = {}
 
         if (needsEmailUpdate) {
           updateData.email = user.email || existingUserByAuthId.email
@@ -317,7 +313,7 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
             () => prisma.$transaction(async (tx) => {
               const updated = await tx.user.update({
                 where: {
-                  auth_user_id: user.id // Always use auth_user_id as the unique identifier
+                  auth_user_id: user.id
                 },
                 data: updateData,
               })
@@ -331,6 +327,22 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
                 update: {},
               })
 
+              // Ensure at least one account exists
+              const accountCount = await tx.account.count({ where: { userId: updated.id } })
+              const masterAccountCount = await tx.masterAccount.count({ where: { userId: updated.id } })
+              
+              if (accountCount === 0 && masterAccountCount === 0) {
+                await tx.account.create({
+                  data: {
+                    id: crypto.randomUUID(),
+                    number: 'Default',
+                    name: 'Main Trading Account',
+                    startingBalance: 0,
+                    userId: updated.id
+                  }
+                })
+              }
+
               return updated
             }),
             existingUserByAuthId
@@ -340,7 +352,23 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
           throw new Error('Failed to synchronize user profile.');
         }
       }
-      // Existing user found, no update needed
+      
+      // Even if no update was needed, ensure account exists
+      const accounts = await prisma.account.findFirst({ where: { userId: existingUserByAuthId.id } })
+      const masterAccounts = await prisma.masterAccount.findFirst({ where: { userId: existingUserByAuthId.id } })
+      
+      if (!accounts && !masterAccounts) {
+        await prisma.account.create({
+          data: {
+            id: crypto.randomUUID(),
+            number: 'Default',
+            name: 'Main Trading Account',
+            startingBalance: 0,
+            userId: existingUserByAuthId.id
+          }
+        })
+      }
+
       return JSON.parse(JSON.stringify(existingUserByAuthId));
     }
 
@@ -380,6 +408,22 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
               update: {},
             })
 
+            // Ensure at least one account exists
+            const accountCount = await tx.account.count({ where: { userId: updated.id } })
+            const masterAccountCount = await tx.masterAccount.count({ where: { userId: updated.id } })
+            
+            if (accountCount === 0 && masterAccountCount === 0) {
+              await tx.account.create({
+                data: {
+                  id: crypto.randomUUID(),
+                  number: 'Default',
+                  name: 'Main Trading Account',
+                  startingBalance: 0,
+                  userId: updated.id
+                }
+              })
+            }
+
             return updated
           }),
           null
@@ -414,6 +458,7 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
               auth_user_id: user.id,
               email: user.email || '',
               id: user.id,
+              role: 'user',
               firstName: generatedNames.firstName,
               lastName: generatedNames.lastName
             },
@@ -441,6 +486,8 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
         }),
         null
       );
+
+
 
       if (!newUser) {
         throw new Error('Failed to create user record in database');

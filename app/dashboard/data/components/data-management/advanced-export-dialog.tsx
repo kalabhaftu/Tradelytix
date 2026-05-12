@@ -166,7 +166,7 @@ export function AdvancedExportDialog() {
       })
       setIsOpen(false)
     } catch (error) {
-      console.error(error)
+      // Error shown via toast below
       toast.error('Export Failed', {
         id: 'export',
         description: 'Could not generate backup. Please try again.'

@@ -86,7 +86,7 @@ export function PerformanceCard({ period, stats, userName }: PerformanceCardProp
                 toast.success('Performance card exported!')
             }, 'image/png')
         } catch (err) {
-            console.error('[PerformanceCard] export error:', err)
+            // Error shown via toast
             toast.error('Export failed. Please try again.')
         } finally {
             setIsExporting(false)

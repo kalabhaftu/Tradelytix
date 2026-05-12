@@ -139,7 +139,7 @@ export default function TradeReplay({ trade, onClose }: TradeReplayProps) {
                         text: `Entry: ${Number(trade.entryPrice).toFixed(2)}`,
                         size: 2
                     })
-                } catch (e) { console.warn('Failed to place entry marker', e) }
+                } catch (e) { /* marker placement failed silently */ }
             }
 
             if (trade.closeDate && trade.closePrice) {
@@ -153,7 +153,7 @@ export default function TradeReplay({ trade, onClose }: TradeReplayProps) {
                         text: `Exit: ${Number(trade.closePrice).toFixed(2)}`,
                         size: 2
                     })
-                } catch (e) { console.warn('Failed to place exit marker', e) }
+                } catch (e) { /* marker placement failed silently */ }
             }
 
             // @ts-ignore
@@ -164,7 +164,7 @@ export default function TradeReplay({ trade, onClose }: TradeReplayProps) {
             setIsLoading(false)
 
         } catch (err) {
-            console.error(err)
+            // Error is surfaced to user via setError state
             setError('Failed to load chart')
             setIsLoading(false)
         }

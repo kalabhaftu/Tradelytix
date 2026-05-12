@@ -118,53 +118,8 @@ function TradeTableSkeleton({ className }: { className?: string }) {
   )
 }
 
-/**
- * Main Dashboard Skeleton — matches the actual widget grid layout.
- * Uses the same Card + Skeleton pattern as Accounts/Data/Journal pages.
- */
-export function MainDashboardSkeleton() {
-  return (
-    <div className="px-4 py-4 space-y-3">
-      {/* KPI Row */}
-      <div className="grid grid-cols-1 min-[768px]:grid-cols-2 min-[1024px]:grid-cols-6 min-[1440px]:grid-cols-5 gap-3">
-        {[0, 1, 2, 3, 4].map(i => (
-          <div
-            key={`kpi-${i}`}
-            className={cn(
-              i === 4 && "min-[768px]:max-[1023px]:col-span-2",
-              i <= 2 && "min-[1024px]:max-[1439px]:col-span-2",
-              i >= 3 && "min-[1024px]:max-[1439px]:col-span-3"
-            )}
-          >
-            <KpiSkeleton />
-          </div>
-        ))}
-      </div>
 
-      {/* Row 1: Large (8-col) + Medium (4-col) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <WidgetSkeleton className="lg:col-span-2 min-h-[280px]" />
-        <WidgetSkeleton className="min-h-[280px]" />
-      </div>
 
-      {/* Row 2: Small (4-col) + Large (8-col) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <WidgetSkeleton className="min-h-[260px]" />
-        <WidgetSkeleton className="lg:col-span-2 min-h-[260px]" />
-      </div>
-
-      {/* Row 3: 3 equal widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-        {[0, 1, 2].map(i => <WidgetSkeleton key={`r3-${i}`} className="min-h-[240px]" />)}
-      </div>
-
-      {/* Row 4: 2 equal widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {[0, 1].map(i => <WidgetSkeleton key={`r4-${i}`} className="min-h-[240px]" />)}
-      </div>
-    </div>
-  )
-}
 
 interface TemplateAwareLayoutItem {
   i: string
@@ -353,7 +308,5 @@ export function ReportsSkeleton() {
   )
 }
 
-// Keep DashboardSkeleton for backwards compatibility with variant-based usage
-export function DashboardSkeleton({ variant, className }: { variant?: string; className?: string; count?: number; height?: string }) {
-  return <WidgetSkeleton className={className} />
-}
+
+

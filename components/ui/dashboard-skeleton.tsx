@@ -58,9 +58,9 @@ function WidgetSkeleton({ className, style }: { className?: string; style?: Reac
 }
 
 /** Calendar skeleton — matches the calendar widget shape */
-function CalendarWidgetSkeleton({ className }: { className?: string }) {
+function CalendarWidgetSkeleton({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
-    <Card className={cn("border-border/24 bg-card/76 overflow-hidden", className)}>
+    <Card className={cn("border-border/24 bg-card/76 overflow-hidden", className)} style={style}>
       <CardContent className="p-0 flex flex-col h-full">
         {/* Calendar header */}
         <div className="flex items-center justify-between border-b border-border/14 px-3 py-2.5">
@@ -92,9 +92,9 @@ function CalendarWidgetSkeleton({ className }: { className?: string }) {
 }
 
 /** Table skeleton — matches trade table shape */
-function TradeTableSkeleton({ className }: { className?: string }) {
+function TradeTableSkeleton({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
-    <Card className={cn("border-border/24 bg-card/76 overflow-hidden", className)}>
+    <Card className={cn("border-border/24 bg-card/76 overflow-hidden", className)} style={style}>
       <CardContent className="p-0">
         {/* Search / filter bar */}
         <div className="flex flex-wrap items-center gap-3 border-b border-border/14 px-4 py-3">
@@ -152,15 +152,22 @@ function GridSkeletonLayout({
       className={cn("gap-3", className)}
       style={{ gridAutoRows: '76px', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
     >
-      {items.map((item) => (
-        <WidgetSkeleton
-          key={item.i}
-          style={{
-            gridColumn: `span ${Math.max(1, Math.min(cols, item.w))} / span ${Math.max(1, Math.min(cols, item.w))}`,
-            gridRow: `span ${Math.max(1, item.h)} / span ${Math.max(1, item.h)}`,
-          }}
-        />
-      ))}
+      {items.map((item) => {
+        const spanW = Math.max(1, Math.min(cols, item.w))
+        const spanH = Math.max(1, item.h)
+        const style = {
+          gridColumn: `span ${spanW} / span ${spanW}`,
+          gridRow: `span ${spanH} / span ${spanH}`,
+        }
+        
+        if (item.type === 'calendar') {
+          return <CalendarWidgetSkeleton key={item.i} style={style} />
+        } else if (item.type === 'recent-trades') {
+          return <TradeTableSkeleton key={item.i} style={style} />
+        }
+        
+        return <WidgetSkeleton key={item.i} style={style} />
+      })}
     </div>
   )
 }
@@ -210,13 +217,18 @@ export function TemplateAwareDashboardSkeleton({
       </div>
 
       <div className="space-y-3 min-[768px]:hidden">
-        {layouts.mobile.map((item) => (
-          <WidgetSkeleton
-            key={item.i}
-            className="min-h-[220px]"
-            style={{ minHeight: `${Math.max(220, item.h * 76)}px` }}
-          />
-        ))}
+        {layouts.mobile.map((item) => {
+          const style = { minHeight: `${Math.max(220, item.h * 76)}px` }
+          const className = "min-h-[220px]"
+          
+          if (item.type === 'calendar') {
+            return <CalendarWidgetSkeleton key={item.i} className={className} style={style} />
+          } else if (item.type === 'recent-trades') {
+            return <TradeTableSkeleton key={item.i} className={className} style={style} />
+          }
+          
+          return <WidgetSkeleton key={item.i} className={className} style={style} />
+        })}
       </div>
 
       <GridSkeletonLayout

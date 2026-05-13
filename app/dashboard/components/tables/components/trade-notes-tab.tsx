@@ -155,10 +155,16 @@ function hasMeaningfulContent(value?: string) {
         const children = parsed?.root?.children || []
         if (children.length === 0) return false
 
+        const extractText = (nodes: any[]): string => {
+            return nodes.map(node => {
+                if (node.text) return node.text;
+                if (Array.isArray(node.children)) return extractText(node.children);
+                return "";
+            }).join("");
+        };
+
         return children.some((node: any) => {
-            const text = Array.isArray(node?.children)
-                ? node.children.map((child: any) => String(child?.text || "")).join("")
-                : ""
+            const text = extractText([node]);
             return text.trim().length > 0
         })
     } catch {

@@ -53,10 +53,10 @@ function formatCompactCurrencyValue(value: number) {
   if (absValue >= 1_000_000) {
     return `${value < 0 ? '-' : ''}$${formatNumber(absValue / 1_000_000, 2)}M`
   }
-  if (absValue >= 1_000) {
-    return `${value < 0 ? '-' : ''}$${formatNumber(absValue / 1_000, absValue >= 10_000 ? 1 : 2)}K`
+  if (absValue >= 100_000) {
+    return `${value < 0 ? '-' : ''}$${formatNumber(absValue / 1_000, 2)}K`
   }
-  return `${value < 0 ? '-' : ''}${formatCurrency(absValue)}`
+  return formatCurrency(value)
 }
 
 export function transformDisplayValue({

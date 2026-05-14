@@ -138,7 +138,7 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
             {useNumberFlowBalance ? (
               <NumberFlow
                 value={totalBalance}
-                format={{ style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 2 }}
+                format={{ style: 'currency', currency: 'USD', notation: Math.abs(totalBalance) >= 100000 ? 'compact' : 'standard', maximumFractionDigits: 2 }}
                 className="text-[1.65rem] min-[768px]:text-[1.85rem] min-[1440px]:text-3xl font-bold tracking-tight text-foreground"
               />
             ) : (
@@ -153,7 +153,7 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
               {useNumberFlowPnl && secondaryValue.rawNumber !== null ? (
                 <NumberFlow
                   value={secondaryValue.rawNumber}
-                  format={{ style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 2, signDisplay: 'always' }}
+                  format={{ style: 'currency', currency: 'USD', notation: Math.abs(secondaryValue.rawNumber) >= 100000 ? 'compact' : 'standard', maximumFractionDigits: 2, signDisplay: 'always' }}
                   className={cn('text-sm font-semibold', secondaryValue.tone)}
                 />
               ) : (

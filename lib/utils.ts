@@ -74,13 +74,16 @@ export function formatNumber(value: number, maxDecimals: number = 4): string {
   return parseFloat(formatted).toString()
 }
 
-// Utility function to format currency without unnecessary trailing zeros
+// Utility function to format currency with proper comma separation and decimal handling
 export function formatCurrency(value: number, maxDecimals: number = 2): string {
   if (isNaN(value) || !isFinite(value)) return '$0'
 
-  const formatted = value.toFixed(maxDecimals)
-  const cleanNumber = parseFloat(formatted)
-  return `$${cleanNumber}`
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: maxDecimals,
+  }).format(value)
 }
 
 // Utility function to format percentage without unnecessary trailing zeros

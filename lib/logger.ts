@@ -28,14 +28,23 @@ async function reportToApi(entry: LogEntry) {
     if (entry.level === 'WARN') prismaLevel = 'WARNING'
     if (entry.level === 'CRITICAL') prismaLevel = 'CRITICAL'
 
-    // Safe serialization for metadata
-    const safeData = entry.data ? JSON.parse(JSON.stringify(entry.data, (key, value) => {
-      if (typeof value === 'object' && value !== null) {
-        if (key === 'originalArgs') return undefined // Don't send massive original args if they exist
-        return value
+    // Safe serialization for metadata to handle circular references
+    const safeData = entry.data ? (() => {
+      try {
+        const cache = new WeakSet();
+        const stringified = JSON.stringify(entry.data, (key, value) => {
+          if (typeof value === 'object' && value !== null) {
+            if (cache.has(value)) return '[Circular]';
+            cache.add(value);
+            if (key === 'originalArgs') return undefined;
+          }
+          return value;
+        });
+        return JSON.parse(stringified);
+      } catch (e) {
+        return { error: 'Failed to serialize metadata', details: String(e) };
       }
-      return value
-    })) : undefined
+    })() : undefined
 
     await fetch(`${baseUrl}/api/v1/errors`, {
       method: 'POST',

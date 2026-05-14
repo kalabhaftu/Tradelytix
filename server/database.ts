@@ -321,6 +321,40 @@ export async function updateTradesAction(tradesIds: string[], update: Partial<Tr
   }
 }
 
+export async function appendTagsToTradesAction(tradeIds: string[], tagIds: string[]): Promise<number> {
+  try {
+    const authUserId = await getUserIdSafe()
+    if (!authUserId) return 0
+
+    const userLookup = await prisma.user.findUnique({
+      where: { auth_user_id: authUserId },
+      select: { id: true }
+    })
+    if (!userLookup) return 0
+    const internalUserId = userLookup.id
+
+    // Optimized: Use raw SQL to append and deduplicate tags in a single atomic operation
+    // This is much faster than fetching all trades and updating them one by one
+    const result = await prisma.$executeRaw`
+      UPDATE "Trade"
+      SET tags = COALESCE(
+        (SELECT array_agg(DISTINCT x)
+         FROM unnest(COALESCE(tags, ARRAY[]::text[]) || ${tagIds}::text[]) AS x),
+        ARRAY[]::text[]
+      )
+      WHERE id = ANY(${tradeIds}) 
+      AND "userId" = ${internalUserId}
+    `
+
+    revalidateTag(`trades-${internalUserId}`, 'max')
+    
+    return result
+  } catch (error) {
+    logger.error('Failed to append tags to trades', error)
+    return 0
+  }
+}
+
 export async function updateTradeCommentAction(tradeId: string, comment: string | null) {
   try {
     await prisma.trade.update({

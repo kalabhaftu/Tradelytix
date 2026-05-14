@@ -7,6 +7,7 @@ import {
   groupTradesAction,
   ungroupTradesAction,
   updateTradesAction,
+  appendTagsToTradesAction,
 } from '@/server/database'
 
 interface UseDataProviderTradeMutationsParams {
@@ -97,9 +98,66 @@ export function useDataProviderTradeMutations({
     await ungroupTradesAction(tradeIds)
   }, [userId, trades, setTrades])
 
+  const appendTagsToTrades = useCallback(async (tradeIds: string[], tagIds: string[]) => {
+    if (!userId) return
+
+    const applyTagAppend = (trade: PrismaTrade) => {
+      if (!tradeIds.includes(trade.id)) return trade
+      const existingTags = Array.isArray(trade.tags) ? trade.tags : []
+      const nextTags = Array.from(new Set([...existingTags, ...tagIds]))
+      return { ...trade, tags: nextTags }
+    }
+
+    const patchCalendarData = (calendarData: any) => {
+      if (!calendarData || typeof calendarData !== 'object') return calendarData
+
+      const nextCalendarData: Record<string, any> = { ...calendarData }
+
+      Object.keys(nextCalendarData).forEach((key) => {
+        const day = nextCalendarData[key]
+        if (!day || !Array.isArray(day.trades)) return
+        nextCalendarData[key] = {
+          ...day,
+          trades: day.trades.map((trade: PrismaTrade) => applyTagAppend(trade)),
+        }
+      })
+
+      return nextCalendarData
+    }
+
+    // Optimistic update
+    const updatedTrades = trades.map((trade) => applyTagAppend(trade))
+    setTrades(updatedTrades)
+
+    queryClient.setQueriesData({ queryKey: ['v1', 'trades'] }, (oldData: any) => {
+      if (!oldData || !Array.isArray(oldData.trades)) return oldData
+
+      return {
+        ...oldData,
+        trades: oldData.trades.map((trade: PrismaTrade) => applyTagAppend(trade)),
+        calendarData: patchCalendarData(oldData.calendarData),
+        widgets: oldData.widgets
+          ? {
+              ...oldData.widgets,
+              calendarData: patchCalendarData(oldData.widgets.calendarData),
+            }
+          : oldData.widgets,
+      }
+    })
+
+    try {
+      await appendTagsToTradesAction(tradeIds, tagIds)
+      await queryClient.invalidateQueries({ queryKey: ['v1', 'trades'] })
+    } catch (error) {
+      await queryClient.invalidateQueries({ queryKey: ['v1', 'trades'] })
+      throw error
+    }
+  }, [userId, trades, setTrades, queryClient])
+
   return {
     updateTrades,
     groupTrades,
     ungroupTrades,
+    appendTagsToTrades,
   }
 }

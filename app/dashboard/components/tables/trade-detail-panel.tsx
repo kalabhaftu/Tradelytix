@@ -17,7 +17,9 @@ import {
   Download,
   Play,
   Copy,
-  Check
+  Check,
+  PenLine,
+  Zap
 } from 'lucide-react'
 import { Trade } from '@prisma/client'
 import Image from 'next/image'

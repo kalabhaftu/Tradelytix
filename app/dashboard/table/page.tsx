@@ -116,7 +116,6 @@ function TableView() {
         <div className="fixed inset-0 z-50 bg-background">
           <TradeDetailPanel
             trade={trade}
-            allTrades={formattedTrades}
             onClose={() => router.replace('/dashboard/table')}
             basePath="/dashboard/table"
           />

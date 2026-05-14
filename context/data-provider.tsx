@@ -157,6 +157,7 @@ interface DataContextType {
   // Mutations
   // Trades
   updateTrades: (tradeIds: string[], update: Partial<PrismaTrade>) => Promise<void>
+  appendTagsToTrades: (tradeIds: string[], tagIds: string[]) => Promise<void>
   groupTrades: (tradeIds: string[]) => Promise<void>
   ungroupTrades: (tradeIds: string[]) => Promise<void>
 
@@ -821,7 +822,7 @@ export const DataProvider: React.FC<{
     await updateIsFirstConnectionAction(isFirstConnection)
   }, [user?.id, setIsFirstConnection])
 
-  const { updateTrades, groupTrades, ungroupTrades } = useDataProviderTradeMutations({
+  const { updateTrades, groupTrades, ungroupTrades, appendTagsToTrades } = useDataProviderTradeMutations({
     userId: user?.id,
     trades,
     setTrades,
@@ -892,6 +893,7 @@ export const DataProvider: React.FC<{
 
     // Update trade
     updateTrades,
+    appendTagsToTrades,
     groupTrades,
     ungroupTrades,
 

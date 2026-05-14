@@ -1,5 +1,5 @@
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $getSelection, $isRangeSelection, $isTextNode, COMMAND_PRIORITY_LOW, KEY_DOWN_COMMAND } from 'lexical';
+import { $getSelection, $isRangeSelection, $isTextNode, COMMAND_PRIORITY_LOW, KEY_DOWN_COMMAND, $nodesOfType, $isElementNode, TextNode, ElementNode } from 'lexical';
 import { useEffect } from 'react';
 import { $isPlaceholderNode, PlaceholderNode } from '../nodes/placeholder-node';
 
@@ -74,7 +74,7 @@ export function PlaceholderPlugin(): null {
             const node = anchor.getNode();
             
             // Find the closest element (usually paragraph)
-            let parent = node;
+            let parent: TextNode | ElementNode | null = node;
             while (parent && !$isElementNode(parent)) {
               parent = parent.getParent();
             }

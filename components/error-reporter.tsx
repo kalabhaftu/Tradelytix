@@ -1,66 +1,48 @@
 'use client'
 
-import { useEffect, useCallback, useRef } from 'react'
+import { useEffect, useRef } from 'react'
+import { logger } from '@/lib/logger'
 
 /**
  * Client-side error reporter.
- * Captures unhandled errors and promise rejections, sends to server.
- * Debounced to prevent flood.
+ * Captures unhandled errors and promise rejections, sends to centralized logger.
+ * Uses a Set to deduplicate identical errors within the same session.
  */
 export function ClientErrorReporter() {
   const sentErrors = useRef(new Set<string>())
-  const queueRef = useRef<Array<Record<string, unknown>>>([])
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const flushQueue = useCallback(() => {
-    const batch = queueRef.current.splice(0, 5) // max 5 per flush
-    batch.forEach(payload => {
-      const key = `${payload.message}:${payload.url}`
-      if (sentErrors.current.has(key as string)) return
-      sentErrors.current.add(key as string)
-
-      fetch('/api/v1/errors', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }).catch(() => {})
-    })
-  }, [])
-
-  const enqueueError = useCallback((payload: Record<string, unknown>) => {
-    queueRef.current.push(payload)
-    if (timerRef.current) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(flushQueue, 1000) // debounce 1s
-  }, [flushQueue])
 
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
-      enqueueError({
-        message: event.message || 'Unknown error',
+      const key = `${event.message}:${event.filename}:${event.lineno}`
+      if (sentErrors.current.has(key)) return
+      sentErrors.current.add(key)
+
+      logger.error(event.message || 'Unhandled Client Error', {
         stack: event.error?.stack,
-        url: window.location.href,
-        level: 'ERROR',
         metadata: {
           filename: event.filename,
           lineno: event.lineno,
           colno: event.colno,
           userAgent: navigator.userAgent,
         },
-      })
+      }, 'CLIENT_BOUNDARY')
     }
 
     const handleRejection = (event: PromiseRejectionEvent) => {
       const error = event.reason
-      enqueueError({
-        message: error?.message || String(error) || 'Unhandled Promise Rejection',
+      const message = error?.message || String(error) || 'Unhandled Promise Rejection'
+      const key = `rejection:${message}`
+      
+      if (sentErrors.current.has(key)) return
+      sentErrors.current.add(key)
+
+      logger.error(message, {
         stack: error?.stack,
-        url: window.location.href,
-        level: 'ERROR',
         metadata: {
           type: 'unhandledrejection',
           userAgent: navigator.userAgent,
         },
-      })
+      }, 'CLIENT_PROMISE')
     }
 
     window.addEventListener('error', handleError)
@@ -69,9 +51,8 @@ export function ClientErrorReporter() {
     return () => {
       window.removeEventListener('error', handleError)
       window.removeEventListener('unhandledrejection', handleRejection)
-      if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [enqueueError])
+  }, [])
 
-  return null // No UI, just side-effect
+  return null
 }

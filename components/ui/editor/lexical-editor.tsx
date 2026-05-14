@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { logger } from '@/lib/logger'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
@@ -17,6 +18,8 @@ import { ListItemNode, ListNode } from '@lexical/list'
 import { AutoLinkNode, LinkNode } from '@lexical/link'
 
 import { LexicalToolbar } from './lexical-toolbar'
+import { PlaceholderNode } from './nodes/placeholder-node'
+import { PlaceholderPlugin } from './plugins/placeholder-plugin'
 
 const theme = {
   paragraph: 'mb-4',
@@ -186,10 +189,11 @@ export function LexicalEditor({
       ListNode,
       ListItemNode,
       LinkNode,
-      AutoLinkNode
+      AutoLinkNode,
+      PlaceholderNode
     ],
     onError: (error: Error) => {
-      // Editor error handled silently
+      logger.error('Lexical Editor Error', error, 'LEXICAL_EDITOR')
     },
   }
 
@@ -209,12 +213,12 @@ export function LexicalEditor({
           <RichTextPlugin
             contentEditable={
               <ContentEditable 
-                className="outline-none p-4 min-h-[150px] data-[placeholder-is-empty]:before:content-[attr(data-placeholder)] data-[placeholder-is-empty]:before:absolute data-[placeholder-is-empty]:before:top-4 data-[placeholder-is-empty]:before:left-4 data-[placeholder-is-empty]:before:text-muted-foreground data-[placeholder-is-empty]:before:pointer-events-none" 
+                className="outline-none p-4 min-h-[150px] relative" 
                 style={{ minHeight }}
               />
             }
             placeholder={
-              <div className="absolute top-4 left-4 text-muted-foreground pointer-events-none">
+              <div className="absolute top-4 left-4 text-muted-foreground pointer-events-none select-none italic text-sm">
                 {placeholder}
               </div>
             }
@@ -225,6 +229,7 @@ export function LexicalEditor({
           <CheckListPlugin />
           <LinkPlugin />
           <SyncExternalValuePlugin value={value} />
+          <PlaceholderPlugin />
           <OnChangePlugin onChange={handleChange} />
         </div>
       </LexicalComposer>

@@ -329,7 +329,7 @@ const useTradeTableColumns = ({
     {
       accessorKey: 'timeInPosition',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Duration" tableId="trade-table" className="justify-end px-0" />,
-      cell: ({ row }) => <div className="text-right font-mono text-xs text-muted-foreground">{parsePositionTime(row.original.timeInPosition || 0)}</div>,
+      cell: ({ row }) => <div className="text-right font-mono text-xs text-muted-foreground tabular-nums">{parsePositionTime(row.original.timeInPosition || 0)}</div>,
       sortingFn: (rowA, rowB) => (rowA.original.timeInPosition || 0) - (rowB.original.timeInPosition || 0),
       size: 100,
     },
@@ -398,6 +398,7 @@ const useTradeTableColumns = ({
 export function TradeTableReview() {
   const {
     updateTrades,
+    appendTagsToTrades,
     accountNumbers,
     dateRange,
     instruments,
@@ -624,13 +625,13 @@ export function TradeTableReview() {
     if (selectedTrades.length === 0) return
     try {
       // For each selected trade, add the tag (append to existing tags)
-      await updateTrades(selectedTrades, { tags: [tagId] } as any)
+      await appendTagsToTrades(selectedTrades, [tagId])
       tableRef.current?.resetRowSelection()
       setSelectedTrades([])
     } catch (error) {
       console.error('Failed to bulk tag trades:', error)
     }
-  }, [selectedTrades, updateTrades])
+  }, [selectedTrades, appendTagsToTrades])
 
   return (
     <section className="w-full max-w-full space-y-6 py-4">

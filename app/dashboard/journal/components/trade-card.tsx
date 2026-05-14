@@ -4,7 +4,8 @@ import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Trade } from '@prisma/client'
 import { ArrowUpRight, ArrowDownRight, CalendarDays, Clock, Target, DollarSign, MoreVertical, Eye, Pencil, Trash2 as Trash, AlertCircle } from 'lucide-react'
-import { cn, formatCurrency, formatQuantity, formatTradeData, formatPrice, classifyTrade } from '@/lib/utils'
+import { cn, formatCurrency, formatQuantity, formatTradeData, classifyTrade } from '@/lib/utils'
+import { formatTradePrice } from '@/lib/trading/precision'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -295,13 +296,13 @@ export function TradeCard({
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground mb-1">Entry Price</p>
             <p className="font-semibold text-foreground text-sm truncate">
-              {formatPrice(trade.entryPrice, trade.instrument)}
+              {formatTradePrice(trade.entryPrice, trade.instrument)}
             </p>
           </div>
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground mb-1">Exit Price</p>
             <p className="font-semibold text-foreground text-sm truncate">
-              {formatPrice(trade.closePrice, trade.instrument)}
+              {formatTradePrice(trade.closePrice, trade.instrument)}
             </p>
           </div>
           <div className="min-w-0">

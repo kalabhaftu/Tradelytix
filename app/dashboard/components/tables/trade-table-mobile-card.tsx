@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { getKillzoneBadge, getTradingSession } from '@/lib/time-utils'
-import { cn, formatNumber, formatPrice, parsePositionTime } from '@/lib/utils'
+import { cn, formatNumber, parsePositionTime } from '@/lib/utils'
+import { formatTradePrice } from '@/lib/trading/precision'
 import { ChevronDown, ChevronRight, BarChart3, Eye, Pencil } from 'lucide-react'
 import { formatInTimeZone } from 'date-fns-tz'
 import { ExtendedTrade } from './trade-table-review'
@@ -137,11 +138,11 @@ export function TradeTableMobileCard({
         </div>
         <div>
           <p className="text-muted-foreground text-xs">Entry Price</p>
-          <p className="font-medium">{formatPrice(trade.entryPrice, trade.instrument)}</p>
+          <p className="font-medium">{formatTradePrice(trade.entryPrice, trade.instrument)}</p>
         </div>
         <div>
           <p className="text-muted-foreground text-xs">Exit Price</p>
-          <p className="font-medium">{formatPrice(trade.closePrice, trade.instrument)}</p>
+          <p className="font-medium">{formatTradePrice(trade.closePrice, trade.instrument)}</p>
         </div>
         <div>
           <p className="text-muted-foreground text-xs">Size</p>

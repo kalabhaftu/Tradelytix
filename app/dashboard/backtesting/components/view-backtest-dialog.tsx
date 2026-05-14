@@ -14,7 +14,8 @@ import {
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Eye, TrendingUp as TrendUp, Clock, Target, Download } from "lucide-react"
-import { cn, formatPrice } from '@/lib/utils'
+import { cn } from '@/lib/utils'
+import { formatTradePrice } from '@/lib/trading/precision'
 import { BacktestTrade } from '@/types/backtesting-types'
 
 interface ViewBacktestDialogProps {
@@ -99,11 +100,11 @@ export function ViewBacktestDialog({ isOpen, onClose, backtest }: ViewBacktestDi
                   </div>
                   <div>
                     <Label className="text-sm text-muted-foreground">Entry Price</Label>
-                    <p className="font-medium">{formatPrice(backtest.entryPrice, backtest.pair)}</p>
+                    <p className="font-medium">{formatTradePrice(backtest.entryPrice, backtest.pair)}</p>
                   </div>
                   <div>
                     <Label className="text-sm text-muted-foreground">Exit Price</Label>
-                    <p className="font-medium">{formatPrice(backtest.exitPrice, backtest.pair)}</p>
+                    <p className="font-medium">{formatTradePrice(backtest.exitPrice, backtest.pair)}</p>
                   </div>
                   <div>
                     <Label className="text-sm text-muted-foreground">P&L</Label>

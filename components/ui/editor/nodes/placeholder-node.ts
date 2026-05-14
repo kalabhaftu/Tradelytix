@@ -47,7 +47,7 @@ export class PlaceholderNode extends TextNode {
     return dom;
   }
 
-  updateDOM(prevNode: PlaceholderNode, dom: HTMLElement, config: EditorConfig): boolean {
+  updateDOM(prevNode: any, dom: HTMLElement, config: EditorConfig): boolean {
     return super.updateDOM(prevNode, dom, config);
   }
 

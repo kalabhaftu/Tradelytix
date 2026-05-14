@@ -4,7 +4,8 @@ import { memo, useMemo } from 'react'
 import { Trade } from '@prisma/client'
 import { TableCell } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { cn, formatQuantity, formatPrice, classifyTrade } from "@/lib/utils"
+import { cn, formatQuantity, classifyTrade } from "@/lib/utils"
+import { formatTradePrice } from '@/lib/trading/precision'
 import { ArrowUpRight, ArrowDownRight } from "lucide-react"
 import { formatTimeInZone } from '@/lib/time-utils'
 import { useUserStore } from '@/store/user-store'
@@ -84,12 +85,12 @@ const TradeRow = memo(({ trade, isSelected, onTradeClick, onTradeSelect }: {
 
       {/* Entry Price */}
       <div className="flex-shrink-0 w-28 text-right text-sm font-mono">
-        {formatPrice(trade.entryPrice, trade.instrument)}
+        {formatTradePrice(trade.entryPrice, trade.instrument)}
       </div>
 
       {/* Close Price */}
       <div className="flex-shrink-0 w-28 text-right text-sm font-mono">
-        {formatPrice(trade.closePrice, trade.instrument)}
+        {formatTradePrice(trade.closePrice, trade.instrument)}
       </div>
 
       {/* Quantity */}

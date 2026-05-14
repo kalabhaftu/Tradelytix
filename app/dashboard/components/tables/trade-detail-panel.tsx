@@ -9,14 +9,15 @@ import { useData } from '@/context/data-provider'
 import { useNewsEvents } from '@/hooks/use-news-events'
 import { formatTimeInZone, getKillzoneBadge, getTradingSession } from '@/lib/time-utils'
 import { classifyTrade, cn, formatCurrency, formatNoteContent } from '@/lib/utils'
+import { formatTradePrice } from '@/lib/trading/precision'
 import { useUserStore } from '@/store/user-store'
 import {
   ArrowLeft,
   BarChart3,
   Download,
-  Zap,
-  PenLine,
   Play,
+  Copy,
+  Check
 } from 'lucide-react'
 import { Trade } from '@prisma/client'
 import Image from 'next/image'
@@ -131,6 +132,15 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
     router.push(`${basePath}?${params.toString()}`)
   }
 
+  const [copiedField, setCopiedField] = useState<string | null>(null)
+
+  const copyToClipboard = (text: string, field: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedField(field)
+    toast.success(`${field} copied to clipboard`)
+    setTimeout(() => setCopiedField(null), 2000)
+  }
+
   return (
     <>
       <div className="flex flex-col h-full">
@@ -183,24 +193,61 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
               <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/70 mb-4">Execution Details</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
-                  { label: 'Entry Price', value: trade.entryPrice },
-                  { label: 'Exit Price', value: trade.closePrice ?? '—' },
-                  { label: 'Quantity', value: `${trade.quantity} lots` },
-                  { label: getPnlDisplayLabel(pnlDisplayMode), value: formatCurrency(displayPnl), color: displayPnl >= 0 ? 'text-long' : displayPnl < 0 ? 'text-short' : 'text-muted-foreground' },
-                ].map(({ label, value, color }) => (
+                  { label: 'Entry Price', value: trade.entryPrice, field: 'entryPrice' },
+                  { label: 'Exit Price', value: trade.closePrice ?? '—', field: 'closePrice' },
+                  { label: 'Quantity', value: `${trade.quantity} lots`, field: 'quantity' },
+                  { label: getPnlDisplayLabel(pnlDisplayMode), value: formatCurrency(displayPnl), color: displayPnl >= 0 ? 'text-long' : displayPnl < 0 ? 'text-short' : 'text-muted-foreground', field: 'pnl' },
+                ].map(({ label, value, color, field }) => (
                   <div key={label} className="space-y-1">
                     <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50">{label}</span>
-                    <p className={cn("text-lg font-mono font-bold leading-none", color)}>{value}</p>
+                    <div className="flex items-center gap-1.5 group">
+                      <p className={cn("text-lg font-mono font-bold leading-none", color)}>
+                        {field === 'entryPrice' || (field === 'closePrice' && value !== '—') 
+                          ? formatTradePrice(value, trade.instrument) 
+                          : value}
+                      </p>
+                      {(field === 'entryPrice' || (field === 'closePrice' && value !== '—')) && (
+                        <button
+                          onClick={() => copyToClipboard(formatTradePrice(value, trade.instrument), label)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-accent rounded-md"
+                          title={`Copy ${label}`}
+                        >
+                          {copiedField === label ? <Check className="h-3 w-3 text-long" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
               {/* Commission, Swap, Duration row */}
               <div className="flex flex-wrap gap-x-6 gap-y-2 mt-4 pt-3 border-t border-border/20 text-xs text-muted-foreground">
                 {tradeData.stopLoss && (
-                  <span>Stop Loss: <span className="font-mono font-semibold text-foreground">{tradeData.stopLoss}</span></span>
+                  <span className="flex items-center gap-1">
+                    Stop Loss: 
+                    <span className="font-mono font-semibold text-foreground">
+                      {formatTradePrice(tradeData.stopLoss, trade.instrument)}
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(formatTradePrice(tradeData.stopLoss, trade.instrument), 'Stop Loss')}
+                      className="p-1 hover:bg-accent rounded-md"
+                    >
+                      {copiedField === 'Stop Loss' ? <Check className="h-2.5 w-2.5 text-long" /> : <Copy className="h-2.5 w-2.5" />}
+                    </button>
+                  </span>
                 )}
                 {tradeData.takeProfit && (
-                  <span>Take Profit: <span className="font-mono font-semibold text-foreground">{tradeData.takeProfit}</span></span>
+                  <span className="flex items-center gap-1">
+                    Take Profit: 
+                    <span className="font-mono font-semibold text-foreground">
+                      {formatTradePrice(tradeData.takeProfit, trade.instrument)}
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(formatTradePrice(tradeData.takeProfit, trade.instrument), 'Take Profit')}
+                      className="p-1 hover:bg-accent rounded-md"
+                    >
+                      {copiedField === 'Take Profit' ? <Check className="h-2.5 w-2.5 text-long" /> : <Copy className="h-2.5 w-2.5" />}
+                    </button>
+                  </span>
                 )}
                 {tradeData.closeReason && (
                   <span>Close Reason: <span className="font-semibold text-foreground">{tradeData.closeReason}</span></span>

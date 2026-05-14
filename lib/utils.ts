@@ -3,6 +3,7 @@ import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format } from "date-fns"
 import { formatInTimeZone } from 'date-fns-tz'
+import { formatTradePrice, getDecimalPlaces } from './trading/precision'
 import { StatisticsProps } from "@/app/dashboard/types/statistics"
 import { Account } from "@/context/data-provider"
 import { ExtendedTrade, MarketBias } from "@/types/trade-extended"
@@ -65,6 +66,41 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/**
+ * Returns an opacity value based on the magnitude of PnL.
+ * Used for "PnL Intensity" background styling.
+ */
+/**
+ * Returns an opacity value based on the magnitude of PnL.
+ * Used for "PnL Intensity" background styling.
+ */
+export function getPnlIntensity(pnl: number): number {
+  const absPnl = Math.abs(pnl)
+  if (absPnl === 0) return 0
+  if (absPnl < 100) return 0.08
+  if (absPnl < 500) return 0.12
+  if (absPnl < 1000) return 0.18
+  if (absPnl < 5000) return 0.25
+  return 0.35
+}
+
+/**
+ * Standardized trade date formatter with day of week support.
+ */
+/**
+ * Standardized trade date formatter with day of week support.
+ */
+export function formatTradeDate(
+  date: string | Date | null | undefined,
+  timezone: string = DEFAULT_TIMEZONE,
+  includeDayOfWeek: boolean = true
+): string {
+  if (!date) return 'N/A'
+  const d = typeof date === 'string' ? new Date(date) : date
+  const pattern = includeDayOfWeek ? 'EEE, MMM d, yyyy' : 'MMM d, yyyy'
+  return formatInTimeZone(d, timezone, pattern)
+}
+
 // Utility function to format numbers without unnecessary trailing zeros
 export function formatNumber(value: number, maxDecimals: number = 4): string {
   if (isNaN(value) || !isFinite(value)) return '0'
@@ -117,50 +153,31 @@ export function formatQuantity(value: number | string | null | undefined): strin
 }
 
 // Get decimal precision based on instrument/pair
-export function getPricePrecision(instrument: string): number {
-  if (!instrument) return 5
-
-  const upper = instrument.toUpperCase()
-
-  // JPY pairs use 3 decimals (2 pips + 1 pipette)
-  if (upper.includes('JPY')) {
-    return 3
-  }
-
-  // All other pairs use 5 decimals (4 pips + 1 pipette)
-  return 5
-}
 
 // Format price based on instrument type (preserves exact decimal from import for display)
 export function formatPrice(price: string | number | { toString(): string }, instrument: string, forAggregation: boolean = false): string {
-  if (!price) return '0'
+  if (price === null || price === undefined || price === '') return '0'
 
-  // Handle Prisma Decimal type
+  // Handle Prisma Decimal type or other objects with toString
   let numPrice: number
   if (typeof price === 'object' && 'toString' in price) {
-    // Prisma Decimal type - convert to number
     numPrice = parseFloat(price.toString())
   } else if (typeof price === 'string') {
     numPrice = parseFloat(price)
   } else {
-    numPrice = price
+    numPrice = price as number
   }
 
   if (isNaN(numPrice) || !isFinite(numPrice)) return '0'
 
-  // For trade details: show exact value as imported (no rounding)
-  if (!forAggregation) {
-    // Return the original string representation if available
-    if (typeof price === 'object' && 'toString' in price) {
-      return price.toString()
-    }
-    return numPrice.toString()
+  // For charts/aggregations: return a clean number string with consistent precision
+  if (forAggregation) {
+    const precision = getDecimalPlaces(instrument, numPrice)
+    return numPrice.toFixed(precision)
   }
 
-  // For charts/aggregations: round to instrument-specific precision
-  const precision = getPricePrecision(instrument)
-  const fixed = numPrice.toFixed(precision)
-  return parseFloat(fixed).toString()
+  // Standard display formatting using the new precision utility
+  return formatTradePrice(numPrice, instrument)
 }
 
 // Unified trade data formatter - single source of truth for all trade displays

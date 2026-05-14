@@ -19,7 +19,8 @@ import { useData } from '@/context/data-provider'
 import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { useFilteredTrades } from '@/hooks/use-filtered-trades'
 import { useMediaQuery } from '@/hooks/use-media-query'
-import { cn, formatCurrency, formatQuantity, parsePositionTime } from '@/lib/utils'
+import { cn, formatCurrency, formatQuantity, parsePositionTime, getPnlIntensity, formatTradeDate } from '@/lib/utils'
+import { formatTradePrice } from '@/lib/trading/precision'
 import { useTableConfigStore } from '@/store/table-config-store'
 import { useUserStore } from '@/store/user-store'
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, BarChart3, Info, Tag } from 'lucide-react'
@@ -153,36 +154,6 @@ const buildGroupedTrades = (trades: ExtendedTrade[]) => {
   return Array.from(groups.values())
 }
 
-const getDecimalPlaces = (instrument: string, price: number): number => {
-  const instrumentUpper = instrument?.toUpperCase?.() ?? ''
-  if (
-    instrumentUpper.includes('USD') ||
-    instrumentUpper.includes('EUR') ||
-    instrumentUpper.includes('GBP') ||
-    instrumentUpper.includes('JPY') ||
-    instrumentUpper.includes('AUD') ||
-    instrumentUpper.includes('CAD') ||
-    instrumentUpper.includes('CHF') ||
-    instrumentUpper.includes('NZD')
-  ) {
-    return 4
-  }
-
-  if (instrumentUpper.includes('XAU') || instrumentUpper.includes('XAG')) {
-    return 2
-  }
-
-  if (
-    instrumentUpper.includes('US') ||
-    instrumentUpper.includes('SPX') ||
-    instrumentUpper.includes('NAS') ||
-    instrumentUpper.includes('DOW')
-  ) {
-    return 2
-  }
-
-  return 2
-}
 
 type ColumnFactoryParams = {
   timezone: string
@@ -302,7 +273,11 @@ const useTradeTableColumns = ({
       ),
       cell: ({ row }) => {
         const date = row.original.trades?.[0]?.entryDate ?? row.original.entryDate
-        return formatInTimeZone(new Date(date), timezone, 'yyyy-MM-dd')
+        return (
+          <div className="whitespace-nowrap font-medium text-muted-foreground/90">
+            {formatTradeDate(date, timezone)}
+          </div>
+        )
       },
       sortingFn: (rowA, rowB) => {
         const toTimestamp = (row: typeof rowA) => {
@@ -334,21 +309,21 @@ const useTradeTableColumns = ({
     {
       accessorKey: 'entryPrice',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Entry" tableId="trade-table" className="justify-end px-0" />,
-      cell: ({ row }) => {
-        const value = parseFloat(String(row.original.entryPrice))
-        const decimals = getDecimalPlaces(row.original.instrument, value)
-        return <div className="text-right font-mono text-xs">{formatCurrency(value, decimals)}</div>
-      },
+      cell: ({ row }) => (
+        <div className="text-right font-mono text-xs tabular-nums">
+          {formatTradePrice(row.original.entryPrice, row.original.instrument)}
+        </div>
+      ),
       size: 110,
     },
     {
       accessorKey: 'closePrice',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Close" tableId="trade-table" className="justify-end px-0" />,
-      cell: ({ row }) => {
-        const value = parseFloat(String(row.original.closePrice))
-        const decimals = getDecimalPlaces(row.original.instrument, value)
-        return <div className="text-right font-mono text-xs">{formatCurrency(value, decimals)}</div>
-      },
+      cell: ({ row }) => (
+        <div className="text-right font-mono text-xs tabular-nums">
+          {formatTradePrice(row.original.closePrice, row.original.instrument)}
+        </div>
+      ),
       size: 110,
     },
     {
@@ -364,11 +339,18 @@ const useTradeTableColumns = ({
       cell: ({ row }) => {
         const value = row.original.pnl
         const rInfo = getTradeRMultipleInfo(row.original)
+        const intensity = getPnlIntensity(value)
         return (
-          <div className="text-right font-bold font-mono">
-            <span className={cn(value >= 0 ? 'text-profit' : 'text-loss')}>
+          <div className="flex justify-end">
+            <div 
+              className={cn(
+                "px-2 py-1 rounded-md font-bold font-mono tabular-nums text-right min-w-[80px]",
+                value >= 0 ? "text-profit bg-profit" : "text-loss bg-loss"
+              )}
+              style={{ backgroundColor: value >= 0 ? `rgba(var(--profit-rgb), ${intensity})` : `rgba(var(--loss-rgb), ${intensity})` }}
+            >
               {formatValue(value, { kind: 'money', rValue: rInfo.value })}
-            </span>
+            </div>
           </div>
         )
       },
@@ -378,13 +360,13 @@ const useTradeTableColumns = ({
     {
       accessorKey: 'commission',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Comm." tableId="trade-table" className="justify-end px-0" />,
-      cell: ({ row }) => <div className="text-right font-mono text-muted-foreground">{formatValue(row.original.commission, { kind: 'money' })}</div>,
+      cell: ({ row }) => <div className="text-right font-mono text-muted-foreground tabular-nums">{formatValue(row.original.commission, { kind: 'money' })}</div>,
       size: 90,
     },
     {
       accessorKey: 'quantity',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Qty" tableId="trade-table" className="justify-end px-0" />,
-      cell: ({ row }) => <div className="text-right font-mono font-medium">{formatQuantity(row.original.quantity)}</div>,
+      cell: ({ row }) => <div className="text-right font-mono font-medium tabular-nums">{formatQuantity(row.original.quantity)}</div>,
       sortingFn: 'basic',
       size: 80,
     },
@@ -736,12 +718,24 @@ export function TradeTableReview() {
                 ))}
               </div>
             ) : (
-              <div className="flex min-h-[280px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border/40 bg-muted/10 text-muted-foreground">
-                <div className="rounded-full bg-muted/30 p-3">
-                  <BarChart3 className="h-6 w-6 opacity-40" />
+              <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-border/40 bg-muted/10 text-muted-foreground p-8 text-center">
+                <div className="rounded-full bg-muted/30 p-4 shadow-sm">
+                  <BarChart3 className="h-8 w-8 opacity-40" />
                 </div>
-                <p className="text-sm font-semibold">No trades found</p>
-                <p className="text-xs text-muted-foreground/70">Adjust filters or import trades</p>
+                <div className="space-y-1">
+                  <p className="text-base font-semibold text-foreground">No trades found</p>
+                  <p className="text-sm text-muted-foreground/70 max-w-[240px]">
+                    We couldn't find any trades matching your current filters.
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2 rounded-full px-6"
+                  onClick={() => router.push('/dashboard/table')}
+                >
+                  Clear all filters
+                </Button>
               </div>
             )}
           </div>

@@ -37,7 +37,7 @@ import {
 import { toast } from 'sonner'
 import { BacktestTrade, BacktestDirection, BacktestSession, BacktestModel, BacktestOutcome } from '@/types/backtesting-types'
 import { Pencil as Edit, Camera, X, Target, Download } from "lucide-react"
-import { formatPrice } from '@/lib/utils'
+import { formatTradePrice } from '@/lib/trading/precision'
 
 const editBacktestSchema = z.object({
   notes: z.string().optional(),
@@ -258,7 +258,7 @@ export function EditBacktestDialog({
               </div>
               <div>
                 <Label className="text-sm text-muted-foreground">Entry → Exit</Label>
-                <p className="font-medium">{formatPrice(backtest.entryPrice, backtest.pair)} → {formatPrice(backtest.exitPrice, backtest.pair)}</p>
+                <p className="font-medium">{formatTradePrice(backtest.entryPrice, backtest.pair)} → {formatTradePrice(backtest.exitPrice, backtest.pair)}</p>
               </div>
               <div>
                 <Label className="text-sm text-muted-foreground">R:R Ratio</Label>

@@ -98,6 +98,11 @@ export async function getUserAccessStatus(userId: string, userRole?: string): Pr
     return { hasAccess: true, status: subscription.status, subscription }
   }
 
+  // Handle active "waiting" payments that might be expired
+  if (subscription.status === 'unpaid' || subscription.status === 'past_due') {
+    await expireAbandonedPayments(userId)
+  }
+
   // past_due: within grace period, still allow access
   if (subscription.status === 'past_due') {
     const graceCutoff = subscription.currentPeriodEnd
@@ -495,9 +500,67 @@ export async function revokeFreeAccess(email: string) {
 // Cron: Subscription Checks
 // ---------------------------------------------------------------------------
 
+/**
+ * Automatically expire payment records that have been in a non-terminal state for too long.
+ * Default timeout is 24 hours.
+ */
+export async function expireAbandonedPayments(userId?: string) {
+  const timeoutMs = 2 * 60 * 60 * 1000 // 2 hours
+  const cutoff = new Date(Date.now() - timeoutMs)
+
+  const pendingPayments = await prisma.paymentRecord.findMany({
+    where: {
+      userId,
+      providerStatus: { in: ['pending', 'waiting', 'confirming', 'sending'] },
+      createdAt: { lt: cutoff },
+    },
+  })
+
+  if (pendingPayments.length === 0) return { expired: 0 }
+
+  console.log(`[Subscription] Found ${pendingPayments.length} potentially abandoned payments.`)
+
+  let expiredCount = 0
+  for (const record of pendingPayments) {
+    try {
+      if (record.providerPaymentId) {
+        // Double check status with provider
+        const status = await getPaymentStatus(record.providerPaymentId)
+        if (status.payment_status && status.payment_status !== record.providerStatus) {
+          // If status changed, handle it normally
+          await handleIpnWebhook(status as any)
+          continue
+        }
+      }
+
+      // If still non-terminal and old, expire it
+      await prisma.paymentRecord.update({
+        where: { id: record.id },
+        data: {
+          providerStatus: 'expired',
+          expiredAt: new Date(),
+        },
+      })
+      expiredCount++
+    } catch (error) {
+      console.error(`[Subscription] Failed to expire payment ${record.id}:`, error)
+    }
+  }
+
+  return { expired: expiredCount }
+}
+
 export async function runSubscriptionChecks() {
   const now = new Date()
-  const results = { notified: 0, expired: 0, errors: [] as string[] }
+  const results = { notified: 0, expired: 0, abandonedCleaned: 0, errors: [] as string[] }
+
+  // 1. Clean up abandoned payments first
+  try {
+    const cleanup = await expireAbandonedPayments()
+    results.abandonedCleaned = cleanup.expired
+  } catch (err) {
+    results.errors.push(`Abandoned Cleanup: ${err instanceof Error ? err.message : 'unknown error'}`)
+  }
 
   // Find active subscriptions with upcoming due dates
   const subscriptions = await prisma.subscription.findMany({

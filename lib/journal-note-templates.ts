@@ -66,7 +66,15 @@ function buildTemplateContent(sections: TemplateSection[]) {
     for (const prompt of section.prompts) {
       children.push(paragraphNode([
         textNode(`${prompt.label}: `, 1),
-        textNode(` ${prompt.placeholder}`, 2)
+        {
+          detail: 0,
+          format: 0,
+          mode: "token",
+          style: "",
+          text: prompt.placeholder,
+          type: "inline-placeholder",
+          version: 1,
+        }
       ]))
     }
     children.push(paragraphNode([textNode("")]))

@@ -39,7 +39,8 @@
     "diagnose:propfirm": "tsx scripts/audit-propfirm-report.ts",
     "cleanup:orphaned-users": "tsx scripts/cleanup-orphaned-users.ts",
     "backfill:trade-core": "tsx scripts/backfill-trade-core-refactor.ts",
-    "backfill:trade-core:apply": "tsx scripts/backfill-trade-core-refactor.ts --apply"
+    "backfill:trade-core:apply": "tsx scripts/backfill-trade-core-refactor.ts --apply",
+    "manage:users": "tsx scripts/user-management.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.52",

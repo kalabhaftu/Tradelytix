@@ -62,7 +62,6 @@ const COLORS = {
 }
 
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
     Dialog,
     DialogContent,
@@ -101,42 +100,6 @@ interface ReportsPageClientProps {
     initialReportData?: ReportStatsResponse | null
     initialReportKey?: string
     initialPropFirmData?: PropFirmSummaryDTO | null
-}
-
-// Dense Metric Block component
-function MetricBlock({
-    label,
-    value,
-    subValue,
-    color = 'neutral',
-    info,
-    className
-}: {
-    label: string
-    value: string | number
-    subValue?: string | React.ReactNode
-    color?: 'long' | 'short' | 'neutral' | 'info'
-    info?: string
-    className?: string
-}) {
-    const colorClasses = {
-        long: 'text-long',
-        short: 'text-short',
-        info: 'text-primary',
-        neutral: 'text-foreground'
-    }
-
-    return (
-        <div className={cn("space-y-1", className)}>
-            <p className="text-[8px] uppercase font-black text-muted-foreground/60 tracking-widest">{label}</p>
-            <p className={cn("text-lg font-black font-mono tracking-tighter", colorClasses[color])}>
-                {value}
-            </p>
-            {subValue && (
-                <p className="text-[9px] text-muted-foreground/40 font-medium">{subValue}</p>
-            )}
-        </div>
-    )
 }
 
 // Session Block for session metrics tab
@@ -588,84 +551,85 @@ export default function ReportsPageClient({
                     </div>
                 ) : (
                     <Tabs defaultValue="overview" className="w-full" onValueChange={setSelectedTab}>
-                        <TabsList className="mb-8 w-full justify-start overflow-x-auto rounded-2xl border border-border/16 bg-card/35 p-1 no-export sm:justify-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                            <TabsTrigger value="overview" className="px-3 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap">
+                        <TabsList className="mb-8 h-auto w-full justify-start overflow-x-auto rounded-xl border border-border/20 bg-background/40 p-0 no-export sm:justify-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                            <TabsTrigger value="overview" className="rounded-none border-r border-border/15 px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all first:rounded-l-xl flex items-center gap-1.5 whitespace-nowrap data-[state=active]:bg-muted/45">
                                 <TrendingUp className="h-3.5 w-3.5 shrink-0" />
                                 Overview
                             </TabsTrigger>
-                            <TabsTrigger value="sessions" className="px-3 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap">
+                            <TabsTrigger value="sessions" className="rounded-none border-r border-border/15 px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap data-[state=active]:bg-muted/45">
                                 <Clock className="h-3.5 w-3.5 shrink-0" />
                                 Sessions
                             </TabsTrigger>
-                            <TabsTrigger value="spreadsheet" className="px-3 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap">
+                            <TabsTrigger value="spreadsheet" className="rounded-none border-r border-border/15 px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap data-[state=active]:bg-muted/45">
                                 <List className="h-3.5 w-3.5 shrink-0" />
                                 Spreadsheet
                             </TabsTrigger>
-                            <TabsTrigger value="statement" className="px-3 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap">
+                            <TabsTrigger value="statement" className="rounded-none border-r border-border/15 px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap data-[state=active]:bg-muted/45">
                                 <FileText className="h-3.5 w-3.5 shrink-0" />
                                 Statement
                             </TabsTrigger>
-                            <TabsTrigger value="propfirm" className="px-3 sm:px-6 py-2 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap">
+                            <TabsTrigger value="propfirm" className="rounded-none px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all last:rounded-r-xl flex items-center gap-1.5 whitespace-nowrap data-[state=active]:bg-muted/45">
                                 <Building2 className="h-3.5 w-3.5 shrink-0" />
                                 Funded
                             </TabsTrigger>
                         </TabsList>
                         <TabsContent value="overview" className="space-y-12 focus-visible:outline-none">
                             <div className="space-y-10">
-                                <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-                    <section className="rounded-[28px] border border-border/22 bg-card/40 p-6">
-                                        <div className="flex items-center justify-between gap-3">
-                                            <div>
-                                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/65">Audit Summary</p>
-                                                <h2 className="mt-2 text-sm font-semibold text-muted-foreground">
-                                                    Performance for the selected range, with risk and activity context on one surface.
-                                                </h2>
+                                <section className="overflow-hidden rounded-2xl border border-border/25 bg-card/35">
+                                    <div className="grid gap-0 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                                        <div className="border-b border-border/15 p-5 lg:border-b-0 lg:border-r">
+                                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                                                <LayoutDashboard className="h-3.5 w-3.5" />
+                                                Audit Statement
                                             </div>
-                                            <Badge variant="outline" className="border-border/20 bg-background/55 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                                                {selectedTab}
-                                            </Badge>
-                                        </div>
-                                        <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-                                            <div>
-                                                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground/55">Net P/L</p>
-                                                <p className={cn("mt-2 text-4xl sm:text-5xl font-black font-mono tracking-tighter", psychMetrics.totalNetPnL >= 0 ? "text-long" : "text-short")}>
-                                                    ${psychMetrics.totalNetPnL.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                                                </p>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-3 sm:min-w-[240px]">
-                                                <div className="rounded-2xl border border-border/14 bg-background/35 p-3">
-                                                    <p className="text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/55">Trades</p>
-                                                    <p className="mt-2 text-lg font-black font-mono">{tradingActivity.totalTrades}</p>
+                                            <p className={cn("mt-5 font-mono text-4xl font-black tracking-tighter sm:text-5xl", psychMetrics.totalNetPnL >= 0 ? "text-long" : "text-short")}>
+                                                {psychMetrics.totalNetPnL >= 0 ? '+' : '-'}${Math.abs(psychMetrics.totalNetPnL).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                            </p>
+                                            <p className="mt-2 max-w-sm text-sm font-semibold text-muted-foreground">
+                                                Net performance for {periodLabel}, including activity, risk, and execution context.
+                                            </p>
+                                            <div className="mt-6 grid grid-cols-2 border-y border-border/15 text-sm">
+                                                <div className="border-r border-border/15 py-3 pr-4">
+                                                    <p className="text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/60">Trades</p>
+                                                    <p className="mt-1 font-mono text-xl font-black">{tradingActivity.totalTrades}</p>
                                                 </div>
-                                                <div className="rounded-2xl border border-border/14 bg-background/35 p-3">
-                                                    <p className="text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/55">Active Days</p>
-                                                    <p className="mt-2 text-lg font-black font-mono">{tradingActivity.tradingDaysActive}</p>
+                                                <div className="py-3 pl-4">
+                                                    <p className="text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/60">Active Days</p>
+                                                    <p className="mt-1 font-mono text-xl font-black">{tradingActivity.tradingDaysActive}</p>
                                                 </div>
                                             </div>
                                         </div>
-                                    </section>
 
-                                    <section className="rounded-[28px] border border-border/22 bg-card/32 p-3">
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div className="rounded-2xl border border-border/14 bg-background/35 p-4">
-                                                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/55">Win Rate</p>
-                                                <p className="mt-2 text-2xl font-black font-mono tracking-tighter">{tradingActivity.winRate}%</p>
+                                        <div className="grid divide-y divide-border/15 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+                                            <div className="divide-y divide-border/15">
+                                                {[
+                                                    ['Win Rate', `${tradingActivity.winRate}%`],
+                                                    ['Profit Factor', psychMetrics.profitFactor],
+                                                    ['Expectancy', `$${psychMetrics.expectancy}`],
+                                                    ['Recovery Factor', psychMetrics.recoveryFactor],
+                                                ].map(([label, value]) => (
+                                                    <div key={label} className="flex items-center justify-between gap-4 px-5 py-4">
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground/65">{label}</span>
+                                                        <span className="font-mono text-lg font-black">{value}</span>
+                                                    </div>
+                                                ))}
                                             </div>
-                                            <div className="rounded-2xl border border-border/14 bg-background/35 p-4">
-                                                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/55">Profit Factor</p>
-                                                <p className="mt-2 text-2xl font-black font-mono tracking-tighter text-primary">{psychMetrics.profitFactor}</p>
-                                            </div>
-                                            <div className="rounded-2xl border border-border/14 bg-background/35 p-4">
-                                                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/55">Expectancy</p>
-                                                <p className="mt-2 text-2xl font-black font-mono tracking-tighter">${psychMetrics.expectancy}</p>
-                                            </div>
-                                            <div className="rounded-2xl border border-border/14 bg-background/35 p-4">
-                                                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-muted-foreground/55">Max Drawdown</p>
-                                                <p className="mt-2 text-2xl font-black font-mono tracking-tighter text-short">${psychMetrics.maxDrawdown}</p>
+                                            <div className="divide-y divide-border/15">
+                                                {[
+                                                    ['Max Drawdown', `$${psychMetrics.maxDrawdown}`],
+                                                    ['Avg Win', `$${psychMetrics.avgWin}`],
+                                                    ['Avg Loss', `$${psychMetrics.avgLoss}`],
+                                                    ['Consistency', `${psychMetrics.consistencyScore}%`],
+                                                ].map(([label, value]) => (
+                                                    <div key={label} className="flex items-center justify-between gap-4 px-5 py-4">
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground/65">{label}</span>
+                                                        <span className={cn("font-mono text-lg font-black", label === 'Max Drawdown' || label === 'Avg Loss' ? 'text-short' : label === 'Avg Win' ? 'text-long' : '')}>{value}</span>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
-                                    </section>
-                                </div>
+                                    </div>
+                                </section>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:items-stretch">
                                     {/* Detailed Metrics Table */}
@@ -977,7 +941,7 @@ export default function ReportsPageClient({
 
                         <TabsContent value="statement" className="focus-visible:outline-none">
                             {filteredTrades && filteredTrades.length > 0 && (
-                                <StatementView trades={filteredTrades} />
+                                <StatementView trades={filteredTrades} dateRange={dateRange} />
                             )}
                         </TabsContent>
 

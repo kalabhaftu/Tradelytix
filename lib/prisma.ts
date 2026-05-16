@@ -23,6 +23,10 @@ function isSupabasePoolerUrl(url: URL) {
   return url.hostname.includes('pooler.supabase.com')
 }
 
+function getConnectionLimit() {
+  return process.env.PRISMA_CONNECTION_LIMIT || (process.env.NODE_ENV === 'production' ? '1' : '2')
+}
+
 function buildDatabaseUrl(): string {
   const baseUrl = resolveBaseDatabaseUrl()
 
@@ -36,17 +40,15 @@ function buildDatabaseUrl(): string {
 
     url.searchParams.set('connect_timeout', '30')
     url.searchParams.set('socket_timeout', '30')
+    url.searchParams.set('connection_limit', getConnectionLimit())
+    url.searchParams.set('pool_timeout', '30')
 
     if (isTransactionPooler) {
       // Supabase recommends transaction mode for serverless/edge traffic,
       // with prepared statements disabled via pgbouncer=true.
-      url.searchParams.set('connection_limit', '1')
-      url.searchParams.set('pool_timeout', '30')
       url.searchParams.set('pgbouncer', 'true')
     } else {
       // Session mode / direct connections should not inherit transaction-pooler flags.
-      url.searchParams.delete('connection_limit')
-      url.searchParams.delete('pool_timeout')
       url.searchParams.delete('pgbouncer')
     }
 

@@ -62,39 +62,37 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
 
     const internalUserId = userLookup.id
 
-    const [accounts, propFirmAccounts, allTrades, activeTemplate] = await Promise.all([
-      prisma.account.findMany({
-        where: { userId: internalUserId },
-        orderBy: { createdAt: 'desc' }
-      }),
+    const accounts = await prisma.account.findMany({
+      where: { userId: internalUserId },
+      orderBy: { createdAt: 'desc' }
+    })
 
-      prisma.masterAccount.findMany({
-        where: { userId: internalUserId },
-        include: { PhaseAccount: { orderBy: { phaseNumber: 'asc' } } }
-      }),
+    const propFirmAccounts = await prisma.masterAccount.findMany({
+      where: { userId: internalUserId },
+      include: { PhaseAccount: { orderBy: { phaseNumber: 'asc' } } }
+    })
 
-      prisma.trade.findMany({
-        where: { userId: internalUserId },
-        select: TRADE_COUNT_SELECT,
-      }),
+    const allTrades = await prisma.trade.findMany({
+      where: { userId: internalUserId },
+      select: TRADE_COUNT_SELECT,
+    })
 
-      prisma.dashboardTemplate.findFirst({
-        where: {
-          userId: internalUserId,
-          isActive: true,
-        },
-        select: {
-          id: true,
-          userId: true,
-          name: true,
-          isDefault: true,
-          isActive: true,
-          layout: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      }),
-    ])
+    const activeTemplate = await prisma.dashboardTemplate.findFirst({
+      where: {
+        userId: internalUserId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        userId: true,
+        name: true,
+        isDefault: true,
+        isActive: true,
+        layout: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    })
 
     const groupedCounts = buildGroupedTradeCountSummary(allTrades as any)
 

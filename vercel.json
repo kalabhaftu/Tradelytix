@@ -1,20 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/daily-anchors",
+      "path": "/api/cron/maintenance",
       "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/cron/evaluate-phases",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/cron/check-subscriptions",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/cron/reconcile-payments",
-      "schedule": "0 4 * * *"
     }
   ],
   "build": {

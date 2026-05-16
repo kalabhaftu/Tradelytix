@@ -1,190 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PhaseEvaluationEngine } from '@/lib/prop-firm/phase-evaluation-engine'
-import { prisma } from '@/lib/prisma'
 import { validateCronRequest } from '@/lib/cron-auth'
+import { evaluateAllActivePhases } from '@/lib/services/phase-service'
 
 /**
- * GET /api/cron/evaluate-phases - Background evaluation for all active phases
- * Evaluates all active prop firm phase accounts and updates their status
- * Should be called hourly via cron job
+ * GET /api/cron/evaluate-phases
+ * Manually trigger phase evaluations.
+ * (Now part of the consolidated maintenance cron)
  */
 export async function GET(request: NextRequest) {
-  try {
-
-    // Get all active phase accounts
-    const activePhases = await prisma.phaseAccount.findMany({
-      where: {
-        status: 'active',
-        MasterAccount: {
-          status: 'active'
-        }
-      },
-      include: {
-        MasterAccount: {
-          select: {
-            id: true,
-            accountName: true,
-            status: true
-          }
-        }
-      }
-    })
-
-    let evaluated = 0
-    let failed = 0
-    let passed = 0
-    let errors: string[] = []
-
-    // Evaluate each active phase
-    for (const phase of activePhases) {
-      try {
-        const evaluation = await PhaseEvaluationEngine.evaluatePhase(
-          phase.masterAccountId,
-          phase.id
-        )
-
-        evaluated++
-
-        // If account failed, mark phase and master account as failed, and record breach
-        if (evaluation.isFailed) {
-          await prisma.$transaction([
-            prisma.phaseAccount.update({
-              where: { id: phase.id },
-              data: {
-                status: 'failed',
-                endDate: new Date()
-              }
-            }),
-            prisma.masterAccount.update({
-              where: { id: phase.masterAccountId },
-              data: { status: 'failed' }
-            }),
-            prisma.breachRecord.create({
-              data: {
-                id: crypto.randomUUID(),
-                phaseAccountId: phase.id,
-                breachType: evaluation.drawdown.breachType || 'max_drawdown',
-                breachAmount: evaluation.drawdown.breachAmount || 0,
-                breachTime: new Date(),
-                currentEquity: evaluation.drawdown.currentEquity,
-                accountSize: evaluation.drawdown.dailyStartBalance || 0,
-                dailyStartBalance: evaluation.drawdown.dailyStartBalance,
-                highWaterMark: evaluation.drawdown.highWaterMark,
-                notes: `Auto-detected breach during background evaluation. ${evaluation.drawdown.breachType?.replace('_', ' ')} exceeded by $${evaluation.drawdown.breachAmount?.toFixed(2)}`
-              }
-            })
-          ])
-
-          failed++
-        }
-
-        // If account passed (profit target met), mark for manual phase progression
-        // We don't auto-advance phases - user needs to manually provide next phase ID
-        if (evaluation.isPassed && !evaluation.isFailed) {
-          passed++
-        }
-
-      } catch (error) {
-        const errorMsg = `Phase ${phase.id} (${phase.MasterAccount.accountName}): evaluation failed`
-        errors.push(errorMsg)
-      }
-    }
-
-    const result = {
-      success: true,
-      message: 'Background evaluation completed',
-      totalPhases: activePhases.length,
-      evaluated,
-      failed,
-      passed,
-      active: evaluated - failed - passed,
-      errors: errors.length > 0 ? errors : undefined,
-      timestamp: new Date().toISOString()
-    }
-
-
-    return NextResponse.json(result)
-
-  } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Background evaluation failed',
-        timestamp: new Date().toISOString()
-      },
-      { status: 500 }
-    )
-  }
-}
-
-/**
- * POST /api/cron/evaluate-phases - Manual trigger for testing
- */
-export async function POST(request: NextRequest) {
   const authError = validateCronRequest(request)
   if (authError) return authError
 
   try {
-    const body = await request.json().catch(() => ({}))
-    const { phaseAccountId, masterAccountId } = body
-
-    // If specific phase/account provided, evaluate that only
-    if (phaseAccountId && masterAccountId) {
-      const evaluation = await PhaseEvaluationEngine.evaluatePhase(
-        masterAccountId,
-        phaseAccountId
-      )
-
-      // Update status if failed and record breach
-      if (evaluation.isFailed) {
-        await prisma.$transaction([
-          prisma.phaseAccount.update({
-            where: { id: phaseAccountId },
-            data: {
-              status: 'failed',
-              endDate: new Date()
-            }
-          }),
-          prisma.masterAccount.update({
-            where: { id: masterAccountId },
-            data: { status: 'failed' }
-          }),
-          prisma.breachRecord.create({
-            data: {
-              id: crypto.randomUUID(),
-              phaseAccountId,
-              breachType: evaluation.drawdown.breachType || 'max_drawdown',
-              breachAmount: evaluation.drawdown.breachAmount || 0,
-              breachTime: new Date(),
-              currentEquity: evaluation.drawdown.currentEquity,
-              accountSize: evaluation.drawdown.dailyStartBalance || 0,
-              dailyStartBalance: evaluation.drawdown.dailyStartBalance,
-              highWaterMark: evaluation.drawdown.highWaterMark,
-              notes: `Manual evaluation triggered breach detection.`
-            }
-          })
-        ])
-      }
-
-      return NextResponse.json({
-        success: true,
-        evaluation,
-        timestamp: new Date().toISOString()
-      })
-    }
-
-    // Otherwise, trigger full evaluation run
-    const cronResponse = await GET(request)
-    return cronResponse
-
+    const result = await evaluateAllActivePhases()
+    return NextResponse.json({
+      success: true,
+      ...result,
+      timestamp: new Date().toISOString()
+    })
   } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Manual evaluation failed',
-        timestamp: new Date().toISOString()
-      },
-      { status: 500 }
-    )
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Evaluation failed',
+      timestamp: new Date().toISOString()
+    }, { status: 500 })
   }
+}
+
+/**
+ * POST /api/cron/evaluate-phases
+ */
+export async function POST(request: NextRequest) {
+  return GET(request)
 }

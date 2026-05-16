@@ -6,6 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, MessageSquare, AlertTriangle, Activity, ShieldAlert, UserCog } from 'lucide-react'
 import { Spinner } from '@/components/ui/spinner'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { LexicalEditor } from '@/components/ui/editor/lexical-editor'
+import { toast } from 'sonner'
+
+interface SiteUiSettings {
+  showDonateButton: boolean
+  showFeedbackButton: boolean
+}
 
 interface AdminStats {
   totalUsers: number
@@ -30,17 +41,90 @@ interface AdminStats {
 
 export default function AdminOverviewPage() {
   const [stats, setStats] = useState<AdminStats | null>(null)
+  const [siteUiSettings, setSiteUiSettings] = useState<SiteUiSettings | null>(null)
+  const [isSavingSiteUi, setIsSavingSiteUi] = useState(false)
+  const [isSendingBroadcast, setIsSendingBroadcast] = useState(false)
+  const [broadcastForm, setBroadcastForm] = useState({
+    title: '',
+    content: '',
+    priority: 'MEDIUM',
+  })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/v1/admin/stats')
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.success) setStats(data.data)
+    Promise.all([
+      fetch('/api/v1/admin/stats').then((response) => response.json()),
+      fetch('/api/v1/admin/site-ui').then((response) => response.json()),
+    ])
+      .then(([statsPayload, siteUiPayload]) => {
+        if (statsPayload.success) setStats(statsPayload.data)
+        if (siteUiPayload.success) setSiteUiSettings(siteUiPayload.data)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
+
+  const handleSendBroadcast = async () => {
+    if (!broadcastForm.title.trim() || !broadcastForm.content.trim()) {
+      toast.error('Broadcast title and content are required')
+      return
+    }
+
+    setIsSendingBroadcast(true)
+    try {
+      const response = await fetch('/api/v1/admin/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(broadcastForm),
+      })
+      const payload = await response.json()
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || 'Failed to send broadcast')
+      }
+
+      setBroadcastForm({
+        title: '',
+        content: '',
+        priority: 'MEDIUM',
+      })
+      toast.success(`Broadcast sent to ${payload.data.recipients} users`)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to send broadcast')
+    } finally {
+      setIsSendingBroadcast(false)
+    }
+  }
+
+  const handleToggleSiteUi = async (
+    key: keyof SiteUiSettings,
+    value: boolean
+  ) => {
+    if (!siteUiSettings) return
+
+    const optimistic = { ...siteUiSettings, [key]: value }
+    setSiteUiSettings(optimistic)
+    setIsSavingSiteUi(true)
+
+    try {
+      const response = await fetch('/api/v1/admin/site-ui', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [key]: value }),
+      })
+      const payload = await response.json()
+
+      if (!response.ok || !payload.success) {
+        throw new Error('Failed to update site UI settings')
+      }
+
+      setSiteUiSettings(payload.data)
+    } catch {
+      setSiteUiSettings(siteUiSettings)
+    } finally {
+      setIsSavingSiteUi(false)
+    }
+  }
 
   const needsAttention = useMemo(() => {
     if (!stats) return []
@@ -159,12 +243,101 @@ export default function AdminOverviewPage() {
                 </CardContent>
               </Card>
             </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Public Support Buttons
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <SiteUiToggleRow
+                  label="Feedback button"
+                  description="Shows or hides feedback entry points in public and dashboard navigation."
+                  checked={siteUiSettings?.showFeedbackButton ?? true}
+                  disabled={!siteUiSettings || isSavingSiteUi}
+                  onCheckedChange={(checked) => handleToggleSiteUi('showFeedbackButton', checked)}
+                />
+                <SiteUiToggleRow
+                  label="Donate button"
+                  description="Shows or hides donate entry points while keeping the route available."
+                  checked={siteUiSettings?.showDonateButton ?? true}
+                  disabled={!siteUiSettings || isSavingSiteUi}
+                  onCheckedChange={(checked) => handleToggleSiteUi('showDonateButton', checked)}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Broadcast Update
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>Title</Label>
+                  <Input
+                    value={broadcastForm.title}
+                    onChange={(event) =>
+                      setBroadcastForm((prev) => ({ ...prev, title: event.target.value }))
+                    }
+                    placeholder="Platform update title"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Post body</Label>
+                  <LexicalEditor
+                    value={broadcastForm.content}
+                    onChange={(value) =>
+                      setBroadcastForm((prev) => ({ ...prev, content: value }))
+                    }
+                    placeholder="Write the announcement users should read in their notification panel..."
+                    minHeight="220px"
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-xs text-muted-foreground">
+                    Sends a readable announcement to the in-app notification panel for {stats.totalUsers.toLocaleString()} users.
+                  </p>
+                  <Button onClick={handleSendBroadcast} disabled={isSendingBroadcast}>
+                    {isSendingBroadcast ? 'Sending...' : 'Send Broadcast'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </>
         ) : (
           <p className="text-muted-foreground">Failed to load stats</p>
         )}
       </div>
     </AdminShell>
+  )
+}
+
+function SiteUiToggleRow({
+  label,
+  description,
+  checked,
+  disabled,
+  onCheckedChange,
+}: {
+  label: string
+  description: string
+  checked: boolean
+  disabled: boolean
+  onCheckedChange: (checked: boolean) => void
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
+      <div>
+        <p className="text-sm font-medium">{label}</p>
+        <p className="text-xs text-muted-foreground mt-1">{description}</p>
+      </div>
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} />
+    </div>
   )
 }
 

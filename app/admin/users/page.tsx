@@ -19,6 +19,7 @@ type AdminUser = {
   hasDbProfile: boolean
   locationLabel: string | null
   accountCount: number
+  subscriptionStatus: string | null
   createdAt: string | null
   lastSignInAt: string | null
 }
@@ -155,13 +156,18 @@ export default function AdminUsersPage() {
                       <th className="text-left text-xs font-medium text-muted-foreground p-3">Name</th>
                       <th className="text-left text-xs font-medium text-muted-foreground p-3">Location</th>
                       <th className="text-left text-xs font-medium text-muted-foreground p-3">Accounts</th>
+                      <th className="text-left text-xs font-medium text-muted-foreground p-3">Subscription</th>
                       <th className="text-left text-xs font-medium text-muted-foreground p-3">Status</th>
+                      <th className="text-right text-xs font-medium text-muted-foreground p-3">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.map((user) => (
-                      <tr key={user.authUserId} className="border-b border-border/50 hover:bg-muted/20">
-                        <td className="p-3 text-sm font-medium">{user.email}</td>
+                      <tr key={user.authUserId} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                        <td className="p-3">
+                          <div className="font-medium text-sm">{user.email}</div>
+                          <div className="text-[10px] text-muted-foreground uppercase tracking-tight">UID: {user.authUserId.slice(0, 8)}</div>
+                        </td>
                         <td className="p-3 text-sm text-muted-foreground">
                           {user.displayName || '—'}
                         </td>
@@ -173,20 +179,31 @@ export default function AdminUsersPage() {
                             </span>
                           ) : '—'}
                         </td>
-                        <td className="p-3 text-sm">{user.accountCount}</td>
+                        <td className="p-3 text-sm font-medium">{user.accountCount}</td>
                         <td className="p-3">
-                          <div className="flex flex-col gap-1">
-                            <span className="text-xs text-muted-foreground">
-                              {user.createdAt
-                                ? `Registered ${formatDistanceToNow(new Date(user.createdAt))} ago`
-                                : 'Registered in Auth'}
-                            </span>
-                            {!user.hasDbProfile && (
-                              <Badge variant="outline" className="w-fit text-[10px]">
-                                Missing app profile
-                              </Badge>
-                            )}
+                          {user.subscriptionStatus ? (
+                            <Badge variant={user.subscriptionStatus === 'active' ? 'success' : 'destructive'} className="text-[10px] px-1.5 py-0">
+                              {user.subscriptionStatus.toUpperCase()}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-xs text-muted-foreground">
+                          <div className="flex flex-col">
+                            <span>{user.createdAt ? formatDistanceToNow(new Date(user.createdAt)) + ' ago' : '—'}</span>
+                            {!user.hasDbProfile && <span className="text-[9px] text-warning font-bold uppercase">No Profile</span>}
                           </div>
+                        </td>
+                        <td className="p-3 text-right">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 text-xs gap-1"
+                            onClick={() => window.location.href = `/admin/subscriptions?search=${user.email}`}
+                          >
+                            Manage
+                          </Button>
                         </td>
                       </tr>
                     ))}

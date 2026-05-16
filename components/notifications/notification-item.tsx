@@ -104,11 +104,16 @@ export function NotificationItem({
 }: NotificationItemProps) {
   const isActionable =
     notification.type === 'WEEKLY_PERFORMANCE' ||
+    (notification.type === 'SYSTEM_ANNOUNCEMENT' && Boolean((notification.data as any)?.body)) ||
     (notification.actionRequired && (
     notification.type === 'FUNDED_PENDING_APPROVAL' ||
     notification.type === 'PHASE_TRANSITION_PENDING'
     ))
-  const actionLabel = notification.type === 'WEEKLY_PERFORMANCE' ? 'Open review' : 'Take Action'
+  const actionLabel = notification.type === 'WEEKLY_PERFORMANCE'
+    ? 'Open review'
+    : notification.type === 'SYSTEM_ANNOUNCEMENT'
+      ? 'Read update'
+      : 'Take Action'
 
   return (
     <div

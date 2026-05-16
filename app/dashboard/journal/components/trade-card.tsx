@@ -176,7 +176,7 @@ export function TradeCard({
   const partialCount = (trade as any).partialTrades?.length || 1
 
   return (
-    <Card className="group hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 h-full flex flex-col w-full max-w-full overflow-hidden border-l-4 border-l-transparent hover:border-l-primary">
+    <Card className="group hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 h-full flex flex-col w-full max-w-full overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">

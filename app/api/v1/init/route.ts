@@ -4,7 +4,7 @@
  * GET /api/v1/init
  * 
  * Lightweight initial load endpoint replacing /api/bundled-data.
- * Returns only what's needed at app startup: user profile, accounts, calendar notes.
+ * Returns only what's needed at app startup: user profile and accounts.
  * Trades are fetched separately via /api/v1/trades with proper filtering.
  */
 
@@ -56,8 +56,8 @@ export async function GET(request: NextRequest) {
 
     const response = NextResponse.json(payload)
     
-    // Cache: private (user-specific), revalidate every 60s
-    response.headers.set('Cache-Control', 'private, s-maxage=60, stale-while-revalidate=120')
+    // Access and payment state must reflect immediately after webhook-driven updates.
+    response.headers.set('Cache-Control', 'private, no-store, no-cache, max-age=0, must-revalidate')
     return response
     
   } catch (error: any) {

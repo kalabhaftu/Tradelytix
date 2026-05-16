@@ -338,6 +338,7 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
                     number: 'Default',
                     name: 'Main Trading Account',
                     startingBalance: 0,
+                    isConfigured: false,
                     userId: updated.id
                   }
                 })
@@ -364,6 +365,7 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
             number: 'Default',
             name: 'Main Trading Account',
             startingBalance: 0,
+            isConfigured: false,
             userId: existingUserByAuthId.id
           }
         })
@@ -419,6 +421,7 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
                   number: 'Default',
                   name: 'Main Trading Account',
                   startingBalance: 0,
+                  isConfigured: false,
                   userId: updated.id
                 }
               })
@@ -478,6 +481,7 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
               number: 'Default',
               name: 'Main Trading Account',
               startingBalance: 0,
+              isConfigured: false,
               userId: created.id
             }
           })

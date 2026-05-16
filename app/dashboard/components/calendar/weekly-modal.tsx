@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LexicalEditor } from "@/components/ui/editor/lexical-editor"
+import { dashboardModalShell } from '@/components/ui/dashboard-modal-shell'
 import { useAuth } from "@/context/auth-provider"
 import { useData } from '@/context/data-provider'
 import { useSupabaseUpload } from "@/hooks/use-supabase-upload"
@@ -608,7 +609,7 @@ export function WeeklyModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleCloseAttempt}>
-        <DialogContent className="w-full max-w-[95vw] sm:max-w-6xl h-[90vh] p-0 flex flex-col overflow-hidden bg-background border-border shadow-lg">
+        <DialogContent className={dashboardModalShell.weekly}>
           <DialogTitle className="sr-only">Weekly Review for {dateRange}</DialogTitle>
 
           {/* Hidden file input for replacement */}
@@ -621,18 +622,18 @@ export function WeeklyModal({
           />
 
           {/* Header */}
-          <div className="px-6 py-4 border-b shrink-0 bg-card">
+          <div className="px-6 py-5 border-b border-border/50 shrink-0 bg-card">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/8 text-primary">
                   <Calendar className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold">{dateRange}</h2>
-                  <p className="text-sm text-muted-foreground">Weekly Performance Review</p>
+                  <h2 className="text-xl font-semibold tracking-tight">{dateRange}</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Weekly Performance Review</p>
                 </div>
               </div>
-              <Button onClick={handleSave} disabled={isSaving || isUploading}>
+              <Button onClick={handleSave} disabled={isSaving || isUploading} className="rounded-xl px-4">
                 {isSaving || isUploading ? <Spinner className="mr-2 h-4 w-4" /> : null}
                 Save Review
               </Button>
@@ -641,29 +642,29 @@ export function WeeklyModal({
 
           {/* Tabs Navigation */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <div className="px-6 border-b bg-muted/30">
-              <TabsList className="h-12 bg-transparent border-0 p-0 gap-6">
+            <div className="px-4 sm:px-6 lg:px-8 py-3 border-b border-border/50 bg-background/90">
+              <TabsList className="h-auto w-full flex-wrap justify-start rounded-2xl border border-border/40 bg-muted/35 p-1 gap-1">
                 <TabsTrigger
                   value="overview"
-                  className="h-12 px-1 border-0 bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
+                  className="rounded-xl px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm"
                 >
                   Overview
                 </TabsTrigger>
                 <TabsTrigger
                   value="analysis"
-                  className="h-12 px-1 border-0 bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
+                  className="rounded-xl px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm"
                 >
                   Analysis
                 </TabsTrigger>
                 <TabsTrigger
                   value="calendar"
-                  className="h-12 px-1 border-0 bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
+                  className="rounded-xl px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm"
                 >
                   Calendar Image
                 </TabsTrigger>
                 <TabsTrigger
                   value="notes"
-                  className="h-12 px-1 border-0 bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
+                  className="rounded-xl px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm"
                 >
                   Notes
                 </TabsTrigger>
@@ -672,9 +673,9 @@ export function WeeklyModal({
 
             <div className="flex-1 overflow-y-auto">
               {/* Overview Tab */}
-              <TabsContent value="overview" className="m-0 p-6 space-y-6">
+              <TabsContent value="overview" className="m-0 px-4 py-5 sm:px-6 lg:px-8 space-y-6">
                 {/* Key Metrics Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 xl:grid-cols-6 gap-4">
                   <MetricCard
                     icon={BarChart3}
                     label="Total P&L"
@@ -726,12 +727,6 @@ export function WeeklyModal({
                     <div className="h-[200px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={chartData} margin={{ left: 0, right: 0, top: 10, bottom: 5 }}>
-                          <defs>
-                            <linearGradient id="colorPnl" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                              <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} vertical={false} />
                           <XAxis
                             dataKey="label"
@@ -781,7 +776,8 @@ export function WeeklyModal({
                             dataKey="balance"
                             stroke="hsl(var(--primary))"
                             strokeWidth={2}
-                            fill="url(#colorPnl)"
+                            fill="hsl(var(--primary))"
+                            fillOpacity={0.12}
                           />
                         </AreaChart>
                       </ResponsiveContainer>
@@ -840,7 +836,7 @@ export function WeeklyModal({
               </TabsContent>
 
               {/* Analysis Tab */}
-              <TabsContent value="analysis" className="m-0 p-6 space-y-6">
+              <TabsContent value="analysis" className="m-0 px-4 py-5 sm:px-6 lg:px-8 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Weekly Expectation */}
                   <Card>
@@ -1111,7 +1107,7 @@ export function WeeklyModal({
               </TabsContent>
 
               {/* Calendar Image Tab */}
-              <TabsContent value="calendar" className="m-0 p-6">
+              <TabsContent value="calendar" className="m-0 px-4 py-5 sm:px-6 lg:px-8">
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium flex items-center justify-between">
@@ -1202,7 +1198,7 @@ export function WeeklyModal({
               </TabsContent>
 
               {/* Notes Tab */}
-              <TabsContent value="notes" className="m-0 p-6">
+              <TabsContent value="notes" className="m-0 px-4 py-5 sm:px-6 lg:px-8">
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">

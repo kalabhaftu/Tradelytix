@@ -16,7 +16,6 @@ export async function getUserData(): Promise<{
   userData: User | null;
   accounts: Account[];
   groups: never[]; // Groups removed - no longer used
-  calendarNotes: Record<string, string>;
 }> {
   try {
     const userId = await getUserIdSafe()
@@ -27,7 +26,6 @@ export async function getUserData(): Promise<{
         userData: null,
         accounts: [],
         groups: [],
-        calendarNotes: {}
       }
     }
 
@@ -41,7 +39,7 @@ export async function getUserData(): Promise<{
       // Aggressive timeouts cause premature failures when network is slow
 
       // PERFORMANCE OPTIMIZATION: Reduce database queries and use parallel fetching
-      const [userData, accounts, groups, calendarNotes] = await Promise.all([
+      const [userData, accounts, groups] = await Promise.all([
         // User data - essential only with error handling
         (async () => {
           try {
@@ -74,50 +72,19 @@ export async function getUserData(): Promise<{
           }
         })(),
         // Groups removed - no longer used
-        Promise.resolve([]),
-        // Calendar notes - bundled with initial data load (Limited to recent history)
-        (async () => {
-          try {
-            // PERFORMANCE: Limit notes to last 2 years to prevent payload bloat
-            const twoYearsAgo = new Date()
-            twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2)
-
-            const notes = await prisma.dailyNote.findMany({
-              where: {
-                userId,
-                date: {
-                  gte: twoYearsAgo
-                }
-              },
-              select: {
-                date: true,
-                note: true
-              }
-            })
-            return notes.reduce((acc, note) => {
-              // Convert Date to ISO string for consistent keys
-              const dateKey = typeof note.date === 'string' ? note.date : note.date.toISOString().split('T')[0]
-              acc[dateKey] = note.note
-              return acc
-            }, {} as Record<string, string>)
-          } catch (error) {
-            return {}
-          }
-        })()
+        Promise.resolve([])
       ])
 
       return JSON.parse(JSON.stringify({
         userData: userData ? mergeUserSettings(userData as any, (userData as any).settings) : null,
         accounts,
         groups,
-        calendarNotes
       }))
     } catch (error) {
       return {
         userData: null,
         accounts: [],
         groups: [],
-        calendarNotes: {}
       }
     }
   } catch (error) {
@@ -125,7 +92,6 @@ export async function getUserData(): Promise<{
       userData: null,
       accounts: [],
       groups: [],
-      calendarNotes: {}
     }
   }
 }
@@ -159,4 +125,3 @@ export async function updateIsFirstConnectionAction(isFirstConnection: boolean) 
     throw new Error('Failed to update onboarding status')
   }
 }
-

@@ -27,6 +27,8 @@ import { Notification, NotificationType } from '@prisma/client'
 import { useDatabaseRealtime } from '@/lib/realtime/database-realtime'
 import { useUserStore } from '@/store/user-store'
 import { Spinner } from '@/components/ui/spinner'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { LexicalRenderer } from '@/components/ui/editor/lexical-renderer'
 
 type FilterCategory = 'all' | 'alerts' | 'updates' | 'system'
 
@@ -76,6 +78,8 @@ export function NotificationCenter() {
   const [phaseTransitionDialogOpen, setPhaseTransitionDialogOpen] = useState(false)
   const [adjustDateDialogOpen, setAdjustDateDialogOpen] = useState(false)
   const [weeklyReviewDialogOpen, setWeeklyReviewDialogOpen] = useState(false)
+  const [announcementDialogOpen, setAnnouncementDialogOpen] = useState(false)
+  const [realtimeStatus, setRealtimeStatus] = useState<'connected' | 'disconnected' | 'error'>('disconnected')
   const [weeklyReviewId, setWeeklyReviewId] = useState<string | undefined>(undefined)
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null)
 
@@ -118,9 +122,10 @@ export function NotificationCenter() {
   }, [])
 
   useEffect(() => {
+    if (!user?.id) return
     fetchNotifications()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [user?.id])
 
   useEffect(() => {
     if (isOpen) {
@@ -130,13 +135,13 @@ export function NotificationCenter() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!isOpenRef.current) {
+      if (!isOpenRef.current && realtimeStatus !== 'connected') {
         refreshUnreadCount()
       }
-    }, 60000)
+    }, 180000)
 
     return () => clearInterval(interval)
-  }, [refreshUnreadCount])
+  }, [refreshUnreadCount, realtimeStatus])
 
   useEffect(() => {
     const handleNotificationsRefresh = () => {
@@ -158,10 +163,13 @@ export function NotificationCenter() {
       const notificationUserId = (change.newRecord?.userId || change.oldRecord?.userId) as string | undefined
       if (notificationUserId === user?.id) {
         if (change.event === 'INSERT' && change.newRecord) {
-          if (isOpenRef.current) {
-            fetchNotifications()
-          } else {
-            refreshUnreadCount()
+          const notification = change.newRecord as unknown as Notification
+          setNotifications((prev) => {
+            const withoutDuplicate = prev.filter((item) => item.id !== notification.id)
+            return [notification, ...withoutDuplicate].slice(0, 50)
+          })
+          if (!notification.isRead) {
+            setUnreadCount((prev) => prev + 1)
           }
         } else if (change.event === 'UPDATE' || change.event === 'DELETE') {
           if (isOpenRef.current) {
@@ -171,7 +179,13 @@ export function NotificationCenter() {
           }
         }
       }
-    }
+    },
+    onStatusChange: (status) => {
+      setRealtimeStatus(status)
+      if (status === 'connected' && user?.id) {
+        refreshUnreadCount()
+      }
+    },
   })
 
   const filteredNotifications = useMemo(() => {
@@ -265,6 +279,10 @@ export function NotificationCenter() {
         setWeeklyReviewId(data?.reviewId)
         setWeeklyReviewDialogOpen(true)
       })
+      if (!notification.isRead) handleMarkAsRead(notification.id)
+    } else if (notification.type === 'SYSTEM_ANNOUNCEMENT' && (notification.data as any)?.body) {
+      setSelectedNotification(notification)
+      openAfterPopoverCloses(() => setAnnouncementDialogOpen(true))
       if (!notification.isRead) handleMarkAsRead(notification.id)
     } else {
       if (!notification.isRead) {
@@ -432,6 +450,27 @@ export function NotificationCenter() {
         }}
         reviewId={weeklyReviewId}
       />
+
+      <Dialog open={announcementDialogOpen} onOpenChange={setAnnouncementDialogOpen}>
+        <DialogContent className="w-[min(100vw-1rem,48rem)] max-w-none rounded-[28px] border border-border/60">
+          <DialogHeader>
+            <DialogTitle>{selectedNotification?.title || 'Announcement'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {selectedNotification?.createdAt
+                ? new Date(selectedNotification.createdAt).toLocaleString()
+                : ''}
+            </p>
+            <div className="max-h-[60vh] overflow-y-auto rounded-2xl border border-border/50 bg-card p-4 sm:p-5">
+              <LexicalRenderer
+                value={String((selectedNotification?.data as any)?.body || selectedNotification?.message || '')}
+                className="text-sm leading-7"
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

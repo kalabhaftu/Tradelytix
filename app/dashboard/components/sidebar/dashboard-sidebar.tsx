@@ -37,6 +37,7 @@ import {
 import { Logo } from '@/components/logo'
 import { cn } from '@/lib/utils'
 import { useData } from '@/context/data-provider'
+import type { SiteUiSettingsPayload } from '@/server/site-ui-settings'
 
 const coreNavItems = [
   { id: 'widgets', label: 'Overview', icon: LayoutDashboard, href: '/dashboard' },
@@ -52,19 +53,22 @@ const toolItems = [
   { id: 'goals', label: 'Goals', icon: Trophy, href: '/dashboard/goals' },
 ]
 
-const utilityItems = [
-  { id: 'feedback', label: 'Feedback', icon: MessageSquare, href: '/feedback' },
-  { id: 'donate', label: 'Donate', icon: Heart, href: '/donate' },
-  { id: 'docs', label: 'Documentation', icon: BookMarked, href: '/docs' },
-  { id: 'data', label: 'Data', icon: Database, href: '/dashboard/data' },
-  { id: 'settings', label: 'Settings', icon: Settings, href: '/dashboard/settings' },
-]
-
-export function DashboardSidebar() {
+export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSettingsPayload }) {
   const pathname = usePathname()
   const { refreshTrades } = useData()
   const { state, toggleSidebar, isOverlay, setOpenMobile } = useSidebar()
   const isCollapsed = state === 'collapsed' && !isOverlay
+  const utilityItems = [
+    ...(siteUiSettings.showFeedbackButton
+      ? [{ id: 'feedback', label: 'Feedback', icon: MessageSquare, href: '/feedback' }]
+      : []),
+    ...(siteUiSettings.showDonateButton
+      ? [{ id: 'donate', label: 'Donate', icon: Heart, href: '/donate' }]
+      : []),
+    { id: 'docs', label: 'Documentation', icon: BookMarked, href: '/docs' },
+    { id: 'data', label: 'Data', icon: Database, href: '/dashboard/data' },
+    { id: 'settings', label: 'Settings', icon: Settings, href: '/dashboard/settings' },
+  ]
 
   const getActiveId = () => {
     if (pathname === '/dashboard') return 'widgets'

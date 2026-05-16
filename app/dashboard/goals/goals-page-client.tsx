@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 import { Target, Plus, Trash2, CheckCircle2, TrendingUp, Trophy, DollarSign, Flame, BarChart2, TrendingDown, Star } from "lucide-react"
+import { GoalsPageSkeleton } from "./components/goals-page-skeleton"
 
 type GoalMetric = "pnl" | "winRate" | "trades" | "streak" | "drawdown" | "custom"
 type GoalPeriod = "daily" | "weekly" | "monthly" | "all-time"
@@ -217,6 +218,10 @@ export function GoalsPageClient() {
     })
   }, [form, createMutation])
 
+  if (isLoading) {
+    return <GoalsPageSkeleton />
+  }
+
   return (
     <div className="flex flex-col gap-8 p-6 max-w-4xl mx-auto">
       <PageHeader
@@ -230,13 +235,7 @@ export function GoalsPageClient() {
         }
       />
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-36 rounded-[24px] border border-border/10 bg-card/20 animate-pulse" />
-          ))}
-        </div>
-      ) : goals.length === 0 ? (
+      {goals.length === 0 ? (
         <EmptyGoals />
       ) : (
         <div className="space-y-8">

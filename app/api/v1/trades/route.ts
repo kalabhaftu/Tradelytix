@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { convertDecimal } from '@/lib/utils/decimal'
+import { format as formatDate } from 'date-fns'
 import { calculateStatistics, classifyTrade, formatCalendarData, groupTradesByExecution } from '@/lib/utils'
 import {
   calculateDayOfWeekPerformance,
@@ -107,6 +108,7 @@ export async function GET(request: NextRequest) {
     const accountNumbers = params.get('accounts')?.split(',').filter(Boolean) || []
     const dateFrom = params.get('dateFrom')
     const dateTo = params.get('dateTo')
+    const tradeDate = params.get('tradeDate')
     const instruments = params.get('instruments')?.split(',').filter(Boolean) || []
     const pnlMin = params.get('pnlMin') ? parseFloat(params.get('pnlMin')!) : undefined
     const pnlMax = params.get('pnlMax') ? parseFloat(params.get('pnlMax')!) : undefined
@@ -255,6 +257,14 @@ export async function GET(request: NextRequest) {
       takeProfit: convertDecimal(trade.takeProfit),
       tradingModel: trade.TradingModel?.name || null,
     }))
+
+    if (tradeDate) {
+      trades = trades.filter((trade: any) => {
+        const rawTradeDate = trade.closeDate || trade.entryDate
+        if (!rawTradeDate) return false
+        return formatDate(new Date(rawTradeDate), 'yyyy-MM-dd') === tradeDate
+      })
+    }
     
     // Post-query filters (can't be done in Prisma WHERE)
     if (weekday !== null) {

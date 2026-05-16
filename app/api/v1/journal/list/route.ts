@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
+import { listDailyJournalEntries } from '@/server/daily-journal'
 
 export async function GET(request: NextRequest) {
   const rateLimitRes = await applyRateLimit(request, apiLimiter)
@@ -20,22 +21,10 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate')
     const accountId = searchParams.get('accountId')
 
-    const where: any = { userId: internalUserId }
-
-    if (accountId && accountId !== 'all') {
-      where.accountId = accountId
-    }
-
-    if (startDate && endDate) {
-      where.date = { gte: new Date(startDate), lte: new Date(endDate) }
-    }
-
-    const journals = await prisma.dailyNote.findMany({
-      where,
-      orderBy: { date: 'desc' },
-      include: {
-        Account: { select: { id: true, name: true, number: true } },
-      },
+    const journals = await listDailyJournalEntries(internalUserId, {
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+      accountId: accountId && accountId !== 'all' ? accountId : undefined,
     })
 
     return NextResponse.json({ journals })

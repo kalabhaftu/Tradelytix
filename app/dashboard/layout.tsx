@@ -14,9 +14,11 @@ import { KeyboardShortcutsModal } from "@/components/ui/keyboard-shortcuts-modal
 import { getInitBootstrapData } from "@/server/init-bootstrap";
 import { checkSubscriptionAccess } from "@/lib/services/subscription-guard";
 import { redirect } from "next/navigation";
+import { getSiteUiSettings } from "@/server/site-ui-settings";
 
 export default async function RootLayout({ children }: { children: ReactElement }) {
   const initialBootstrapData = await getInitBootstrapData()
+  const siteUiSettings = await getSiteUiSettings()
 
   // Subscription access gate — admins bypass, unpaid users redirect to /subscribe
   if (initialBootstrapData.isAuthenticated && initialBootstrapData.user?.id) {
@@ -35,7 +37,7 @@ export default async function RootLayout({ children }: { children: ReactElement 
           <TemplateProvider initialActiveTemplate={initialBootstrapData.activeTemplateShell}>
               <div className="min-h-screen flex flex-col">
                 <Suspense fallback={<div className="flex flex-1" />}>
-                  <SidebarLayout>
+                  <SidebarLayout siteUiSettings={siteUiSettings}>
                     {children}
                   </SidebarLayout>
                 </Suspense>

@@ -3,8 +3,11 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Heart, Github, Mail, Target, Shield, Zap } from 'lucide-react'
+import { getSiteUiSettings } from '@/server/site-ui-settings'
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const siteUiSettings = await getSiteUiSettings()
+
   return (
     <PublicLayout>
       <div className="space-y-10">
@@ -58,12 +61,16 @@ export default function AboutPage() {
         </Card>
 
         <div className="flex flex-wrap justify-center gap-4">
-          <Button asChild size="lg">
-            <Link href="/donate"><Heart className="h-4 w-4 mr-2" />Support the Project</Link>
-          </Button>
-          <Button asChild variant="outline" size="lg">
-            <Link href="/feedback"><Mail className="h-4 w-4 mr-2" />Send Feedback</Link>
-          </Button>
+          {siteUiSettings.showDonateButton && (
+            <Button asChild size="lg">
+              <Link href="/donate"><Heart className="h-4 w-4 mr-2" />Support the Project</Link>
+            </Button>
+          )}
+          {siteUiSettings.showFeedbackButton && (
+            <Button asChild variant="outline" size="lg">
+              <Link href="/feedback"><Mail className="h-4 w-4 mr-2" />Send Feedback</Link>
+            </Button>
+          )}
           <Button asChild variant="outline" size="lg">
             <Link href="/docs"><Zap className="h-4 w-4 mr-2" />Read the Docs</Link>
           </Button>

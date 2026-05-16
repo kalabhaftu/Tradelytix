@@ -32,6 +32,7 @@ export default function SubscribeSuccessPage() {
           if (data.data.providerStatus === 'finished') {
             setStatus('confirmed')
             sessionStorage.removeItem('pendingPaymentId')
+            router.refresh()
             return true
           }
           if (['failed', 'expired', 'refunded'].includes(data.data.providerStatus)) {
@@ -95,7 +96,10 @@ export default function SubscribeSuccessPage() {
             <p className="text-sm text-muted-foreground">
               Your subscription is now active. Welcome to Deltalytix Pro!
             </p>
-            <Button onClick={() => router.push('/dashboard')} className="mt-4">
+            <Button onClick={() => {
+              router.refresh()
+              router.push('/dashboard')
+            }} className="mt-4">
               Go to Dashboard →
             </Button>
           </div>

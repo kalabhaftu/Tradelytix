@@ -7,6 +7,7 @@ export interface UseJournalParams {
   page?: number
   limit?: number
   search?: string
+  tradeDate?: string
   filterBy?: 'all' | 'wins' | 'losses' | 'breakeven' | 'buys' | 'sells'
   selectedTagIds?: string[]
   accountNumbers?: string[]
@@ -17,19 +18,29 @@ export function useJournal(params: UseJournalParams) {
     page = 1,
     limit = 21, // ITEMS_PER_PAGE in journal-client
     search = '',
+    tradeDate = '',
     filterBy = 'all',
     selectedTagIds = [],
     accountNumbers = []
   } = params
 
   const queryParams = new URLSearchParams()
+  const normalizedSearch = search.trim()
+  const exactDateMatch = normalizedSearch.match(/^(\d{4}-\d{2}-\d{2})$/)
+  const normalizedTradeDate = tradeDate.trim()
   
   // Pagination via offset since /v1/trades leverages pageLimit & pageOffset
   queryParams.append('pageLimit', limit.toString())
   queryParams.append('pageOffset', ((page - 1) * limit).toString())
   
   // Search
-  if (search) queryParams.append('search', search)
+  if (normalizedTradeDate) {
+    queryParams.append('tradeDate', normalizedTradeDate)
+  } else if (exactDateMatch) {
+    queryParams.append('tradeDate', exactDateMatch[1])
+  } else if (normalizedSearch) {
+    queryParams.append('search', normalizedSearch)
+  }
   
   // Win/Loss
   if (filterBy === 'wins') {

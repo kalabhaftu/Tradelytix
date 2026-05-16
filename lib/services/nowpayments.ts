@@ -69,6 +69,14 @@ export interface IpnPayload {
   [key: string]: unknown
 }
 
+export const NOWPAYMENTS_PENDING_STATUSES: NowPaymentStatus[] = [
+  'waiting',
+  'confirming',
+  'confirmed',
+  'sending',
+  'partially_paid',
+]
+
 function sortObject(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(sortObject)
@@ -161,11 +169,19 @@ export function verifyIpnSignature(payload: Record<string, unknown>, signature: 
   }
 
   try {
-    const hmac = crypto.createHmac('sha512', IPN_SECRET)
-    hmac.update(JSON.stringify(sortObject(payload)))
+    const normalizedPayload = JSON.stringify(sortObject(payload))
+    const normalizedSignature = signature.trim().toLowerCase()
+    const algorithm = normalizedSignature.length === 64 ? 'sha256' : 'sha512'
+    const hmac = crypto.createHmac(algorithm, IPN_SECRET)
+    hmac.update(normalizedPayload)
     const calculated = hmac.digest('hex')
 
-    return crypto.timingSafeEqual(Buffer.from(calculated, 'hex'), Buffer.from(signature, 'hex'))
+    if (calculated.length !== normalizedSignature.length) return false
+
+    return crypto.timingSafeEqual(
+      Buffer.from(calculated, 'hex'),
+      Buffer.from(normalizedSignature, 'hex')
+    )
   } catch (error) {
     console.error('[NOWPayments] IPN signature verification error:', error)
     return false
@@ -174,6 +190,10 @@ export function verifyIpnSignature(payload: Record<string, unknown>, signature: 
 
 export function isTerminalStatus(status: NowPaymentStatus): boolean {
   return ['finished', 'failed', 'refunded', 'expired'].includes(status)
+}
+
+export function isPendingStatus(status: NowPaymentStatus): boolean {
+  return NOWPAYMENTS_PENDING_STATUSES.includes(status)
 }
 
 export function isSuccessStatus(status: NowPaymentStatus): boolean {

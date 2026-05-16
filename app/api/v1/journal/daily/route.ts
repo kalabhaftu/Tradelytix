@@ -10,6 +10,7 @@ import { getResolvedUserIdentity } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { isJournalEmotion } from '@/lib/journal-emotions'
+import { getDailyJournalEntry, normalizeJournalDate } from '@/server/daily-journal'
 
 export async function GET(request: NextRequest) {
   const rateLimitRes = await applyRateLimit(request, apiLimiter)
@@ -25,9 +26,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Date is required' }, { status: 400 })
     }
 
-    const journal = await prisma.dailyNote.findFirst({
-      where: { userId: internalUserId, date: new Date(date), accountId: accountId || null },
-    })
+    const journal = await getDailyJournalEntry(internalUserId, date, accountId)
 
     return NextResponse.json({ journal })
   } catch (error: any) {
@@ -65,9 +64,8 @@ export async function POST(request: NextRequest) {
       validAccountId = userAccount ? accountId : null
     }
 
-    const existing = await prisma.dailyNote.findFirst({
-      where: { userId: internalUserId, date: new Date(date), accountId: validAccountId },
-    })
+    const normalizedDate = normalizeJournalDate(date)
+    const existing = await getDailyJournalEntry(internalUserId, normalizedDate, validAccountId)
 
     if (existing) {
       return NextResponse.json({ error: 'Journal entry already exists for this date' }, { status: 409 })
@@ -78,7 +76,7 @@ export async function POST(request: NextRequest) {
         id: crypto.randomUUID(),
         updatedAt: new Date(),
         userId: internalUserId,
-        date: new Date(date),
+        date: normalizedDate,
         note: note || '',
         emotion: emotion || null,
         accountId: validAccountId,

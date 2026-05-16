@@ -24,6 +24,8 @@ import {
 const editAccountSchema = z.object({
   name: z.string().min(1, 'Account name is required').max(100, 'Name too long'),
   broker: z.string().min(1, 'Broker is required').max(100, 'Broker name too long'),
+  number: z.string().min(1, 'Account number is required').max(50, 'Number too long'),
+  startingBalance: z.string().min(1, 'Starting balance is required'),
 })
 
 type EditAccountForm = z.infer<typeof editAccountSchema>
@@ -37,6 +39,7 @@ interface LiveAccountData {
   startingBalance?: number
   status?: string
   accountType?: 'live' | 'prop-firm'
+  isConfigured?: boolean
 }
 
 interface EditLiveAccountDialogProps {
@@ -69,6 +72,8 @@ export function EditLiveAccountDialog({
     if (account && open) {
       setValue('name', account.name || account.displayName || account.number)
       setValue('broker', account.broker || '')
+      setValue('number', account.number || '')
+      setValue('startingBalance', (account.startingBalance || 0).toString())
     }
   }, [account, open, setValue])
 
@@ -85,7 +90,9 @@ export function EditLiveAccountDialog({
         },
         body: JSON.stringify({
           name: data.name.trim(),
-          broker: data.broker.trim()
+          broker: data.broker.trim(),
+          number: data.number.trim(),
+          startingBalance: data.startingBalance
         })
       })
 
@@ -127,7 +134,7 @@ export function EditLiveAccountDialog({
             Edit Account
           </DialogTitle>
           <DialogDescription>
-            Update your live account settings. Changes will be saved immediately.
+            Update your live account settings. {account.isConfigured ? 'Changes will be saved immediately.' : 'Configure your default account details.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -159,26 +166,42 @@ export function EditLiveAccountDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Account Number</Label>
+            <Label htmlFor="number">Account Number *</Label>
             <Input
-              value={account.number}
-              disabled
-              className="bg-muted"
+              id="number"
+              placeholder="Enter account number"
+              {...register('number')}
+              disabled={isSaving || account.isConfigured}
+              className={account.isConfigured ? "bg-muted" : ""}
             />
+            {errors.number && (
+              <p className="text-sm text-destructive">{errors.number.message}</p>
+            )}
             <p className="text-xs text-muted-foreground">
-              Account number cannot be changed
+              {account.isConfigured 
+                ? "Account number cannot be changed" 
+                : "Enter your account number. This can only be set once."}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label>Starting Balance</Label>
+            <Label htmlFor="startingBalance">Starting Balance ($) *</Label>
             <Input
-              value={`$${(account.startingBalance || 0).toLocaleString()}`}
-              disabled
-              className="bg-muted"
+              id="startingBalance"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              {...register('startingBalance')}
+              disabled={isSaving || account.isConfigured}
+              className={account.isConfigured ? "bg-muted" : ""}
             />
+            {errors.startingBalance && (
+              <p className="text-sm text-destructive">{errors.startingBalance.message}</p>
+            )}
             <p className="text-xs text-muted-foreground">
-              Starting balance cannot be changed
+              {account.isConfigured 
+                ? "Starting balance cannot be changed" 
+                : "Enter your initial balance. This can only be set once."}
             </p>
           </div>
 
@@ -193,7 +216,7 @@ export function EditLiveAccountDialog({
             </Button>
             <Button type="submit" disabled={isSaving}>
               {isSaving && <Spinner className="mr-2 h-4 w-4" />}
-              Save Changes
+              {account.isConfigured ? 'Save Changes' : 'Confirm Setup'}
             </Button>
           </DialogFooter>
         </form>

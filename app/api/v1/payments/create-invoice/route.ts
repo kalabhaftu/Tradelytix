@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
       invoiceUrl: result.invoiceUrl,
       invoiceId: result.invoiceId,
       paymentRecordId: result.paymentRecordId,
+      reusedExisting: Boolean(result.reusedExisting),
     })
   } catch (error) {
     console.error('[Payment] Create invoice error:', error)

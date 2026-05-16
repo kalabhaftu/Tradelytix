@@ -1,0 +1,43 @@
+export const ADMIN_WIDGET_DEFAULTS = [
+  { widgetType: 'calendarAdvanced', label: 'Advanced Calendar', visible: true, recommended: true, deprecated: false, status: 'stable' },
+  { widgetType: 'calendarMini', label: 'Mini Calendar', visible: true, recommended: false, deprecated: true, status: 'legacy' },
+  { widgetType: 'recentTrades', label: 'Recent Trades', visible: true, recommended: true, deprecated: false, status: 'stable' },
+  { widgetType: 'netDailyPnL', label: 'Net Daily P/L', visible: true, recommended: true, deprecated: false, status: 'stable' },
+  { widgetType: 'weekdayPnL', label: 'Weekday P/L', visible: true, recommended: false, deprecated: false, status: 'stable' },
+  { widgetType: 'accountProgression', label: 'Account Curve', visible: true, recommended: true, deprecated: false, status: 'stable' },
+  { widgetType: 'performanceSummary', label: 'Performance', visible: true, recommended: true, deprecated: false, status: 'stable' },
+  { widgetType: 'tagPerformance', label: 'Tag Performance', visible: true, recommended: false, deprecated: false, status: 'review' },
+  { widgetType: 'timeOfDayPerformance', label: 'Time of Day', visible: true, recommended: false, deprecated: false, status: 'review' },
+  { widgetType: 'disciplineAnalytics', label: 'Discipline Analytics', visible: true, recommended: false, deprecated: false, status: 'review' },
+  { widgetType: 'dailyCumulativePnL', label: 'Daily Cumulative P/L', visible: false, recommended: false, deprecated: true, status: 'replaced' },
+  { widgetType: 'equityCurve', label: 'Equity Curve', visible: false, recommended: false, deprecated: true, status: 'legacy' },
+  { widgetType: 'accountBalanceChart', label: 'Account Balance Chart', visible: false, recommended: false, deprecated: true, status: 'replaced' },
+  { widgetType: 'dayOfWeekPerformance', label: 'Day of Week Performance', visible: false, recommended: false, deprecated: true, status: 'legacy' },
+  { widgetType: 'pnlByStrategy', label: 'P&L by Strategy', visible: false, recommended: false, deprecated: true, status: 'replaced' },
+  { widgetType: 'winRateByStrategy', label: 'Win Rate by Strategy', visible: false, recommended: false, deprecated: true, status: 'replaced' },
+  { widgetType: 'tradeDurationPerformance', label: 'Trade Duration Performance', visible: true, recommended: false, deprecated: false, status: 'stable' },
+  { widgetType: 'performanceScore', label: 'Performance Score', visible: true, recommended: false, deprecated: false, status: 'stable' },
+  { widgetType: 'pnlByInstrument', label: 'P&L by Instrument', visible: true, recommended: false, deprecated: false, status: 'stable' },
+  { widgetType: 'sessionAnalysis', label: 'Session Analysis', visible: true, recommended: false, deprecated: false, status: 'stable' },
+  { widgetType: 'outcomeDistribution', label: 'Outcome Distribution', visible: false, recommended: false, deprecated: true, status: 'replaced' },
+  { widgetType: 'drawdown', label: 'Drawdown', visible: true, recommended: false, deprecated: false, status: 'stable' },
+  { widgetType: 'accountBalancePnl', label: 'Account Balance P/L', visible: true, recommended: true, deprecated: false, status: 'stable' },
+  { widgetType: 'tradeWinRate', label: 'Trade Win Rate', visible: true, recommended: true, deprecated: false, status: 'stable' },
+  { widgetType: 'dayWinRate', label: 'Day Win Rate', visible: true, recommended: true, deprecated: false, status: 'stable' },
+  { widgetType: 'profitFactor', label: 'Profit Factor', visible: true, recommended: true, deprecated: false, status: 'stable' },
+  { widgetType: 'avgWinLoss', label: 'Average Win/Loss', visible: true, recommended: true, deprecated: false, status: 'stable' },
+  { widgetType: 'streakKpi', label: 'Streak KPI', visible: true, recommended: false, deprecated: false, status: 'stable' },
+] as const
+
+export const ADMIN_FEATURE_DEFAULTS = [
+  { key: 'analytics.new_widgets', label: 'New Analytics Widgets', description: 'Shows review-stage analytics widgets in the library.', enabled: true, internalOnly: false },
+  { key: 'reports.public_sharing', label: 'Public Report Sharing', description: 'Allows users to create public shared reports.', enabled: true, internalOnly: false },
+  { key: 'dashboard.admin_presets', label: 'Admin Dashboard Presets', description: 'Allows admins to curate product-owned dashboard presets.', enabled: true, internalOnly: true },
+] as const
+
+export const DEFAULT_SHARING_POLICY = {
+  key: 'default',
+  publicSharingEnabled: true,
+  defaultExpirationDays: null,
+  requireExpiration: false,
+}

@@ -134,6 +134,73 @@ model DashboardTemplate {
   @@schema("public")
 }
 
+model AdminWidgetSetting {
+  id          String   @id @default(cuid())
+  widgetType  String   @unique
+  label       String?
+  description String?
+  visible     Boolean  @default(true)
+  recommended Boolean  @default(false)
+  deprecated  Boolean  @default(false)
+  status      String   @default("stable")
+  premiumOnly Boolean  @default(false)
+  roleGate    String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([visible])
+  @@index([recommended])
+  @@index([deprecated])
+  @@schema("public")
+}
+
+model AdminDashboardPreset {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  segment     String   @default("all")
+  description String?
+  layout      Json     @default("[]")
+  active      Boolean  @default(true)
+  recommended Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([segment])
+  @@index([active])
+  @@index([recommended])
+  @@schema("public")
+}
+
+model AdminFeatureFlag {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  label        String
+  description  String?
+  enabled      Boolean  @default(false)
+  internalOnly Boolean  @default(false)
+  roleGate     String?
+  cohort       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([enabled])
+  @@index([internalOnly])
+  @@schema("public")
+}
+
+model AdminSharingPolicy {
+  id                     String   @id @default(cuid())
+  key                    String   @unique @default("default")
+  publicSharingEnabled    Boolean  @default(true)
+  defaultExpirationDays   Int?
+  requireExpiration       Boolean  @default(false)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@schema("public")
+}
+
 model LiveAccountTransaction {
   id          String          @id
   accountId   String

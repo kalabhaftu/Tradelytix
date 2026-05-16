@@ -21,19 +21,21 @@ import StreakKpi from '../components/kpi/streak-kpi'
 
 // Chart components
 import NetDailyPnL from '../components/charts/net-daily-pnl'
-import DailyCumulativePnL from '../components/charts/daily-cumulative-pnl'
-import AccountBalanceChart from '../components/charts/account-balance-chart'
 import WeekdayPnL from '../components/charts/weekday-pnl'
 import TradeDurationPerformance from '../components/charts/trade-duration-performance'
 import PerformanceScore from '../components/charts/performance-score'
 import PnLByInstrument from '../components/charts/pnl-by-instrument'
-import PnLByStrategy from '../components/charts/pnl-by-strategy'
-import WinRateByStrategy from '../components/charts/win-rate-by-strategy'
 import EquityCurveWidget from '../components/charts/equity-curve-widget'
 import OutcomeDistributionWidget from '../components/charts/outcome-distribution-widget'
 import DayOfWeekPerformanceWidget from '../components/charts/day-of-week-performance-widget'
 import DrawdownChart from '../components/charts/drawdown-chart'
 import PerformanceSummaryWidget from '../components/charts/performance-summary'
+import {
+  AccountCurveWidget,
+  DisciplineAnalyticsWidget,
+  TagPerformanceWidget,
+  TimeOfDayPerformanceWidget,
+} from '../components/charts/analytics-widgets'
 
 export interface WidgetConfig {
   type: WidgetType
@@ -86,6 +88,15 @@ function CreateCalendarPreview() {
           </div>
         </div>
       </CardContent>
+    </Card>
+  )
+}
+
+function CreateLinePreview({ title }: { title: string }) {
+  return (
+    <Card className="w-full h-full">
+      <CardHeader className="pb-2"><CardTitle className="text-sm">{title}</CardTitle></CardHeader>
+      <CardContent className="p-2"><div className="h-24 rounded bg-muted/30" /></CardContent>
     </Card>
   )
 }
@@ -231,9 +242,10 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetConfig> = {
     defaultSize: 'small-long',
     allowedSizes: ['small-long', 'medium', 'large'],
     category: 'charts',
-    description: 'Cumulative profit/loss area chart over time',
+    description: 'Legacy cumulative P/L entry, now shown through Account Curve',
+    hiddenFromLibrary: true,
     previewHeight: 200,
-    getComponent: ({ size }) => <DailyCumulativePnL size={size} />,
+    getComponent: () => <AccountCurveWidget initialMode="cumulative" />,
     getPreview: () => (
       <Card className="w-full h-full">
         <CardHeader className="pb-2">
@@ -265,9 +277,10 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetConfig> = {
     defaultSize: 'small-long',
     allowedSizes: ['small-long', 'medium', 'large'],
     category: 'charts',
-    description: 'Account balance progression with detailed trade information',
+    description: 'Legacy account balance entry, now shown through Account Curve',
+    hiddenFromLibrary: true,
     previewHeight: 200,
-    getComponent: ({ size }) => <AccountBalanceChart size={size} />,
+    getComponent: () => <AccountCurveWidget initialMode="balance" />,
     getPreview: () => (
       <Card className="w-full h-full">
         <CardHeader className="pb-2">
@@ -276,17 +289,18 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetConfig> = {
         <CardContent className="p-2">
           <div className="h-32 relative">
             <svg viewBox="0 0 100 100" className="w-full h-full">
+              <defs>
+                <linearGradient id="balance-preview-gradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity="0.8" />
+                  <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity="0.1" />
+                </linearGradient>
+              </defs>
               <path
-                d="M 0,80 L 20,60 L 40,65 L 60,40 L 80,45 L 100,25"
-                fill="none"
+                d="M 0,80 L 20,60 L 40,65 L 60,40 L 80,45 L 100,25 L 100,100 L 0,100 Z"
+                fill="url(#balance-preview-gradient)"
                 stroke="hsl(var(--chart-2))"
                 strokeWidth="2"
               />
-              <circle cx="20" cy="60" r="2" fill="hsl(var(--chart-2))" />
-              <circle cx="40" cy="65" r="2" fill="hsl(var(--chart-2))" />
-              <circle cx="60" cy="40" r="2" fill="hsl(var(--chart-2))" />
-              <circle cx="80" cy="45" r="2" fill="hsl(var(--chart-2))" />
-              <circle cx="100" cy="25" r="2" fill="hsl(var(--chart-2))" />
             </svg>
           </div>
         </CardContent>
@@ -440,8 +454,9 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetConfig> = {
     allowedSizes: ['small-long', 'medium', 'large'],
     category: 'charts',
     description: 'P&L performance by trading strategy/model with win/loss stats',
+    hiddenFromLibrary: true,
     previewHeight: 250,
-    getComponent: ({ size }) => <PnLByStrategy size={size} />,
+    getComponent: () => <PerformanceSummaryWidget />,
     getPreview: () => (
       <Card className="w-full h-full">
         <CardHeader className="pb-2">
@@ -472,8 +487,9 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetConfig> = {
     allowedSizes: ['small-long', 'medium', 'large'],
     category: 'charts',
     description: 'Win rate distribution and success metrics by strategy',
+    hiddenFromLibrary: true,
     previewHeight: 250,
-    getComponent: ({ size }) => <WinRateByStrategy size={size} />,
+    getComponent: () => <PerformanceSummaryWidget />,
     getPreview: () => (
       <Card className="w-full h-full">
         <CardHeader className="pb-2">
@@ -604,13 +620,12 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetConfig> = {
   },
   performanceSummary: {
     type: 'performanceSummary',
-    defaultSize: 'large',
-    allowedSizes: ['medium', 'large', 'extra-large'],
+    defaultSize: 'extra-large',
+    allowedSizes: ['large', 'extra-large'],
     category: 'charts',
-    description: 'Performance overview with equity curve, stats, fees & net',
-    hiddenFromLibrary: true,
-    previewHeight: 200,
-    getComponent: ({ size }) => <PerformanceSummaryWidget />,
+    description: 'Full-width performance diagnostics with strategy P&L and win rate',
+    previewHeight: 260,
+    getComponent: () => <PerformanceSummaryWidget />,
     getPreview: () => (
       <Card className="w-full h-full">
         <CardHeader className="pb-2">
@@ -637,6 +652,46 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetConfig> = {
     kpiRowOnly: true,
     getComponent: ({ size }) => <StreakKpi size={size} />,
     getPreview: () => <StreakKpi size="kpi" />
+  },
+  accountProgression: {
+    type: 'accountProgression',
+    defaultSize: 'large',
+    allowedSizes: ['medium', 'large', 'extra-large'],
+    category: 'charts',
+    description: 'Cumulative P/L and account balance in one area-curve view',
+    previewHeight: 260,
+    getComponent: () => <AccountCurveWidget />,
+    getPreview: () => <CreateLinePreview title="Account Curve" />,
+  },
+  tagPerformance: {
+    type: 'tagPerformance',
+    defaultSize: 'small-long',
+    allowedSizes: ['small-long', 'medium', 'large'],
+    category: 'charts',
+    description: 'Tag, setup, and mistake performance ranked by P&L, win rate, expectancy, and profit factor',
+    previewHeight: 250,
+    getComponent: () => <TagPerformanceWidget />,
+    getPreview: () => <CreateLinePreview title="Tag Performance" />,
+  },
+  timeOfDayPerformance: {
+    type: 'timeOfDayPerformance',
+    defaultSize: 'medium',
+    allowedSizes: ['medium', 'large'],
+    category: 'charts',
+    description: 'Hourly trading performance heatmap for intraday timing review',
+    previewHeight: 220,
+    getComponent: () => <TimeOfDayPerformanceWidget />,
+    getPreview: () => <CreateLinePreview title="Time of Day" />,
+  },
+  disciplineAnalytics: {
+    type: 'disciplineAnalytics',
+    defaultSize: 'medium',
+    allowedSizes: ['medium', 'large'],
+    category: 'statistics',
+    description: 'Rule adherence, playbook coverage, and discipline performance summary',
+    previewHeight: 220,
+    getComponent: () => <DisciplineAnalyticsWidget />,
+    getPreview: () => <CreateLinePreview title="Discipline" />,
   },
 }
 

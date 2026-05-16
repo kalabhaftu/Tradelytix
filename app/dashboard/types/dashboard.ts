@@ -23,6 +23,10 @@ export type WidgetType =
   | 'drawdown'
   | 'performanceSummary'
   | 'streakKpi'
+  | 'accountProgression'
+  | 'tagPerformance'
+  | 'timeOfDayPerformance'
+  | 'disciplineAnalytics'
 export type WidgetSize = 'tiny' | 'small' | 'small-long' | 'medium' | 'large' | 'extra-large' | 'kpi'
 
 

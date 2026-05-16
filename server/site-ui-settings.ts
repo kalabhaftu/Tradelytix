@@ -1,4 +1,4 @@
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag, unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 
 export interface SiteUiSettingsPayload {
@@ -7,25 +7,33 @@ export interface SiteUiSettingsPayload {
 }
 
 const SITE_UI_SETTINGS_ID = 'global'
+const SITE_UI_SETTINGS_CACHE_TAG = 'site-ui-settings'
 
-export async function getSiteUiSettings(): Promise<SiteUiSettingsPayload> {
-  const existing = await prisma.siteUiSettings.findUnique({
+async function loadSiteUiSettings(): Promise<SiteUiSettingsPayload> {
+  const settings = await prisma.siteUiSettings.upsert({
     where: { id: SITE_UI_SETTINGS_ID },
+    update: {},
+    create: {
+      id: SITE_UI_SETTINGS_ID,
+      showDonateButton: true,
+      showFeedbackButton: true,
+    },
   })
-
-  const settings = existing
-    ?? await prisma.siteUiSettings.create({
-      data: {
-        id: SITE_UI_SETTINGS_ID,
-        showDonateButton: true,
-        showFeedbackButton: true,
-      },
-    })
 
   return {
     showDonateButton: settings.showDonateButton,
     showFeedbackButton: settings.showFeedbackButton,
   }
+}
+
+const getCachedSiteUiSettings = unstable_cache(
+  loadSiteUiSettings,
+  [SITE_UI_SETTINGS_CACHE_TAG],
+  { tags: [SITE_UI_SETTINGS_CACHE_TAG] }
+)
+
+export async function getSiteUiSettings(): Promise<SiteUiSettingsPayload> {
+  return getCachedSiteUiSettings()
 }
 
 export async function updateSiteUiSettings(
@@ -48,6 +56,7 @@ export async function updateSiteUiSettings(
     },
   })
 
+  revalidateTag(SITE_UI_SETTINGS_CACHE_TAG, 'max')
   revalidatePath('/', 'layout')
   revalidatePath('/docs', 'layout')
   revalidatePath('/dashboard', 'layout')

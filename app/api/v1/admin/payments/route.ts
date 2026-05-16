@@ -5,21 +5,44 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { requireAdmin } from '@/server/admin-auth'
 import { prisma } from '@/lib/prisma'
 import { reconcilePaymentRecord, reconcilePendingPayments } from '@/lib/services/subscription'
 import { derivePaymentState } from '@/server/admin-subscription-state'
+import { applyRateLimit, adminLimiter } from '@/lib/rate-limiter'
+import { createErrorResponse } from '@/lib/api-response'
+
+function boundedInt(value: string | null, fallback: number, min: number, max: number) {
+  const parsed = Number.parseInt(value || '', 10)
+  if (!Number.isFinite(parsed)) return fallback
+  return Math.min(max, Math.max(min, parsed))
+}
+
+const paymentSyncSchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('sync_payment'),
+    paymentRecordId: z.string().trim().min(1).max(128),
+  }).strict(),
+  z.object({
+    action: z.literal('sync_user'),
+    email: z.string().trim().email().max(254),
+  }).strict(),
+])
 
 export async function GET(request: NextRequest) {
+  const rl = await applyRateLimit(request, adminLimiter)
+  if (rl) return rl
+
   try {
     await requireAdmin()
 
-    const page = parseInt(request.nextUrl.searchParams.get('page') || '1', 10)
-    const limit = parseInt(request.nextUrl.searchParams.get('limit') || '50', 10)
-    const status = request.nextUrl.searchParams.get('status')
-    const search = request.nextUrl.searchParams.get('search')
+    const page = boundedInt(request.nextUrl.searchParams.get('page'), 1, 1, 10000)
+    const limit = boundedInt(request.nextUrl.searchParams.get('limit'), 50, 1, 100)
+    const status = request.nextUrl.searchParams.get('status')?.trim().slice(0, 64) || undefined
+    const search = request.nextUrl.searchParams.get('search')?.trim().slice(0, 254) || undefined
 
-    let where: any = {}
+    const where: any = {}
     if (status) where.providerStatus = status
     if (search) {
       where.Subscription = {
@@ -80,47 +103,40 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  const rl = await applyRateLimit(request, adminLimiter)
+  if (rl) return rl
+
   try {
     await requireAdmin()
-    const body = await request.json()
-    const action = String(body.action || '')
+    const body = await request.json().catch(() => null)
+    const parsed = paymentSyncSchema.safeParse(body)
 
-    if (action === 'sync_payment') {
-      const paymentRecordId = String(body.paymentRecordId || '')
-      if (!paymentRecordId) {
-        return NextResponse.json({ success: false, error: 'Missing paymentRecordId' }, { status: 400 })
-      }
+    if (!parsed.success) {
+      return createErrorResponse('Validation failed', 400, parsed.error.flatten(), 'VALIDATION_ERROR')
+    }
 
+    if (parsed.data.action === 'sync_payment') {
       const payment = await prisma.paymentRecord.findUnique({
-        where: { id: paymentRecordId },
+        where: { id: parsed.data.paymentRecordId },
       })
       if (!payment) {
         return NextResponse.json({ success: false, error: 'Payment not found' }, { status: 404 })
       }
 
-      const updated = await reconcilePaymentRecord(paymentRecordId, payment.userId)
+      const updated = await reconcilePaymentRecord(parsed.data.paymentRecordId, payment.userId)
       return NextResponse.json({ success: true, data: updated })
     }
 
-    if (action === 'sync_user') {
-      const email = String(body.email || '').trim()
-      if (!email) {
-        return NextResponse.json({ success: false, error: 'Missing email' }, { status: 400 })
-      }
-
-      const user = await prisma.user.findUnique({
-        where: { email },
-        select: { id: true },
-      })
-      if (!user) {
-        return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 })
-      }
-
-      const result = await reconcilePendingPayments({ userId: user.id })
-      return NextResponse.json({ success: true, data: result })
+    const user = await prisma.user.findUnique({
+      where: { email: parsed.data.email },
+      select: { id: true },
+    })
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ success: false, error: `Unknown action: ${action}` }, { status: 400 })
+    const result = await reconcilePendingPayments({ userId: user.id })
+    return NextResponse.json({ success: true, data: result })
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unauthorized'
     const statusCode = msg.includes('Unauthorized') || msg.includes('Forbidden') ? 403 : 500

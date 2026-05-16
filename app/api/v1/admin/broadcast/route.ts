@@ -1,29 +1,35 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { z } from 'zod'
 import { NotificationPriority, NotificationType } from '@prisma/client'
 import { requireAdmin } from '@/server/admin-auth'
 import { prisma } from '@/lib/prisma'
 import { formatNoteContent } from '@/lib/utils'
+import { applyRateLimit, adminLimiter } from '@/lib/rate-limiter'
+import { createErrorResponse, createSuccessResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 
 const BATCH_SIZE = 200
 
+const broadcastSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  content: z.string().trim().min(1).max(10000),
+  priority: z.nativeEnum(NotificationPriority).optional().default(NotificationPriority.MEDIUM),
+}).strict()
+
 export async function POST(request: NextRequest) {
+  const rl = await applyRateLimit(request, adminLimiter)
+  if (rl) return rl
+
   try {
     await requireAdmin()
-    const body = await request.json()
-    const title = String(body.title || '').trim()
-    const content = String(body.content || '').trim()
-    const priority =
-      body.priority && Object.values(NotificationPriority).includes(body.priority)
-        ? body.priority
-        : NotificationPriority.MEDIUM
+    const body = await request.json().catch(() => null)
+    const parsed = broadcastSchema.safeParse(body)
 
-    if (!title || !content) {
-      return NextResponse.json(
-        { success: false, error: 'Title and content are required' },
-        { status: 400 }
-      )
+    if (!parsed.success) {
+      return createErrorResponse('Validation failed', 400, parsed.error.flatten(), 'VALIDATION_ERROR')
     }
 
+    const { title, content, priority } = parsed.data
     const preview = formatNoteContent(content).slice(0, 280)
     const users = await prisma.user.findMany({
       select: { id: true },
@@ -35,7 +41,7 @@ export async function POST(request: NextRequest) {
         data: batch.map((user) => ({
           userId: user.id,
           type: NotificationType.SYSTEM_ANNOUNCEMENT,
-          title: title.slice(0, 200),
+          title,
           message: preview,
           priority,
           data: {
@@ -47,14 +53,9 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    return NextResponse.json({
-      success: true,
-      data: { recipients: users.length },
-    })
-  } catch {
-    return NextResponse.json(
-      { success: false, error: 'Failed to send broadcast' },
-      { status: 500 }
-    )
+    return createSuccessResponse({ recipients: users.length })
+  } catch (error) {
+    logger.error('Admin broadcast failed', {}, 'api')
+    return createErrorResponse('Failed to send broadcast', 500)
   }
 }

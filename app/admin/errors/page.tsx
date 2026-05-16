@@ -49,13 +49,15 @@ export default function AdminErrorsPage() {
   const handleCleanup = async (days: number | 'all') => {
     const isAll = days === 'all'
     if (isAll && !confirm('Are you sure you want to clear ALL error logs? This cannot be undone.')) return
-    
-    const params = isAll ? 'all=true' : `olderThan=${days}`
+
+    const params = isAll ? 'all=true&confirm=DELETE_ALL_ERROR_LOGS' : `olderThan=${days}`
     const res = await fetch(`/api/v1/admin/errors?${params}`, { method: 'DELETE' })
     const data = await res.json()
     if (data.success) {
       toast.success(isAll ? `Cleared all ${data.deleted} entries` : `Cleaned up ${data.deleted} old entries`)
       fetchErrors()
+    } else {
+      toast.error(data.error || 'Failed to clean up error logs')
     }
   }
 

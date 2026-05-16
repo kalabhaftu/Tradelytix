@@ -5,22 +5,46 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { SubscriptionStatus } from '@prisma/client'
+import { z } from 'zod'
 import { requireAdmin } from '@/server/admin-auth'
 import { prisma } from '@/lib/prisma'
 import { reconcilePendingPayments } from '@/lib/services/subscription'
 import { deriveAccessSource, derivePaymentState, getAccessDescriptor } from '@/server/admin-subscription-state'
+import { applyRateLimit, adminLimiter } from '@/lib/rate-limiter'
+import { createErrorResponse } from '@/lib/api-response'
+
+function boundedInt(value: string | null, fallback: number, min: number, max: number) {
+  const parsed = Number.parseInt(value || '', 10)
+  if (!Number.isFinite(parsed)) return fallback
+  return Math.min(max, Math.max(min, parsed))
+}
+
+const subscriptionActionSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('sync'), subscriptionId: z.string().trim().min(1) }).strict(),
+  z.object({ action: z.literal('activate'), subscriptionId: z.string().trim().min(1), periodEnd: z.string().date().optional() }).strict(),
+  z.object({ action: z.literal('cancel'), subscriptionId: z.string().trim().min(1) }).strict(),
+  z.object({ action: z.literal('expire'), subscriptionId: z.string().trim().min(1) }).strict(),
+  z.object({ action: z.literal('extend'), subscriptionId: z.string().trim().min(1), days: z.coerce.number().int().min(1).max(365) }).strict(),
+])
 
 export async function GET(request: NextRequest) {
+  const rl = await applyRateLimit(request, adminLimiter)
+  if (rl) return rl
+
   try {
     await requireAdmin()
 
-    const page = parseInt(request.nextUrl.searchParams.get('page') || '1')
-    const limit = parseInt(request.nextUrl.searchParams.get('limit') || '50')
-    const status = request.nextUrl.searchParams.get('status')
-    const search = request.nextUrl.searchParams.get('search')
+    const page = boundedInt(request.nextUrl.searchParams.get('page'), 1, 1, 10000)
+    const limit = boundedInt(request.nextUrl.searchParams.get('limit'), 50, 1, 100)
+    const rawStatus = request.nextUrl.searchParams.get('status')
+    const status = rawStatus && Object.values(SubscriptionStatus).includes(rawStatus as SubscriptionStatus)
+      ? rawStatus as SubscriptionStatus
+      : undefined
+    const search = request.nextUrl.searchParams.get('search')?.trim().slice(0, 254) || undefined
 
-    let where: any = {}
-    if (status) where.Subscription = { status: status as any }
+    const where: any = {}
+    if (status) where.Subscription = { status }
     if (search) where.email = { contains: search, mode: 'insensitive' }
 
     const [users, total] = await Promise.all([
@@ -95,15 +119,19 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  const rl = await applyRateLimit(request, adminLimiter)
+  if (rl) return rl
+
   try {
     await requireAdmin()
-    const body = await request.json()
-    const { subscriptionId, action, ...params } = body
+    const body = await request.json().catch(() => null)
+    const parsed = subscriptionActionSchema.safeParse(body)
 
-    if (!subscriptionId || !action) {
-      return NextResponse.json({ success: false, error: 'Missing subscriptionId or action' }, { status: 400 })
+    if (!parsed.success) {
+      return createErrorResponse('Validation failed', 400, parsed.error.flatten(), 'VALIDATION_ERROR')
     }
 
+    const { subscriptionId, action } = parsed.data
     const subscription = await prisma.subscription.findUnique({
       where: { id: subscriptionId },
       include: {
@@ -150,7 +178,10 @@ export async function PATCH(request: NextRequest) {
         if (accessSource === 'free_access' || accessSource === 'promo') {
           return respondBlocked('This access type cannot be activated with the standard paid-access control.')
         }
-        const periodEnd = params.periodEnd ? new Date(params.periodEnd) : new Date(Date.now() + 30 * 86400000)
+        const periodEnd = parsed.data.periodEnd ? new Date(`${parsed.data.periodEnd}T00:00:00.000Z`) : new Date(Date.now() + 30 * 86400000)
+        if (periodEnd <= new Date()) {
+          return createErrorResponse('periodEnd must be in the future', 400)
+        }
         await prisma.subscription.update({
           where: { id: subscriptionId },
           data: {
@@ -202,20 +233,17 @@ export async function PATCH(request: NextRequest) {
         if (isLifetimeFreeAccess || (subscription.status === 'active' && !subscription.currentPeriodEnd)) {
           return respondBlocked('Cannot extend a lifetime or indefinite subscription')
         }
-        const days = parseInt(params.days || '30')
         const currentEnd = subscription.currentPeriodEnd || new Date()
-        const newEnd = new Date(currentEnd.getTime() + days * 86400000)
+        const newEnd = new Date(currentEnd.getTime() + parsed.data.days * 86400000)
         await prisma.subscription.update({
           where: { id: subscriptionId },
           data: { currentPeriodEnd: newEnd, nextPaymentDue: newEnd, status: 'active' },
         })
         return NextResponse.json({
           success: true,
-          message: `Extended subscription by ${days} day${days === 1 ? '' : 's'}.`,
+          message: `Extended subscription by ${parsed.data.days} day${parsed.data.days === 1 ? '' : 's'}.`,
         })
       }
-      default:
-        return NextResponse.json({ success: false, error: `Unknown action: ${action}` }, { status: 400 })
     }
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Failed'

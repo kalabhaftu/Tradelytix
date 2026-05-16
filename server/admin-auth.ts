@@ -1,13 +1,20 @@
 import { getResolvedUserIdentitySafe, type ResolvedUserIdentity } from '@/server/user-identity'
 import { prisma } from '@/lib/prisma'
 
-/**
- * Check if the currently authenticated user is an admin.
- *
- * Uses a two-layer approach:
- * 1. Database `role` column (preferred — persistent, supports multi-admin)
- * 2. ADMIN_EMAIL env var fallback (legacy — for bootstrapping the first admin)
- */
+function adminEmailFallbackEnabled() {
+  return process.env.NODE_ENV !== 'production' || process.env.ENABLE_ADMIN_EMAIL_FALLBACK === 'true'
+}
+
+function isConfiguredAdminEmail(email: string | null | undefined) {
+  if (!email || !adminEmailFallbackEnabled()) return false
+
+  const adminEmailStr = process.env.ADMIN_EMAIL
+  if (!adminEmailStr) return false
+
+  const adminEmails = adminEmailStr.split(',').map((entry) => entry.trim().toLowerCase())
+  return adminEmails.includes(email.toLowerCase())
+}
+
 export async function isAdminUser(): Promise<boolean> {
   const identity = await getResolvedUserIdentitySafe()
   if (!identity) return false
@@ -18,24 +25,11 @@ export async function isAdminUser(): Promise<boolean> {
   })
 
   if (!user) return false
-
-  // Check database role first (preferred path)
   if (user.role === 'admin') return true
 
-  // Fallback: check ADMIN_EMAIL env var (bootstrapping)
-  const adminEmailStr = process.env.ADMIN_EMAIL
-  if (adminEmailStr) {
-    const adminEmails = adminEmailStr.split(',').map(e => e.trim().toLowerCase())
-    if (user.email && adminEmails.includes(user.email.toLowerCase())) return true
-  }
-
-  return false
+  return isConfiguredAdminEmail(user.email)
 }
 
-/**
- * Require admin access. Throws if not admin.
- * Returns the resolved user identity for further use.
- */
 export async function requireAdmin(): Promise<ResolvedUserIdentity> {
   const identity = await getResolvedUserIdentitySafe()
   if (!identity) {
@@ -51,17 +45,8 @@ export async function requireAdmin(): Promise<ResolvedUserIdentity> {
     throw new Error('Unauthorized')
   }
 
-  // Check database role first
   if (user.role === 'admin') return identity
-
-  // Fallback: check ADMIN_EMAIL env var
-  const adminEmailStr = process.env.ADMIN_EMAIL
-  if (adminEmailStr) {
-    const adminEmails = adminEmailStr.split(',').map(e => e.trim().toLowerCase())
-    if (user.email && adminEmails.includes(user.email.toLowerCase())) {
-      return identity
-    }
-  }
+  if (isConfiguredAdminEmail(user.email)) return identity
 
   throw new Error('Forbidden: Admin access required')
 }

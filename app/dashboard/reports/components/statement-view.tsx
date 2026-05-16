@@ -18,7 +18,23 @@ type StatementRow = {
   tone?: 'positive' | 'negative'
 }
 
-function StatementMetric({ label, value, tone }: StatementRow) {
+function buildPrintDocument(innerHtml: string) {
+  return `
+    <html>
+      <head>
+        <title>Trading Statement</title>
+        <style>
+          body { margin: 0; background: #f5f7fb; color: #172033; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+          .statement-sheet { box-shadow: none !important; border-color: #d8dee8 !important; margin: 24px; }
+          @media print { body { background: #fff; } .statement-sheet { margin: 0; border: none !important; } }
+        </style>
+      </head>
+      <body>${innerHtml}</body>
+    </html>
+  `
+}
+
+function WhiteStatementMetric({ label, value, tone }: StatementRow) {
   return (
     <div className="flex items-center justify-between gap-6 border-b border-slate-200 py-2.5 last:border-b-0">
       <span className="text-[13px] font-semibold text-slate-600">{label}</span>
@@ -27,6 +43,23 @@ function StatementMetric({ label, value, tone }: StatementRow) {
           'font-mono text-[13px] font-bold text-slate-900',
           tone === 'positive' && 'text-emerald-700',
           tone === 'negative' && 'text-red-700'
+        )}
+      >
+        {value}
+      </span>
+    </div>
+  )
+}
+
+function ThemeStatementMetric({ label, value, tone }: StatementRow) {
+  return (
+    <div className="flex items-center justify-between gap-6 border-b border-border/16 py-2.5 last:border-b-0">
+      <span className="text-[13px] font-semibold text-muted-foreground">{label}</span>
+      <span
+        className={cn(
+          'font-mono text-[13px] font-bold text-foreground',
+          tone === 'positive' && 'text-long',
+          tone === 'negative' && 'text-short'
         )}
       >
         {value}
@@ -112,19 +145,7 @@ export function StatementView({ trades, dateRange }: StatementViewProps) {
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Trading Statement</title>
-          <style>
-            body { margin: 0; background: #f5f7fb; color: #172033; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-            .statement-sheet { box-shadow: none !important; border-color: #d8dee8 !important; margin: 24px; }
-            @media print { body { background: #fff; } .statement-sheet { margin: 0; border: none !important; } }
-          </style>
-        </head>
-        <body>${el.innerHTML}</body>
-      </html>
-    `)
+    printWindow.document.write(buildPrintDocument(el.innerHTML))
     printWindow.document.close()
     printWindow.focus()
     setTimeout(() => printWindow.print(), 300)
@@ -170,14 +191,95 @@ export function StatementView({ trades, dateRange }: StatementViewProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-[10px] uppercase font-black text-muted-foreground tracking-[0.2em]">Statement View</h3>
+        <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground">Statement View</h3>
         <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5 text-xs font-bold">
           <Printer className="h-3.5 w-3.5" />
           Print / Export PDF
         </Button>
       </div>
 
-      <div ref={printRef}>
+      <div className="overflow-hidden rounded-2xl border border-border/22 bg-card/30 shadow-sm">
+        <div className="border-b border-border/14 px-5 py-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/70">Statement Preview</p>
+              <h2 className="mt-2 text-xl font-extrabold tracking-tight text-foreground">Trading Statement</h2>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground/65">From {period}</p>
+            </div>
+            <div className="grid grid-cols-3 gap-6 text-left">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/60">Best Trade</p>
+                <p className="mt-1 font-mono text-sm font-extrabold text-long">{formatCurrency(summary.largestProfit)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/60">Worst Trade</p>
+                <p className="mt-1 font-mono text-sm font-extrabold text-short">{formatCurrency(summary.largestLoss)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/60">Average</p>
+                <p className="mt-1 font-mono text-sm font-extrabold text-foreground">{formatCurrency(summary.averageTrade)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-8 px-5 py-4 lg:grid-cols-2">
+          <div>{leftRows.map((row) => <ThemeStatementMetric key={row.label} {...row} />)}</div>
+          <div>{rightRows.map((row) => <ThemeStatementMetric key={row.label} {...row} />)}</div>
+        </div>
+
+        <div className="border-t border-border/14 px-5 py-4">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[960px] border-collapse text-[12px]">
+              <thead>
+                <tr className="border-b border-border/18 text-left">
+                  {['#', 'Date', 'Instrument', 'Side', 'Qty', 'Entry', 'Exit', 'Gross P&L', 'Fees', 'Net P&L', 'Cumulative'].map((heading) => (
+                    <th key={heading} className="px-2 py-2 text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground/65 last:text-right">
+                      {heading}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  let cumulative = 0
+                  return sortedTrades.map((trade: any, index: number) => {
+                    const netPnl = getTradeNetPnl(trade)
+                    cumulative += netPnl
+                    const tradeDate = trade.closeDate || trade.entryDate
+                    const grossPnl = Number(trade.pnl || 0)
+                    const commission = Math.abs(Number(trade.commission || 0))
+
+                    return (
+                      <tr key={trade.id || index} className="border-b border-border/10">
+                        <td className="px-2 py-2 font-mono text-muted-foreground/45">{index + 1}</td>
+                        <td className="px-2 py-2 font-mono text-muted-foreground">{tradeDate ? format(new Date(tradeDate), 'MM/dd/yy HH:mm') : '-'}</td>
+                        <td className="px-2 py-2 font-bold text-foreground">{trade.instrument || trade.symbol || '-'}</td>
+                        <td className="px-2 py-2 font-bold uppercase text-foreground">{trade.side || '-'}</td>
+                        <td className="px-2 py-2 text-right font-mono text-foreground">{trade.quantity || '-'}</td>
+                        <td className="px-2 py-2 text-right font-mono text-foreground">{trade.entryPrice ? Number(trade.entryPrice).toFixed(2) : '-'}</td>
+                        <td className="px-2 py-2 text-right font-mono text-foreground">{trade.closePrice ? Number(trade.closePrice).toFixed(2) : '-'}</td>
+                        <td className={cn('px-2 py-2 text-right font-mono font-bold', grossPnl >= 0 ? 'text-long' : 'text-short')}>
+                          {grossPnl >= 0 ? '+' : ''}{grossPnl.toFixed(2)}
+                        </td>
+                        <td className="px-2 py-2 text-right font-mono text-muted-foreground">{commission > 0 ? commission.toFixed(2) : '-'}</td>
+                        <td className={cn('px-2 py-2 text-right font-mono font-bold', netPnl >= 0 ? 'text-long' : 'text-short')}>
+                          {netPnl >= 0 ? '+' : ''}{netPnl.toFixed(2)}
+                        </td>
+                        <td className={cn('px-2 py-2 text-right font-mono font-bold', cumulative >= 0 ? 'text-long' : 'text-short')}>
+                          {cumulative >= 0 ? '+' : ''}{cumulative.toFixed(2)}
+                        </td>
+                      </tr>
+                    )
+                  })
+                })()}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div ref={printRef} className="sr-only">
         <div className="statement-sheet overflow-hidden rounded-sm border border-slate-200 bg-white text-slate-900 shadow-sm">
           <div className="border-b border-slate-200 px-6 py-5">
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -204,8 +306,8 @@ export function StatementView({ trades, dateRange }: StatementViewProps) {
           </div>
 
           <div className="grid gap-8 px-6 py-4 lg:grid-cols-2">
-            <div>{leftRows.map((row) => <StatementMetric key={row.label} {...row} />)}</div>
-            <div>{rightRows.map((row) => <StatementMetric key={row.label} {...row} />)}</div>
+            <div>{leftRows.map((row) => <WhiteStatementMetric key={row.label} {...row} />)}</div>
+            <div>{rightRows.map((row) => <WhiteStatementMetric key={row.label} {...row} />)}</div>
           </div>
 
           <div className="border-t border-slate-200 px-6 py-4">

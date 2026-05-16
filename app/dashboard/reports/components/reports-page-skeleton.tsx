@@ -20,42 +20,35 @@ function AuditPanelSkeleton() {
 export function ReportsContentSkeleton() {
   return (
     <div className="space-y-10">
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-        <Card className="border-border/20 bg-card/55">
-          <CardContent className="space-y-6 p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-24 bg-muted/30" />
-                <Skeleton className="h-5 w-64 bg-muted/40" />
-              </div>
-              <Skeleton className="h-8 w-20 rounded-xl bg-muted/35" />
-            </div>
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div className="space-y-3">
+      <div className="overflow-hidden rounded-2xl border border-border/25 bg-card/35">
+        <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <div className="border-b border-border/15 p-5 lg:border-b-0 lg:border-r">
+            <Skeleton className="h-3 w-36 bg-muted/35" />
+            <Skeleton className="mt-6 h-12 w-56 bg-muted/50" />
+            <Skeleton className="mt-3 h-4 w-72 max-w-full bg-muted/35" />
+            <div className="mt-6 grid grid-cols-2 border-y border-border/15 py-3">
+              <div className="space-y-2 border-r border-border/15 pr-4">
                 <Skeleton className="h-3 w-16 bg-muted/30" />
-                <Skeleton className="h-12 w-44 bg-muted/50" />
+                <Skeleton className="h-6 w-12 bg-muted/45" />
               </div>
-              <div className="grid grid-cols-2 gap-3 lg:w-[240px]">
-                {Array.from({ length: 2 }).map((_, index) => (
-                  <div key={index} className="rounded-2xl border border-border/15 bg-card/45 p-4 space-y-2">
-                    <Skeleton className="h-3 w-16 bg-muted/30" />
-                    <Skeleton className="h-7 w-12 bg-muted/45" />
+              <div className="space-y-2 pl-4">
+                <Skeleton className="h-3 w-20 bg-muted/30" />
+                <Skeleton className="h-6 w-12 bg-muted/45" />
+              </div>
+            </div>
+          </div>
+          <div className="grid divide-y divide-border/15 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+            {Array.from({ length: 2 }).map((_, columnIndex) => (
+              <div key={columnIndex} className="divide-y divide-border/15">
+                {Array.from({ length: 4 }).map((__, rowIndex) => (
+                  <div key={rowIndex} className="flex items-center justify-between gap-4 px-5 py-4">
+                    <Skeleton className="h-3 w-24 bg-muted/30" />
+                    <Skeleton className="h-6 w-16 bg-muted/45" />
                   </div>
                 ))}
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-2 gap-4">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Card key={index} className="border-border/20 bg-card/55">
-              <CardContent className="space-y-4 p-5">
-                <Skeleton className="h-3 w-20 bg-muted/30" />
-                <Skeleton className="h-10 w-24 bg-muted/50" />
-              </CardContent>
-            </Card>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 
@@ -177,9 +170,9 @@ export function ReportsPageSkeleton() {
           <Skeleton className="h-11 w-28 rounded-2xl bg-muted/35" />
         </div>
 
-        <div className="flex gap-2 rounded-2xl border border-border/16 bg-card/35 p-1">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-9 w-28 rounded-xl bg-muted/35" />
+        <div className="flex overflow-hidden rounded-xl border border-border/20 bg-background/40">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <Skeleton key={index} className="h-11 w-32 rounded-none border-r border-border/10 bg-muted/35 last:border-r-0" />
           ))}
         </div>
 

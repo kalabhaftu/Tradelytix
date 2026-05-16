@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
-import { TrendingUp, Calendar, Eye, Share2, Activity, ShieldCheck, Clock3 } from "lucide-react"
+import { Activity, Calendar, Eye, LockKeyhole, Share2, ShieldCheck, TrendingUp } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 interface SharedReport {
@@ -20,16 +20,23 @@ interface Props {
   report: SharedReport
 }
 
-function StatCard({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
+function money(value: unknown) {
+  const number = Number(value || 0)
+  return `$${number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function percent(value: unknown) {
+  if (value === undefined || value === null || value === '') return '-'
+  return `${value}%`
+}
+
+function MetricRow({ label, value, tone }: { label: string; value: string; tone?: 'good' | 'bad' }) {
   return (
-    <div className="rounded-2xl border border-border/20 bg-card/50 p-4">
-      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 mb-2">{label}</p>
-      <p className={cn(
-        "text-2xl font-black font-mono tracking-tighter",
-        positive === true ? "text-green-500" : positive === false ? "text-red-500" : "text-foreground"
-      )}>
+    <div className="flex items-center justify-between gap-6 border-b border-slate-200 py-2.5 last:border-b-0">
+      <span className="text-[13px] font-semibold text-slate-600">{label}</span>
+      <span className={cn("font-mono text-[13px] font-bold text-slate-950", tone === 'good' && 'text-emerald-700', tone === 'bad' && 'text-red-700')}>
         {value}
-      </p>
+      </span>
     </div>
   )
 }
@@ -43,7 +50,7 @@ export function SharedReportView({ report }: Props) {
   const sessions = reportData?.sessionPerformance ?? null
   const rDataQuality = reportData?.rMultipleDataQuality ?? null
   const dateRange = report.dateFrom && report.dateTo
-    ? `${new Date(report.dateFrom).toLocaleDateString()} — ${new Date(report.dateTo).toLocaleDateString()}`
+    ? `${new Date(report.dateFrom).toLocaleDateString()} - ${new Date(report.dateTo).toLocaleDateString()}`
     : 'All Time'
 
   useEffect(() => {
@@ -72,210 +79,136 @@ export function SharedReportView({ report }: Props) {
     }
   }, [report.slug])
 
+  const netPnl = Number(psych?.totalNetPnL || 0)
+  const avgWin = Number(psych?.avgWin || 0)
+  const avgLoss = Number(psych?.avgLoss || 0)
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-border/20 bg-card/50 backdrop-blur px-6 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
+    <div className="min-h-screen bg-[#f4f6fa] text-slate-950">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
-              <TrendingUp className="h-4 w-4 text-primary" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-sm bg-slate-950 text-white">
+              <TrendingUp className="h-4 w-4" />
             </div>
             <div>
-              <h1 className="text-sm font-black">{report.title}</h1>
-              <p className="text-[10px] text-muted-foreground/50 flex items-center gap-1.5">
-                <Calendar className="h-3 w-3" />
+              <h1 className="text-lg font-extrabold tracking-tight">{report.title}</h1>
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-[12px] font-semibold text-slate-500">
+                <Calendar className="h-3.5 w-3.5" />
                 {dateRange}
-                <span className="opacity-40">·</span>
-                <Eye className="h-3 w-3" />
+                <span className="text-slate-300">/</span>
+                <Eye className="h-3.5 w-3.5" />
                 {viewCount} views
               </p>
             </div>
           </div>
-          <Badge variant="outline" className="text-[9px] font-black uppercase tracking-wider border-border/20 gap-1">
-            <Share2 className="h-3 w-3" />
-            Shared Report
+          <Badge variant="outline" className="h-8 rounded-sm border-slate-300 bg-white px-3 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-700">
+            <Share2 className="mr-1.5 h-3.5 w-3.5" />
+            Public Report
           </Badge>
         </div>
-      </div>
+      </header>
 
-      {/* Content */}
-      <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
-        {psych && activity && (
-          <>
-            {/* Key Metrics */}
-            <div>
-              <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">
-                Performance Summary
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <StatCard
-                  label="Net P&L"
-                  value={`$${Number(psych.totalNetPnL).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-                  positive={psych.totalNetPnL >= 0}
-                />
-                <StatCard
-                  label="Win Rate"
-                  value={`${activity?.winRate || '—'}%`}
-                  positive={parseFloat(activity?.winRate || '0') >= 50}
-                />
-                <StatCard
-                  label="Profit Factor"
-                  value={psych.profitFactor}
-                  positive={parseFloat(psych.profitFactor) >= 1}
-                />
-                <StatCard
-                  label="Max Drawdown"
-                  value={`$${Number(psych.maxDrawdown).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-                  positive={false}
-                />
-              </div>
-            </div>
-
-            {/* Secondary Metrics */}
-            <div>
-              <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">
-                Risk-Adjusted Metrics
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                <StatCard label="Total Trades" value={String(activity?.totalTrades || '—')} />
-                <StatCard label="Trading Days" value={String(activity?.tradingDaysActive || '—')} />
-                <StatCard label="Avg Trades / Month" value={String(activity?.avgTradesPerMonth || '—')} />
-                <StatCard label="Avg Win" value={`$${psych.avgWin}`} positive={true} />
-                <StatCard label="Avg Loss" value={`$${psych.avgLoss}`} positive={false} />
-                <StatCard label="Expectancy" value={`$${psych.expectancy}`} positive={parseFloat(psych.expectancy) >= 0} />
-                <StatCard label="Recovery Factor" value={psych.recoveryFactor} positive={parseFloat(psych.recoveryFactor) >= 0} />
-                <StatCard label="Consistency" value={`${psych.consistencyScore}%`} positive={parseFloat(psych.consistencyScore) >= 60} />
-                {psych.sharpeRatio && <StatCard label="Sharpe Ratio" value={psych.sharpeRatio} positive={parseFloat(psych.sharpeRatio) >= 0} />}
-                {psych.sortinoRatio && <StatCard label="Sortino Ratio" value={psych.sortinoRatio} positive={parseFloat(psych.sortinoRatio) >= 0} />}
-                {psych.calmarRatio && <StatCard label="Calmar Ratio" value={psych.calmarRatio} positive={parseFloat(psych.calmarRatio) >= 0} />}
-              </div>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-3">
-              <div className="rounded-2xl border border-border/20 bg-card/50 p-4">
-                <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
-                  <Activity className="h-3.5 w-3.5" />
-                  Trade Behavior
+      <main className="mx-auto max-w-6xl px-5 py-8">
+        {psych && activity ? (
+          <div className="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm">
+            <section className="border-b border-slate-200 px-6 py-6">
+              <div className="grid gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+                <div>
+                  <p className="text-[12px] font-extrabold uppercase tracking-[0.22em] text-slate-500">Performance Statement</p>
+                  <p className={cn("mt-5 font-mono text-5xl font-black tracking-tighter", netPnl >= 0 ? "text-emerald-700" : "text-red-700")}>
+                    {netPnl >= 0 ? '+' : '-'}{money(Math.abs(netPnl))}
+                  </p>
+                  <p className="mt-2 max-w-md text-sm font-semibold text-slate-500">
+                    Shared snapshot of trading activity, risk, execution quality, and account behavior.
+                  </p>
                 </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">Most traded day</span>
-                    <span className="font-mono font-bold">{activity.mostTradedDay || '—'}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">Best day</span>
-                    <span className="font-mono font-bold text-green-500">{activity.mostProfitableDay || '—'}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">Worst day</span>
-                    <span className="font-mono font-bold text-red-500">{activity.mostLosingDay || '—'}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">Best instrument</span>
-                    <span className="font-mono font-bold">{activity.mostProfitablePair || '—'}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">Worst instrument</span>
-                    <span className="font-mono font-bold">{activity.mostLosingPair || '—'}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-border/20 bg-card/50 p-4">
-                <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  Streaks
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">Longest win streak</span>
-                    <span className="font-mono font-bold text-green-500">{psych.longestWinStreak}W</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">Longest loss streak</span>
-                    <span className="font-mono font-bold text-red-500">{psych.longestLoseStreak}L</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">Total R</span>
-                    <span className="font-mono font-bold">{psych.totalRMultiple}R</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">Peak equity</span>
-                    <span className="font-mono font-bold">${psych.peakEquity}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-border/20 bg-card/50 p-4">
-                <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
-                  <Clock3 className="h-3.5 w-3.5" />
-                  Execution Quality
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">Avg hold time</span>
-                    <span className="font-mono font-bold">{psych.avgHoldingTime}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">R:R efficiency</span>
-                    <span className="font-mono font-bold">{psych.rrEfficiency}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">R data coverage</span>
-                    <span className="font-mono font-bold">
-                      {rDataQuality ? `${rDataQuality.tradesWithStopLoss}/${rDataQuality.totalTrades} (${rDataQuality.percentageComplete}%)` : '—'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {sessions && (
-              <div>
-                <h2 className="mb-4 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-                  Session Performance
-                </h2>
-                <div className="grid gap-3 md:grid-cols-3">
-                  {Object.entries(sessions).map(([key, session]: [string, any]) => (
-                    <div key={key} className="rounded-2xl border border-border/20 bg-card/50 p-4">
-                      <div className="mb-2 flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-black">{session.name}</p>
-                          <p className="text-[10px] text-muted-foreground">{session.range}</p>
-                        </div>
-                        <p className={cn("font-mono font-bold", session.pnl >= 0 ? "text-green-500" : "text-red-500")}>
-                          ${Number(session.pnl || 0).toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                        <div>
-                          <p className="text-muted-foreground">Trades</p>
-                          <p className="font-mono font-bold">{session.trades}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Wins</p>
-                          <p className="font-mono font-bold">{session.wins}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Max DD</p>
-                          <p className="font-mono font-bold">${Number(session.maxDD || 0).toFixed(2)}</p>
-                        </div>
-                      </div>
+                <div className="grid border-y border-slate-200 sm:grid-cols-3 sm:border-y-0">
+                  {[
+                    ['Total Trades', String(activity.totalTrades || '-')],
+                    ['Win Rate', percent(activity.winRate)],
+                    ['Profit Factor', String(psych.profitFactor || '-')],
+                  ].map(([label, value], index) => (
+                    <div key={label} className={cn("px-4 py-4 sm:border-l sm:border-slate-200", index === 0 && "sm:border-l-0")}>
+                      <p className="text-[11px] font-bold text-slate-500">{label}</p>
+                      <p className="mt-1 font-mono text-2xl font-black">{value}</p>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
-          </>
-        )}
+            </section>
 
-        <div className="text-center pt-8 border-t border-border/10">
-          <p className="text-[10px] text-muted-foreground/30 font-bold">
-            Generated with Deltalytix — the trading journal built for serious traders.
-          </p>
-        </div>
-      </div>
+            <section className="grid gap-8 px-6 py-5 lg:grid-cols-2">
+              <div>
+                <MetricRow label="Average Trade P&L" value={money(psych.expectancy)} tone={Number(psych.expectancy || 0) >= 0 ? 'good' : 'bad'} />
+                <MetricRow label="Average Winning Trade" value={money(avgWin)} tone="good" />
+                <MetricRow label="Average Losing Trade" value={money(avgLoss)} tone="bad" />
+                <MetricRow label="Total Trading Days" value={String(activity.tradingDaysActive || '-')} />
+                <MetricRow label="Most Traded Day" value={activity.mostTradedDay || '-'} />
+                <MetricRow label="Most Profitable Day" value={activity.mostProfitableDay || '-'} tone="good" />
+                <MetricRow label="Most Losing Day" value={activity.mostLosingDay || '-'} tone="bad" />
+              </div>
+              <div>
+                <MetricRow label="Max Drawdown" value={money(psych.maxDrawdown)} tone="bad" />
+                <MetricRow label="Recovery Factor" value={String(psych.recoveryFactor || '-')} />
+                <MetricRow label="R:R Efficiency" value={String(psych.rrEfficiency || '-')} />
+                <MetricRow label="Consistency Score" value={percent(psych.consistencyScore)} />
+                <MetricRow label="Total R-Multiple" value={`${psych.totalRMultiple || '-'}R`} />
+                <MetricRow label="Peak Equity" value={money(psych.peakEquity)} tone="good" />
+                <MetricRow
+                  label="R Data Coverage"
+                  value={rDataQuality ? `${rDataQuality.tradesWithStopLoss}/${rDataQuality.totalTrades} (${rDataQuality.percentageComplete}%)` : '-'}
+                />
+              </div>
+            </section>
+
+            {sessions && (
+              <section className="border-t border-slate-200 px-6 py-5">
+                <div className="mb-3 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.2em] text-slate-500">
+                  <Activity className="h-3.5 w-3.5" />
+                  Session Performance
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[640px] text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-300 text-left">
+                        {['Session', 'Range', 'Trades', 'Wins', 'P&L', 'Max DD'].map((heading) => (
+                          <th key={heading} className="px-2 py-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-slate-500">{heading}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(sessions).map(([key, session]: [string, any]) => (
+                        <tr key={key} className="border-b border-slate-100">
+                          <td className="px-2 py-2 font-bold">{session.name}</td>
+                          <td className="px-2 py-2 text-slate-500">{session.range}</td>
+                          <td className="px-2 py-2 font-mono font-bold">{session.trades}</td>
+                          <td className="px-2 py-2 font-mono font-bold">{session.wins}</td>
+                          <td className={cn("px-2 py-2 font-mono font-bold", Number(session.pnl || 0) >= 0 ? "text-emerald-700" : "text-red-700")}>{money(session.pnl)}</td>
+                          <td className="px-2 py-2 font-mono font-bold text-red-700">{money(session.maxDD)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+
+            <footer className="flex flex-col gap-2 border-t border-slate-200 px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 md:flex-row md:items-center md:justify-between">
+              <span>Generated with Deltalytix</span>
+              <span className="flex items-center gap-1.5">
+                <LockKeyhole className="h-3.5 w-3.5" />
+                Read-only public snapshot
+              </span>
+            </footer>
+          </div>
+        ) : (
+          <div className="rounded-sm border border-slate-200 bg-white px-6 py-16 text-center">
+            <ShieldCheck className="mx-auto h-8 w-8 text-slate-300" />
+            <h2 className="mt-4 text-sm font-extrabold uppercase tracking-[0.16em] text-slate-600">Report data unavailable</h2>
+          </div>
+        )}
+      </main>
     </div>
   )
 }

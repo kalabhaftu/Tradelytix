@@ -26,6 +26,7 @@ import {
   Trophy,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { dashboardModalShell } from '@/components/ui/dashboard-modal-shell'
 
 interface WeeklyAIReview {
   id: string
@@ -124,7 +125,7 @@ export function WeeklyReviewDialog({ open, onOpenChange, reviewId }: WeeklyRevie
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-2xl max-h-[85vh] overflow-hidden p-0">
+      <DialogContent className={dashboardModalShell.weekly}>
         <DialogHeader className="sr-only">
           <DialogTitle>Weekly Performance Review</DialogTitle>
           <DialogDescription>

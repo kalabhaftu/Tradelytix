@@ -22,19 +22,20 @@ export async function GET(request: NextRequest) {
     const unreadOnly = searchParams.get('unreadOnly') === 'true'
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
 
-    const [notifications, unreadCount] = await Promise.all([
-      prisma.notification.findMany({
-        where: {
-          userId: internalUserId,
-          ...(unreadOnly ? { isRead: false } : {}),
-        },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-      }),
-      prisma.notification.count({
-        where: { userId: internalUserId, isRead: false },
-      }),
-    ])
+    const notifications = await prisma.notification.findMany({
+      where: {
+        userId: internalUserId,
+        ...(unreadOnly ? { isRead: false } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    })
+
+    const unreadCount = unreadOnly
+      ? notifications.length
+      : await prisma.notification.count({
+          where: { userId: internalUserId, isRead: false },
+        })
 
     return NextResponse.json({ success: true, data: { notifications, unreadCount } })
   } catch (error: any) {

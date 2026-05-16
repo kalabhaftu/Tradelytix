@@ -260,29 +260,29 @@ export async function GET(request: NextRequest) {
       select: TRADE_SELECT,
     }
 
-    const [rawTrades, totalForDirectPagination, regularAccounts, propFirmAccounts, userSettings] = await Promise.all([
-      prisma.trade.findMany(tradeQuery),
-      useDirectPagination ? prisma.trade.count({ where: whereClause }) : Promise.resolve(null),
-      includeStats ? prisma.account.findMany({
-        where: { userId: internalUserId },
-        select: { id: true, number: true, startingBalance: true }
-      }) : Promise.resolve([]),
-      includeStats ? prisma.masterAccount.findMany({
-        where: { userId: internalUserId },
-        include: {
-          PhaseAccount: {
-            select: { id: true, phaseId: true, phaseNumber: true, status: true }
-          }
+    const rawTrades = await prisma.trade.findMany(tradeQuery)
+    const totalForDirectPagination = useDirectPagination
+      ? await prisma.trade.count({ where: whereClause })
+      : null
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { userId: internalUserId },
+      select: {
+        breakEvenThreshold: true,
+        pnlDisplayMode: true,
+      }
+    })
+    const regularAccounts = includeStats ? await prisma.account.findMany({
+      where: { userId: internalUserId },
+      select: { id: true, number: true, startingBalance: true }
+    }) : []
+    const propFirmAccounts = includeStats ? await prisma.masterAccount.findMany({
+      where: { userId: internalUserId },
+      include: {
+        PhaseAccount: {
+          select: { id: true, phaseId: true, phaseNumber: true, status: true }
         }
-      }) : Promise.resolve([]),
-      prisma.userSettings.findUnique({
-        where: { userId: internalUserId },
-        select: {
-          breakEvenThreshold: true,
-          pnlDisplayMode: true,
-        }
-      })
-    ])
+      }
+    }) : []
 
     const breakEvenThreshold = getBreakEvenThreshold(userSettings?.breakEvenThreshold)
     const pnlDisplayMode = normalizePnlDisplayMode(userSettings?.pnlDisplayMode)

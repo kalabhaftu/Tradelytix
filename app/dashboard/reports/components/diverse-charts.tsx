@@ -1,15 +1,13 @@
 'use client'
 
-import { classifyTrade } from '@/lib/utils'
-import { format, parseISO } from 'date-fns'
-import { useMemo } from 'react'
+import { cn } from '@/lib/utils'
+import { reportSurface, reportTypography } from '@/components/ui/report-style'
 import {
     Area,
     AreaChart,
     Bar,
     // @ts-ignore
     BarChart,
-    CartesianGrid,
     Cell,
     Pie,
     PieChart,
@@ -62,14 +60,14 @@ export function DiverseCharts({ chartData }: DiverseChartsProps) {
 
     return (
         <div className="space-y-6">
-            <h2 className="text-[11px] uppercase tracking-[0.2em] font-black text-muted-foreground">Portfolio Visualizations</h2>
+            <h2 className={reportTypography.sectionTitle}>Portfolio Visualizations</h2>
             
             {/* Top Row: Equity Curve & Outcome Distribution */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 {/* Cumulative Equity Curve (Area Chart) */}
-                <div className="lg:col-span-2 bg-muted/10 border border-border/40 rounded-2xl p-6 h-[320px] flex flex-col">
-                    <h3 className="text-[10px] uppercase font-black text-muted-foreground mb-4">Cumulative Equity Curve</h3>
+                <div className={cn('lg:col-span-2', reportSurface.chartPanel)}>
+                    <h3 className={reportTypography.sectionTitle}>Cumulative Equity Curve</h3>
                     <div className="flex-1 w-full min-h-0">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={equityData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
@@ -107,8 +105,8 @@ export function DiverseCharts({ chartData }: DiverseChartsProps) {
                 </div>
 
                 {/* Outcome Distribution (Donut Chart) */}
-                <div className="bg-muted/10 border border-border/40 rounded-2xl p-6 h-[320px] flex flex-col">
-                    <h3 className="text-[10px] uppercase font-black text-muted-foreground mb-4">Outcome Distribution</h3>
+                <div className={reportSurface.chartPanel}>
+                    <h3 className={reportTypography.sectionTitle}>Outcome Distribution</h3>
                     <div className="flex-1 w-full min-h-0 flex items-center justify-center relative">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
@@ -131,7 +129,7 @@ export function DiverseCharts({ chartData }: DiverseChartsProps) {
                         </ResponsiveContainer>
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                             <span className="text-2xl font-black">{outcomeData.reduce((acc, curr) => acc + curr.value, 0)}</span>
-                            <span className="text-[9px] uppercase font-bold text-muted-foreground">Trades</span>
+                            <span className={reportTypography.microLabel}>Trades</span>
                         </div>
                     </div>
                     {/* Custom Legend */}
@@ -148,8 +146,8 @@ export function DiverseCharts({ chartData }: DiverseChartsProps) {
             </div>
 
             {/* Bottom Row: Day of Week Performance (Bar Chart) */}
-            <div className="bg-muted/10 border border-border/40 rounded-2xl p-6 h-[320px] flex flex-col">
-                <h3 className="text-[10px] uppercase font-black text-muted-foreground mb-4">Performance by Day of Week</h3>
+            <div className={reportSurface.chartPanel}>
+                <h3 className={reportTypography.sectionTitle}>Performance by Day of Week</h3>
                 <div className="flex-1 w-full min-h-0">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={dayOfWeekData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>

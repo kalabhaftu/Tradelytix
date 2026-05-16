@@ -59,13 +59,6 @@ export default async function RootLayout({
 
         {/* Analytics removed to comply with essential-only cookie policy */}
 
-        {/* Preload Satoshi font from Fontshare */}
-        <link
-          rel="preconnect"
-          href="https://api.fontshare.com"
-          crossOrigin="anonymous"
-        />
-
         {/* Performance: Preconnect to Supabase for faster API calls */}
         <link
           rel="preconnect"
@@ -74,7 +67,6 @@ export default async function RootLayout({
         />
 
         {/* Performance: DNS prefetch for external resources */}
-        <link rel="dns-prefetch" href="https://api.fontshare.com" />
         <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_SUPABASE_URL || ''} />
 
         <link
@@ -89,23 +81,17 @@ export default async function RootLayout({
         />
         <style>
           {`
-            /* Font fallback for when Fontshare CDN fails */
-            @font-face {
-              font-family: 'Satoshi Fallback';
-              src: local('Satoshi'), local('-apple-system'), local('BlinkMacSystemFont'), local('Segoe UI'), local('Roboto');
-              font-display: swap;
-            }
-            
             /* Ensure font variables are available */
             :root {
-              --font-satoshi: 'Satoshi', 'Satoshi Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              --font-system: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              --font-satoshi: var(--font-system);
             }
 
             /* Base layout */
             html {
               margin: 0;
               padding: 0;
-              background-color: #020817 !important;
+              background-color: hsl(var(--background)) !important;
               color-scheme: dark;
               overflow-y: scroll !important;
               overflow-x: hidden !important;
@@ -114,12 +100,12 @@ export default async function RootLayout({
             }
 
             html.dark {
-              background-color: #020817 !important;
+              background-color: hsl(var(--background)) !important;
               color-scheme: dark;
             }
 
             html.light {
-              background-color: #ffffff !important;
+              background-color: hsl(var(--background)) !important;
               color-scheme: light;
             }
 

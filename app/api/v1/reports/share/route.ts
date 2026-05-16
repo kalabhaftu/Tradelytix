@@ -1,9 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { nanoid } from 'nanoid'
+import { z } from 'zod'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { calculateReportStatistics } from '@/lib/statistics/report-statistics'
+import { createErrorResponse, createSuccessResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
+import { getWebsiteURL } from '@/server/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,60 +16,88 @@ function generateSlug(): string {
   return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
 }
 
+const boundedString = (max: number) => z.string().trim().max(max).optional().nullable()
+const dateString = z.string().date().optional().nullable()
+
+const shareReportSchema = z.object({
+  title: z.string().trim().min(1).max(120).optional(),
+  dateFrom: dateString,
+  dateTo: dateString,
+  accountId: boundedString(128),
+  accountNumbers: z.array(z.string().trim().min(1).max(128)).max(50).optional(),
+  symbol: boundedString(32),
+  session: boundedString(64),
+  outcome: boundedString(32),
+  strategy: boundedString(128),
+  ruleBroken: z.boolean().optional().nullable(),
+  snapshot: z.record(z.string(), z.unknown()).optional(),
+  expiresInDays: z.coerce.number().int().min(1).max(365).optional().nullable(),
+}).strict()
+
 export async function POST(req: NextRequest) {
   const rl = await applyRateLimit(req, apiLimiter)
   if (rl) return rl
 
   try {
     const { internalUserId } = await getResolvedUserIdentity()
-    const body = await req.json()
-    const { title, dateFrom, dateTo, accountId, accountNumbers, snapshot, expiresInDays } = body
+    const body = await req.json().catch(() => null)
+    const parsed = shareReportSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return createErrorResponse('Validation failed', 400, parsed.error.flatten(), 'VALIDATION_ERROR')
+    }
+
+    const payload = parsed.data
     const sharingPolicy = await (prisma as any).adminSharingPolicy.findUnique({ where: { key: 'default' } }).catch(() => null)
 
     if (sharingPolicy?.publicSharingEnabled === false) {
-      return NextResponse.json({ error: 'Public report sharing is currently disabled' }, { status: 403 })
+      return createErrorResponse('Public report sharing is currently disabled', 403)
+    }
+
+    if (payload.dateFrom && payload.dateTo && payload.dateFrom > payload.dateTo) {
+      return createErrorResponse('dateFrom must be before dateTo', 400, undefined, 'INVALID_DATE_RANGE')
     }
 
     const serverSnapshot = await calculateReportStatistics({
       userId: internalUserId,
-      accountId: accountId || undefined,
-      accountNumbers: Array.isArray(accountNumbers) ? accountNumbers : undefined,
-      dateFrom: dateFrom || undefined,
-      dateTo: dateTo || undefined,
-      symbol: body.symbol || undefined,
-      session: body.session || undefined,
-      outcome: body.outcome || undefined,
-      strategy: body.strategy || undefined,
-      ruleBroken: body.ruleBroken || undefined,
+      accountId: payload.accountId || undefined,
+      accountNumbers: payload.accountNumbers,
+      dateFrom: payload.dateFrom || undefined,
+      dateTo: payload.dateTo || undefined,
+      symbol: payload.symbol || undefined,
+      session: payload.session || undefined,
+      outcome: payload.outcome || undefined,
+      strategy: payload.strategy || undefined,
+      ruleBroken: typeof payload.ruleBroken === 'boolean' ? (payload.ruleBroken ? 'broken' : 'not-broken') : undefined,
     })
 
     const snapshotPayload = JSON.parse(JSON.stringify({
       version: 2,
       generatedAt: new Date().toISOString(),
       filters: {
-        accountId: accountId || null,
-        accountNumbers: Array.isArray(accountNumbers) ? accountNumbers : [],
-        dateFrom: dateFrom || null,
-        dateTo: dateTo || null,
-        symbol: body.symbol || null,
-        session: body.session || null,
-        outcome: body.outcome || null,
-        strategy: body.strategy || null,
-        ruleBroken: body.ruleBroken || null,
+        accountId: payload.accountId || null,
+        accountNumbers: payload.accountNumbers || [],
+        dateFrom: payload.dateFrom || null,
+        dateTo: payload.dateTo || null,
+        symbol: payload.symbol || null,
+        session: payload.session || null,
+        outcome: payload.outcome || null,
+        strategy: payload.strategy || null,
+        ruleBroken: payload.ruleBroken ?? null,
       },
       reportData: serverSnapshot,
-      legacySnapshot: snapshot && typeof snapshot === 'object' ? snapshot : null,
+      legacySnapshot: payload.snapshot || null,
     }))
 
     const slug = generateSlug()
     const policyDays = sharingPolicy?.defaultExpirationDays || null
-    const resolvedExpirationDays = expiresInDays || policyDays
+    const resolvedExpirationDays = payload.expiresInDays || policyDays
     const expiresAt = resolvedExpirationDays
       ? new Date(Date.now() + resolvedExpirationDays * 24 * 60 * 60 * 1000)
       : null
 
     if (sharingPolicy?.requireExpiration && !expiresAt) {
-      return NextResponse.json({ error: 'Shared reports require an expiration date' }, { status: 400 })
+      return createErrorResponse('Shared reports require an expiration date', 400)
     }
 
     const shared = await prisma.sharedReport.create({
@@ -73,22 +105,21 @@ export async function POST(req: NextRequest) {
         id: nanoid(),
         userId: internalUserId,
         slug,
-        title: title || 'Trading Report',
-        dateFrom: dateFrom || null,
-        dateTo: dateTo || null,
-        accountId: accountId || null,
+        title: payload.title || 'Trading Report',
+        dateFrom: payload.dateFrom || null,
+        dateTo: payload.dateTo || null,
+        accountId: payload.accountId || null,
         snapshot: snapshotPayload,
         isPublic: true,
         expiresAt,
       },
     })
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
-    const url = `${appUrl}/reports/shared/${slug}`
-    return NextResponse.json({ slug, url, id: shared.id })
+    const appUrl = await getWebsiteURL()
+    return createSuccessResponse({ slug, url: new URL(`/reports/shared/${slug}`, appUrl).toString(), id: shared.id })
   } catch (err) {
-    console.error('[Reports Share POST]', err)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    logger.error('Reports share creation failed', {}, 'api')
+    return createErrorResponse('Internal server error', 500)
   }
 }
 
@@ -113,9 +144,9 @@ export async function GET(req: NextRequest) {
       },
       orderBy: { createdAt: 'desc' },
     })
-    return NextResponse.json({ reports })
+    return createSuccessResponse({ reports })
   } catch (err) {
-    console.error('[Reports Share GET]', err)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    logger.error('Reports share list failed', {}, 'api')
+    return createErrorResponse('Internal server error', 500)
   }
 }

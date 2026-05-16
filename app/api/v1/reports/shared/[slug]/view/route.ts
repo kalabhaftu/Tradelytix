@@ -1,12 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { applyRateLimit, publicLimiter } from '@/lib/rate-limiter'
+import { createErrorResponse, createSuccessResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
 
 interface Props {
   params: Promise<{ slug: string }>
 }
 
-export async function POST(_request: NextRequest, { params }: Props) {
+const sharedReportSlugPattern = /^[a-z0-9]{10}$/
+
+export async function POST(request: NextRequest, { params }: Props) {
+  const rateLimitResponse = await applyRateLimit(request, publicLimiter)
+  if (rateLimitResponse) return rateLimitResponse
+
   const { slug } = await params
+  if (!sharedReportSlugPattern.test(slug)) {
+    return createErrorResponse('Not found', 404)
+  }
+
   const cookieName = `shared-report-viewed-${slug}`
 
   try {
@@ -16,12 +28,12 @@ export async function POST(_request: NextRequest, { params }: Props) {
     })
 
     if (!report || !report.isPublic || (report.expiresAt && report.expiresAt < new Date())) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return createErrorResponse('Not found', 404)
     }
 
-    const alreadyCounted = _request.cookies.get(cookieName)?.value === '1'
+    const alreadyCounted = request.cookies.get(cookieName)?.value === '1'
     if (alreadyCounted) {
-      return NextResponse.json({ viewCount: report.viewCount, counted: false })
+      return createSuccessResponse({ viewCount: report.viewCount, counted: false })
     }
 
     const updated = await prisma.sharedReport.update({
@@ -30,7 +42,7 @@ export async function POST(_request: NextRequest, { params }: Props) {
       select: { viewCount: true },
     })
 
-    const response = NextResponse.json({ viewCount: updated.viewCount, counted: true })
+    const response = createSuccessResponse({ viewCount: updated.viewCount, counted: true })
     response.cookies.set(cookieName, '1', {
       httpOnly: true,
       sameSite: 'lax',
@@ -39,7 +51,7 @@ export async function POST(_request: NextRequest, { params }: Props) {
     })
     return response
   } catch (error) {
-    console.error('[Shared Report View POST]', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    logger.error('Shared report view count failed', { slug }, 'api')
+    return createErrorResponse('Internal server error', 500)
   }
 }

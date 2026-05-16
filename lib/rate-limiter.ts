@@ -64,6 +64,8 @@ export const authLimiter: LimiterConfig = { points: 10, duration: 60 }
 export const aiLimiter: LimiterConfig = { points: 20, duration: 60 }
 export const importLimiter: LimiterConfig = { points: 10, duration: 60 }
 export const uploadLimiter: LimiterConfig = { points: 30, duration: 60 }
+export const webhookLimiter: LimiterConfig = { points: 20, duration: 60 }
+export const paymentLimiter: LimiterConfig = { points: 30, duration: 60 }
 export const feedbackLimiter: LimiterConfig = { points: 5, duration: 60 }
 export const adminLimiter: LimiterConfig = { points: 200, duration: 60 }
 export const publicLimiter: LimiterConfig = { points: 30, duration: 60 }
@@ -74,13 +76,8 @@ export const errorReportLimiter: LimiterConfig = { points: 10, duration: 60 }
  * Uses user ID if available, falls back to IP.
  */
 export function getRateLimitIdentifier(req: NextRequest): string {
-  const userId = req.headers.get('x-user-id')
-  if (userId) {
-    return `user:${userId}`
-  }
-
   const forwarded = req.headers.get('x-forwarded-for')
-  const ip = forwarded ? forwarded.split(',')[0] : req.headers.get('x-real-ip') || 'unknown'
+  const ip = forwarded ? forwarded.split(',')[0].trim() : req.headers.get('x-real-ip') || 'unknown'
   return `ip:${ip}`
 }
 

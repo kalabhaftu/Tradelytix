@@ -5,7 +5,6 @@ import { Spinner } from '@/components/ui/spinner'
 import React from 'react'
 import { Button, type ButtonProps } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { Loader2 } from "lucide-react"
 
 /**
  * Button Style Guide and Standardized Components
@@ -35,7 +34,7 @@ export function PrimaryButton({
 }: ActionButtonProps) {
   return (
     <Button
-      variant="outline"
+      variant="default"
       disabled={disabled || loading}
       className={cn('min-w-[100px]', className)}
       {...props}

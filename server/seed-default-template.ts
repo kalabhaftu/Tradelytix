@@ -3,33 +3,54 @@
 import { prisma } from '@/lib/prisma'
 import { getUserId } from './auth-utils'
 import { cloneDefaultTemplateLayout } from '@/lib/dashboard/default-template-layout'
+import { logger } from '@/lib/logger'
 
-/**
- * Ensure the current user has a default template
- * Called on first dashboard load
- */
 export async function ensureDefaultTemplate() {
   try {
     const userId = await getUserId()
-
-    // Ensure user exists before creating template
     const userExists = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true }
+      select: { id: true },
     })
 
-    if (!userExists) {
-      return // User doesn't exist yet, skip template creation
-    }
+    if (!userExists) return
 
-    // Check if user has any templates
-    const existingTemplates = await prisma.dashboardTemplate.findMany({
-      where: { userId },
-    })
+    await prisma.$transaction(async (tx) => {
+      const activeTemplate = await tx.dashboardTemplate.findFirst({
+        where: { userId, isActive: true },
+        select: { id: true },
+      })
 
-    if (existingTemplates.length === 0) {
-      // Create default template
-      await prisma.dashboardTemplate.create({
+      if (activeTemplate) return
+
+      const defaultTemplate = await tx.dashboardTemplate.findFirst({
+        where: { userId, isDefault: true },
+        select: { id: true },
+      })
+
+      if (defaultTemplate) {
+        await tx.dashboardTemplate.update({
+          where: { id: defaultTemplate.id },
+          data: { isActive: true },
+        })
+        return
+      }
+
+      const firstTemplate = await tx.dashboardTemplate.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true },
+      })
+
+      if (firstTemplate) {
+        await tx.dashboardTemplate.update({
+          where: { id: firstTemplate.id },
+          data: { isActive: true },
+        })
+        return
+      }
+
+      await tx.dashboardTemplate.create({
         data: {
           id: crypto.randomUUID(),
           updatedAt: new Date(),
@@ -40,18 +61,9 @@ export async function ensureDefaultTemplate() {
           layout: cloneDefaultTemplateLayout() as any,
         },
       })
-    } else {
-      // Ensure there's an active template
-      const hasActive = existingTemplates.some(t => t.isActive)
-      if (!hasActive) {
-        const defaultTemplate = existingTemplates.find(t => t.isDefault) || existingTemplates[0]
-        await prisma.dashboardTemplate.update({
-          where: { id: defaultTemplate.id },
-          data: { isActive: true },
-        })
-      }
-    }
-  } catch (error) {
-    // Template creation failed, continue without it
+    })
+  } catch (error: any) {
+    if (error?.code === 'P2002') return
+    logger.warn('Default dashboard template initialization failed', { error: error?.message }, 'server')
   }
 }

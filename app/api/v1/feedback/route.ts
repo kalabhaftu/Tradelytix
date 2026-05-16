@@ -4,15 +4,60 @@ import { applyRateLimit, feedbackLimiter } from '@/lib/rate-limiter'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { extractIP } from '@/server/geolocation'
 import { logServerError } from '@/lib/error-logger'
+import { createErrorResponse, createSuccessResponse } from '@/lib/api-response'
+import { logger } from '@/lib/logger'
+import { z } from 'zod'
+import { randomUUID } from 'crypto'
 
-const ALLOWED_FILE_TYPES = [
-  'image/png', 'image/jpeg', 'image/gif', 'image/webp',
-  'application/pdf', 'text/csv', 'text/plain',
-  'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-]
+const MAX_FILE_SIZE = 5 * 1024 * 1024
+const MAX_FILES = 3
 
-const BLOCKED_EXTENSIONS = ['.exe', '.bat', '.sh', '.js', '.php', '.dll', '.cmd', '.ps1', '.vbs', '.msi']
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const ALLOWED_FILE_TYPES: Record<string, string[]> = {
+  '.png': ['image/png'],
+  '.jpg': ['image/jpeg'],
+  '.jpeg': ['image/jpeg'],
+  '.gif': ['image/gif'],
+  '.webp': ['image/webp'],
+  '.pdf': ['application/pdf'],
+  '.csv': ['text/csv', 'application/csv', 'application/vnd.ms-excel'],
+  '.txt': ['text/plain'],
+  '.doc': ['application/msword'],
+  '.docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+}
+
+const IMAGE_SIGNATURES: Record<string, number[][]> = {
+  'image/jpeg': [[0xFF, 0xD8, 0xFF]],
+  'image/png': [[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]],
+  'image/gif': [[0x47, 0x49, 0x46, 0x38, 0x37, 0x61], [0x47, 0x49, 0x46, 0x38, 0x39, 0x61]],
+  'image/webp': [[0x52, 0x49, 0x46, 0x46]],
+  'application/pdf': [[0x25, 0x50, 0x44, 0x46]],
+}
+
+const feedbackSchema = z.object({
+  category: z.enum(['BUG_REPORT', 'FEATURE_REQUEST', 'GENERAL', 'OTHER']),
+  subject: z.string().trim().min(1).max(200),
+  message: z.string().trim().min(1).max(5000),
+  name: z.string().trim().max(120).optional(),
+  email: z.string().trim().email().max(254).optional(),
+})
+
+function getFileExtension(fileName: string) {
+  const index = fileName.lastIndexOf('.')
+  if (index < 0) return ''
+  return fileName.slice(index).toLowerCase()
+}
+
+async function validateFileSignature(file: File) {
+  const signatures = IMAGE_SIGNATURES[file.type]
+  if (!signatures) return true
+
+  const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer())
+  return signatures.some((signature) => signature.every((byte, index) => bytes[index] === byte))
+}
+
+function sanitizeOriginalFileName(fileName: string) {
+  return fileName.replace(/[^a-zA-Z0-9._ -]/g, '_').slice(0, 180)
+}
 
 export async function POST(req: NextRequest) {
   const rl = await applyRateLimit(req, feedbackLimiter)
@@ -20,54 +65,41 @@ export async function POST(req: NextRequest) {
 
   try {
     const formData = await req.formData()
+    const parsed = feedbackSchema.safeParse({
+      category: formData.get('category'),
+      subject: formData.get('subject'),
+      message: formData.get('message'),
+      name: formData.get('name') || undefined,
+      email: formData.get('email') || undefined,
+    })
 
-    const category = formData.get('category') as string
-    const subject = formData.get('subject') as string
-    const message = formData.get('message') as string
-    const name = formData.get('name') as string | null
-    const email = formData.get('email') as string | null
-
-    if (!category || !subject || !message) {
-      return NextResponse.json({ success: false, error: 'category, subject, and message are required' }, { status: 400 })
+    if (!parsed.success) {
+      return createErrorResponse('Validation failed', 400, parsed.error.flatten(), 'VALIDATION_ERROR')
     }
 
-    if (!['BUG_REPORT', 'FEATURE_REQUEST', 'GENERAL', 'OTHER'].includes(category)) {
-      return NextResponse.json({ success: false, error: 'Invalid category' }, { status: 400 })
-    }
-
-    if (subject.length > 200) {
-      return NextResponse.json({ success: false, error: 'Subject too long (max 200 chars)' }, { status: 400 })
-    }
-
-    if (message.length > 5000) {
-      return NextResponse.json({ success: false, error: 'Message too long (max 5000 chars)' }, { status: 400 })
-    }
-
-    // Process file attachments
+    const payload = parsed.data
     const attachments: Array<{ name: string; size: number; type: string; url: string }> = []
-    const files = formData.getAll('files') as File[]
+    const files = formData.getAll('files').filter((file): file is File => file instanceof File && file.size > 0)
 
-    if (files.length > 3) {
-      return NextResponse.json({ success: false, error: 'Maximum 3 files allowed' }, { status: 400 })
+    if (files.length > MAX_FILES) {
+      return createErrorResponse('Maximum 3 files allowed', 400, undefined, 'TOO_MANY_FILES')
     }
 
     for (const file of files) {
-      if (!(file instanceof File) || file.size === 0) continue
-
       if (file.size > MAX_FILE_SIZE) {
-        return NextResponse.json({ success: false, error: `File ${file.name} exceeds 5MB limit` }, { status: 400 })
+        return createErrorResponse(`File ${sanitizeOriginalFileName(file.name)} exceeds 5MB limit`, 400, undefined, 'FILE_TOO_LARGE')
       }
 
-      const ext = '.' + file.name.split('.').pop()?.toLowerCase()
-      if (BLOCKED_EXTENSIONS.includes(ext)) {
-        return NextResponse.json({ success: false, error: `File type ${ext} is not allowed` }, { status: 400 })
+      const ext = getFileExtension(file.name)
+      const allowedTypes = ALLOWED_FILE_TYPES[ext]
+      if (!allowedTypes || !allowedTypes.includes(file.type)) {
+        return createErrorResponse('Unsupported attachment file type', 400, undefined, 'UNSUPPORTED_FILE_TYPE')
       }
 
-      if (!ALLOWED_FILE_TYPES.includes(file.type) && !file.type.startsWith('image/')) {
-        return NextResponse.json({ success: false, error: `File type ${file.type} is not allowed` }, { status: 400 })
+      if (!(await validateFileSignature(file))) {
+        return createErrorResponse('Attachment content does not match its file type', 400, undefined, 'FILE_SIGNATURE_MISMATCH')
       }
 
-      // Upload to Supabase Storage
       try {
         const { createClient } = await import('@supabase/supabase-js')
         const supabase = createClient(
@@ -75,15 +107,18 @@ export async function POST(req: NextRequest) {
           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
         )
 
-        const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
+        const fileName = `${randomUUID()}${ext}`
         const buffer = Buffer.from(await file.arrayBuffer())
 
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('feedback-attachments')
-          .upload(fileName, buffer, { contentType: file.type })
+          .upload(fileName, buffer, {
+            contentType: file.type,
+            metadata: { originalName: sanitizeOriginalFileName(file.name) },
+          })
 
-        if (uploadError) {
-          console.error('[Feedback] Upload error:', uploadError)
+        if (uploadError || !uploadData) {
+          logger.warn('Feedback attachment upload failed', { type: file.type, size: file.size }, 'api')
           continue
         }
 
@@ -92,55 +127,37 @@ export async function POST(req: NextRequest) {
           .getPublicUrl(fileName)
 
         attachments.push({
-          name: file.name,
+          name: sanitizeOriginalFileName(file.name),
           size: file.size,
           type: file.type,
           url: urlData.publicUrl,
         })
-      } catch (uploadErr) {
-        console.error('[Feedback] File upload failed:', uploadErr)
+      } catch {
+        logger.warn('Feedback attachment upload failed', { type: file.type, size: file.size }, 'api')
       }
     }
 
-    // Resolve user identity (optional — may be anonymous)
     const identity = await getResolvedUserIdentitySafe()
     const ip = extractIP(req.headers)
     const userAgent = req.headers.get('user-agent') || undefined
 
-    // Simple IP geo lookup for feedback
-    let country: string | undefined
-    let city: string | undefined
-    let region: string | undefined
-    try {
-      const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=country,city,regionName`, { signal: AbortSignal.timeout(2000) })
-      if (geoRes.ok) {
-        const geo = await geoRes.json()
-        country = geo.country
-        city = geo.city
-        region = geo.regionName
-      }
-    } catch {}
-
     const feedback = await prisma.feedback.create({
       data: {
         userId: identity?.internalUserId,
-        name: name || undefined,
-        email: email || undefined,
-        category: category as any,
-        subject: subject.slice(0, 200),
-        message: message.slice(0, 5000),
+        name: payload.name,
+        email: payload.email,
+        category: payload.category as any,
+        subject: payload.subject,
+        message: payload.message,
         attachments: attachments.length > 0 ? attachments : undefined,
         ipAddress: ip,
         userAgent,
-        country,
-        city,
-        region,
       },
     })
 
-    return NextResponse.json({ success: true, data: { id: feedback.id } })
+    return createSuccessResponse({ id: feedback.id })
   } catch (error: any) {
     await logServerError(error, { url: req.url, source: 'API' })
-    return NextResponse.json({ success: false, error: 'Failed to submit feedback' }, { status: 500 })
+    return createErrorResponse('Failed to submit feedback', 500)
   }
 }

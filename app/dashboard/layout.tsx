@@ -1,4 +1,6 @@
 import { DataProvider } from "@/context/data-provider";
+export const dynamic = 'force-dynamic'
+
 import { TemplateProvider } from "@/context/template-provider";
 import { TagsProvider } from "@/context/tags-provider";
 import Modals from "@/components/modals";

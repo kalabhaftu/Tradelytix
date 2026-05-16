@@ -41,6 +41,33 @@ import { logger } from '@/lib/logger'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { getTradeNetPnl, normalizePnlDisplayMode } from '@/lib/metrics/pnl'
 
+const MAX_ANALYTICS_TRADE_LIMIT = 5000
+const MAX_TABLE_PAGE_LIMIT = 500
+const MAX_FILTER_VALUES = 100
+
+function boundedInt(value: string | null, fallback: number, min: number, max: number) {
+  const parsed = Number.parseInt(value || '', 10)
+  if (!Number.isFinite(parsed)) return fallback
+  return Math.min(max, Math.max(min, parsed))
+}
+
+function boundedFloat(value: string | null) {
+  if (value === null || value.trim() === '') return undefined
+  const parsed = Number.parseFloat(value)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+function boundedList(value: string | null, max = MAX_FILTER_VALUES) {
+  return (value?.split(',') || [])
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, max)
+}
+
+function isDateOnly(value: string | null) {
+  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value))
+}
+
 // PERF: Only select fields the dashboard actually uses (~40% smaller payload)
 const TRADE_SELECT = {
   id: true,
@@ -111,27 +138,29 @@ export async function GET(request: NextRequest) {
     const params = request.nextUrl.searchParams
     
     // Parse filter params
-    const accountNumbers = params.get('accounts')?.split(',').filter(Boolean) || []
+    const accountNumbers = boundedList(params.get('accounts'))
     const dateFrom = params.get('dateFrom')
     const dateTo = params.get('dateTo')
-    const tradeDate = params.get('tradeDate')
-    const instruments = params.get('instruments')?.split(',').filter(Boolean) || []
-    const pnlMin = params.get('pnlMin') ? parseFloat(params.get('pnlMin')!) : undefined
-    const pnlMax = params.get('pnlMax') ? parseFloat(params.get('pnlMax')!) : undefined
+    const tradeDate = isDateOnly(params.get('tradeDate')) ? params.get('tradeDate') : null
+    const instruments = boundedList(params.get('instruments'))
+    const pnlMin = boundedFloat(params.get('pnlMin'))
+    const pnlMax = boundedFloat(params.get('pnlMax'))
     const timeRange = params.get('timeRange') || null
-    const weekday = params.get('weekday') ? parseInt(params.get('weekday')!) : null
-    const hour = params.get('hour') ? parseInt(params.get('hour')!) : null
-    const limit = parseInt(params.get('limit') || '5000')
-    const pageLimit = params.get('pageLimit') ? parseInt(params.get('pageLimit')!) : null
-    const pageOffset = params.get('pageOffset') ? parseInt(params.get('pageOffset')!) : 0
+    const weekday = params.get('weekday') ? boundedInt(params.get('weekday'), -1, 0, 6) : null
+    const hour = params.get('hour') ? boundedInt(params.get('hour'), -1, 0, 23) : null
     const includeStats = params.get('includeStats') !== 'false'
     const includeCalendar = params.get('includeCalendar') !== 'false'
     const groupByExecution = params.get('groupByExecution') === 'true'
-    const timezone = params.get('timezone') || 'UTC'
-    const search = params.get('search') || ''
-    const side = params.get('side') || ''
-    const outcome = params.get('outcome') || ''
-    const tagIds = params.get('tags') ? params.get('tags')!.split(',').filter(Boolean) : []
+    const includeWidgets = params.get('includeWidgets') !== 'false'
+    const needsAnalytics = includeStats || includeCalendar || includeWidgets || groupByExecution
+    const pageLimit = params.get('pageLimit') ? boundedInt(params.get('pageLimit'), 50, 1, MAX_TABLE_PAGE_LIMIT) : null
+    const pageOffset = boundedInt(params.get('pageOffset'), 0, 0, 1_000_000)
+    const limit = boundedInt(params.get('limit'), needsAnalytics ? MAX_ANALYTICS_TRADE_LIMIT : (pageLimit || MAX_TABLE_PAGE_LIMIT), 1, needsAnalytics ? MAX_ANALYTICS_TRADE_LIMIT : MAX_TABLE_PAGE_LIMIT)
+    const timezone = params.get('timezone')?.slice(0, 64) || 'UTC'
+    const search = (params.get('search') || '').trim().slice(0, 120)
+    const side = (params.get('side') || '').trim().slice(0, 16)
+    const outcome = (params.get('outcome') || '').trim()
+    const tagIds = boundedList(params.get('tags'))
     
     // Build Prisma where clause — ALL filtering server-side
     const whereClause: any = { userId: internalUserId }
@@ -222,13 +251,18 @@ export async function GET(request: NextRequest) {
     }
     
     // PERF: Fetch trades (slim select) + accounts (both regular and prop firm) in parallel
-    const [rawTrades, regularAccounts, propFirmAccounts, userSettings] = await Promise.all([
-      prisma.trade.findMany({
-        where: whereClause,
-        orderBy: { entryDate: 'desc' },
-        take: limit,
-        select: TRADE_SELECT,
-      }),
+    const useDirectPagination = !needsAnalytics && pageLimit !== null && weekday === null && hour === null && !outcome
+    const tradeQuery = {
+      where: whereClause,
+      orderBy: { entryDate: 'desc' as const },
+      take: useDirectPagination ? pageLimit : limit,
+      ...(useDirectPagination ? { skip: pageOffset } : {}),
+      select: TRADE_SELECT,
+    }
+
+    const [rawTrades, totalForDirectPagination, regularAccounts, propFirmAccounts, userSettings] = await Promise.all([
+      prisma.trade.findMany(tradeQuery),
+      useDirectPagination ? prisma.trade.count({ where: whereClause }) : Promise.resolve(null),
       includeStats ? prisma.account.findMany({
         where: { userId: internalUserId },
         select: { id: true, number: true, startingBalance: true }
@@ -319,7 +353,6 @@ export async function GET(request: NextRequest) {
     
     // PERF: Compute all widget chart data server-side (trades already in memory)
     // This eliminates 6 separate /api/v1/dashboard/widgets calls
-    const includeWidgets = params.get('includeWidgets') !== 'false'
     const widgetCalendarData = includeWidgets
       ? (calendarData || formatCalendarData(trades as any, accounts as any, timezone, grouped as any))
       : null
@@ -367,15 +400,19 @@ export async function GET(request: NextRequest) {
       accountBalancePnl: calculateBalanceInfo(filteredAccounts, trades, relevantTransactions, { pnlDisplayMode }),
     } : null
 
-    const total = responseTrades.length
-    const pagedTrades = pageLimit !== null && pageLimit > 0
-      ? responseTrades.slice(Math.max(0, pageOffset), Math.max(0, pageOffset) + pageLimit)
-      : responseTrades
-    
+    const total = useDirectPagination ? (totalForDirectPagination ?? rawTrades.length) : responseTrades.length
+    const pagedTrades = useDirectPagination
+      ? responseTrades
+      : pageLimit !== null && pageLimit > 0
+        ? responseTrades.slice(pageOffset, pageOffset + pageLimit)
+        : responseTrades
+    const truncated = needsAnalytics && rawTrades.length >= MAX_ANALYTICS_TRADE_LIMIT
+
     const response = NextResponse.json({
       trades: pagedTrades,
       total,
-      page: pageLimit !== null ? { limit: pageLimit, offset: Math.max(0, pageOffset) } : null,
+      page: pageLimit !== null ? { limit: pageLimit, offset: pageOffset } : null,
+      meta: { directPagination: useDirectPagination, truncated },
       breakEvenThreshold,
       pnlDisplayMode,
       statistics,

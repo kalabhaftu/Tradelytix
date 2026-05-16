@@ -6,12 +6,14 @@ import { DashboardSidebar } from './sidebar/dashboard-sidebar'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { useUserStore } from '@/store/user-store'
 import Navbar from './navbar'
+import type { SiteUiSettingsPayload } from '@/server/site-ui-settings'
 
 interface SidebarLayoutProps {
   children: ReactNode
+  siteUiSettings: SiteUiSettingsPayload
 }
 
-export function SidebarLayout({ children }: SidebarLayoutProps) {
+export function SidebarLayout({ children, siteUiSettings }: SidebarLayoutProps) {
   const pathname = usePathname()
   const setIsLoading = useUserStore(state => state.setIsLoading)
 
@@ -25,7 +27,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 
   return (
     <SidebarProvider defaultOpen={false}>
-      <DashboardSidebar />
+      <DashboardSidebar siteUiSettings={siteUiSettings} />
       <SidebarInset>
         <Navbar />
         <div className="w-full max-w-full overflow-x-hidden pb-24 lg:pb-0">

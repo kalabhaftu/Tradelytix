@@ -27,17 +27,12 @@ export async function GET(request: NextRequest) {
 
     const record = await prisma.paymentRecord.findFirst({
       where: { id: paymentRecordId, userId: identity.internalUserId },
-      select: {
-        id: true,
-        providerStatus: true,
-        amountUsd: true,
-        payCurrency: true,
-        payAmount: true,
-        invoiceUrl: true,
-        paidAt: true,
-        expiredAt: true,
-        subscriptionPeriodEnd: true,
-        createdAt: true,
+      include: {
+        Subscription: {
+          select: {
+            status: true,
+          },
+        },
       },
     })
 
@@ -45,7 +40,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Payment not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ success: true, data: record })
+    const payload = {
+      id: record.id,
+      providerStatus: record.providerStatus,
+      amountUsd: record.amountUsd,
+      payCurrency: record.payCurrency,
+      payAmount: record.payAmount,
+      invoiceUrl: record.invoiceUrl,
+      paidAt: record.paidAt,
+      expiredAt: record.expiredAt,
+      subscriptionPeriodEnd: record.subscriptionPeriodEnd,
+      createdAt: record.createdAt,
+      subscriptionStatus: record.Subscription?.status || null,
+      hasAccess: record.Subscription?.status === 'active',
+    }
+
+    return NextResponse.json({ success: true, data: payload })
   } catch (error) {
     console.error('[Payment] Status check error:', error)
     return NextResponse.json({ success: false, error: 'Failed to check status' }, { status: 500 })

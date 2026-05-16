@@ -58,10 +58,6 @@ export const queryKeys = {
   // Tags
   tags: () => ['tags'] as const,
 
-  // Calendar
-  calendarNotes: (params?: Record<string, unknown>) =>
-    ['calendar-notes', params ?? {}] as const,
-
   // Journal
   journal: (params?: Record<string, unknown>) =>
     ['journal', params ?? {}] as const,

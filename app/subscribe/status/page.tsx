@@ -38,6 +38,7 @@ export default function SubscribeStatusPage() {
       setStatus(payload.data)
       if (payload.data?.providerStatus === 'finished') {
         sessionStorage.removeItem('pendingPaymentId')
+        router.refresh()
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load payment status')
@@ -125,7 +126,10 @@ export default function SubscribeStatusPage() {
 
               <div className="flex flex-col gap-2">
                 {isFinished ? (
-                  <Button onClick={() => router.push('/dashboard')} className="w-full">Go to Dashboard</Button>
+                  <Button onClick={() => {
+                    router.refresh()
+                    router.push('/dashboard')
+                  }} className="w-full">Go to Dashboard</Button>
                 ) : isFailed ? (
                   <Button onClick={() => router.push('/subscribe')} className="w-full">Try Again</Button>
                 ) : (

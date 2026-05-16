@@ -1,48 +1,55 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from "react"
-import { format } from "date-fns"
+import React, { useMemo } from 'react'
+import { format } from 'date-fns'
 import { enUS } from 'date-fns/locale'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { LexicalEditor } from "@/components/ui/editor/lexical-editor"
-import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
-import { Spinner } from "@/components/ui/spinner"
-import { BarChart3, BookOpen, PenLine, Save, X } from "lucide-react"
-import { cn, parsePositionTime, formatNoteContent } from "@/lib/utils"
-import { useDashboardDisplay } from "@/hooks/use-dashboard-display"
-import { Trade } from "@prisma/client"
-import { CalendarEntry } from "@/app/dashboard/types/calendar"
-import { DailyStats } from "./daily-stats"
-import { EmotionPicker, emotions, type EmotionType } from "../journal/emotion-picker"
-import { useUserStore } from "@/store/user-store"
-import { useData } from "@/context/data-provider"
-import { toast } from "sonner"
-import { PNL_TEXT_STYLES } from "@/app/dashboard/constants/calendar-styles"
-import { getTradeNetPnl } from "@/lib/metrics/pnl"
+import { BarChart3, Clock3, TrendingDown, TrendingUp } from 'lucide-react'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
+import { CalendarEntry } from '@/app/dashboard/types/calendar'
+import { useData } from '@/context/data-provider'
+import { dashboardModalShell } from '@/components/ui/dashboard-modal-shell'
+import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import { getTradeNetPnl } from '@/lib/metrics/pnl'
 
 interface CalendarModalProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  selectedDate: Date | null;
-  dayData: CalendarEntry | undefined;
-  isLoading: boolean;
+  isOpen: boolean
+  onOpenChange: (open: boolean) => void
+  selectedDate: Date | null
+  dayData: CalendarEntry | undefined
+  isLoading: boolean
+}
+
+function StatBlock({
+  label,
+  value,
+  hint,
+  tone = 'neutral',
+}: {
+  label: string
+  value: string
+  hint?: string
+  tone?: 'positive' | 'negative' | 'neutral'
+}) {
+  return (
+    <div className="rounded-2xl border border-border/50 bg-muted/[0.18] px-4 py-3">
+      <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+        {label}
+      </p>
+      <p
+        className={cn(
+          'mt-2 text-2xl font-semibold tracking-tight',
+          tone === 'positive' && 'text-long',
+          tone === 'negative' && 'text-short'
+        )}
+      >
+        {value}
+      </p>
+      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
+    </div>
+  )
 }
 
 export function CalendarModal({
@@ -52,410 +59,151 @@ export function CalendarModal({
   dayData,
   isLoading,
 }: CalendarModalProps) {
-  const timezone = useUserStore(state => state.timezone)
-  const dateLocale = enUS
   const { formatValue } = useDashboardDisplay()
-  const [formattedDate, setFormattedDate] = useState<string>("")
-  const { accounts } = useData()
+  const { statistics } = useData()
 
-  // Journal state
-  const [note, setNote] = useState('')
-  const [selectedEmotion, setSelectedEmotion] = useState<EmotionType | null>(null)
-  const [isEditMode, setIsEditMode] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const [isLoadingJournal, setIsLoadingJournal] = useState(false)
-  const [journalId, setJournalId] = useState<string | null>(null)
-  const [hasExistingJournal, setHasExistingJournal] = useState(false)
-  const [hasLoadedJournal, setHasLoadedJournal] = useState(false)
+  const formattedDate = selectedDate
+    ? format(selectedDate, 'EEEE, MMMM d, yyyy', { locale: enUS })
+    : ''
 
-  const currentAccountId = accounts && accounts.length === 1 ? accounts[0].id : null
+  const summary = useMemo(() => {
+    const trades = dayData?.trades ?? []
+    const threshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
+    const totalPnL = trades.reduce((sum, trade) => sum + getTradeNetPnl(trade), 0)
+    const wins = trades.filter((trade) => classifyOutcome(getTradeNetPnl(trade), threshold) === 'win').length
+    const losses = trades.filter((trade) => classifyOutcome(getTradeNetPnl(trade), threshold) === 'loss').length
+    const averagePnL = trades.length > 0 ? totalPnL / trades.length : 0
+    const totalMinutes = trades.reduce((sum, trade) => sum + Number((trade as any).timeInPosition || 0), 0) / 60
+    const avgMinutes = trades.length > 0 ? totalMinutes / trades.length : 0
 
-  React.useEffect(() => {
-    if (selectedDate) {
-      setFormattedDate(format(selectedDate, 'EEEE, MMMM d, yyyy', { locale: dateLocale }))
-    }
-  }, [selectedDate, dateLocale])
-
-  const fetchJournalData = useCallback(async () => {
-    if (!selectedDate || hasLoadedJournal) return
-
-    setIsLoadingJournal(true)
-    try {
-      const dateStr = format(selectedDate, 'yyyy-MM-dd')
-      const params = new URLSearchParams({ date: dateStr })
-      if (currentAccountId) {
-        params.append('accountId', currentAccountId)
-      }
-
-      const response = await fetch(`/api/v1/journal/daily?${params}`)
-      if (response.ok) {
-        const data = await response.json()
-        if (data.journal) {
-          setNote(data.journal.note || '')
-          setSelectedEmotion(data.journal.emotion || null)
-          setJournalId(data.journal.id)
-          setHasExistingJournal(true)
-          setIsEditMode(false)
-        } else {
-          setNote('')
-          setSelectedEmotion(null)
-          setJournalId(null)
-          setHasExistingJournal(false)
-          setIsEditMode(true)
+    const byInstrument = Object.entries(
+      trades.reduce<Record<string, { trades: number; pnl: number }>>((acc, trade) => {
+        const key = trade.instrument || 'Unknown'
+        if (!acc[key]) {
+          acc[key] = { trades: 0, pnl: 0 }
         }
-        setHasLoadedJournal(true)
-      }
-    } catch (error) {
-      // Error fetching journal
-    } finally {
-      setIsLoadingJournal(false)
+        acc[key].trades += 1
+        acc[key].pnl += getTradeNetPnl(trade)
+        return acc
+      }, {})
+    )
+      .sort((a, b) => b[1].pnl - a[1].pnl)
+      .slice(0, 4)
+
+    return {
+      trades,
+      totalPnL,
+      wins,
+      losses,
+      breakEven: Math.max(trades.length - wins - losses, 0),
+      averagePnL,
+      avgMinutes,
+      byInstrument,
     }
-  }, [selectedDate, currentAccountId, hasLoadedJournal])
-
-  useEffect(() => {
-    if (isOpen && selectedDate) {
-      setHasLoadedJournal(false)
-    }
-  }, [isOpen, selectedDate])
-
-  const handleTabChange = (value: string) => {
-    if (value === 'journal' && !hasLoadedJournal) {
-      fetchJournalData()
-    }
-  }
-
-  const handleSaveJournal = async () => {
-    if (!selectedDate) return
-
-    setIsSaving(true)
-    try {
-      const dateStr = format(selectedDate, 'yyyy-MM-dd')
-
-      if (journalId) {
-        const response = await fetch(`/api/v1/journal/daily/${journalId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ note, emotion: selectedEmotion }),
-        })
-        if (!response.ok) throw new Error('Failed to update journal')
-        toast.success('Journal updated successfully')
-      } else {
-        const response = await fetch('/api/v1/journal/daily', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            date: dateStr,
-            note,
-            emotion: selectedEmotion,
-            accountId: currentAccountId,
-          }),
-        })
-        if (!response.ok) throw new Error('Failed to save journal')
-        const data = await response.json()
-        setJournalId(data.journal.id)
-        setHasExistingJournal(true)
-        toast.success('Journal saved successfully')
-      }
-      setIsEditMode(false)
-    } catch (error) {
-      toast.error('Failed to save journal')
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  // Safe Close Logic
-  const [showUnsavedAlert, setShowUnsavedAlert] = useState(false)
-  const [initialNote, setInitialNote] = useState('')
-  const [initialEmotion, setInitialEmotion] = useState<EmotionType | null>(null)
-
-  // Update initial state when data is loaded/saved
-  useEffect(() => {
-    if (hasLoadedJournal) {
-      // If we just loaded, current note/emotion are the initial values
-      setInitialNote(note)
-      setInitialEmotion(selectedEmotion)
-    }
-  }, [hasLoadedJournal, note, selectedEmotion])
-
-  const handleCloseAttempt = (open: boolean) => {
-    if (!open) {
-      const hasUnsavedChanges = note !== initialNote || selectedEmotion !== initialEmotion
-      if (hasUnsavedChanges && isEditMode) { // Only check if in edit mode
-        setShowUnsavedAlert(true)
-      } else {
-        onOpenChange(false)
-      }
-    } else {
-      onOpenChange(true)
-    }
-  }
-
-  // Update save handler to sync initial state
-  const handleSaveJournalWrapped = async () => {
-    await handleSaveJournal()
-    // handleSaveJournal sets hasExistingJournal=true and isEditMode=false on success
-    // We should also update initial state to match current, so if they edit again, baseline is new data
-    setInitialNote(note)
-    setInitialEmotion(selectedEmotion)
-  }
+  }, [dayData?.trades, statistics?.breakEvenThreshold])
 
   if (!selectedDate) return null
 
-  const tradesForDay = dayData?.trades || []
-
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={handleCloseAttempt}>
-        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-[56rem] h-[100dvh] sm:h-[min(90vh,56rem)] p-0 flex flex-col overflow-hidden">
-          {/* Header - Simple */}
-          <div className="flex items-center justify-between p-4 border-b bg-card">
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className={dashboardModalShell.daily}>
+        <div className="border-b border-border/50 px-6 py-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/8 text-primary">
+              <BarChart3 className="h-5 w-5" />
+            </div>
             <div>
-              <DialogTitle className="text-lg font-bold">{formattedDate}</DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground">
-                Daily performance overview
+              <DialogTitle className="text-xl font-semibold tracking-tight">Trade Statistics</DialogTitle>
+              <DialogDescription className="mt-1 text-sm text-muted-foreground">
+                {formattedDate}
               </DialogDescription>
             </div>
           </div>
+        </div>
 
-          <Tabs defaultValue="trades" onValueChange={handleTabChange} className="flex-1 flex flex-col overflow-hidden">
-            <div className="px-4 border-b">
-              <TabsList className="h-10 bg-transparent border-0 p-0 gap-1">
-                <TabsTrigger value="trades" className="data-[state=active]:bg-muted rounded-md px-3 py-1.5 text-sm gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  Trades & Stats
-                </TabsTrigger>
-                <TabsTrigger value="journal" className="data-[state=active]:bg-muted rounded-md px-3 py-1.5 text-sm gap-2">
-                  <BookOpen className="h-4 w-4" />
-                  Journal
-                </TabsTrigger>
-              </TabsList>
+        <div className="space-y-6 px-6 py-6">
+          {isLoading ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Skeleton className="h-24 rounded-2xl" />
+              <Skeleton className="h-24 rounded-2xl" />
+              <Skeleton className="h-24 rounded-2xl" />
+              <Skeleton className="h-24 rounded-2xl" />
             </div>
+          ) : summary.trades.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border/60 px-6 py-10 text-center">
+              <p className="text-sm font-medium text-foreground">No trades recorded for this day.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Daily notes now live exclusively in Daily Journal.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <StatBlock
+                  label="Net P&L"
+                  value={formatValue(summary.totalPnL, { kind: 'money' })}
+                  hint={`${summary.trades.length} trade${summary.trades.length === 1 ? '' : 's'}`}
+                  tone={summary.totalPnL >= 0 ? 'positive' : 'negative'}
+                />
+                <StatBlock
+                  label="Win Rate"
+                  value={`${((summary.wins / summary.trades.length) * 100).toFixed(1)}%`}
+                  hint={`${summary.wins}W / ${summary.losses}L / ${summary.breakEven} BE`}
+                />
+                <StatBlock
+                  label="Average Trade"
+                  value={formatValue(summary.averagePnL, { kind: 'money' })}
+                  tone={summary.averagePnL >= 0 ? 'positive' : 'negative'}
+                />
+                <StatBlock
+                  label="Avg Hold"
+                  value={`${Math.round(summary.avgMinutes)}m`}
+                  hint="Mean time in position"
+                />
+              </div>
 
-            {/* Trades Tab */}
-            <TabsContent value="trades" className="m-0 flex-1 overflow-auto px-4 pb-4">
-              <ScrollArea className="h-full">
-                <div className="space-y-4 py-4">
-                  <DailyStats dayData={dayData} isWeekly={false} />
-
-                  {/* Trades Table */}
-                  {tradesForDay.length > 0 ? (
-                    <div className="rounded-lg border overflow-hidden">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-muted/30">
-                            <TableHead className="font-semibold">Instrument</TableHead>
-                            <TableHead className="font-semibold">Side</TableHead>
-                            <TableHead className="text-right font-semibold">P&L</TableHead>
-                            <TableHead className="text-right font-semibold">Duration</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {tradesForDay.map((trade) => (
-                            <TableRow key={trade.id} className="cursor-pointer hover:bg-muted/50">
-                              <TableCell>
-                                <div className="flex flex-col">
-                                  <span className="font-bold">{trade.instrument}</span>
-                                  <span className="text-xs text-muted-foreground">{trade.entryTime ? format(new Date(trade.entryTime), 'HH:mm') : '-'}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={trade.side === 'BUY' ? 'default' : 'destructive'} className={cn("text-[10px] uppercase", trade.side === "BUY" ? "bg-long hover:bg-long/90" : "bg-short hover:bg-short/90")}>
-                                  {trade.side}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <span className={cn("font-mono font-bold", getTradeNetPnl(trade) >= 0 ? "text-long" : "text-short")}>
-                                  {formatValue(getTradeNetPnl(trade), { kind: 'money' })}
-                                </span>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                {parsePositionTime(trade.timeInPosition)}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 border rounded-lg border-dashed bg-muted/5">
-                      <div className="p-3 bg-muted rounded-full">
-                        <BarChart3 className="w-6 h-6 text-muted-foreground" />
-                      </div>
-                      <div className="space-y-1">
-                        <p className="font-medium">No trades recorded</p>
-                        <p className="text-sm text-muted-foreground">No trades found for this day.</p>
-                      </div>
-                    </div>
-                  )}
+              <div className="rounded-2xl border border-border/50">
+                <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Instrument Breakdown</p>
+                    <p className="text-xs text-muted-foreground">Top contributors for the selected day</p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Clock3 className="h-3.5 w-3.5" />
+                    Day summary
+                  </div>
                 </div>
-              </ScrollArea>
-            </TabsContent>
 
-            {/* Journal Tab */}
-            <TabsContent value="journal" className="m-0 flex-1 overflow-auto px-4 pb-4">
-              {isLoadingJournal ? (
-                <div className="flex flex-col gap-4 p-4 min-h-[200px]">
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-24" />
-                    <div className="flex gap-2">
-                      {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-10 w-10 rounded-full" />)}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-20" />
-                    <Skeleton className="h-24 w-full rounded-lg" />
-                  </div>
-                  <Skeleton className="h-10 w-full rounded-lg" />
+                <div className="divide-y divide-border/40">
+                  {summary.byInstrument.map(([instrument, item]) => {
+                    const isPositive = item.pnl >= 0
+                    return (
+                      <div key={instrument} className="flex items-center justify-between px-4 py-3">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{instrument}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {item.trades} trade{item.trades === 1 ? '' : 's'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isPositive ? (
+                            <TrendingUp className="h-4 w-4 text-long" />
+                          ) : (
+                            <TrendingDown className="h-4 w-4 text-short" />
+                          )}
+                          <span className={cn('text-sm font-semibold', isPositive ? 'text-long' : 'text-short')}>
+                            {formatValue(item.pnl, { kind: 'money' })}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
-              ) : (
-                <ScrollArea className="h-full">
-                  <div className="space-y-4 py-4">
-                    {/* View Mode */}
-                    {!isEditMode && hasExistingJournal && (
-                      <Card>
-                        <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
-                          <CardTitle className="text-sm font-semibold">Your Journal Entry</CardTitle>
-                          <Button
-                            onClick={() => setIsEditMode(true)}
-                            variant="outline"
-                            size="sm"
-                            className="gap-2"
-                          >
-                            <PenLine className="h-3.5 w-3.5" />
-                            Edit
-                          </Button>
-                        </CardHeader>
-                        <CardContent className="space-y-3 px-4 pb-4">
-                          {selectedEmotion && (
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">Emotion</p>
-                              <div className="flex items-center gap-2">
-                                {(() => {
-                                  const emotion = emotions.find(e => e.id === selectedEmotion)
-                                  if (!emotion) return null
-                                  const Icon = emotion.icon
-                                  return (
-                                    <>
-                                      <Icon className={cn("h-4 w-4", emotion.color)} />
-                                      <span className="text-sm font-medium">{emotion.label}</span>
-                                    </>
-                                  )
-                                })()}
-                              </div>
-                            </div>
-                          )}
-                          {note && (
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">Notes</p>
-                              <div className="text-sm whitespace-pre-wrap bg-muted/30 rounded-lg p-3">
-                                {formatNoteContent(note)}
-                              </div>
-                            </div>
-                          )}
-                          {!note && !selectedEmotion && (
-                            <p className="text-sm text-muted-foreground">No journal entry yet.</p>
-                          )}
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {/* Edit Mode */}
-                    {isEditMode && (
-                      <Card>
-                        <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
-                          <CardTitle className="text-sm font-semibold">
-                            {hasExistingJournal ? 'Edit Journal Entry' : 'Create Journal Entry'}
-                          </CardTitle>
-                          {hasExistingJournal && (
-                            <Button
-                              onClick={() => {
-                                // Reset to initial values on cancel
-                                setNote(initialNote)
-                                setSelectedEmotion(initialEmotion)
-                                setIsEditMode(false)
-                              }}
-                              variant="ghost"
-                              size="sm"
-                              className="gap-2"
-                            >
-                              <X className="h-3.5 w-3.5" />
-                              Cancel
-                            </Button>
-                          )}
-                        </CardHeader>
-                        <CardContent className="space-y-4 px-4 pb-4">
-                          <div>
-                            <label className="text-sm font-medium mb-2 block">How did you feel?</label>
-                            <EmotionPicker
-                              selectedEmotion={selectedEmotion}
-                              onChange={setSelectedEmotion}
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-sm font-medium mb-2 block">Your Notes</label>
-                            <LexicalEditor
-                              value={note}
-                              onChange={setNote}
-                              placeholder="Reflect on today's trading..."
-                              minHeight="120px"
-                            />
-                          </div>
-
-                          <Button
-                            onClick={handleSaveJournalWrapped}
-                            disabled={isSaving || (!note.trim() && !selectedEmotion)}
-                            className="w-full gap-2"
-                          >
-                            {isSaving ? (
-                              <>
-                                <Spinner className="h-4 w-4 text-current" />
-                                Saving...
-                              </>
-                            ) : (
-                              <>
-                                <Save className="h-4 w-4" />
-                                Save Journal
-                              </>
-                            )}
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
-                </ScrollArea>
-              )}
-            </TabsContent>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={showUnsavedAlert} onOpenChange={setShowUnsavedAlert}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
-            <AlertDialogDescription>
-              You have unsaved changes in your journal entry. Are you sure you want to discard them?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep Editing</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setShowUnsavedAlert(false)
-                // Reset to initial values
-                setNote(initialNote)
-                setSelectedEmotion(initialEmotion)
-                onOpenChange(false)
-              }}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              Discard Changes
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+              </div>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }

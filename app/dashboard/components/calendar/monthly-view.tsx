@@ -16,11 +16,11 @@ import { BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { useDashboardDisplay } from "@/hooks/use-dashboard-display"
+import { useJournalData } from "@/app/dashboard/hooks/use-journal-data"
 
 import { CalendarData } from "@/app/dashboard/types/calendar"
 import { useCalendarViewStore } from "@/store/calendar-view"
 import { useUserStore } from "@/store/user-store"
-import { useCalendarNotes } from "@/app/dashboard/hooks/use-calendar-notes"
 import { calculateDailyStats } from "./calendar-utils"
 import { useData } from '@/context/data-provider'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
@@ -300,9 +300,17 @@ export default function MonthlyView({
   isMiniCalendar?: boolean
 }) {
   const timezone = useUserStore((state) => state.timezone)
-  const { notes } = useCalendarNotes()
   const isCompactAdvancedCalendar = useMediaQuery('(max-width: 1439px)')
   const shouldUseWeekdayOnlyLayout = hideWeekends || (!isMiniCalendar && isCompactAdvancedCalendar)
+  const visibleRangeStart = useMemo(
+    () => startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 }),
+    [currentDate]
+  )
+  const visibleRangeEnd = useMemo(
+    () => endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 }),
+    [currentDate]
+  )
+  const { journals } = useJournalData(visibleRangeStart, visibleRangeEnd, null)
 
   // Sunday-start weeks
   const weeks = useMemo(() => {
@@ -361,7 +369,7 @@ export default function MonthlyView({
                 const dateKey = format(date, 'yyyy-MM-dd')
                 const dayData = calendarData[dateKey]
                 const isCurrentMonth = isSameMonth(date, currentDate)
-                const hasNotes = !!notes[dateKey]
+                const hasNotes = !!journals[dateKey]
 
                 return (
                   <DayCell

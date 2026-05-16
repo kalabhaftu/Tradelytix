@@ -19,6 +19,7 @@ model Account {
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime                 @updatedAt
   isArchived             Boolean                  @default(false)
+  isConfigured           Boolean                  @default(false)
   User                   User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   DailyNote              DailyNote[]
   LiveAccountTransaction LiveAccountTransaction[]
@@ -828,6 +829,16 @@ model DonationAddress {
   updatedAt DateTime @updatedAt
 
   @@index([isActive])
+  @@schema("public")
+}
+
+model SiteUiSettings {
+  id                 String   @id
+  showDonateButton   Boolean  @default(true)
+  showFeedbackButton Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
   @@schema("public")
 }
 

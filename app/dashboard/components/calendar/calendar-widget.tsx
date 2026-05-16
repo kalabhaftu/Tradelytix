@@ -18,7 +18,6 @@ import { CalendarModal } from "./daily-modal"
 import { WeeklyModal } from "./weekly-modal"
 import { CalendarSettings } from "./calendar-settings"
 import { useCalendarViewStore } from "@/store/calendar-view"
-import { useCalendarNotes } from "@/app/dashboard/hooks/use-calendar-notes"
 import { useUserStore } from "@/store/user-store"
 import { useWidgetData } from "@/hooks/use-widget-data"
 import { CalendarData } from "@/app/dashboard/types/calendar"
@@ -53,17 +52,9 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const calendarRef = useRef<HTMLDivElement>(null)
 
-  const { refetchNotes } = useCalendarNotes()
-
   // View Store
   const { viewMode, setViewMode, selectedDate, setSelectedDate, selectedWeekDate, setSelectedWeekDate } = useCalendarViewStore()
   const [showWeeklyModal, setShowWeeklyModal] = useState(false)
-
-  useEffect(() => {
-    const handleNotesSaved = () => refetchNotes()
-    window.addEventListener('notesSaved', handleNotesSaved)
-    return () => window.removeEventListener('notesSaved', handleNotesSaved)
-  }, [refetchNotes])
 
   // Construct Calendar Data entirely from the server 
   const localCalendarData = useMemo(() => {

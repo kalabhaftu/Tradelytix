@@ -45,6 +45,9 @@ export async function GET(req: NextRequest) {
             auth_user_id: true,
             firstName: true,
             lastName: true,
+            Subscription: {
+              select: { status: true, currentPeriodEnd: true }
+            },
             _count: { select: { Account: true, MasterAccount: true, Notification: true } },
           },
         })
@@ -96,6 +99,7 @@ export async function GET(req: NextRequest) {
         locationLabel: formatGeoLocation(geo),
         accountCount: dbUser ? dbUser._count.Account + dbUser._count.MasterAccount : 0,
         notificationCount: dbUser?._count.Notification ?? 0,
+        subscriptionStatus: dbUser?.Subscription?.status ?? null,
         createdAt: authUser.created_at ?? null,
         lastSignInAt: authUser.last_sign_in_at ?? null,
       }

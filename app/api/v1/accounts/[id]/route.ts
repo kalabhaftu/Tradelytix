@@ -110,7 +110,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const internalUserId = identity.internalUserId
     const { id: accountId } = await params
     const body = await request.json()
-    const { name, broker, isArchived } = body
+    const { name, broker, isArchived, startingBalance, number } = body
 
     const existingAccount = await prisma.account.findFirst({
       where: {
@@ -132,15 +132,38 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       updateData.isArchived = isArchived
     }
 
-    if (name !== undefined || broker !== undefined) {
-      if (!name || !broker) {
-        return NextResponse.json(
-          { success: false, error: 'Name and broker are required for account updates' },
-          { status: 400 }
-        )
+    // Name is always editable
+    if (name !== undefined) {
+      if (!name.trim()) {
+        return NextResponse.json({ success: false, error: 'Name is required' }, { status: 400 })
       }
       updateData.name = name.trim()
-      updateData.broker = broker.trim()
+    }
+
+    // Balance, Broker, and Number are one-time editable if the account is not yet "fully configured"
+    // or if they are currently defaults (like 0 balance).
+    if (!existingAccount.isConfigured) {
+      if (startingBalance !== undefined) {
+        updateData.startingBalance = parseFloat(startingBalance)
+      }
+      if (number !== undefined) {
+        updateData.number = number.trim()
+      }
+      if (broker !== undefined) {
+        if (!broker.trim()) {
+          return NextResponse.json({ success: false, error: 'Broker is required' }, { status: 400 })
+        }
+        updateData.broker = broker.trim()
+      }
+
+      // If we performed a one-time edit of these sensitive fields, lock them for the future
+      if (startingBalance !== undefined || number !== undefined || broker !== undefined) {
+        updateData.isConfigured = true
+      }
+    } else {
+      // If already configured, we ignore startingBalance, number, and broker updates
+      // but we still allowed 'name' above.
+      // Optionally log or notify that these fields are locked.
     }
 
     const updatedAccount = await prisma.account.update({
@@ -157,7 +180,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const action = typeof isArchived === 'boolean'
       ? (isArchived ? 'ACCOUNT_ARCHIVED' : 'ACCOUNT_UNARCHIVED')
-      : 'ACCOUNT_RENAMED'
+      : (existingAccount.isConfigured ? 'ACCOUNT_RENAMED' : 'ACCOUNT_CONFIGURED')
 
     logActivity({
       userId: internalUserId,
@@ -178,6 +201,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         displayName: updatedAccount.name || updatedAccount.number,
         startingBalance: updatedAccount.startingBalance,
         isArchived: updatedAccount.isArchived,
+        isConfigured: updatedAccount.isConfigured,
       }
     })
   } catch {

@@ -199,6 +199,7 @@ export function JournalClient() {
 
   // State
   const [searchTerm, setSearchTerm] = useState('')
+  const [tradeDateFilter, setTradeDateFilter] = useState('')
   const [filterBy, setFilterBy] = useState<'all' | 'wins' | 'losses' | 'breakeven' | 'buys' | 'sells'>('all')
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -212,11 +213,13 @@ export function JournalClient() {
   // URL State
   const view = searchParams.get('view')
   const tradeIdParam = searchParams.get('tradeId')
+  const dateParam = searchParams.get('date')
 
   // Pagination via Backend V1 Endpoint
   const { trades: paginatedTrades, totalCount, statistics, isLoading, refetch } = useJournal({
     page: currentPage,
     search: searchTerm,
+    tradeDate: tradeDateFilter,
     filterBy,
     selectedTagIds,
     accountNumbers,
@@ -234,6 +237,13 @@ export function JournalClient() {
   useEffect(() => {
     setCurrentPage(1)
   }, [searchTerm, filterBy, selectedTagIds])
+
+  useEffect(() => {
+    if (!dateParam) return
+    setSearchTerm(dateParam)
+    setTradeDateFilter(dateParam)
+    setViewMode('grid')
+  }, [dateParam])
 
   // Handlers
   const handleRefresh = useCallback(async () => {
@@ -290,9 +300,13 @@ export function JournalClient() {
 
   const handleClearFilters = useCallback(() => {
     setSearchTerm('')
+    setTradeDateFilter('')
     setFilterBy('all')
     setSelectedTagIds([])
-  }, [])
+    if (dateParam || view || tradeIdParam) {
+      router.replace('/dashboard/journal')
+    }
+  }, [dateParam, router, tradeIdParam, view])
 
   const hasFilters = filterBy !== 'all' || selectedTagIds.length > 0
 
@@ -412,14 +426,22 @@ export function JournalClient() {
             ref={searchInputRef}
             placeholder="Search by symbol, alias, or notes..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              const nextValue = e.target.value
+              setSearchTerm(nextValue)
+              const nextIsDate = /^\d{4}-\d{2}-\d{2}$/.test(nextValue.trim())
+              setTradeDateFilter(nextIsDate ? nextValue.trim() : '')
+            }}
             className="pl-9 pr-9 h-9"
           />
           {searchTerm && (
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setSearchTerm('')}
+              onClick={() => {
+                setSearchTerm('')
+                setTradeDateFilter('')
+              }}
               className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
             >
               <X className="h-3.5 w-3.5" />
@@ -584,14 +606,11 @@ export function JournalClient() {
                     setNotePanelDate(date)
                     return
                   }
-                  if (dayTrades.length === 1) {
-                    handleViewTrade(dayTrades[0])
-                  } else {
-                    // Filter cards view to this specific date
-                    const dateStr = date.toISOString().split('T')[0]
-                    setSearchTerm(dateStr)
-                    setViewMode('grid')
-                  }
+                  const dateStr = format(date, 'yyyy-MM-dd')
+                  setTradeDateFilter(dateStr)
+                  setSearchTerm(dateStr)
+                  setViewMode('grid')
+                  router.push(`/dashboard/journal?date=${dateStr}`)
                 }}
                 onDayNoteClick={(date) => setNotePanelDate(date)}
               />

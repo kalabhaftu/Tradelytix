@@ -19,7 +19,6 @@ export interface InitBootstrapPayload {
   isAuthenticated: boolean
   user: any | null
   accounts: any[]
-  calendarNotes: Record<string, string>
   activeTemplateShell: ActiveTemplateShell | null
 }
 
@@ -32,7 +31,6 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
         isAuthenticated: false,
         user: null,
         accounts: [],
-        calendarNotes: {},
         activeTemplateShell: null,
       }
     }
@@ -58,34 +56,17 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
         isAuthenticated: false,
         user: null,
         accounts: [],
-        calendarNotes: {},
         activeTemplateShell: null,
       }
     }
 
     const internalUserId = userLookup.id
 
-    const [accounts, calendarNotes, propFirmAccounts, allTrades, activeTemplate] = await Promise.all([
+    const [accounts, propFirmAccounts, allTrades, activeTemplate] = await Promise.all([
       prisma.account.findMany({
         where: { userId: internalUserId },
         orderBy: { createdAt: 'desc' }
       }),
-
-      (async () => {
-        const twoYearsAgo = new Date()
-        twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2)
-        const notes = await prisma.dailyNote.findMany({
-          where: { userId: internalUserId, date: { gte: twoYearsAgo } },
-          select: { date: true, note: true }
-        })
-        return notes.reduce<Record<string, string>>((acc, note) => {
-          const dateKey = typeof note.date === 'string'
-            ? note.date
-            : note.date.toISOString().split('T')[0]
-          acc[dateKey] = note.note
-          return acc
-        }, {})
-      })(),
 
       prisma.masterAccount.findMany({
         where: { userId: internalUserId },
@@ -197,7 +178,6 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
       isAuthenticated: true,
       user: mergeUserSettings(userLookup as any, (userLookup as any).settings),
       accounts: [...processedLiveAccounts, ...processedPropFirmAccounts],
-      calendarNotes,
       activeTemplateShell,
     }
   } catch {
@@ -205,7 +185,6 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
       isAuthenticated: false,
       user: null,
       accounts: [],
-      calendarNotes: {},
       activeTemplateShell: null,
     }
   }

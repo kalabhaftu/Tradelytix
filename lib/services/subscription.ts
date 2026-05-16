@@ -4,19 +4,40 @@
  */
 
 import { prisma } from '@/lib/prisma'
-import { SubscriptionStatus } from '@prisma/client'
-import crypto from 'crypto'
+import { NotificationPriority, NotificationType, SubscriptionStatus } from '@prisma/client'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import {
   createInvoice,
   getMinAmount,
   getPaymentStatus,
   isSuccessStatus,
   isFailureStatus,
+  type NowPaymentStatus,
   type IpnPayload,
 } from './nowpayments'
+import { createOrUpdateNotification } from './notification-service'
 
 const PRICE_USD = parseFloat(process.env.SUBSCRIPTION_PRICE_USD || '10')
 const GRACE_DAYS = parseInt(process.env.SUBSCRIPTION_GRACE_DAYS || '3', 10)
+const PROVIDER_PENDING_EXPIRY_MS = 24 * 60 * 60 * 1000
+const PAYMENT_RECONCILIATION_BATCH_SIZE = 100
+const PENDING_PROVIDER_STATUSES: Array<NowPaymentStatus | 'pending'> = [
+  'pending',
+  'waiting',
+  'confirming',
+  'confirmed',
+  'sending',
+  'partially_paid',
+]
+
+function isPendingProviderStatus(status: string | null | undefined): status is NowPaymentStatus {
+  return typeof status === 'string' && PENDING_PROVIDER_STATUSES.includes(status as NowPaymentStatus)
+}
+
+function shouldMirrorExpiredByAge(record: { createdAt: Date; providerStatus: string | null | undefined }) {
+  if (!isPendingProviderStatus(record.providerStatus)) return false
+  return Date.now() - record.createdAt.getTime() >= PROVIDER_PENDING_EXPIRY_MS
+}
 
 // ---------------------------------------------------------------------------
 // Access Checks
@@ -135,6 +156,17 @@ export async function ensureSubscription(userId: string) {
   })
 }
 
+async function getLatestPendingPaymentRecord(userId: string, subscriptionId: string) {
+  return prisma.paymentRecord.findFirst({
+    where: {
+      userId,
+      subscriptionId,
+      providerStatus: { in: PENDING_PROVIDER_STATUSES },
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
 /** Create a payment invoice for a subscription */
 export async function createSubscriptionInvoice(
   userId: string,
@@ -143,6 +175,21 @@ export async function createSubscriptionInvoice(
   const subscription = await ensureSubscription(userId)
   if (['active', 'free_access', 'invited_free', 'promo_active'].includes(subscription.status)) {
     return { subscription, invoiceUrl: null, paymentRecordId: null, alreadyActive: true, freeAccess: false }
+  }
+
+  const existingPending = await getLatestPendingPaymentRecord(userId, subscription.id)
+  if (existingPending) {
+    const refreshedExisting = await reconcilePaymentRecord(existingPending.id, userId)
+    if (refreshedExisting && isPendingProviderStatus(refreshedExisting.providerStatus)) {
+      return {
+        subscription,
+        invoiceUrl: refreshedExisting.invoiceUrl,
+        invoiceId: refreshedExisting.providerInvoiceId,
+        paymentRecordId: refreshedExisting.id,
+        freeAccess: false,
+        reusedExisting: true,
+      }
+    }
   }
 
   let finalAmount = PRICE_USD
@@ -237,6 +284,7 @@ export async function createSubscriptionInvoice(
     invoiceId: invoice.id,
     paymentRecordId: paymentRecord.id,
     freeAccess: false,
+    reusedExisting: false,
   }
 }
 
@@ -289,6 +337,7 @@ export async function handleIpnWebhook(payload: IpnPayload) {
 
   if (isSuccessStatus(payment_status)) {
     updateData.paidAt = new Date()
+    updateData.expiredAt = null
   } else if (isFailureStatus(payment_status)) {
     updateData.expiredAt = new Date()
   }
@@ -315,24 +364,90 @@ export async function handleIpnWebhook(payload: IpnPayload) {
       paymentRecord.userId,
       'PAYMENT_RECEIVED',
       'Payment Confirmed',
-      `Your subscription payment of $${paymentRecord.amountUsd} has been confirmed. Access is active until ${paymentRecord.subscriptionPeriodEnd?.toLocaleDateString()}.`
+      `Your subscription payment of $${paymentRecord.amountUsd} has been confirmed. Access is active until ${paymentRecord.subscriptionPeriodEnd?.toLocaleDateString()}.`,
+      {
+        priority: NotificationPriority.HIGH,
+        invalidationKey: `payment-received-${paymentRecord.subscriptionId}`,
+      }
     )
     await createPaymentNotification(
       paymentRecord.userId,
       'ACCESS_RESTORED',
       'Access Restored',
-      'Your Deltalytix Pro access is active again.'
+      'Your Deltalytix Pro access is active again.',
+      {
+        priority: NotificationPriority.HIGH,
+        invalidationKey: `access-restored-${paymentRecord.subscriptionId}`,
+      }
     )
   } else if (isFailureStatus(payment_status)) {
     await createPaymentNotification(
       paymentRecord.userId,
       'PAYMENT_FAILED',
       'Payment Failed',
-      `Your payment of $${paymentRecord.amountUsd} ${payment_status}. Please try again to maintain access.`
+      `Your payment of $${paymentRecord.amountUsd} ${payment_status}. Please try again to maintain access.`,
+      {
+        priority: NotificationPriority.HIGH,
+        invalidationKey: `payment-failed-${paymentRecord.id}`,
+      }
     )
   }
 
+  revalidateSubscriptionAccess(paymentRecord.userId)
+
   return { processed: true, status: payment_status }
+}
+
+async function markPaymentRecordExpired(recordId: string) {
+  await prisma.paymentRecord.update({
+    where: { id: recordId },
+    data: {
+      providerStatus: 'expired',
+      expiredAt: new Date(),
+    },
+  })
+}
+
+export async function reconcilePaymentRecord(paymentRecordId: string, userId?: string) {
+  const record = await prisma.paymentRecord.findFirst({
+    where: {
+      id: paymentRecordId,
+      ...(userId ? { userId } : {}),
+    },
+    include: {
+      Subscription: true,
+    },
+  })
+
+  if (!record) return null
+  if (record.providerStatus && ['finished', 'failed', 'expired', 'refunded'].includes(record.providerStatus)) {
+    return record
+  }
+
+  if (record.providerPaymentId) {
+    try {
+      const provider = await getPaymentStatus(record.providerPaymentId)
+      await handleIpnWebhook(provider as unknown as IpnPayload)
+    } catch (error) {
+      if (shouldMirrorExpiredByAge(record)) {
+        await markPaymentRecordExpired(record.id)
+      } else {
+        throw error
+      }
+    }
+  } else if (shouldMirrorExpiredByAge(record)) {
+    await markPaymentRecordExpired(record.id)
+  }
+
+  return prisma.paymentRecord.findFirst({
+    where: {
+      id: paymentRecordId,
+      ...(userId ? { userId } : {}),
+    },
+    include: {
+      Subscription: true,
+    },
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -382,20 +497,7 @@ export async function validatePromoCode(code: string, userId: string) {
 }
 
 export async function refreshPaymentRecordStatus(paymentRecordId: string, userId: string) {
-  const record = await prisma.paymentRecord.findFirst({
-    where: { id: paymentRecordId, userId },
-  })
-
-  if (!record) return null
-  if (!record.providerPaymentId) return record
-  if (['finished', 'failed', 'expired', 'refunded'].includes(record.providerStatus || '')) return record
-
-  const provider = await getPaymentStatus(record.providerPaymentId)
-  await handleIpnWebhook(provider as unknown as IpnPayload)
-
-  return prisma.paymentRecord.findFirst({
-    where: { id: paymentRecordId, userId },
-  })
+  return reconcilePaymentRecord(paymentRecordId, userId)
 }
 
 function getDiscountDescription(promo: { type: string; value: number }) {
@@ -501,47 +603,27 @@ export async function revokeFreeAccess(email: string) {
 // ---------------------------------------------------------------------------
 
 /**
- * Automatically expire payment records that have been in a non-terminal state for too long.
- * Default timeout is 24 hours.
+ * Reconcile pending payment records with provider status and mirror expiry after the provider window.
  */
 export async function expireAbandonedPayments(userId?: string) {
-  const timeoutMs = 2 * 60 * 60 * 1000 // 2 hours
-  const cutoff = new Date(Date.now() - timeoutMs)
-
   const pendingPayments = await prisma.paymentRecord.findMany({
     where: {
       userId,
-      providerStatus: { in: ['pending', 'waiting', 'confirming', 'sending'] },
-      createdAt: { lt: cutoff },
+      providerStatus: { in: PENDING_PROVIDER_STATUSES },
     },
+    orderBy: { createdAt: 'asc' },
+    take: PAYMENT_RECONCILIATION_BATCH_SIZE,
   })
 
   if (pendingPayments.length === 0) return { expired: 0 }
 
-  console.log(`[Subscription] Found ${pendingPayments.length} potentially abandoned payments.`)
+  console.log(`[Subscription] Reconciling ${pendingPayments.length} pending payments.`)
 
   let expiredCount = 0
   for (const record of pendingPayments) {
     try {
-      if (record.providerPaymentId) {
-        // Double check status with provider
-        const status = await getPaymentStatus(record.providerPaymentId)
-        if (status.payment_status && status.payment_status !== record.providerStatus) {
-          // If status changed, handle it normally
-          await handleIpnWebhook(status as any)
-          continue
-        }
-      }
-
-      // If still non-terminal and old, expire it
-      await prisma.paymentRecord.update({
-        where: { id: record.id },
-        data: {
-          providerStatus: 'expired',
-          expiredAt: new Date(),
-        },
-      })
-      expiredCount++
+      const updated = await reconcilePaymentRecord(record.id, record.userId)
+      if (updated?.providerStatus === 'expired') expiredCount++
     } catch (error) {
       console.error(`[Subscription] Failed to expire payment ${record.id}:`, error)
     }
@@ -611,27 +693,42 @@ export async function runSubscriptionChecks() {
   return results
 }
 
+export async function reconcilePendingPayments(params?: { userId?: string }) {
+  return expireAbandonedPayments(params?.userId)
+}
+
 // ---------------------------------------------------------------------------
 // Notification Helper
 // ---------------------------------------------------------------------------
 
+function revalidateSubscriptionAccess(userId: string) {
+  revalidateTag(`notifications-${userId}`, 'max')
+  revalidateTag(`accounts-${userId}`, 'max')
+  revalidateTag(`user-data-${userId}`, 'max')
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/settings')
+  revalidatePath('/subscribe')
+  revalidatePath('/subscribe/status')
+  revalidatePath('/subscribe/success')
+}
+
 async function createPaymentNotification(
   userId: string,
-  type: string,
+  type: NotificationType,
   title: string,
-  message: string
+  message: string,
+  options?: {
+    priority?: NotificationPriority
+    invalidationKey?: string
+  }
 ) {
   try {
-    await prisma.notification.create({
-      data: {
-        id: crypto.randomUUID(),
-        userId,
-        type: type as any,
-        title,
-        message,
-        priority: type === 'SUBSCRIPTION_EXPIRED' ? 'CRITICAL' : 'HIGH',
-        isRead: false,
-      },
+    await createOrUpdateNotification(userId, {
+      type,
+      title,
+      message,
+      priority: options?.priority || (type === 'SUBSCRIPTION_EXPIRED' ? NotificationPriority.CRITICAL : NotificationPriority.HIGH),
+      invalidationKey: options?.invalidationKey,
     })
   } catch (error) {
     console.error('[Subscription] Failed to create notification:', error)

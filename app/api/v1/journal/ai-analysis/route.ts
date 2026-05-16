@@ -3,9 +3,10 @@ import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
-import { cleanContent } from '@/lib/utils'
+import { cleanContent, groupTradesByExecution } from '@/lib/utils'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { getRuntimeBreakEvenThreshold } from '@/server/user-settings'
+import { listDailyJournalEntries } from '@/server/daily-journal'
 
 // GET - Generate AI analysis of journals and trades
 export async function GET(request: NextRequest) {
@@ -32,29 +33,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch journals in date range
-    const journalsWhere: any = {
-      userId: internalUserId,
-      date: {
-        gte: new Date(startDate),
-        lte: new Date(endDate)
-      }
-    }
-
-    if (accountId) {
-      journalsWhere.accountId = accountId
-    }
-
-    const journals = await prisma.dailyNote.findMany({
-      where: journalsWhere,
-      orderBy: { date: 'asc' },
-      include: {
-        Account: {
-          select: {
-            name: true,
-            number: true
-          }
-        }
-      }
+    const journals = await listDailyJournalEntries(internalUserId, {
+      startDate,
+      endDate,
+      accountId: accountId || undefined,
+      sortOrder: 'asc',
     })
 
     // Fetch trades in date range
@@ -77,16 +60,24 @@ export async function GET(request: NextRequest) {
       orderBy: { entryDate: 'asc' },
       select: {
         id: true,
+        entryId: true,
         instrument: true,
         side: true,
         pnl: true,
         commission: true,
+        accountNumber: true,
+        phaseAccountId: true,
         entryDate: true,
         closeDate: true,
         quantity: true,
         entryPrice: true,
         closePrice: true,
         comment: true, // Trade notes
+        setup: true,
+        selectedRules: true,
+        ruleBroken: true,
+        chartLinks: true,
+        chartLinksList: true,
         modelId: true,
         TradingModel: {
           select: {
@@ -183,8 +174,20 @@ async function generateAnalysis(
   breakEvenThreshold: number = 10
 ) {
   const threshold = getBreakEvenThreshold(breakEvenThreshold)
+  const analyzedTrades = (groupTradesByExecution(trades as any[]) as any[])
+    .sort((a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime())
   const getNetPnl = (trade: any) => Number(trade.pnl || 0)
   const getOutcome = (trade: any) => classifyOutcome(getNetPnl(trade), threshold)
+  const getTradeDateKey = (trade: any) => {
+    const raw = trade.closeDate || trade.entryDate
+    return raw ? new Date(raw).toISOString().split('T')[0] : null
+  }
+  const getRuleList = (trade: any) => Array.isArray(trade.selectedRules) ? trade.selectedRules.map((rule: unknown) => String(rule)).filter(Boolean) : []
+  const getChartLinkCount = (trade: any) => {
+    if (Array.isArray(trade.chartLinksList) && trade.chartLinksList.length > 0) return trade.chartLinksList.length
+    if (typeof trade.chartLinks === 'string' && trade.chartLinks.trim()) return trade.chartLinks.split(',').map((item: string) => item.trim()).filter(Boolean).length
+    return 0
+  }
 
   // Prepare data for AI
   const journalSummary = journals.map(j => ({
@@ -202,7 +205,7 @@ async function generateAnalysis(
     : 'No funded prop firm accounts found'
 
   // Extract trade notes for analysis
-  const tradeNotes = trades
+  const tradeNotes = analyzedTrades
     .filter(t => t.comment && t.comment.trim().length > 0)
     .map(t => ({
       date: t.entryDate,
@@ -214,22 +217,22 @@ async function generateAnalysis(
     }))
 
   const tradeStats = {
-    totalTrades: trades.length,
-    winningTrades: trades.filter(t => getOutcome(t) === 'win').length,
-    losingTrades: trades.filter(t => getOutcome(t) === 'loss').length,
-    breakEvenTrades: trades.filter(t => getOutcome(t) === 'breakeven').length,
-    totalPnL: trades.reduce((sum, t) => sum + getNetPnl(t), 0),
-    averagePnL: trades.length > 0 ? trades.reduce((sum, t) => sum + getNetPnl(t), 0) / trades.length : 0,
-    totalCommission: trades.reduce((sum, t) => sum + (t.commission || 0), 0),
+    totalTrades: analyzedTrades.length,
+    winningTrades: analyzedTrades.filter(t => getOutcome(t) === 'win').length,
+    losingTrades: analyzedTrades.filter(t => getOutcome(t) === 'loss').length,
+    breakEvenTrades: analyzedTrades.filter(t => getOutcome(t) === 'breakeven').length,
+    totalPnL: analyzedTrades.reduce((sum, t) => sum + getNetPnl(t), 0),
+    averagePnL: analyzedTrades.length > 0 ? analyzedTrades.reduce((sum, t) => sum + getNetPnl(t), 0) / analyzedTrades.length : 0,
+    totalCommission: analyzedTrades.reduce((sum, t) => sum + (t.commission || 0), 0),
     tradesWithNotes: tradeNotes.length
   }
 
   // Calculate profit factor
-  const grossProfit = trades
+  const grossProfit = analyzedTrades
     .filter(t => getOutcome(t) === 'win')
     .reduce((sum, t) => sum + getNetPnl(t), 0)
   const grossLoss = Math.abs(
-    trades
+    analyzedTrades
       .filter(t => getOutcome(t) === 'loss')
       .reduce((sum, t) => sum + getNetPnl(t), 0)
   )
@@ -241,7 +244,7 @@ async function generateAnalysis(
 
   // P&L by instrument
   const pnlByInstrument: Record<string, { trades: number, pnl: number, wins: number }> = {}
-  trades.forEach(t => {
+  analyzedTrades.forEach(t => {
     const netPnL = getNetPnl(t)
     if (!pnlByInstrument[t.instrument]) {
       pnlByInstrument[t.instrument] = { trades: 0, pnl: 0, wins: 0 }
@@ -258,7 +261,7 @@ async function generateAnalysis(
 
   // P&L by strategy (trading model)
   const pnlByStrategy: Record<string, { trades: number, pnl: number, wins: number }> = {}
-  trades.forEach(t => {
+  analyzedTrades.forEach(t => {
     const strategy = (t as any).TradingModel?.name || 'No Strategy'
     const netPnL = getNetPnl(t)
     if (!pnlByStrategy[strategy]) {
@@ -279,7 +282,7 @@ async function generateAnalysis(
     Friday: { trades: 0, pnl: 0 },
     Saturday: { trades: 0, pnl: 0 }
   }
-  trades.forEach(t => {
+  analyzedTrades.forEach(t => {
     const dayOfWeek = new Date(t.entryDate).toLocaleDateString('en-US', { weekday: 'long' })
     const netPnL = getNetPnl(t)
     pnlByWeekday[dayOfWeek].trades++
@@ -288,7 +291,7 @@ async function generateAnalysis(
 
   // P&L by hour of day
   const pnlByHour: Record<number, { trades: number, pnl: number }> = {}
-  trades.forEach(t => {
+  analyzedTrades.forEach(t => {
     const hour = new Date(t.entryDate).getHours()
     const netPnL = getNetPnl(t)
     if (!pnlByHour[hour]) {
@@ -316,7 +319,7 @@ async function generateAnalysis(
   journals.forEach(j => {
     if (j.emotion) {
       const dateStr = new Date(j.date).toISOString().split('T')[0]
-      const dayTrades = trades.filter(t => t.entryDate.startsWith(dateStr))
+      const dayTrades = analyzedTrades.filter(t => getTradeDateKey(t) === dateStr)
 
       if (!emotionPerformance[j.emotion]) {
         emotionPerformance[j.emotion] = { trades: 0, totalPnL: 0 }
@@ -340,7 +343,7 @@ async function generateAnalysis(
   let tradesWithBias = 0
   let tradesAlignedWithBias = 0
 
-  trades.forEach(t => {
+  analyzedTrades.forEach(t => {
     if (t.marketBias) {
       tradesWithBias++
       const netPnL = getNetPnl(t)
@@ -363,29 +366,29 @@ async function generateAnalysis(
 
   // News Trading Analysis
   const newsTradesStats = {
-    totalNewsDays: trades.filter(t => t.newsDay).length,
-    tradedDuringNews: trades.filter(t => t.newsDay && t.newsTraded).length,
-    tradedBeforeAfterNews: trades.filter(t => t.newsDay && !t.newsTraded).length,
-    noNewsTraded: trades.filter(t => !t.newsDay).length,
+    totalNewsDays: analyzedTrades.filter(t => t.newsDay).length,
+    tradedDuringNews: analyzedTrades.filter(t => t.newsDay && t.newsTraded).length,
+    tradedBeforeAfterNews: analyzedTrades.filter(t => t.newsDay && !t.newsTraded).length,
+    noNewsTraded: analyzedTrades.filter(t => !t.newsDay).length,
   }
 
-  const newsDayPnL = trades.filter(t => t.newsDay).reduce((sum, t) => sum + getNetPnl(t), 0)
-  const noNewsDayPnL = trades.filter(t => !t.newsDay).reduce((sum, t) => sum + getNetPnl(t), 0)
+  const newsDayPnL = analyzedTrades.filter(t => t.newsDay).reduce((sum, t) => sum + getNetPnl(t), 0)
+  const noNewsDayPnL = analyzedTrades.filter(t => !t.newsDay).reduce((sum, t) => sum + getNetPnl(t), 0)
 
-  const tradedDuringNewsPnL = trades.filter(t => t.newsDay && t.newsTraded).reduce((sum, t) => sum + getNetPnl(t), 0)
-  const tradedBeforeAfterNewsPnL = trades.filter(t => t.newsDay && !t.newsTraded).reduce((sum, t) => sum + getNetPnl(t), 0)
+  const tradedDuringNewsPnL = analyzedTrades.filter(t => t.newsDay && t.newsTraded).reduce((sum, t) => sum + getNetPnl(t), 0)
+  const tradedBeforeAfterNewsPnL = analyzedTrades.filter(t => t.newsDay && !t.newsTraded).reduce((sum, t) => sum + getNetPnl(t), 0)
 
-  const newsDayWins = trades.filter(t => t.newsDay && getOutcome(t) === 'win').length
-  const newsDayLosses = trades.filter(t => t.newsDay && getOutcome(t) === 'loss').length
+  const newsDayWins = analyzedTrades.filter(t => t.newsDay && getOutcome(t) === 'win').length
+  const newsDayLosses = analyzedTrades.filter(t => t.newsDay && getOutcome(t) === 'loss').length
   const newsDayWinRate = newsTradesStats.totalNewsDays > 0 ? (newsDayWins / newsTradesStats.totalNewsDays) * 100 : 0
 
-  const noNewsDayWins = trades.filter(t => !t.newsDay && getOutcome(t) === 'win').length
-  const noNewsDayLosses = trades.filter(t => !t.newsDay && getOutcome(t) === 'loss').length
+  const noNewsDayWins = analyzedTrades.filter(t => !t.newsDay && getOutcome(t) === 'win').length
+  const noNewsDayLosses = analyzedTrades.filter(t => !t.newsDay && getOutcome(t) === 'loss').length
   const noNewsDayWinRate = newsTradesStats.noNewsTraded > 0 ? (noNewsDayWins / newsTradesStats.noNewsTraded) * 100 : 0
 
   // Extract specific news events that were traded
   const newsEventsTrade: Record<string, { trades: number, pnl: number, wins: number, tradedDuring: number }> = {}
-  trades.forEach(t => {
+  analyzedTrades.forEach(t => {
     if (t.newsDay && t.selectedNews) {
       const newsIds = t.selectedNews.split(',').filter(Boolean)
       const netPnL = getNetPnl(t)
@@ -427,7 +430,7 @@ async function generateAnalysis(
   }
 
   // Count usage by timeframe type (entry is most important)
-  trades.forEach(t => {
+  analyzedTrades.forEach(t => {
     const netPnL = getNetPnl(t)
     const isWin = getOutcome(t) === 'win'
 
@@ -450,7 +453,7 @@ async function generateAnalysis(
     'limit': { trades: 0, pnl: 0, wins: 0 },
   }
 
-  trades.forEach(t => {
+  analyzedTrades.forEach(t => {
     if ((t as any).orderType) {
       const netPnL = getNetPnl(t)
       const isWin = getOutcome(t) === 'win'
@@ -472,7 +475,7 @@ async function generateAnalysis(
   const { getTradingSession } = await import('@/lib/time-utils')
   const sessionStats: Record<string, { trades: number, pnl: number, wins: number }> = {}
 
-  trades.forEach(t => {
+  analyzedTrades.forEach(t => {
     if ((t as any).entryTime) {
       const session = getTradingSession((t as any).entryTime)
       if (session) {
@@ -623,12 +626,69 @@ async function generateAnalysis(
     }
   }
 
-  const revengeTradeAnalysis = calculateAvgTradeAfterLoss(trades)
-  const consecutiveLossPattern = analyzeConsecutiveLosses(trades)
-  const firstTradeAnalysis = analyzeFirstTradePerformance(trades)
-  const overtradingAnalysis = analyzeOvertradingPatterns(trades)
-  const riskMetrics = analyzeRiskMetrics(trades)
-  const streakPatterns = analyzeStreakPatterns(trades)
+  const ruleFrequency: Record<string, number> = {}
+  let tradesWithRules = 0
+  let brokenRuleTrades = 0
+  let reviewReadyTrades = 0
+  let tradesWithCharts = 0
+  let tradesWithSetup = 0
+  let tradesWithNotes = 0
+  const setupPerformance: Record<string, { trades: number, pnl: number, wins: number }> = {}
+  const accountPerformance: Record<string, { trades: number, pnl: number }> = {}
+
+  analyzedTrades.forEach((trade) => {
+    const rules = getRuleList(trade)
+    const chartLinkCount = getChartLinkCount(trade)
+    const setupName = typeof trade.setup === 'string' && trade.setup.trim() ? trade.setup.trim() : null
+    const accountKey = trade.accountNumber || trade.phaseAccountId || 'Unknown Account'
+    const netPnl = getNetPnl(trade)
+
+    if (rules.length > 0) {
+      tradesWithRules++
+      rules.forEach((rule: string) => {
+        ruleFrequency[rule] = (ruleFrequency[rule] || 0) + 1
+      })
+    }
+    if (trade.ruleBroken) brokenRuleTrades++
+    if (chartLinkCount > 0) tradesWithCharts++
+    if (setupName) {
+      tradesWithSetup++
+      if (!setupPerformance[setupName]) setupPerformance[setupName] = { trades: 0, pnl: 0, wins: 0 }
+      setupPerformance[setupName].trades++
+      setupPerformance[setupName].pnl += netPnl
+      if (getOutcome(trade) === 'win') setupPerformance[setupName].wins++
+    }
+    if (trade.comment && trade.comment.trim()) tradesWithNotes++
+    if (rules.length > 0 && chartLinkCount > 0 && trade.comment?.trim()) reviewReadyTrades++
+    if (!accountPerformance[accountKey]) accountPerformance[accountKey] = { trades: 0, pnl: 0 }
+    accountPerformance[accountKey].trades++
+    accountPerformance[accountKey].pnl += netPnl
+  })
+
+  const partialExecutionCount = analyzedTrades.filter((trade) => Array.isArray(trade.partialTrades) && trade.partialTrades.length > 1).length
+  const averagePartialsPerGroupedTrade = partialExecutionCount > 0
+    ? analyzedTrades
+      .filter((trade) => Array.isArray(trade.partialTrades) && trade.partialTrades.length > 1)
+      .reduce((sum, trade) => sum + trade.partialTrades.length, 0) / partialExecutionCount
+    : 0
+  const sortedPnls = analyzedTrades.map((trade) => getNetPnl(trade)).sort((a, b) => b - a)
+  const totalPnL = tradeStats.totalPnL
+  const bestTrade = sortedPnls[0] ?? 0
+  const secondBestTrade = sortedPnls[1] ?? 0
+  const pnlWithoutBestTrade = totalPnL - bestTrade
+  const bestTradeContributionPct = totalPnL !== 0 ? (bestTrade / totalPnL) * 100 : 0
+  const edgeFragility = totalPnL > 0 && pnlWithoutBestTrade <= 0
+  const topRules = Object.entries(ruleFrequency).sort((a, b) => b[1] - a[1]).slice(0, 5)
+  const topSetups = Object.entries(setupPerformance).sort((a, b) => b[1].pnl - a[1].pnl).slice(0, 5)
+  const topAccounts = Object.entries(accountPerformance).sort((a, b) => b[1].pnl - a[1].pnl).slice(0, 5)
+  const reviewCompletenessRate = analyzedTrades.length > 0 ? (reviewReadyTrades / analyzedTrades.length) * 100 : 0
+
+  const revengeTradeAnalysis = calculateAvgTradeAfterLoss(analyzedTrades)
+  const consecutiveLossPattern = analyzeConsecutiveLosses(analyzedTrades)
+  const firstTradeAnalysis = analyzeFirstTradePerformance(analyzedTrades)
+  const overtradingAnalysis = analyzeOvertradingPatterns(analyzedTrades)
+  const riskMetrics = analyzeRiskMetrics(analyzedTrades)
+  const streakPatterns = analyzeStreakPatterns(analyzedTrades)
 
   // Call AI API (XAI/Grok)
   try {
@@ -689,6 +749,12 @@ OUTPUT REQUIREMENTS:
 - Strengths: ONLY if genuinely demonstrated. Empty array is valid if nothing stands out.
 - Weaknesses: The real ones. If their R:R is inverted, say it. If they're overtrading, say it.
 - Recommendations: Specific, actionable, prioritized. Not "be more disciplined" - instead "Stop trading after 2 consecutive losses. Your data shows your 3rd trade after losses is wrong 78% of the time."
+- In weaknesses and recommendations, explicitly separate:
+  1. execution mistakes
+  2. setup-quality mistakes
+  3. discipline/behavior mistakes
+  4. review-process gaps
+- End recommendations with a blunt "Stop / Keep / Test" mini-playbook.
     
     THE DATA (Study this carefully):
     
@@ -711,7 +777,7 @@ OUTPUT REQUIREMENTS:
         : 'No weekly reviews recorded for this period'}
 
     **Trading Performance (Dashboard Metrics)**:
-    - Total Trades: ${tradeStats.totalTrades} (W: ${tradeStats.winningTrades}, L: ${tradeStats.losingTrades}, BE: ${tradeStats.breakEvenTrades})
+    - Canonical Trades: ${tradeStats.totalTrades} grouped executions (partials merged into one trade idea)
     - Win Rate: ${tradeStats.totalTrades > 0 ? ((tradeStats.winningTrades / tradeStats.totalTrades) * 100).toFixed(1) : 0}%
     - Total P&L: $${tradeStats.totalPnL.toFixed(2)}
     - Gross Profit: $${grossProfit.toFixed(2)} | Gross Loss: -$${grossLoss.toFixed(2)}
@@ -719,6 +785,31 @@ OUTPUT REQUIREMENTS:
     - Average Win: $${avgWin.toFixed(2)} | Average Loss: -$${avgLoss.toFixed(2)}
     - Risk/Reward Ratio: ${avgLoss > 0 ? (avgWin / avgLoss).toFixed(2) : 'N/A'}
     - Total Commission Paid: $${tradeStats.totalCommission.toFixed(2)}
+
+    **Execution Quality / Review Readiness**:
+    - Trades with setup tagged: ${tradesWithSetup} / ${tradeStats.totalTrades}
+    - Trades with selected rules: ${tradesWithRules} / ${tradeStats.totalTrades}
+    - Trades marked as broken rule: ${brokenRuleTrades} / ${tradeStats.totalTrades}
+    - Trades with chart evidence: ${tradesWithCharts} / ${tradeStats.totalTrades}
+    - Trades with notes: ${tradesWithNotes} / ${tradeStats.totalTrades}
+    - Review-ready trades (rules + charts + notes): ${reviewReadyTrades} / ${tradeStats.totalTrades} (${reviewCompletenessRate.toFixed(1)}%)
+    - Partial execution groups: ${partialExecutionCount}${partialExecutionCount > 0 ? ` (avg ${averagePartialsPerGroupedTrade.toFixed(1)} partials each)` : ''}
+
+    **Rule and Setup Context**:
+    Top rules used:
+    ${topRules.length > 0 ? topRules.map(([rule, count]) => `- ${rule}: ${count} trades`).join('\n') : 'No selected rules recorded'}
+    Top setups by P&L:
+    ${topSetups.length > 0 ? topSetups.map(([setup, data]) => `- ${setup}: ${data.trades} trades, $${data.pnl.toFixed(2)} P&L, ${data.trades > 0 ? ((data.wins / data.trades) * 100).toFixed(1) : 0}% WR`).join('\n') : 'No setup data recorded'}
+
+    **Account / Phase Context**:
+    ${topAccounts.length > 0 ? topAccounts.map(([account, data]) => `- ${account}: ${data.trades} trades, $${data.pnl.toFixed(2)} P&L`).join('\n') : 'No account breakdown available'}
+
+    **Edge Fragility Check**:
+    - Best trade: $${bestTrade.toFixed(2)}
+    - Second-best trade: $${secondBestTrade.toFixed(2)}
+    - P&L without best trade: $${pnlWithoutBestTrade.toFixed(2)}
+    - Best trade contribution: ${Number.isFinite(bestTradeContributionPct) ? bestTradeContributionPct.toFixed(1) : '0.0'}%
+    ${edgeFragility ? '[WARNING] Remove the best trade and the whole period goes non-profitable. The edge is fragile, not robust.' : ''}
 
     **P&L by Instrument (Top 5)**:
     ${topInstruments.length > 0
@@ -910,13 +1001,15 @@ OUTPUT REQUIREMENTS:
       "weaknesses": [
         "The real problems. No euphemisms. Example: 'You are gambling on news events. 4 trades during CPI, all losers, totaling negative $340.'",
         "Example: 'Your average loss ($89) is larger than your average win ($67). You are letting losers run and cutting winners short. Classic fear pattern.'",
-        "Include any consistency or fragility issues."
+        "Include any consistency or fragility issues.",
+        "Name the category directly when it fits: execution mistake, setup quality mistake, discipline mistake, or review process gap."
       ],
       "recommendations": [
         "Specific, actionable, measurable. Example: 'Stop trading after 2 consecutive losses. Your data shows the 3rd trade after losses is wrong 78% of the time.'",
         "Example: 'Remove ES from your watchlist for 2 weeks. Trade only NQ where you actually have edge.'",
         "Example: 'Set a hard rule: no trades within 30 minutes of high impact news. You have proven you cannot handle it.'",
-        "The ONE THING that would have the biggest impact if they did nothing else."
+        "The ONE THING that would have the biggest impact if they did nothing else.",
+        "Close the list with a Stop / Keep / Test framing."
       ],
       "riskGrade": "A letter grade (A through F) for their risk management discipline this period. A = tight stops, consistent sizing, good R:R. F = no stops, random sizing, inverted R:R.",
       "consistencyScore": "A number from 1 to 10 rating how consistent and repeatable their edge appears. 10 = rock solid. 1 = pure randomness.",

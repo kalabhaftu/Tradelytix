@@ -221,7 +221,6 @@ export const DataProvider: React.FC<{
     isAuthenticated: boolean
     user: any | null
     accounts: any[]
-    calendarNotes: Record<string, string>
   }
 }> = ({ children, initialBootstrapData }) => {
   const isMobile = useIsMobileDetection();
@@ -354,7 +353,7 @@ export const DataProvider: React.FC<{
 
     hasLoadedDataRef.current = true
 
-    const { user: userData, accounts: rawAccounts, calendarNotes } = initialBootstrapData
+    const { user: userData, accounts: rawAccounts } = initialBootstrapData
 
     setUser(userData as any)
     setIsFirstConnection(!!userData?.isFirstConnection)
@@ -369,12 +368,6 @@ export const DataProvider: React.FC<{
     }))
 
     setAccounts(accountsWithBalance)
-
-    if (calendarNotes) {
-      try {
-        localStorage.setItem('calendar-notes-cache', JSON.stringify(calendarNotes))
-      } catch {}
-    }
 
     if (userData?.accountFilterSettings) {
       try {
@@ -451,16 +444,11 @@ export const DataProvider: React.FC<{
           return;
         }
 
-        const { user: userData, accounts: rawAccounts, calendarNotes } = initData
+        const { user: userData, accounts: rawAccounts } = initData
 
         setUser(userData);
         setIsFirstConnection(userData?.isFirstConnection || false)
-        
-        // Cache calendar notes for hooks
-        if (calendarNotes) {
-          localStorage.setItem('calendar-notes-cache', JSON.stringify(calendarNotes))
-        }
-        
+
         // Persist account filter settings
         if (userData?.accountFilterSettings) {
           try {
@@ -629,7 +617,6 @@ export const DataProvider: React.FC<{
     try {
       // Clear legacy caches
       try {
-        localStorage.removeItem('calendar-notes-cache')
         localStorage.removeItem('last-refresh-timestamp')
       } catch (e) {}
       

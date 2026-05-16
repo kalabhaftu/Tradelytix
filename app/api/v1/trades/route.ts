@@ -30,6 +30,10 @@ import {
   calculateWeekdayPnl,
   calculatePerformanceScoreResult,
   calculateSessionAnalysis,
+  calculateAccountProgression,
+  calculateTagPerformance,
+  calculateTimeOfDayPerformance,
+  calculateDisciplineAnalytics,
 } from '@/lib/dashboard-math'
 import { calculateBalanceInfo } from '@/lib/utils/balance-calculator'
 import { CacheHeaders } from '@/lib/api-cache-headers'
@@ -89,6 +93,9 @@ const TRADE_SELECT = {
   chartLinksList: true,
   tradeIdentityKey: true,
   userId: true,
+  mae: true,
+  mfe: true,
+  setup: true,
   entryTime: true,
   exitTime: true,
   symbol: true,
@@ -342,6 +349,10 @@ export async function GET(request: NextRequest) {
       weekdayPnl: calculateWeekdayPnl(trades, breakEvenThreshold),
       performanceScore: calculatePerformanceScoreResult(trades, breakEvenThreshold),
       sessionAnalysis: calculateSessionAnalysis(trades, breakEvenThreshold),
+      accountProgression: calculateAccountProgression(trades, filteredAccounts, breakEvenThreshold),
+      tagPerformance: calculateTagPerformance(trades, breakEvenThreshold),
+      timeOfDayPerformance: calculateTimeOfDayPerformance(trades, breakEvenThreshold),
+      disciplineAnalytics: calculateDisciplineAnalytics(trades, breakEvenThreshold),
       calendarData: widgetCalendarData,
       accountBalancePnl: calculateBalanceInfo(filteredAccounts, trades, relevantTransactions, { pnlDisplayMode }),
     } : null

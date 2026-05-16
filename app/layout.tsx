@@ -57,118 +57,6 @@ export default async function RootLayout({
         <meta name="googlebot" content="notranslate" />
         <meta name="googlebot-news" content="notranslate" />
 
-        <Script id="theme-script" strategy="beforeInteractive">
-          {`
-            (function() {
-              try {
-                var root = document.documentElement;
-                // Dark-first prepaint to avoid white flash on hard refresh.
-                root.style.colorScheme = 'dark';
-                if (!root.classList.contains('dark')) {
-                  root.classList.add('dark');
-                }
-
-                var saved = localStorage.getItem('theme') || 'dark';
-                var effective = saved;
-                if (saved === 'system') {
-                  effective = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                }
-                if (effective !== 'light' && effective !== 'dark') effective = 'dark';
-                if (effective === 'light') {
-                  root.classList.remove('dark');
-                  root.classList.add('light');
-                  root.style.colorScheme = 'light';
-                } else {
-                  root.classList.remove('light');
-                  root.classList.add('dark');
-                  root.style.colorScheme = 'dark';
-                }
-
-                // Restore accent pack
-                var accent = localStorage.getItem('accentPack') || 'classic';
-                root.classList.remove('accent-reports');
-                if (accent === 'reports') {
-                  root.classList.add('accent-reports');
-                }
-              } catch (e) {
-                document.documentElement.classList.add('dark');
-                document.documentElement.style.colorScheme = 'dark';
-              }
-            })();
-          `}
-        </Script>
-
-        {/* DOM patches for third-party widget compatibility */}
-        <Script id="dom-patches" strategy="beforeInteractive">
-          {`
-            (function() {
-              if (typeof Node === 'function' && Node.prototype) {
-                var originalRemoveChild = Node.prototype.removeChild;
-                Node.prototype.removeChild = function(child) {
-                  try {
-                    if (child.parentNode !== this) {
-                      return child;
-                    }
-                    return originalRemoveChild.call(this, child);
-                  } catch (error) {
-                    return child;
-                  }
-                };
-              }
-            })();
-          `}
-        </Script>
-
-        {/* Prevent Google Translate DOM manipulation */}
-        <Script id="prevent-google-translate" strategy="beforeInteractive">
-          {`
-            // Function to prevent Google Translate from modifying the DOM
-            function preventGoogleTranslate() {
-              // Prevent Google Translate from modifying the DOM
-              const observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                  if (mutation.type === 'childList' && 
-                      mutation.target.classList && 
-                      mutation.target.classList.contains('goog-te-menu-frame')) {
-                    // Prevent Google Translate from modifying our React components
-                    const elements = document.querySelectorAll('[class*="goog-te-"]');
-                    elements.forEach((el) => {
-                      if (el.tagName === 'SPAN' && el.parentElement) {
-                        // Preserve the original text content
-                        const originalText = el.getAttribute('data-original-text') || el.textContent;
-                        el.textContent = originalText;
-                      }
-                    });
-                  }
-                });
-              });
-
-              // Start observing the document with the configured parameters
-              observer.observe(document.body, {
-                childList: true,
-                subtree: true,
-                attributes: true,
-                attributeFilter: ['class']
-              });
-
-              // Prevent Google Translate from initializing
-              if (window.google && window.google.translate) {
-                window.google.translate.TranslateElement = function() {
-                  return {
-                    translate: function() {
-                      return false;
-                    }
-                  };
-                };
-              }
-            }
-
-            // Run the prevention function
-            preventGoogleTranslate();
-          `}
-        </Script>
-
-
         {/* Analytics removed to comply with essential-only cookie policy */}
 
         {/* Preload Satoshi font from Fontshare */}
@@ -275,6 +163,119 @@ export default async function RootLayout({
 
       </head>
       <body className={`${inter.variable} font-sans min-h-screen overflow-x-clip w-full`}>
+        <Script id="theme-script" strategy="beforeInteractive">
+          {`
+            (function() {
+              try {
+                var root = document.documentElement;
+                // Dark-first prepaint to avoid white flash on hard refresh.
+                root.style.colorScheme = 'dark';
+                if (!root.classList.contains('dark')) {
+                  root.classList.add('dark');
+                }
+
+                var saved = localStorage.getItem('theme') || 'dark';
+                var effective = saved;
+                if (saved === 'system') {
+                  effective = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                if (effective !== 'light' && effective !== 'dark') effective = 'dark';
+                if (effective === 'light') {
+                  root.classList.remove('dark');
+                  root.classList.add('light');
+                  root.style.colorScheme = 'light';
+                } else {
+                  root.classList.remove('light');
+                  root.classList.add('dark');
+                  root.style.colorScheme = 'dark';
+                }
+
+                // Restore accent pack
+                var accent = localStorage.getItem('accentPack') || 'classic';
+                root.classList.remove('accent-reports');
+                if (accent === 'reports') {
+                  root.classList.add('accent-reports');
+                }
+              } catch (e) {
+                document.documentElement.classList.add('dark');
+                document.documentElement.style.colorScheme = 'dark';
+              }
+            })();
+          `}
+        </Script>
+
+        {/* DOM patches for third-party widget compatibility */}
+        <Script id="dom-patches" strategy="beforeInteractive">
+          {`
+            (function() {
+              if (typeof Node === 'function' && Node.prototype) {
+                var originalRemoveChild = Node.prototype.removeChild;
+                Node.prototype.removeChild = function(child) {
+                  try {
+                    if (child.parentNode !== this) {
+                      return child;
+                    }
+                    return originalRemoveChild.call(this, child);
+                  } catch (error) {
+                    return child;
+                  }
+                };
+              }
+            })();
+          `}
+        </Script>
+
+        {/* Prevent Google Translate DOM manipulation */}
+        <Script id="prevent-google-translate" strategy="afterInteractive">
+          {`
+            // Function to prevent Google Translate from modifying the DOM
+            function preventGoogleTranslate() {
+              if (!document.body) return;
+
+              // Prevent Google Translate from modifying the DOM
+              const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                  if (mutation.type === 'childList' &&
+                      mutation.target.classList &&
+                      mutation.target.classList.contains('goog-te-menu-frame')) {
+                    // Prevent Google Translate from modifying our React components
+                    const elements = document.querySelectorAll('[class*="goog-te-"]');
+                    elements.forEach((el) => {
+                      if (el.tagName === 'SPAN' && el.parentElement) {
+                        // Preserve the original text content
+                        const originalText = el.getAttribute('data-original-text') || el.textContent;
+                        el.textContent = originalText;
+                      }
+                    });
+                  }
+                });
+              });
+
+              // Start observing the document with the configured parameters
+              observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['class']
+              });
+
+              // Prevent Google Translate from initializing
+              if (window.google && window.google.translate) {
+                window.google.translate.TranslateElement = function() {
+                  return {
+                    translate: function() {
+                      return false;
+                    }
+                  };
+                };
+              }
+            }
+
+            // Run the prevention function
+            preventGoogleTranslate();
+          `}
+        </Script>
+
         <ErrorBoundaryWrapper showDetails={process.env.NODE_ENV === 'development'}>
           <ThemeProvider>
             <QueryProvider>

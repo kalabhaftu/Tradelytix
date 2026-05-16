@@ -20,6 +20,11 @@ export async function POST(req: NextRequest) {
     const { internalUserId } = await getResolvedUserIdentity()
     const body = await req.json()
     const { title, dateFrom, dateTo, accountId, accountNumbers, snapshot, expiresInDays } = body
+    const sharingPolicy = await (prisma as any).adminSharingPolicy.findUnique({ where: { key: 'default' } }).catch(() => null)
+
+    if (sharingPolicy?.publicSharingEnabled === false) {
+      return NextResponse.json({ error: 'Public report sharing is currently disabled' }, { status: 403 })
+    }
 
     const serverSnapshot = await calculateReportStatistics({
       userId: internalUserId,
@@ -53,9 +58,15 @@ export async function POST(req: NextRequest) {
     }))
 
     const slug = generateSlug()
-    const expiresAt = expiresInDays
-      ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
+    const policyDays = sharingPolicy?.defaultExpirationDays || null
+    const resolvedExpirationDays = expiresInDays || policyDays
+    const expiresAt = resolvedExpirationDays
+      ? new Date(Date.now() + resolvedExpirationDays * 24 * 60 * 60 * 1000)
       : null
+
+    if (sharingPolicy?.requireExpiration && !expiresAt) {
+      return NextResponse.json({ error: 'Shared reports require an expiration date' }, { status: 400 })
+    }
 
     const shared = await prisma.sharedReport.create({
       data: {

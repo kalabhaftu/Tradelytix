@@ -429,13 +429,18 @@ export const DataProvider: React.FC<{
         }
 
         // Step 2: Fetch initial data from v1 init endpoint (NO trades — those come via React Query)
-        const initResponse = await fetch('/api/v1/init', {
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache' }
-        })
-        
-        if (!initResponse.ok) throw new Error('Failed to fetch initial data')
-        const initData = await initResponse.json()
+        // If SSR bootstrap already provided authenticated data, skip this duplicate DB-heavy fetch.
+        const initData = initialBootstrapData?.isAuthenticated
+          ? initialBootstrapData
+          : await (async () => {
+              const initResponse = await fetch('/api/v1/init', {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache' }
+              })
+
+              if (!initResponse.ok) throw new Error('Failed to fetch initial data')
+              return initResponse.json()
+            })()
         
         if (!initData.isAuthenticated) {
           try { await signOut(); } catch (error) {}
@@ -500,7 +505,7 @@ export const DataProvider: React.FC<{
     })();
 
     return activeLoadPromiseRef.current
-  }, [dashboardLayout, isLoading, setAccounts, setDashboardLayout, setIsLoading, setSupabaseUser, setTrades, setUser]);
+  }, [dashboardLayout, initialBootstrapData, isLoading, setAccounts, setDashboardLayout, setIsLoading, setSupabaseUser, setTrades, setUser]);
 
   // Load data on mount only - ONCE
   useEffect(() => {

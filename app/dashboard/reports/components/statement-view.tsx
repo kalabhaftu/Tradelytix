@@ -1,11 +1,11 @@
 'use client'
 
-import { useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import { cn, formatCurrency } from '@/lib/utils'
 import { getTradeNetPnl } from '@/lib/metrics/pnl'
 import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
-import { Printer } from 'lucide-react'
+import { Download } from 'lucide-react'
 
 interface StatementViewProps {
   trades: any[]
@@ -16,39 +16,6 @@ type StatementRow = {
   label: string
   value: string
   tone?: 'positive' | 'negative'
-}
-
-function buildPrintDocument(innerHtml: string) {
-  return `
-    <html>
-      <head>
-        <title>Trading Statement</title>
-        <style>
-          body { margin: 0; background: #f5f7fb; color: #172033; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-          .statement-sheet { box-shadow: none !important; border-color: #d8dee8 !important; margin: 24px; }
-          @media print { body { background: #fff; } .statement-sheet { margin: 0; border: none !important; } }
-        </style>
-      </head>
-      <body>${innerHtml}</body>
-    </html>
-  `
-}
-
-function WhiteStatementMetric({ label, value, tone }: StatementRow) {
-  return (
-    <div className="flex items-center justify-between gap-6 border-b border-slate-200 py-2.5 last:border-b-0">
-      <span className="text-[13px] font-semibold text-slate-600">{label}</span>
-      <span
-        className={cn(
-          'font-mono text-[13px] font-bold text-slate-900',
-          tone === 'positive' && 'text-emerald-700',
-          tone === 'negative' && 'text-red-700'
-        )}
-      >
-        {value}
-      </span>
-    </div>
-  )
 }
 
 function ThemeStatementMetric({ label, value, tone }: StatementRow) {
@@ -69,8 +36,6 @@ function ThemeStatementMetric({ label, value, tone }: StatementRow) {
 }
 
 export function StatementView({ trades, dateRange }: StatementViewProps) {
-  const printRef = useRef<HTMLDivElement>(null)
-
   const { sortedTrades, summary } = useMemo(() => {
     if (!trades || trades.length === 0) return { sortedTrades: [], summary: null }
 
@@ -138,17 +103,79 @@ export function StatementView({ trades, dateRange }: StatementViewProps) {
     }
   }, [trades])
 
-  const handlePrint = () => {
-    const el = printRef.current
-    if (!el) return
+  const handleExportPdf = async () => {
+    const [{ jsPDF }, autoTableModule] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ])
+    const autoTable = (autoTableModule.default || autoTableModule) as any
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' })
+    const pageWidth = doc.internal.pageSize.getWidth()
 
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) return
+    doc.setFillColor(255, 255, 255)
+    doc.rect(0, 0, pageWidth, doc.internal.pageSize.getHeight(), 'F')
+    doc.setTextColor(15, 23, 42)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(18)
+    doc.text('Trading Statement', 40, 44)
+    doc.setFontSize(9)
+    doc.setTextColor(100, 116, 139)
+    doc.text(`From ${period}`, 40, 62)
 
-    printWindow.document.write(buildPrintDocument(el.innerHTML))
-    printWindow.document.close()
-    printWindow.focus()
-    setTimeout(() => printWindow.print(), 300)
+    const summaryRows = [
+      ...leftRows.map((row) => [row.label, row.value]),
+      ...rightRows.map((row) => [row.label, row.value]),
+    ]
+
+    autoTable(doc, {
+      startY: 82,
+      body: summaryRows,
+      theme: 'plain',
+      tableWidth: 340,
+      styles: { fontSize: 8, cellPadding: 3, lineColor: [226, 232, 240], lineWidth: 0.4 },
+      columnStyles: {
+        0: { textColor: [71, 85, 105], fontStyle: 'bold' },
+        1: { halign: 'right', textColor: [15, 23, 42], fontStyle: 'bold' },
+      },
+    })
+
+    let cumulative = 0
+    const tableRows = sortedTrades.map((trade: any, index: number) => {
+      const netPnl = getTradeNetPnl(trade)
+      cumulative += netPnl
+      const tradeDate = trade.closeDate || trade.entryDate
+      const grossPnl = Number(trade.pnl || 0)
+      const commission = Math.abs(Number(trade.commission || 0))
+      return [
+        index + 1,
+        tradeDate ? format(new Date(tradeDate), 'MM/dd/yy HH:mm') : '-',
+        trade.instrument || trade.symbol || '-',
+        trade.side || '-',
+        trade.quantity || '-',
+        trade.entryPrice ? Number(trade.entryPrice).toFixed(2) : '-',
+        trade.closePrice ? Number(trade.closePrice).toFixed(2) : '-',
+        grossPnl.toFixed(2),
+        commission > 0 ? commission.toFixed(2) : '-',
+        netPnl.toFixed(2),
+        cumulative.toFixed(2),
+      ]
+    })
+
+    autoTable(doc, {
+      startY: 82,
+      margin: { left: 400, right: 28 },
+      head: [['#', 'Date', 'Instrument', 'Side', 'Qty', 'Entry', 'Exit', 'Gross', 'Fees', 'Net', 'Cumulative']],
+      body: tableRows,
+      theme: 'grid',
+      styles: { fontSize: 7, cellPadding: 3, lineColor: [226, 232, 240], lineWidth: 0.35 },
+      headStyles: { fillColor: [248, 250, 252], textColor: [71, 85, 105], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [249, 250, 251] },
+    })
+
+    doc.setFontSize(8)
+    doc.setTextColor(148, 163, 184)
+    doc.text(`Generated by Deltalytix on ${format(new Date(), 'MMM dd, yyyy HH:mm')}`, 40, doc.internal.pageSize.getHeight() - 24)
+    doc.save(`deltalytix-statement-${format(new Date(), 'yyyy-MM-dd')}.pdf`)
   }
 
   if (!summary || sortedTrades.length === 0) return null
@@ -192,9 +219,9 @@ export function StatementView({ trades, dateRange }: StatementViewProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground">Statement View</h3>
-        <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5 text-xs font-bold">
-          <Printer className="h-3.5 w-3.5" />
-          Print / Export PDF
+        <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5 text-xs font-bold">
+          <Download className="h-3.5 w-3.5" />
+          Export PDF
         </Button>
       </div>
 
@@ -279,92 +306,6 @@ export function StatementView({ trades, dateRange }: StatementViewProps) {
         </div>
       </div>
 
-      <div ref={printRef} className="sr-only">
-        <div className="statement-sheet overflow-hidden rounded-sm border border-slate-200 bg-white text-slate-900 shadow-sm">
-          <div className="border-b border-slate-200 px-6 py-5">
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-              <div>
-                <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-slate-500">Your Stats</p>
-                <h1 className="mt-1 text-xl font-extrabold tracking-tight text-slate-950">Trading Statement</h1>
-                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">From {period}</p>
-              </div>
-              <div className="grid grid-cols-3 gap-8 text-left">
-                <div>
-                  <p className="text-[12px] font-bold text-slate-500">Best Trade</p>
-                  <p className="font-mono text-sm font-extrabold text-emerald-700">{formatCurrency(summary.largestProfit)}</p>
-                </div>
-                <div>
-                  <p className="text-[12px] font-bold text-slate-500">Worst Trade</p>
-                  <p className="font-mono text-sm font-extrabold text-red-700">{formatCurrency(summary.largestLoss)}</p>
-                </div>
-                <div>
-                  <p className="text-[12px] font-bold text-slate-500">Average</p>
-                  <p className="font-mono text-sm font-extrabold text-slate-950">{formatCurrency(summary.averageTrade)}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-8 px-6 py-4 lg:grid-cols-2">
-            <div>{leftRows.map((row) => <WhiteStatementMetric key={row.label} {...row} />)}</div>
-            <div>{rightRows.map((row) => <WhiteStatementMetric key={row.label} {...row} />)}</div>
-          </div>
-
-          <div className="border-t border-slate-200 px-6 py-4">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[960px] border-collapse text-[12px]">
-                <thead>
-                  <tr className="border-b border-slate-300 text-left">
-                    {['#', 'Date', 'Instrument', 'Side', 'Qty', 'Entry', 'Exit', 'Gross P&L', 'Fees', 'Net P&L', 'Cumulative'].map((heading) => (
-                      <th key={heading} className="px-2 py-2 text-[10px] font-extrabold uppercase tracking-[0.12em] text-slate-500 last:text-right">
-                        {heading}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {(() => {
-                    let cumulative = 0
-                    return sortedTrades.map((trade: any, index: number) => {
-                      const netPnl = getTradeNetPnl(trade)
-                      cumulative += netPnl
-                      const tradeDate = trade.closeDate || trade.entryDate
-                      const grossPnl = Number(trade.pnl || 0)
-                      const commission = Math.abs(Number(trade.commission || 0))
-
-                      return (
-                        <tr key={trade.id || index} className="border-b border-slate-100">
-                          <td className="px-2 py-2 font-mono text-slate-400">{index + 1}</td>
-                          <td className="px-2 py-2 font-mono text-slate-600">{tradeDate ? format(new Date(tradeDate), 'MM/dd/yy HH:mm') : '-'}</td>
-                          <td className="px-2 py-2 font-bold">{trade.instrument || trade.symbol || '-'}</td>
-                          <td className="px-2 py-2 font-bold uppercase">{trade.side || '-'}</td>
-                          <td className="px-2 py-2 text-right font-mono">{trade.quantity || '-'}</td>
-                          <td className="px-2 py-2 text-right font-mono">{trade.entryPrice ? Number(trade.entryPrice).toFixed(2) : '-'}</td>
-                          <td className="px-2 py-2 text-right font-mono">{trade.closePrice ? Number(trade.closePrice).toFixed(2) : '-'}</td>
-                          <td className={cn('px-2 py-2 text-right font-mono font-bold', grossPnl >= 0 ? 'text-emerald-700' : 'text-red-700')}>
-                            {grossPnl >= 0 ? '+' : ''}{grossPnl.toFixed(2)}
-                          </td>
-                          <td className="px-2 py-2 text-right font-mono text-slate-500">{commission > 0 ? commission.toFixed(2) : '-'}</td>
-                          <td className={cn('px-2 py-2 text-right font-mono font-bold', netPnl >= 0 ? 'text-emerald-700' : 'text-red-700')}>
-                            {netPnl >= 0 ? '+' : ''}{netPnl.toFixed(2)}
-                          </td>
-                          <td className={cn('px-2 py-2 text-right font-mono font-bold', cumulative >= 0 ? 'text-emerald-700' : 'text-red-700')}>
-                            {cumulative >= 0 ? '+' : ''}{cumulative.toFixed(2)}
-                          </td>
-                        </tr>
-                      )
-                    })
-                  })()}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="border-t border-slate-200 px-6 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-            Generated by Deltalytix on {format(new Date(), 'MMM dd, yyyy HH:mm')}
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

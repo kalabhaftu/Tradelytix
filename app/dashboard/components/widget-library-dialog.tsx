@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,19 @@ export default function WidgetLibraryDialog({
   onInsertWidget,
 }: WidgetLibraryDialogProps) {
   const [searchQuery, setSearchQuery] = useState('')
+  const [catalog, setCatalog] = useState<Record<string, any>>({})
+
+  useEffect(() => {
+    if (!open) return
+    fetch('/api/v1/dashboard/widget-catalog')
+      .then((response) => response.json())
+      .then((payload) => {
+        if (payload.success && Array.isArray(payload.data)) {
+          setCatalog(Object.fromEntries(payload.data.map((item: any) => [item.widgetType, item])))
+        }
+      })
+      .catch(() => setCatalog({}))
+  }, [open])
 
   // Get list of widget types already in use
   const usedWidgetTypes = useMemo(() => {
@@ -45,12 +58,19 @@ export default function WidgetLibraryDialog({
       if (config.kpiRowOnly || config.hiddenFromLibrary) {
         return false
       }
+      const adminSetting = catalog[type]
+      if (adminSetting && (adminSetting.visible === false || adminSetting.deprecated === true)) {
+        return false
+      }
 
-      const nameMatch = type.toLowerCase().includes(query)
+      const label = adminSetting?.label || type
+      const description = adminSetting?.description || config.description || ''
+      const nameMatch = `${type} ${label}`.toLowerCase().includes(query)
       const categoryMatch = config.category?.toLowerCase().includes(query)
-      return nameMatch || categoryMatch
+      const descriptionMatch = description.toLowerCase().includes(query)
+      return nameMatch || categoryMatch || descriptionMatch
     })
-  }, [searchQuery])
+  }, [searchQuery, catalog])
 
   // Group by category
   const widgetsByCategory = useMemo(() => {
@@ -155,10 +175,10 @@ export default function WidgetLibraryDialog({
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
                               <h4 className="font-medium text-sm truncate">
-                                {formatWidgetName(type)}
+                                {catalog[type]?.label || formatWidgetName(type)}
                               </h4>
                               <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                {config.description || 'No description available'}
+                                {catalog[type]?.description || config.description || 'No description available'}
                               </p>
                               <p className="text-xs text-primary/70 mt-1 font-medium">
                                 {formatWidgetSize(type)}

@@ -1,24 +1,11 @@
 'use client'
 
-import React, { useMemo } from 'react'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
+import { useMemo } from 'react'
 import { useWidgetData } from '@/hooks/use-widget-data'
 import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { useData } from '@/context/data-provider'
-import { WidgetCard, ChartTooltip } from '../widget-card'
+import { WidgetCard } from '../widget-card'
 import { cn } from '@/lib/utils'
-
-const COLORS = {
-  bullish: 'hsl(var(--chart-profit))',
-  bearish: 'hsl(var(--chart-loss))',
-} as const
-
-function formatCurrency(value: number): string {
-  const abs = Math.abs(value)
-  if (abs >= 1_000_000) return `${value < 0 ? '-' : ''}$${(abs / 1_000_000).toFixed(2)}M`
-  if (abs >= 1_000) return `${value < 0 ? '-' : ''}$${(abs / 1_000).toFixed(abs >= 10_000 ? 1 : 2)}K`
-  return `${value < 0 ? '-' : ''}$${abs.toFixed(2)}`
-}
 
 interface StatItemProps {
   label: string
@@ -43,18 +30,9 @@ function StatItem({ label, value, negative }: StatItemProps) {
 
 export default function PerformanceSummaryWidget() {
   const { data: chartData, isLoading: chartLoading } = useWidgetData('equityCurve')
+  const { data: strategies = [] } = useWidgetData('pnlByStrategy')
   const { statistics, formattedTrades } = useData()
   const { mode, formatValue, getTradeRMultipleInfo } = useDashboardDisplay()
-
-  // Split gradient offset — green above zero, red below zero
-  const gradientOffset = useMemo(() => {
-    if (!Array.isArray(chartData) || chartData.length === 0) return 1
-    const dataMax = Math.max(...chartData.map((d: any) => d.equity ?? 0))
-    const dataMin = Math.min(...chartData.map((d: any) => d.equity ?? 0))
-    if (dataMax <= 0) return 0
-    if (dataMin >= 0) return 1
-    return dataMax / (dataMax - dataMin)
-  }, [chartData])
 
   const stats = useMemo(() => {
     if (!statistics || !formattedTrades) return null
@@ -109,8 +87,17 @@ export default function PerformanceSummaryWidget() {
       fees,
       net: netPnl,
       rCoverage,
+      grossPnl,
+      winRate: statistics.winRate || 0,
+      avgWin: statistics.averageWin || 0,
+      avgLoss: Math.abs(statistics.averageLoss || 0),
     }
   }, [statistics, formattedTrades, chartData, getTradeRMultipleInfo])
+
+  const topStrategies = useMemo(() => {
+    if (!Array.isArray(strategies)) return []
+    return [...strategies].sort((a: any, b: any) => Math.abs(Number(b.pnl || 0)) - Math.abs(Number(a.pnl || 0))).slice(0, 6)
+  }, [strategies])
 
   if (chartLoading) {
     return (
@@ -124,91 +111,28 @@ export default function PerformanceSummaryWidget() {
 
   return (
     <WidgetCard title="Performance">
-      <div className="flex h-full flex-col min-[1280px]:flex-row gap-0">
-        {/* Left: Equity Chart */}
-        <div className="flex-1 min-w-0 h-[220px] min-[768px]:h-[260px] min-[1280px]:h-full pb-3 min-[1280px]:pb-0 min-[1280px]:pr-3">
-          {Array.isArray(chartData) && chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
-                <defs>
-                  {/* Split gradient for fill */}
-                  <linearGradient id="perfFillGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={COLORS.bullish} stopOpacity={0.4} />
-                    <stop offset={`${gradientOffset * 100}%`} stopColor={COLORS.bullish} stopOpacity={0.05} />
-                    <stop offset={`${gradientOffset * 100}%`} stopColor={COLORS.bearish} stopOpacity={0.05} />
-                    <stop offset="100%" stopColor={COLORS.bearish} stopOpacity={0.4} />
-                  </linearGradient>
-                  {/* Split gradient for stroke */}
-                  <linearGradient id="perfStrokeGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset={`${gradientOffset * 100}%`} stopColor={COLORS.bullish} />
-                    <stop offset={`${gradientOffset * 100}%`} stopColor={COLORS.bearish} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border)/0.15)" vertical={false} />
-                <XAxis
-                  dataKey="date"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-                  interval="equidistantPreserveStart"
-                  minTickGap={30}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-                  tickFormatter={(v) => `$${v >= 1000 ? `${(v/1000).toFixed(0)}K` : v}`}
-                  width={50}
-                />
-                <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.4} />
-                <Tooltip content={<ChartTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey="equity"
-                  stroke="url(#perfStrokeGrad)"
-                  strokeWidth={2}
-                  fill="url(#perfFillGrad)"
-                  dot={false}
-                  name="Equity"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground/50 text-sm">
-              No trade data available
-            </div>
-          )}
-        </div>
-
-        {/* Right: Stats Sidebar */}
-        <div className="w-full min-[1280px]:w-[160px] shrink-0 flex flex-col justify-center pt-3 min-[1280px]:pt-0 min-[1280px]:pl-3 border-t border-border/30 min-[1280px]:border-t-0 min-[1280px]:border-l">
-          {stats ? (
-            <>
-              <StatItem label="Total trades" value={String(stats.totalTrades)} />
-              <StatItem label="Profit factor" value={stats.profitFactor.toFixed(2)} negative={stats.profitFactor < 1} />
+      <div className="grid h-full gap-4 xl:grid-cols-[1fr_1.15fr]">
+        {stats ? (
+          <div className="grid content-start gap-px overflow-hidden rounded-lg border border-border/25 bg-border/20 sm:grid-cols-2">
+            <div className="bg-card/80 px-3 py-3"><StatItem label="Total trades" value={String(stats.totalTrades)} /></div>
+            <div className="bg-card/80 px-3 py-3"><StatItem label="Win rate" value={`${stats.winRate.toFixed(1)}%`} /></div>
+            <div className="bg-card/80 px-3 py-3"><StatItem label="Profit factor" value={stats.profitFactor.toFixed(2)} negative={stats.profitFactor < 1} /></div>
+            <div className="bg-card/80 px-3 py-3">
               <StatItem
-                label="Trade expectancy"
+                label="Expectancy"
                 value={formatValue(stats.expectancy, {
                   kind: mode === 'rMultiple' ? 'rMultiple' : 'money',
                   rValue: mode === 'rMultiple' ? stats.rCoverage.total / Math.max(stats.totalTrades, 1) : null,
                 })}
                 negative={stats.expectancy < 0 ? true : stats.expectancy > 0 ? false : undefined}
               />
-              <StatItem
-                label="Max drawdown"
-                value={formatValue(stats.maxDrawdown * -1, { kind: 'money' })}
-                negative={stats.maxDrawdown > 0 ? true : undefined}
-              />
-              <StatItem
-                label="Avg drawdown"
-                value={formatValue(stats.avgDrawdown * -1, { kind: 'money' })}
-                negative={stats.avgDrawdown > 0 ? true : undefined}
-              />
-              <StatItem
-                label="Fees"
-                value={formatValue(Math.abs(stats.fees) * -1, { kind: 'money' })}
-                negative={stats.fees !== 0 ? true : undefined}
-              />
+            </div>
+            <div className="bg-card/80 px-3 py-3"><StatItem label="Max drawdown" value={formatValue(stats.maxDrawdown * -1, { kind: 'money' })} negative={stats.maxDrawdown > 0 ? true : undefined} /></div>
+            <div className="bg-card/80 px-3 py-3"><StatItem label="Avg drawdown" value={formatValue(stats.avgDrawdown * -1, { kind: 'money' })} negative={stats.avgDrawdown > 0 ? true : undefined} /></div>
+            <div className="bg-card/80 px-3 py-3"><StatItem label="Avg win" value={formatValue(stats.avgWin, { kind: 'money' })} negative={false} /></div>
+            <div className="bg-card/80 px-3 py-3"><StatItem label="Avg loss" value={formatValue(stats.avgLoss * -1, { kind: 'money' })} negative /></div>
+            <div className="bg-card/80 px-3 py-3"><StatItem label="Fees" value={formatValue(Math.abs(stats.fees) * -1, { kind: 'money' })} negative={stats.fees !== 0 ? true : undefined} /></div>
+            <div className="bg-card/80 px-3 py-3">
               <StatItem
                 label={mode === 'rMultiple' ? 'Total R' : 'Net'}
                 value={mode === 'rMultiple'
@@ -216,10 +140,31 @@ export default function PerformanceSummaryWidget() {
                   : formatValue(stats.net, { kind: 'money' })}
                 negative={stats.net < 0 ? true : stats.net > 0 ? false : undefined}
               />
-            </>
-          ) : (
-            <div className="text-xs text-muted-foreground text-center">No data</div>
-          )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center rounded-lg border border-border/25 text-xs text-muted-foreground">No data</div>
+        )}
+
+        <div className="rounded-lg border border-border/25">
+          <div className="flex items-center justify-between border-b border-border/25 px-3 py-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Strategy Performance</p>
+            <p className="text-[10px] font-bold text-muted-foreground">P&L / WR</p>
+          </div>
+          <div className="divide-y divide-border/25">
+            {topStrategies.length === 0 ? (
+              <p className="px-3 py-8 text-center text-xs text-muted-foreground">No strategy data yet</p>
+            ) : topStrategies.map((strategy: any) => (
+              <div key={strategy.strategy} className="grid grid-cols-[minmax(0,1fr)_86px_56px] items-center gap-3 px-3 py-2">
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-bold">{strategy.strategy}</p>
+                  <p className="text-[10px] text-muted-foreground">{strategy.trades} trades / {Number(strategy.profitFactor || 0).toFixed(2)} PF</p>
+                </div>
+                <p className={cn('text-right font-mono text-xs font-black', strategy.pnl >= 0 ? 'text-long' : 'text-short')}>{formatValue(strategy.pnl || 0, { kind: 'money' })}</p>
+                <p className="text-right font-mono text-xs font-bold">{Number(strategy.winRate || 0).toFixed(0)}%</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </WidgetCard>

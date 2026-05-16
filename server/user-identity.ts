@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { prisma } from '@/lib/prisma'
 import { getUserId, getUserIdSafe } from '@/server/auth'
 
@@ -18,23 +19,29 @@ function isTransientDatabaseError(error: unknown) {
   ].some((message) => error.message.includes(message))
 }
 
-async function resolveInternalUserIdFromAuth(authUserId: string): Promise<string | null> {
-  const byAuthId = await prisma.user.findUnique({
-    where: { auth_user_id: authUserId },
-    select: { id: true }
-  })
+const resolveInternalUserIdFromAuthCached = cache(
+  async (authUserId: string): Promise<string | null> => {
+    const byAuthId = await prisma.user.findUnique({
+      where: { auth_user_id: authUserId },
+      select: { id: true }
+    })
 
-  if (byAuthId?.id) {
-    return byAuthId.id
+    if (byAuthId?.id) {
+      return byAuthId.id
+    }
+
+    // Backward-compatibility fallback for legacy datasets where id may equal auth id.
+    const byId = await prisma.user.findUnique({
+      where: { id: authUserId },
+      select: { id: true }
+    })
+
+    return byId?.id ?? null
   }
+)
 
-  // Backward-compatibility fallback for legacy datasets where id may equal auth id.
-  const byId = await prisma.user.findUnique({
-    where: { id: authUserId },
-    select: { id: true }
-  })
-
-  return byId?.id ?? null
+async function resolveInternalUserIdFromAuth(authUserId: string): Promise<string | null> {
+  return resolveInternalUserIdFromAuthCached(authUserId)
 }
 
 export async function resolveInternalUserId(authUserId: string): Promise<string | null> {

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { toast } from 'sonner'
 
 type FreeAccessInvite = {
   id: string
@@ -23,33 +24,58 @@ type FreeAccessInvite = {
 export default function AdminFreeAccessPage() {
   const [invites, setInvites] = useState<FreeAccessInvite[]>([])
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ email: '', type: 'until_date', expiresAt: '', note: '' })
 
   async function load() {
     setLoading(true)
-    const response = await fetch('/api/v1/admin/free-access')
-    const payload = await response.json()
-    if (payload.success) setInvites(payload.data)
-    setLoading(false)
+    try {
+      const response = await fetch('/api/v1/admin/free-access')
+      const payload = await response.json()
+      if (!response.ok || !payload.success) throw new Error(payload.error || 'Failed to load free access invites')
+      setInvites(payload.data)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to load free access invites')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function grant() {
-    await fetch('/api/v1/admin/free-access', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    })
-    setForm({ email: '', type: 'until_date', expiresAt: '', note: '' })
-    await load()
+    setSaving(true)
+    try {
+      const response = await fetch('/api/v1/admin/free-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, expiresAt: form.expiresAt || null, note: form.note || null }),
+      })
+      const payload = await response.json()
+      if (!response.ok || !payload.success) throw new Error(payload.error || 'Failed to grant free access')
+
+      setForm({ email: '', type: 'until_date', expiresAt: '', note: '' })
+      toast.success('Free access granted')
+      await load()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to grant free access')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function revoke(email: string) {
-    await fetch('/api/v1/admin/free-access', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, action: 'revoke' }),
-    })
-    await load()
+    try {
+      const response = await fetch('/api/v1/admin/free-access', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, action: 'revoke' }),
+      })
+      const payload = await response.json()
+      if (!response.ok || !payload.success) throw new Error(payload.error || 'Failed to revoke free access')
+      toast.success('Free access revoked')
+      await load()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to revoke free access')
+    }
   }
 
   useEffect(() => {
@@ -78,7 +104,7 @@ export default function AdminFreeAccessPage() {
               </Select>
               <Input type="date" value={form.expiresAt} disabled={form.type !== 'until_date'} onChange={(event) => setForm({ ...form, expiresAt: event.target.value })} />
               <Input placeholder="Note" value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} />
-              <Button onClick={grant} disabled={!form.email || (form.type === 'until_date' && !form.expiresAt)}>Grant</Button>
+              <Button onClick={grant} disabled={saving || !form.email || (form.type === 'until_date' && !form.expiresAt)}>{saving ? 'Granting...' : 'Grant'}</Button>
             </div>
           </CardContent>
         </Card>

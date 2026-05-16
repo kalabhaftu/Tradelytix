@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { toast } from 'sonner'
 
 type PromoCode = {
   id: string
@@ -24,33 +25,57 @@ type PromoCode = {
 export default function AdminPromoCodesPage() {
   const [codes, setCodes] = useState<PromoCode[]>([])
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ code: '', type: 'percentage_discount', applicability: 'signup_only', value: '', maxUses: '', validUntil: '' })
 
   async function load() {
     setLoading(true)
-    const response = await fetch('/api/v1/admin/promo-codes')
-    const payload = await response.json()
-    if (payload.success) setCodes(payload.data)
-    setLoading(false)
+    try {
+      const response = await fetch('/api/v1/admin/promo-codes')
+      const payload = await response.json()
+      if (!response.ok || !payload.success) throw new Error(payload.error || 'Failed to load promo codes')
+      setCodes(payload.data)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to load promo codes')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function createPromo() {
-    await fetch('/api/v1/admin/promo-codes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    })
-    setForm({ code: '', type: 'percentage_discount', applicability: 'signup_only', value: '', maxUses: '', validUntil: '' })
-    await load()
+    setSaving(true)
+    try {
+      const response = await fetch('/api/v1/admin/promo-codes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, validUntil: form.validUntil || null, maxUses: form.maxUses || null }),
+      })
+      const payload = await response.json()
+      if (!response.ok || !payload.success) throw new Error(payload.error || 'Failed to create promo code')
+
+      setForm({ code: '', type: 'percentage_discount', applicability: 'signup_only', value: '', maxUses: '', validUntil: '' })
+      toast.success('Promo code created')
+      await load()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to create promo code')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function togglePromo(id: string, isActive: boolean) {
-    await fetch('/api/v1/admin/promo-codes', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, isActive }),
-    })
-    await load()
+    try {
+      const response = await fetch('/api/v1/admin/promo-codes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, isActive }),
+      })
+      const payload = await response.json()
+      if (!response.ok || !payload.success) throw new Error(payload.error || 'Failed to update promo code')
+      await load()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update promo code')
+    }
   }
 
   useEffect(() => {
@@ -86,9 +111,9 @@ export default function AdminPromoCodesPage() {
                   <SelectItem value="any">Any</SelectItem>
                 </SelectContent>
               </Select>
-              <Input placeholder="Value" value={form.value} onChange={(event) => setForm({ ...form, value: event.target.value })} />
-              <Input placeholder="Max uses" value={form.maxUses} onChange={(event) => setForm({ ...form, maxUses: event.target.value })} />
-              <Button onClick={createPromo} disabled={!form.code || !form.value}>Create</Button>
+              <Input inputMode="decimal" placeholder="Value" value={form.value} onChange={(event) => setForm({ ...form, value: event.target.value })} />
+              <Input inputMode="numeric" placeholder="Max uses" value={form.maxUses} onChange={(event) => setForm({ ...form, maxUses: event.target.value })} />
+              <Button onClick={createPromo} disabled={saving || !form.code || !form.value}>{saving ? 'Creating...' : 'Create'}</Button>
             </div>
           </CardContent>
         </Card>

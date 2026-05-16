@@ -1,30 +1,44 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { z } from 'zod'
 import { requireAdmin } from '@/server/admin-auth'
 import { getSiteUiSettings, updateSiteUiSettings } from '@/server/site-ui-settings'
+import { applyRateLimit, adminLimiter } from '@/lib/rate-limiter'
+import { createErrorResponse, createSuccessResponse } from '@/lib/api-response'
 
-export async function GET() {
+const siteUiSettingsSchema = z.object({
+  showDonateButton: z.boolean().optional(),
+  showFeedbackButton: z.boolean().optional(),
+}).strict()
+
+export async function GET(request: NextRequest) {
+  const rl = await applyRateLimit(request, adminLimiter)
+  if (rl) return rl
+
   try {
     await requireAdmin()
     const settings = await getSiteUiSettings()
-    return NextResponse.json({ success: true, data: settings })
+    return createSuccessResponse(settings)
   } catch {
-    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    return createErrorResponse('Unauthorized', 401)
   }
 }
 
 export async function PATCH(request: NextRequest) {
+  const rl = await applyRateLimit(request, adminLimiter)
+  if (rl) return rl
+
   try {
     await requireAdmin()
-    const body = await request.json()
-    const settings = await updateSiteUiSettings({
-      showDonateButton:
-        typeof body.showDonateButton === 'boolean' ? body.showDonateButton : undefined,
-      showFeedbackButton:
-        typeof body.showFeedbackButton === 'boolean' ? body.showFeedbackButton : undefined,
-    })
+    const body = await request.json().catch(() => null)
+    const parsed = siteUiSettingsSchema.safeParse(body)
 
-    return NextResponse.json({ success: true, data: settings })
+    if (!parsed.success) {
+      return createErrorResponse('Validation failed', 400, parsed.error.flatten(), 'VALIDATION_ERROR')
+    }
+
+    const settings = await updateSiteUiSettings(parsed.data)
+    return createSuccessResponse(settings)
   } catch {
-    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    return createErrorResponse('Unauthorized', 401)
   }
 }

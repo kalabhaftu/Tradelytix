@@ -1,13 +1,30 @@
 import { getSupabaseAdminClient } from '@/server/supabase-admin'
 
+const ALLOWED_PUBLIC_DELETE_BUCKETS = new Set(['trade-images', 'feedback-attachments'])
+
 export type StorageObjectRef = {
   bucket: string
   path: string
 }
 
+function isExpectedStorageOrigin(parsed: URL) {
+  const configuredUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!configuredUrl) return false
+
+  try {
+    return parsed.origin === new URL(configuredUrl).origin
+  } catch {
+    return false
+  }
+}
+
 export function parsePublicStorageUrl(url: string): StorageObjectRef | null {
   try {
     const parsed = new URL(url)
+    if (!isExpectedStorageOrigin(parsed)) {
+      return null
+    }
+
     const marker = '/storage/v1/object/public/'
     const markerIndex = parsed.pathname.indexOf(marker)
 
@@ -22,8 +39,13 @@ export function parsePublicStorageUrl(url: string): StorageObjectRef | null {
       return null
     }
 
+    const decodedBucket = decodeURIComponent(bucket)
+    if (!ALLOWED_PUBLIC_DELETE_BUCKETS.has(decodedBucket)) {
+      return null
+    }
+
     return {
-      bucket: decodeURIComponent(bucket),
+      bucket: decodedBucket,
       path: pathParts.map((part) => decodeURIComponent(part)).join('/'),
     }
   } catch {

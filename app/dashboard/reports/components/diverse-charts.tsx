@@ -6,7 +6,6 @@ import {
     Area,
     AreaChart,
     Bar,
-    // @ts-ignore
     BarChart,
     Cell,
     Pie,

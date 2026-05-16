@@ -3,7 +3,7 @@ import nextVitals from 'eslint-config-next/core-web-vitals'
 const config = [
   ...nextVitals,
   {
-    ignores: ['.next/**', 'node_modules/**', 'coverage/**', 'playwright-report/**', 'test-results/**'],
+    ignores: ['.next/**', '.claude/worktrees/**', 'node_modules/**', 'coverage/**', 'playwright-report/**', 'test-results/**'],
   },
   {
     rules: {

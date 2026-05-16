@@ -10,19 +10,13 @@ const SITE_UI_SETTINGS_ID = 'global'
 const SITE_UI_SETTINGS_CACHE_TAG = 'site-ui-settings'
 
 async function loadSiteUiSettings(): Promise<SiteUiSettingsPayload> {
-  const settings = await prisma.siteUiSettings.upsert({
+  const settings = await prisma.siteUiSettings.findUnique({
     where: { id: SITE_UI_SETTINGS_ID },
-    update: {},
-    create: {
-      id: SITE_UI_SETTINGS_ID,
-      showDonateButton: true,
-      showFeedbackButton: true,
-    },
   })
 
   return {
-    showDonateButton: settings.showDonateButton,
-    showFeedbackButton: settings.showFeedbackButton,
+    showDonateButton: settings?.showDonateButton ?? true,
+    showFeedbackButton: settings?.showFeedbackButton ?? true,
   }
 }
 

@@ -17,6 +17,8 @@ const envSchema = z.object({
   
   // Next.js
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+  NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
+  NEXT_PUBLIC_VERCEL_URL: z.string().optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   
   // Vercel (optional, only in production)
@@ -41,9 +43,51 @@ const envSchema = z.object({
   SUBSCRIPTION_PRICE_USD: z.string().optional(),
   SUBSCRIPTION_BILLING_INTERVAL: z.string().optional(),
   SUBSCRIPTION_GRACE_DAYS: z.string().optional(),
-})
+}).superRefine((env, ctx) => {
+    if (env.NODE_ENV !== 'production') return
 
-// Parse and validate environment variables
+    const appUrl = env.NEXT_PUBLIC_APP_URL || env.NEXT_PUBLIC_SITE_URL || env.NEXT_PUBLIC_VERCEL_URL
+    if (!appUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['NEXT_PUBLIC_APP_URL'],
+        message: 'NEXT_PUBLIC_APP_URL or equivalent canonical app URL is required in production',
+      })
+    }
+
+    if (!env.CRON_SECRET || env.CRON_SECRET.length < 32) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['CRON_SECRET'],
+        message: 'CRON_SECRET must be at least 32 characters in production',
+      })
+    }
+
+    const paymentConfigured = Boolean(env.NOWPAYMENTS_API_KEY || env.NOWPAYMENTS_PUBLIC_KEY || env.NOWPAYMENTS_IPN_CALLBACK_URL)
+    if (paymentConfigured && (!env.NOWPAYMENTS_IPN_SECRET || env.NOWPAYMENTS_IPN_SECRET.length < 32)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['NOWPAYMENTS_IPN_SECRET'],
+        message: 'NOWPAYMENTS_IPN_SECRET must be at least 32 characters when payments are configured in production',
+      })
+    }
+
+    for (const [key, value] of Object.entries({
+      NEXT_PUBLIC_APP_URL: env.NEXT_PUBLIC_APP_URL,
+      NOWPAYMENTS_SUCCESS_URL: env.NOWPAYMENTS_SUCCESS_URL,
+      NOWPAYMENTS_CANCEL_URL: env.NOWPAYMENTS_CANCEL_URL,
+      NOWPAYMENTS_IPN_CALLBACK_URL: env.NOWPAYMENTS_IPN_CALLBACK_URL,
+      APP_BASE_URL: env.APP_BASE_URL,
+    })) {
+      if (value?.includes('localhost') || value?.includes('127.0.0.1')) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: `${key} cannot point to localhost in production`,
+        })
+      }
+    }
+  })
 function validateEnv() {
   try {
     return envSchema.parse(process.env)

@@ -8,40 +8,42 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyIpnSignature, type IpnPayload } from '@/lib/services/nowpayments'
 import { handleIpnWebhook } from '@/lib/services/subscription'
+import { logger } from '@/lib/logger'
+
+const MAX_WEBHOOK_BODY_BYTES = 256 * 1024
 
 export async function POST(request: NextRequest) {
   try {
     const signature = request.headers.get('x-nowpayments-sig') || ''
     const rawBody = await request.text()
 
+    if (Buffer.byteLength(rawBody, 'utf8') > MAX_WEBHOOK_BODY_BYTES) {
+      return NextResponse.json({ error: 'Payload too large' }, { status: 413 })
+    }
+
     let payload: IpnPayload
     try {
       payload = JSON.parse(rawBody)
     } catch {
-      console.error('[Webhook] Invalid JSON body')
+      logger.warn('Invalid NOWPayments webhook JSON')
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
     }
 
-    // Verify IPN signature
     if (!verifyIpnSignature(payload as unknown as Record<string, unknown>, signature)) {
-      console.error('[Webhook] Invalid IPN signature')
+      logger.warn('Invalid NOWPayments webhook signature')
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
-    console.log('[Webhook] Verified IPN:', {
-      payment_id: payload.payment_id,
+    logger.info('Verified NOWPayments webhook', {
       status: payload.payment_status,
-      order_id: payload.order_id,
+      hasOrderId: Boolean(payload.order_id),
     })
 
-    // Process the webhook (idempotent)
     const result = await handleIpnWebhook(payload)
 
     return NextResponse.json({ success: true, ...result })
   } catch (error) {
-    console.error('[Webhook] IPN processing error:', error)
-    // Return 200 to prevent NOWPayments from retrying on our internal errors
-    // We log the error for debugging
+    logger.error('NOWPayments webhook processing failed', { error })
     return NextResponse.json({ success: false, error: 'Internal processing error' }, { status: 200 })
   }
 }

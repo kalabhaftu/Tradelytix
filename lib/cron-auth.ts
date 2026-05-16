@@ -5,19 +5,29 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
+
+function safeCompareSecret(providedSecret: string, expectedSecret: string) {
+  const provided = Buffer.from(providedSecret)
+  const expected = Buffer.from(expectedSecret)
+
+  if (provided.length !== expected.length) {
+    return false
+  }
+
+  return timingSafeEqual(provided, expected)
+}
 
 export function validateCronRequest(request: NextRequest): NextResponse | null {
   const secret = process.env.CRON_SECRET
 
-  // In development, if CRON_SECRET is not set, allow unauthenticated requests
   if (!secret && process.env.NODE_ENV === 'development') {
     return null
   }
 
-  // In production without CRON_SECRET, reject (cron must be explicitly secured)
-  if (!secret && process.env.NODE_ENV === 'production') {
+  if (!secret) {
     return NextResponse.json(
-      { error: 'Forbidden', message: 'CRON_SECRET must be set in production' },
+      { error: 'Forbidden', message: 'CRON_SECRET must be configured' },
       { status: 403 }
     )
   }
@@ -27,7 +37,7 @@ export function validateCronRequest(request: NextRequest): NextResponse | null {
   const headerSecret = request.headers.get('x-cron-secret')
   const providedSecret = bearerToken || headerSecret
 
-  if (!providedSecret || providedSecret !== secret) {
+  if (!providedSecret || !safeCompareSecret(providedSecret, secret)) {
     return NextResponse.json(
       { error: 'Unauthorized', message: 'Invalid or missing cron secret' },
       { status: 401 }

@@ -1037,7 +1037,6 @@ model SharedReport {
   User        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([slug])
   @@schema("public")
 }
 
@@ -1150,8 +1149,6 @@ model PaymentRecord {
 
   @@index([userId])
   @@index([subscriptionId])
-  @@index([providerPaymentId])
-  @@index([providerInvoiceId])
   @@index([dueDate])
   @@schema("public")
 }

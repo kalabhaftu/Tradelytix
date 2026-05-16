@@ -14,7 +14,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { convertDecimal } from '@/lib/utils/decimal'
-import { format as formatDate } from 'date-fns'
 import { calculateStatistics, classifyTrade, formatCalendarData, groupTradesByExecution } from '@/lib/utils'
 import {
   calculateDayOfWeekPerformance,
@@ -144,7 +143,26 @@ export async function GET(request: NextRequest) {
       ]
     }
     
-    if (dateFrom || dateTo) {
+    if (tradeDate) {
+      if (!whereClause.AND) whereClause.AND = []
+      whereClause.AND.push({
+        OR: [
+          {
+            closeDate: {
+              gte: `${tradeDate}T00:00:00.000Z`,
+              lte: `${tradeDate}T23:59:59.999Z`,
+            }
+          },
+          {
+            closeDate: '',
+            entryDate: {
+              gte: `${tradeDate}T00:00:00.000Z`,
+              lte: `${tradeDate}T23:59:59.999Z`,
+            }
+          }
+        ]
+      })
+    } else if (dateFrom || dateTo) {
       whereClause.entryDate = {}
       if (dateFrom) {
         whereClause.entryDate.gte = dateFrom.includes('T') ? dateFrom : `${dateFrom}T00:00:00.000Z`
@@ -153,7 +171,7 @@ export async function GET(request: NextRequest) {
         whereClause.entryDate.lte = dateTo.includes('T') ? dateTo : `${dateTo}T23:59:59.999Z`
       }
     }
-    
+
     if (instruments.length > 0) {
       whereClause.instrument = { in: instruments }
     }
@@ -265,14 +283,6 @@ export async function GET(request: NextRequest) {
       tradingModel: trade.TradingModel?.name || null,
     }))
 
-    if (tradeDate) {
-      trades = trades.filter((trade: any) => {
-        const rawTradeDate = trade.closeDate || trade.entryDate
-        if (!rawTradeDate) return false
-        return formatDate(new Date(rawTradeDate), 'yyyy-MM-dd') === tradeDate
-      })
-    }
-    
     // Post-query filters (can't be done in Prisma WHERE)
     if (weekday !== null) {
       trades = trades.filter((trade: any) => {

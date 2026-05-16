@@ -14,30 +14,23 @@ function isLocalDevelopment() {
   return process.env.NODE_ENV === 'development' && !isVercel
 }
 
+function getConfiguredAppUrl() {
+  return process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_VERCEL_URL || null
+}
+
 export async function getWebsiteURL() {
-  // Only use localhost if we're truly in local development (not on Vercel)
-  if (isLocalDevelopment()) {
-    return 'http://localhost:3000/'
+  const configuredUrl = getConfiguredAppUrl()
+
+  if (!configuredUrl) {
+    if (isLocalDevelopment()) {
+      return 'http://localhost:3000/'
+    }
+    throw new Error('NEXT_PUBLIC_APP_URL must be configured outside local development')
   }
 
-  // Priority order for production URLs
-  let url =
-    process?.env?.NEXT_PUBLIC_APP_URL ?? // Your custom app URL (highest priority)
-    process?.env?.NEXT_PUBLIC_SITE_URL ?? // Set this to your site URL in production env.
-    process?.env?.NEXT_PUBLIC_VERCEL_URL ?? // Automatically set by Vercel.
-    'http://localhost:3000/'
-
-  // Remove any path from VERCEL_URL (it might include /dashboard)
-  if (url.includes('NEXT_PUBLIC_VERCEL_URL') || url.includes('vercel.app')) {
-    url = url.split('/').slice(0, 3).join('/') // Keep only protocol + domain
-  }
-
-  // Make sure to include `https://` when not localhost.
-  url = url.startsWith('http') ? url : `https://${url}`
-  // Make sure to include a trailing `/`.
-  url = url.endsWith('/') ? url : `${url}/`
-
-  return url
+  const normalizedUrl = configuredUrl.startsWith('http') ? configuredUrl : `https://${configuredUrl}`
+  const origin = new URL(normalizedUrl).origin
+  return origin.endsWith('/') ? origin : `${origin}/`
 }
 
 export async function createClient() {

@@ -27,6 +27,9 @@ export type WidgetType =
   | 'tagPerformance'
   | 'timeOfDayPerformance'
   | 'disciplineAnalytics'
+  | 'propFirmObjectivesToday'
+  | 'propFirmAccountStatistics'
+  | 'propFirmGrowthCurve'
 export type WidgetSize = 'tiny' | 'small' | 'small-long' | 'medium' | 'large' | 'extra-large' | 'kpi'
 
 

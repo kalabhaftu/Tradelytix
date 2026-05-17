@@ -36,6 +36,9 @@ import {
   TagPerformanceWidget,
   TimeOfDayPerformanceWidget,
 } from '../components/charts/analytics-widgets'
+import { PropFirmAccountStatisticsWidget } from '../components/prop-firm-widgets/prop-firm-account-statistics-widget'
+import { PropFirmGrowthCurveWidget } from '../components/prop-firm-widgets/prop-firm-growth-curve-widget'
+import { PropFirmObjectivesTodayWidget } from '../components/prop-firm-widgets/prop-firm-objectives-today-widget'
 
 export interface WidgetConfig {
   type: WidgetType
@@ -692,6 +695,39 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetConfig> = {
     previewHeight: 220,
     getComponent: () => <DisciplineAnalyticsWidget />,
     getPreview: () => <CreateLinePreview title="Discipline" />,
+  },
+  propFirmObjectivesToday: {
+    type: 'propFirmObjectivesToday',
+    defaultSize: 'extra-large',
+    allowedSizes: ['extra-large'],
+    category: 'statistics',
+    description: 'Prop firm objectives, drawdown limits, and today’s current-phase stats',
+    requiresFullWidth: true,
+    previewHeight: 280,
+    getComponent: () => <PropFirmObjectivesTodayWidget />,
+    getPreview: () => <CreateLinePreview title="Prop Firm Objectives" />,
+  },
+  propFirmAccountStatistics: {
+    type: 'propFirmAccountStatistics',
+    defaultSize: 'extra-large',
+    allowedSizes: ['extra-large'],
+    category: 'statistics',
+    description: 'Full-width prop firm account statistics for the selected challenge',
+    requiresFullWidth: true,
+    previewHeight: 280,
+    getComponent: () => <PropFirmAccountStatisticsWidget />,
+    getPreview: () => <CreateLinePreview title="Prop Firm Stats" />,
+  },
+  propFirmGrowthCurve: {
+    type: 'propFirmGrowthCurve',
+    defaultSize: 'extra-large',
+    allowedSizes: ['extra-large'],
+    category: 'charts',
+    description: 'Selected prop firm challenge growth curve with target and drawdown references',
+    requiresFullWidth: true,
+    previewHeight: 340,
+    getComponent: () => <PropFirmGrowthCurveWidget />,
+    getPreview: () => <CreateLinePreview title="Prop Firm Growth" />,
   },
 }
 

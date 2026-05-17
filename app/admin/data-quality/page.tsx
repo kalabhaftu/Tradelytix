@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AdminShell } from '../components/admin-shell'
+import { AdminPageHeader, AdminShell } from '../components/admin-shell'
 import { Progress } from '@/components/ui/progress'
 import { Spinner } from '@/components/ui/spinner'
 import { AlertTriangle, DatabaseZap } from 'lucide-react'
@@ -30,10 +30,11 @@ export default function AdminDataQualityPage() {
   return (
     <AdminShell>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Data Quality</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Coverage and health checks for advanced analytics readiness.</p>
-        </div>
+        <AdminPageHeader
+          title="Data Quality"
+          description="Coverage and health checks for advanced analytics readiness."
+          hint="Use this before blaming analytics. Low coverage means users have missing stop loss, excursion, tag, or playbook data."
+        />
         {loading ? <div className="flex justify-center py-20"><Spinner size="lg" /></div> : (
           <>
             <section className="overflow-hidden rounded-xl border border-border bg-card">

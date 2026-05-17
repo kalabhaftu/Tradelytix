@@ -406,8 +406,8 @@ export default function ReportsPageClient({
         try {
             const payload = {
                 title: 'Performance Report',
-                dateFrom: dateRange?.from?.toISOString(),
-                dateTo: dateRange?.to?.toISOString(),
+                dateFrom: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+                dateTo: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
                 accountId: selectedAccountId,
                 symbol: advancedFilters.symbol !== 'all' ? advancedFilters.symbol : undefined,
                 session: advancedFilters.session !== 'all' ? advancedFilters.session : undefined,

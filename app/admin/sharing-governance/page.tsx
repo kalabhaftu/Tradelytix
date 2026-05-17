@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AdminShell } from '../components/admin-shell'
+import { AdminPageHeader, AdminShell } from '../components/admin-shell'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -37,10 +37,11 @@ export default function AdminSharingGovernancePage() {
   return (
     <AdminShell>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Sharing Governance</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Control default behavior for public statement and report sharing.</p>
-        </div>
+        <AdminPageHeader
+          title="Sharing Governance"
+          description="Control default behavior for public statement and report sharing."
+          hint="These settings affect new public links. Disable sharing during abuse or incidents; require expiration when links should not stay public forever."
+        />
         {loading ? <div className="flex justify-center py-20"><Spinner size="lg" /></div> : (
           <section className="max-w-3xl rounded-xl border border-border bg-card">
             <div className="flex items-center gap-2 border-b border-border px-5 py-4">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AdminShell } from '../components/admin-shell'
+import { AdminPageHeader, AdminShell } from '../components/admin-shell'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -42,10 +42,11 @@ export default function AdminDashboardPresetsPage() {
   return (
     <AdminShell>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard Presets</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Curate product-owned starter layouts without touching user-owned templates.</p>
-        </div>
+        <AdminPageHeader
+          title="Dashboard Presets"
+          description="Curate product-owned starter layouts without touching user-owned templates."
+          hint="Use presets for curated layouts users can choose from. This does not rewrite existing user templates."
+        />
         <section className="rounded-xl border border-border bg-card p-5">
           <div className="flex flex-col gap-3 md:flex-row">
             <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Preset name" />

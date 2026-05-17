@@ -4,15 +4,14 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { WidgetCard } from "../widget-card"
 import { useData } from "@/context/data-provider"
-import { getTradeNetPnl } from "@/lib/metrics/pnl"
+import { getNewYorkHour } from '@/lib/time-utils'
+import { getTradeNetPnl } from '@/lib/metrics/pnl'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 
 function formatHour(h: number): string {
-  if (h === 0) return '12am'
-  if (h === 12) return '12pm'
-  return h < 12 ? `${h}am` : `${h - 12}pm`
+  return `${String(h).padStart(2, '0')}:00`
 }
 
 function getColor(pnl: number, maxAbs: number): string {
@@ -53,7 +52,8 @@ export default function TimeHeatmap() {
       const dayNum = date.getDay() // 0=Sun, 1=Mon...5=Fri
       if (dayNum === 0 || dayNum === 6) continue
       const dayName = DAYS[dayNum - 1]
-      const hour = date.getHours()
+      const hour = getNewYorkHour(trade.entryDate)
+      if (hour == null) continue
       const pnl = getTradeNetPnl(trade)
       grid[dayName][hour].pnl += pnl
       grid[dayName][hour].count += 1

@@ -83,6 +83,12 @@ export function getKillzoneBadge(date: Date | string | number, symbol?: string):
   return null;
 }
 
+export function getNewYorkDateKey(date: Date | string | number): string {
+  const parsedDate = new Date(date);
+  if (isNaN(parsedDate.getTime())) return '';
+  return formatInTimeZone(parsedDate, DEFAULT_TIMEZONE, 'yyyy-MM-dd');
+}
+
 export function getNewYorkHour(date: Date | string | number): number | null {
   if (!date) return null;
   const parsedDate = new Date(date);

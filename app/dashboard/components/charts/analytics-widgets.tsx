@@ -155,16 +155,19 @@ export function TimeOfDayPerformanceWidget() {
   return (
     <WidgetCard title="Time of Day" headerRight={<Clock3 className="h-4 w-4 text-muted-foreground" />}>
       {isLoading ? <EmptyWidget label="Loading time of day..." /> : active.length === 0 ? <EmptyWidget label="No hourly data yet" /> : (
-        <div className="grid grid-cols-6 gap-2">
-          {data.map((item: any) => {
-            const intensity = Math.max(0.12, Math.abs(Number(item.pnl || 0)) / maxAbs)
-            return (
-              <div key={item.hour} className={cn('rounded-md border border-border/25 px-2 py-2', item.pnl >= 0 ? 'bg-long/10' : 'bg-short/10')} style={{ opacity: item.trades > 0 ? 0.55 + intensity * 0.45 : 0.35 }}>
-                <p className="font-mono text-[10px] font-black">{String(item.hour).padStart(2, '0')}</p>
-                <p className="mt-1 text-[9px] font-bold text-muted-foreground">{item.trades || 0}T</p>
-              </div>
-            )
-          })}
+        <div>
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">New York time · 24h</div>
+          <div className="grid grid-cols-6 gap-2">
+            {data.map((item: any) => {
+              const intensity = Math.max(0.12, Math.abs(Number(item.pnl || 0)) / maxAbs)
+              return (
+                <div key={item.hour} className={cn('rounded-md border border-border/25 px-2 py-2', item.pnl >= 0 ? 'bg-long/10' : 'bg-short/10')} style={{ opacity: item.trades > 0 ? 0.55 + intensity * 0.45 : 0.35 }}>
+                  <p className="font-mono text-[10px] font-black">{String(item.hour).padStart(2, '0')}:00</p>
+                  <p className="mt-1 text-[9px] font-bold text-muted-foreground">{item.trades || 0}T</p>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
     </WidgetCard>

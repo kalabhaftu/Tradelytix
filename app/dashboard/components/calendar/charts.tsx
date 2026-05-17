@@ -8,6 +8,7 @@ import { CalendarEntry } from "@/app/dashboard/types/calendar"
 import { useTheme } from "@/context/theme-provider"
 import { cn } from "@/lib/utils"
 import { CHART_STYLES, PNL_TEXT_STYLES } from "@/app/dashboard/constants/calendar-styles"
+import { formatTimeInZone } from '@/lib/time-utils'
 import { useDashboardDisplay } from "@/hooks/use-dashboard-display"
 
 interface ChartsProps {
@@ -135,7 +136,7 @@ export function Charts({ dayData, isWeekly = false }: ChartsProps) {
           .slice(0, index + 1)
           .reduce((sum, t) => sum + Number(t.pnl || 0), 0)
         return {
-          time: new Date(trade.entryDate).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
+          time: `${formatTimeInZone(trade.entryDate)} NY`,
           date: new Date(trade.entryDate).toLocaleDateString(locale, {
             weekday: 'short',
             month: 'short',

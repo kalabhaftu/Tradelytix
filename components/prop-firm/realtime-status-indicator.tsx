@@ -3,8 +3,7 @@
  * Compatible with the new prop firm system architecture
  */
 
-'use client'
-
+import { formatTimeInZone } from '@/lib/time-utils'
 import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -436,7 +435,7 @@ export function RealtimeStatusIndicator({
 
         {/* Last Update */}
         <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-2">
-          <span>Last updated: {lastRefresh.toLocaleTimeString()}</span>
+          <span>Last updated: {formatTimeInZone(lastRefresh, 'HH:mm')} NY</span>
           <div className="flex items-center space-x-1">
             <Zap className="h-3 w-3" />
             <span>Live</span>

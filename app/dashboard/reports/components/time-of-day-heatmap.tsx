@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { cn, formatCurrency } from '@/lib/utils'
 import { getTradeNetPnl } from '@/lib/metrics/pnl'
+import { getNewYorkHour, getNewYorkWeekdayIndex } from '@/lib/time-utils'
 
 interface TimeOfDayHeatmapProps {
   trades: any[]
@@ -12,10 +13,7 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 
 function formatHour(h: number): string {
-  if (h === 0) return '12am'
-  if (h < 12) return `${h}am`
-  if (h === 12) return '12pm'
-  return `${h - 12}pm`
+  return `${String(h).padStart(2, '0')}:00`
 }
 
 export function TimeOfDayHeatmap({ trades }: TimeOfDayHeatmapProps) {
@@ -33,12 +31,12 @@ export function TimeOfDayHeatmap({ trades }: TimeOfDayHeatmapProps) {
       const rawDate = trade.entryDate || trade.entryTime
       if (!rawDate) return
 
-      const d = new Date(rawDate)
-      const dayIdx = d.getDay() // 0=Sun, 1=Mon, ...
-      if (dayIdx < 1 || dayIdx > 5) return // Skip weekends
+      const dayIdx = getNewYorkWeekdayIndex(rawDate) // 0=Sun, 1=Mon, ...
+      if (dayIdx == null || dayIdx < 1 || dayIdx > 5) return // Skip weekends
 
       const dayName = DAYS[dayIdx - 1]
-      const hour = d.getHours()
+      const hour = getNewYorkHour(rawDate)
+      if (hour == null) return
       const pnl = getTradeNetPnl(trade)
 
       activeHours.add(hour)
@@ -73,6 +71,7 @@ export function TimeOfDayHeatmap({ trades }: TimeOfDayHeatmapProps) {
   return (
     <div className="bg-muted/10 border border-border/40 rounded-2xl p-6">
       <h3 className="text-[10px] uppercase font-black text-muted-foreground mb-4 tracking-[0.2em]">Time of Day Performance</h3>
+      <div className="mb-3 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">New York time · 24h</div>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>

@@ -1,6 +1,6 @@
 import { Trade, Account } from '@prisma/client'
 import { startOfMonth, endOfMonth, parseISO, isWithinInterval, startOfWeek, endOfWeek, format, differenceInDays, getDay } from 'date-fns'
-import { getTradingSession } from '@/lib/time-utils'
+import { getTradingSession, getNewYorkHour } from '@/lib/time-utils'
 import { calculateWinRate, classifyOutcome, DEFAULT_BREAK_EVEN_THRESHOLD } from '@/lib/metrics/outcome'
 import { CHART_COLORS } from '@/app/dashboard/components/widget-card'
 import { 
@@ -669,7 +669,8 @@ export function calculateTimeOfDayPerformance(
 
   groupedTrades.forEach((trade: any) => {
     if (!trade.entryDate) return
-    const hour = new Date(trade.entryDate).getHours()
+    const hour = getNewYorkHour(trade.entryDate)
+    if (hour == null) return
     const netPnl = getTradeNetPnl(trade)
     hours[hour].pnl += netPnl
     hours[hour].trades++

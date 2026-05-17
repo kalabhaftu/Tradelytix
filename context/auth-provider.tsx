@@ -104,27 +104,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const syncPromise = (async () => {
       try {
-      const response = await fetch('/api/auth/restore', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          accessToken: nextSession.access_token,
-          refreshToken: nextSession.refresh_token,
-        }),
-      })
+        const response = await fetch('/api/auth/restore', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessToken: nextSession.access_token,
+            refreshToken: nextSession.refresh_token,
+          }),
+        })
 
-      if (!response.ok) {
+        if (!response.ok) {
+          lastSyncedSessionRef.current = sessionKey
+          return false
+        }
+
+        lastSyncedSessionRef.current = sessionKey
+        setAuthCheckCache({
+          timestamp: Date.now(),
+          isAuthenticated: true
+        })
+        return true
+      } catch {
         return false
-      }
-
-      lastSyncedSessionRef.current = sessionKey
-      setAuthCheckCache({
-        timestamp: Date.now(),
-        isAuthenticated: true
-      })
-      return true
-    } catch {
-      return false
       } finally {
         syncInFlightRef.current.delete(sessionKey)
       }

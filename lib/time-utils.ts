@@ -83,9 +83,20 @@ export function getKillzoneBadge(date: Date | string | number, symbol?: string):
   return null;
 }
 
-/**
- * Helper to display time cleanly formatted according to user preferences.
- */
+export function getNewYorkHour(date: Date | string | number): number | null {
+  if (!date) return null;
+  const parsedDate = new Date(date);
+  if (isNaN(parsedDate.getTime())) return null;
+  return toZonedTime(parsedDate, DEFAULT_TIMEZONE).getHours();
+}
+
+export function getNewYorkWeekdayIndex(date: Date | string | number): number | null {
+  if (!date) return null;
+  const parsedDate = new Date(date);
+  if (isNaN(parsedDate.getTime())) return null;
+  return toZonedTime(parsedDate, DEFAULT_TIMEZONE).getDay();
+}
+
 export function formatUserTime(date: Date | string | number, timezone: string = DEFAULT_TIMEZONE, use24HourFormat: boolean = true): string {
   if (!date) return 'N/A';
   const parsedDate = new Date(date);
@@ -98,7 +109,7 @@ export function formatUserTime(date: Date | string | number, timezone: string = 
 /**
  * Helper to display time with a custom format string.
  */
-export function formatTimeInZone(date: Date | string | number, formatStr: string, timezone: string = DEFAULT_TIMEZONE): string {
+export function formatTimeInZone(date: Date | string | number, formatStr: string = 'HH:mm', timezone: string = DEFAULT_TIMEZONE): string {
   if (!date) return 'N/A';
   const parsedDate = new Date(date);
   if (isNaN(parsedDate.getTime())) return 'N/A';

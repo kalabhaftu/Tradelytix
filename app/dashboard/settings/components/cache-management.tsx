@@ -1,13 +1,7 @@
 'use client'
 
-/**
- * Cache Management Component
- * 
- * Provides manual cache clearing functionality for users
- * in the settings page
- */
-
 import { useState, useEffect } from 'react'
+import { formatTimeInZone } from '@/lib/time-utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -145,7 +139,7 @@ export function CacheManagement() {
           <div className="flex items-center gap-2 text-sm text-profit">
             <CheckCircle className="h-4 w-4" />
             <span>
-              Cache cleared at {lastCleared.toLocaleTimeString()}
+              Cache cleared at {formatTimeInZone(lastCleared, 'HH:mm')} NY
             </span>
           </div>
         )}

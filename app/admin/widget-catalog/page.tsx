@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AdminShell } from '../components/admin-shell'
+import { AdminPageHeader, AdminShell } from '../components/admin-shell'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -49,10 +49,11 @@ export default function AdminWidgetCatalogPage() {
   return (
     <AdminShell>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Widget Catalog</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Control what appears in the dashboard widget library.</p>
-        </div>
+        <AdminPageHeader
+          title="Widget Catalog"
+          description="Control what appears in the dashboard widget library."
+          hint="Visible controls whether users can add the widget. Recommended boosts it in the picker. Premium marks widgets that should require paid access."
+        />
 
         {loading ? (
           <div className="flex justify-center py-20"><Spinner size="lg" /></div>

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { Input } from '@/components/ui/input'
 import { Search, ChevronLeft, ChevronRight, ExternalLink, Info } from 'lucide-react'
+import { formatTimeInZone } from '@/lib/time-utils'
 import { toast } from 'sonner'
 
 type AdminPayment = {
@@ -218,13 +219,13 @@ export default function AdminPaymentsPage() {
                           </td>
                           <td className="p-3 text-muted-foreground text-xs">
                             {new Date(payment.createdAt).toLocaleDateString()}<br/>
-                            {new Date(payment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {formatTimeInZone(payment.createdAt)} NY
                           </td>
                           <td className="p-3 text-muted-foreground text-xs">
                             {payment.resolvedAt ? (
                               <>
                                 {new Date(payment.resolvedAt).toLocaleDateString()}<br/>
-                                {new Date(payment.resolvedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {formatTimeInZone(payment.resolvedAt)} NY
                               </>
                             ) : (
                               '—'

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AdminShell } from '../components/admin-shell'
+import { AdminPageHeader, AdminShell } from '../components/admin-shell'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Spinner } from '@/components/ui/spinner'
@@ -35,10 +35,11 @@ export default function AdminFeatureControlsPage() {
   return (
     <AdminShell>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Feature Controls</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Manage platform-level feature visibility and rollout state.</p>
-        </div>
+        <AdminPageHeader
+          title="Feature Controls"
+          description="Manage platform-level feature visibility and rollout state."
+          hint="Use these switches for guarded features only. Internal hides a feature from normal users; Enabled controls whether it is active at all."
+        />
         {loading ? <div className="flex justify-center py-20"><Spinner size="lg" /></div> : (
           <section className="overflow-hidden rounded-xl border border-border bg-card">
             <div className="flex items-center gap-2 border-b border-border px-5 py-4">

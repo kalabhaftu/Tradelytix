@@ -16,23 +16,43 @@ function generateSlug(): string {
   return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
 }
 
-const boundedString = (max: number) => z.string().trim().max(max).optional().nullable()
-const dateString = z.string().date().optional().nullable()
+const boundedString = (max: number) => z.preprocess(
+  (value) => (value === '' || value === 'all' ? undefined : value),
+  z.string().trim().max(max).optional().nullable()
+)
+const dateString = z.preprocess(
+  (value) => {
+    if (value === '' || value == null) return undefined
+    if (typeof value !== 'string') return value
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) return value
+    return parsed.toISOString().slice(0, 10)
+  },
+  z.string().date().optional().nullable()
+)
 
 const shareReportSchema = z.object({
   title: z.string().trim().min(1).max(120).optional(),
   dateFrom: dateString,
   dateTo: dateString,
   accountId: boundedString(128),
-  accountNumbers: z.array(z.string().trim().min(1).max(128)).max(50).optional(),
+  accountNumbers: z.preprocess(
+    (value) => Array.isArray(value) ? value.filter((item) => item !== '' && item !== 'all') : value,
+    z.array(z.string().trim().min(1).max(128)).max(50).optional()
+  ),
   symbol: boundedString(32),
   session: boundedString(64),
   outcome: boundedString(32),
   strategy: boundedString(128),
-  ruleBroken: z.boolean().optional().nullable(),
+  ruleBroken: z.union([z.boolean(), z.enum(['broken', 'not-broken'])]).optional().nullable(),
   snapshot: z.record(z.string(), z.unknown()).optional(),
   expiresInDays: z.coerce.number().int().min(1).max(365).optional().nullable(),
 }).strict()
+
+function normalizeRuleBroken(value: z.infer<typeof shareReportSchema>['ruleBroken']) {
+  if (typeof value === 'boolean') return value ? 'broken' : 'not-broken'
+  return value || undefined
+}
 
 export async function POST(req: NextRequest) {
   const rl = await applyRateLimit(req, apiLimiter)
@@ -44,6 +64,7 @@ export async function POST(req: NextRequest) {
     const parsed = shareReportSchema.safeParse(body)
 
     if (!parsed.success) {
+      logger.warn('Reports share validation failed', { fields: parsed.error.flatten().fieldErrors }, 'api')
       return createErrorResponse('Validation failed', 400, parsed.error.flatten(), 'VALIDATION_ERROR')
     }
 
@@ -68,7 +89,7 @@ export async function POST(req: NextRequest) {
       session: payload.session || undefined,
       outcome: payload.outcome || undefined,
       strategy: payload.strategy || undefined,
-      ruleBroken: typeof payload.ruleBroken === 'boolean' ? (payload.ruleBroken ? 'broken' : 'not-broken') : undefined,
+      ruleBroken: normalizeRuleBroken(payload.ruleBroken),
     })
 
     const snapshotPayload = JSON.parse(JSON.stringify({
@@ -83,7 +104,7 @@ export async function POST(req: NextRequest) {
         session: payload.session || null,
         outcome: payload.outcome || null,
         strategy: payload.strategy || null,
-        ruleBroken: payload.ruleBroken ?? null,
+        ruleBroken: normalizeRuleBroken(payload.ruleBroken) || null,
       },
       reportData: serverSnapshot,
       legacySnapshot: payload.snapshot || null,

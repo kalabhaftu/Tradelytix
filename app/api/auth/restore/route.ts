@@ -1,7 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient, type CookieOptions } from "@supabase/ssr"
+import { z } from "zod"
 
 import { ensureUserInDatabase } from "@/server/auth"
+
+const restoreSessionSchema = z.object({
+  accessToken: z.string().trim().min(20).max(8192),
+  refreshToken: z.string().trim().min(20).max(8192),
+}).strict()
 
 type SupabaseCookie = {
   name: string
@@ -18,11 +24,10 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json().catch(() => null)
-  const accessToken = typeof body?.accessToken === "string" ? body.accessToken : ""
-  const refreshToken = typeof body?.refreshToken === "string" ? body.refreshToken : ""
+  const parsed = restoreSessionSchema.safeParse(body)
 
-  if (!accessToken || !refreshToken) {
-    return NextResponse.json({ authenticated: false, error: "missing_tokens" }, { status: 400 })
+  if (!parsed.success) {
+    return NextResponse.json({ authenticated: false, error: "invalid_tokens" }, { status: 400 })
   }
 
   const pendingCookies: SupabaseCookie[] = []
@@ -39,13 +44,13 @@ export async function POST(request: NextRequest) {
   })
 
   const { data, error } = await supabase.auth.setSession({
-    access_token: accessToken,
-    refresh_token: refreshToken,
+    access_token: parsed.data.accessToken,
+    refresh_token: parsed.data.refreshToken,
   })
 
   if (error || !data.session || !data.user) {
     const errorResponse = NextResponse.json(
-      { authenticated: false, error: error?.message || "restore_failed" },
+      { authenticated: false, error: "restore_failed" },
       { status: 401 },
     )
     pendingCookies.forEach(({ name, value, options }) => {

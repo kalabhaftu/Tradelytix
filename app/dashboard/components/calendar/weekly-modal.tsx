@@ -622,18 +622,18 @@ export function WeeklyModal({
           />
 
           {/* Header */}
-          <div className="px-6 py-5 border-b border-border/50 shrink-0 bg-card">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/8 text-primary">
-                  <Calendar className="h-5 w-5 text-primary" />
+          <div className="shrink-0 px-5 py-4 sm:px-6 border-b border-border/40 bg-background/95">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border/50 bg-muted/25 text-muted-foreground">
+                  <Calendar className="h-5 w-5" />
                 </div>
-                <div>
-                  <h2 className="text-xl font-semibold tracking-tight">{dateRange}</h2>
-                  <p className="text-sm text-muted-foreground mt-1">Weekly Performance Review</p>
+                <div className="min-w-0">
+                  <h2 className="truncate text-lg font-semibold tracking-tight sm:text-xl">{dateRange}</h2>
+                  <p className="mt-0.5 text-sm text-muted-foreground">Weekly Performance Review</p>
                 </div>
               </div>
-              <Button onClick={handleSave} disabled={isSaving || isUploading} className="rounded-xl px-4">
+              <Button onClick={handleSave} disabled={isSaving || isUploading} className="shrink-0 rounded-xl px-4">
                 {isSaving || isUploading ? <Spinner className="mr-2 h-4 w-4" /> : null}
                 Save Review
               </Button>
@@ -642,8 +642,8 @@ export function WeeklyModal({
 
           {/* Tabs Navigation */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <div className="px-4 sm:px-6 lg:px-8 py-3 border-b border-border/50 bg-background/90">
-              <TabsList className="h-auto w-full flex-wrap justify-start rounded-2xl border border-border/40 bg-muted/35 p-1 gap-1">
+            <div className="px-4 sm:px-6 py-3 border-b border-border/40 bg-background">
+              <TabsList className="h-auto w-full flex-wrap justify-start rounded-xl border border-border/40 bg-muted/20 p-1 gap-1">
                 <TabsTrigger
                   value="overview"
                   className="rounded-xl px-4 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm"

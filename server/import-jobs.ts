@@ -324,6 +324,7 @@ async function runPreparation(data: any, internalUserId: string) {
   }
 
   const phaseMap = new Map<string, string>()
+  const phaseNumberMap = new Map<string, string>()
   const masterMap = new Map<string, string>()
 
   if (data.masterAccounts) {
@@ -386,7 +387,122 @@ async function runPreparation(data: any, internalUserId: string) {
           if (phase.phaseId) {
             phaseMap.set(phase.phaseId, targetPhase.id)
           }
+
+          phaseNumberMap.set(`${masterAccount.accountName}:${phase.phaseNumber}`, targetPhase.id)
         }
+      }
+    }
+  }
+
+  if (data.journalTemplates) {
+    for (const template of data.journalTemplates) {
+      if (!template?.name) continue
+      await prisma.journalTemplate.upsert({
+        where: { userId_name: { userId: internalUserId, name: template.name } },
+        update: {
+          content: template.content,
+        },
+        create: {
+          id: crypto.randomUUID(),
+          userId: internalUserId,
+          name: template.name,
+          content: template.content,
+        },
+      })
+    }
+  }
+
+  if (data.weeklyAIReviews) {
+    for (const review of data.weeklyAIReviews) {
+      if (!review?.weekStart) continue
+      await prisma.weeklyAIReview.upsert({
+        where: { userId_weekStart: { userId: internalUserId, weekStart: new Date(review.weekStart) } },
+        update: {
+          weekEnd: review.weekEnd ? new Date(review.weekEnd) : undefined,
+          stats: review.stats,
+          summary: review.summary,
+          highlights: review.highlights ?? [],
+          lowlights: review.lowlights ?? [],
+          focusNextWeek: review.focusNextWeek,
+          grade: review.grade,
+        },
+        create: {
+          id: crypto.randomUUID(),
+          userId: internalUserId,
+          weekStart: new Date(review.weekStart),
+          weekEnd: review.weekEnd ? new Date(review.weekEnd) : new Date(review.weekStart),
+          stats: review.stats,
+          summary: review.summary,
+          highlights: review.highlights ?? [],
+          lowlights: review.lowlights ?? [],
+          focusNextWeek: review.focusNextWeek,
+          grade: review.grade,
+        },
+      })
+    }
+  }
+
+  if (data.userGoals) {
+    for (const goal of data.userGoals) {
+      if (!goal?.title) continue
+      const existing = await prisma.userGoal.findFirst({
+        where: {
+          userId: internalUserId,
+          title: goal.title,
+          metric: goal.metric,
+          period: goal.period,
+          startDate: goal.startDate ? new Date(goal.startDate) : undefined,
+        },
+      })
+
+      if (!existing) {
+        await prisma.userGoal.create({
+          data: {
+            id: crypto.randomUUID(),
+            userId: internalUserId,
+            title: goal.title,
+            metric: goal.metric,
+            targetValue: goal.targetValue,
+            currentValue: goal.currentValue ?? 0,
+            period: goal.period,
+            startDate: goal.startDate ? new Date(goal.startDate) : new Date(),
+            endDate: goal.endDate ? new Date(goal.endDate) : null,
+            isCompleted: Boolean(goal.isCompleted),
+            completedAt: goal.completedAt ? new Date(goal.completedAt) : null,
+          },
+        })
+      }
+    }
+  }
+
+  if (data.notifications) {
+    for (const notification of data.notifications) {
+      if (!notification?.title || !notification?.createdAt) continue
+      const existing = await prisma.notification.findFirst({
+        where: {
+          userId: internalUserId,
+          title: notification.title,
+          type: notification.type,
+          createdAt: new Date(notification.createdAt),
+        },
+      })
+
+      if (!existing) {
+        await prisma.notification.create({
+          data: {
+            id: crypto.randomUUID(),
+            userId: internalUserId,
+            title: notification.title,
+            message: notification.message,
+            type: notification.type,
+            priority: notification.priority,
+            isRead: Boolean(notification.isRead),
+            actionRequired: Boolean(notification.actionRequired),
+            invalidationKey: notification.invalidationKey,
+            data: notification.data,
+            createdAt: new Date(notification.createdAt),
+          },
+        })
       }
     }
   }
@@ -422,7 +538,11 @@ async function runPreparation(data: any, internalUserId: string) {
 
   if (data.breachRecords) {
     for (const breachRecord of data.breachRecords) {
-      const targetPhaseId = phaseMap.get(breachRecord.phaseId)
+      const targetPhaseId =
+        phaseMap.get(breachRecord.phaseId) ??
+        (breachRecord.accountName && breachRecord.phaseNumber != null
+          ? phaseNumberMap.get(`${breachRecord.accountName}:${breachRecord.phaseNumber}`)
+          : undefined)
       if (!targetPhaseId) continue
 
       const existing = await prisma.breachRecord.findFirst({
@@ -454,7 +574,11 @@ async function runPreparation(data: any, internalUserId: string) {
 
   if (data.dailyAnchors) {
     for (const anchor of data.dailyAnchors) {
-      const targetPhaseId = phaseMap.get(anchor.phaseId)
+      const targetPhaseId =
+        phaseMap.get(anchor.phaseId) ??
+        (anchor.accountName && anchor.phaseNumber != null
+          ? phaseNumberMap.get(`${anchor.accountName}:${anchor.phaseNumber}`)
+          : undefined)
       if (!targetPhaseId) continue
 
       await prisma.dailyAnchor.upsert({
@@ -478,7 +602,14 @@ async function runPreparation(data: any, internalUserId: string) {
   if (data.payouts) {
     for (const payout of data.payouts) {
       const targetMasterId = masterMap.get(payout.accountName)
-      const targetPhaseId = payout.phaseId ? phaseMap.get(payout.phaseId) : null
+      const targetPhaseId = payout.phaseId
+        ? phaseMap.get(payout.phaseId) ??
+          (payout.accountName && payout.phaseNumber != null
+            ? phaseNumberMap.get(`${payout.accountName}:${payout.phaseNumber}`)
+            : null)
+        : payout.accountName && payout.phaseNumber != null
+          ? phaseNumberMap.get(`${payout.accountName}:${payout.phaseNumber}`)
+          : null
       if (!targetMasterId || !targetPhaseId) continue
 
       const existing = await prisma.payout.findFirst({

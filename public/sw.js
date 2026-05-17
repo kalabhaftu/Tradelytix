@@ -1,10 +1,10 @@
 // Deltalytix Service Worker - Optimized for performance
 // Provides offline functionality, caching, and background sync
 
-const CACHE_NAME = 'deltalytix-v1.1.1'
-const STATIC_CACHE = 'deltalytix-static-v1.1.1'
-const API_CACHE = 'deltalytix-api-v1.1.1'
-const IMAGE_CACHE = 'deltalytix-images-v1.1.1'
+const CACHE_NAME = 'deltalytix-v1.2.0'
+const STATIC_CACHE = 'deltalytix-static-v1.2.0'
+const API_CACHE = 'deltalytix-api-v1.2.0'
+const IMAGE_CACHE = 'deltalytix-images-v1.2.0'
 
 // Minimal files to cache for performance
 const STATIC_FILES = [
@@ -12,10 +12,24 @@ const STATIC_FILES = [
   '/offline.html',
 ]
 
-// API endpoints to cache (reduced for performance)
+// Read-only user-scoped API endpoints that are useful for cached offline viewing.
 const CACHE_API_PATTERNS = [
-  /^\/api\/trades\/basic/, // Only cache basic trade endpoints
-  /^\/api\/accounts\/basic/,
+  /^\/api\/v1\/trades(?:\?|$)/,
+  /^\/api\/v1\/accounts(?:\?|$)/,
+  /^\/api\/v1\/journal\/list(?:\?|$)/,
+  /^\/api\/v1\/tags(?:\?|$)/,
+  /^\/api\/v1\/settings\/account-filters(?:\?|$)/,
+  /^\/api\/v1\/reports\/shared\/[^/]+(?:\?|$)/,
+]
+
+const EXCLUDED_API_PATTERNS = [
+  /^\/api\/auth\//,
+  /^\/api\/v1\/admin\//,
+  /^\/api\/v1\/payments\//,
+  /^\/api\/v1\/import\//,
+  /^\/api\/v1\/data\/(?:import|export)/,
+  /^\/api\/v1\/trades\/import\//,
+  /\/webhook\//,
 ]
 
 // Background sync tags
@@ -125,7 +139,9 @@ async function handleAPIRequest(request) {
   const url = new URL(request.url)
   
   // Check if this API should be cached
-  const shouldCache = CACHE_API_PATTERNS.some(pattern => pattern.test(url.pathname))
+  const shouldCache =
+    CACHE_API_PATTERNS.some(pattern => pattern.test(url.pathname)) &&
+    !EXCLUDED_API_PATTERNS.some(pattern => pattern.test(url.pathname))
   
   if (!shouldCache) {
     return fetch(request)
@@ -136,8 +152,16 @@ async function handleAPIRequest(request) {
     const response = await fetch(request)
     
     if (response.ok) {
-      // Cache successful responses
-      cache.put(request, response.clone())
+      // Cache successful read-only responses with a marker for offline-aware UI.
+      const headers = new Headers(response.headers)
+      headers.set('X-Deltalytix-Cache-Source', 'network')
+      headers.set('X-Deltalytix-Cached-At', new Date().toISOString())
+      const cacheableResponse = new Response(response.clone().body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      })
+      await cache.put(request, cacheableResponse)
       return response
     } else {
       // If network fails, try cache

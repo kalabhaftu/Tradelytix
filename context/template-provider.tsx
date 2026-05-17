@@ -56,7 +56,9 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
   const [templates, setTemplates] = useState<DashboardTemplate[]>(
     initialActiveTemplate ? [initialActiveTemplate] : []
   )
-  const [activeTemplate, setActiveTemplate] = useState<DashboardTemplate | null>(initialActiveTemplate)
+  const [activeTemplate, setActiveTemplate] = useState<DashboardTemplate | null>(
+    initialActiveTemplate ?? buildFallbackTemplate()
+  )
   const [isLoading, setIsLoading] = useState(!initialActiveTemplate)
   const hasLoadedRef = useRef(false)
   const isLoadingRef = useRef(false)
@@ -90,11 +92,8 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
       }
 
       templateBootstrapInFlight = (async () => {
-      // Try to load user's saved template first
-        const [allTemplates, active] = await Promise.all([
-          getUserTemplates(),
-          getActiveTemplate(),
-        ])
+        const allTemplates = await getUserTemplates()
+        const active = await getActiveTemplate()
 
       // If we got templates, use them immediately
         if (allTemplates.length > 0 && active) {
@@ -108,10 +107,8 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
         await ensureDefaultTemplate()
 
       // Reload after creating default
-        const [newTemplates, newActive] = await Promise.all([
-          getUserTemplates(),
-          getActiveTemplate(),
-        ])
+        const newTemplates = await getUserTemplates()
+        const newActive = await getActiveTemplate()
 
         if (newTemplates.length > 0 && newActive) {
           return {

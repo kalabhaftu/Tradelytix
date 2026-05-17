@@ -82,7 +82,15 @@ export async function POST(request: NextRequest) {
       transactions,
       breachRecords,
       dailyAnchors,
-      payouts
+      payouts,
+      journalTemplates,
+      notifications,
+      weeklyAIReviews,
+      userGoals,
+      sharedReports,
+      feedback,
+      userGeoLogs,
+      promoRedemptions
     ] = await Promise.all([
       prisma.user.findUnique({ 
         where: { id: internalUserId },
@@ -109,14 +117,50 @@ export async function POST(request: NextRequest) {
       prisma.dashboardTemplate.findMany({ where: { userId: internalUserId } }),
       prisma.liveAccountTransaction.findMany({ where: { userId: internalUserId } }),
       prisma.breachRecord.findMany({
-        where: { PhaseAccount: { MasterAccount: { userId: internalUserId } } }
+        where: { PhaseAccount: { MasterAccount: { userId: internalUserId } } },
+        include: {
+          PhaseAccount: {
+            select: {
+              phaseId: true,
+              phaseNumber: true,
+              MasterAccount: { select: { accountName: true } },
+            },
+          },
+        },
       }),
       prisma.dailyAnchor.findMany({
-        where: { PhaseAccount: { MasterAccount: { userId: internalUserId } } }
+        where: { PhaseAccount: { MasterAccount: { userId: internalUserId } } },
+        include: {
+          PhaseAccount: {
+            select: {
+              phaseId: true,
+              phaseNumber: true,
+              MasterAccount: { select: { accountName: true } },
+            },
+          },
+        },
       }),
       prisma.payout.findMany({
-        where: { MasterAccount: { userId: internalUserId } }
-      })
+        where: { MasterAccount: { userId: internalUserId } },
+        include: {
+          MasterAccount: { select: { accountName: true } },
+          PhaseAccount: {
+            select: {
+              phaseId: true,
+              phaseNumber: true,
+              MasterAccount: { select: { accountName: true } },
+            },
+          },
+        },
+      }),
+      prisma.journalTemplate.findMany({ where: { userId: internalUserId } }),
+      prisma.notification.findMany({ where: { userId: internalUserId } }),
+      prisma.weeklyAIReview.findMany({ where: { userId: internalUserId } }),
+      prisma.userGoal.findMany({ where: { userId: internalUserId } }),
+      prisma.sharedReport.findMany({ where: { userId: internalUserId } }),
+      prisma.feedback.findMany({ where: { userId: internalUserId } }),
+      prisma.userGeoLog.findMany({ where: { userId: internalUserId } }),
+      prisma.promoRedemption.findMany({ where: { userId: internalUserId } })
     ])
 
     const modelMap = new Map(
@@ -151,15 +195,53 @@ export async function POST(request: NextRequest) {
       dashboardTemplates: dashboards.map(sanitizeUser),
       liveAccountTransactions: transactions.map(sanitizeUser),
       breachRecords: breachRecords.map((br: any) => {
-        const { id, phaseAccountId, ...rest } = br
-        return rest
+        const { id, phaseAccountId, PhaseAccount, ...rest } = br
+        return {
+          ...rest,
+          phaseId: PhaseAccount?.phaseId,
+          phaseNumber: PhaseAccount?.phaseNumber,
+          accountName: PhaseAccount?.MasterAccount?.accountName,
+        }
       }),
       dailyAnchors: dailyAnchors.map((da: any) => {
-        const { id, phaseAccountId, ...rest } = da
-        return rest
+        const { id, phaseAccountId, PhaseAccount, ...rest } = da
+        return {
+          ...rest,
+          phaseId: PhaseAccount?.phaseId,
+          phaseNumber: PhaseAccount?.phaseNumber,
+          accountName: PhaseAccount?.MasterAccount?.accountName,
+        }
       }),
       payouts: payouts.map((p: any) => {
-        const { id, masterAccountId, phaseAccountId, ...rest } = p
+        const { id, masterAccountId, phaseAccountId, MasterAccount, PhaseAccount, ...rest } = p
+        return {
+          ...rest,
+          accountName: MasterAccount?.accountName ?? PhaseAccount?.MasterAccount?.accountName,
+          phaseId: PhaseAccount?.phaseId,
+          phaseNumber: PhaseAccount?.phaseNumber,
+        }
+      }),
+      journalTemplates: journalTemplates.map(sanitizeUser),
+      notifications: notifications.map((notification: any) => {
+        const { id, userId, ...rest } = notification
+        return rest
+      }),
+      weeklyAIReviews: weeklyAIReviews.map(sanitizeUser),
+      userGoals: userGoals.map(sanitizeUser),
+      sharedReports: sharedReports.map((report: any) => {
+        const { id, userId, slug, viewCount, lastViewedAt, ...rest } = report
+        return rest
+      }),
+      feedback: feedback.map((item: any) => {
+        const { id, userId, email, ipAddress, userAgent, ...rest } = item
+        return rest
+      }),
+      userGeoLogs: userGeoLogs.map((log: any) => {
+        const { id, userId, ipAddress, userAgent, ...rest } = log
+        return rest
+      }),
+      promoRedemptions: promoRedemptions.map((redemption: any) => {
+        const { id, userId, promoCodeId, ...rest } = redemption
         return rest
       })
     }

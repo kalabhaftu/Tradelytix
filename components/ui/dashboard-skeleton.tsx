@@ -121,6 +121,27 @@ function TradeTableSkeleton({ className, style }: { className?: string; style?: 
 
 
 
+const SKELETON_ROW_HEIGHT = 80
+const SKELETON_GRID_GAP = 12
+const SKELETON_GRID_PADDING = 8
+
+function getSkeletonKind(type?: string) {
+  if (type === 'calendar' || type === 'calendarAdvanced' || type === 'calendarMini') return 'calendar'
+  if (type === 'recent-trades' || type === 'recentTrades') return 'recent-trades'
+  return 'widget'
+}
+
+function getSkeletonMinHeight(item: TemplateAwareLayoutItem) {
+  return Math.max(160, item.h * SKELETON_ROW_HEIGHT + Math.max(0, item.h - 1) * SKELETON_GRID_GAP)
+}
+
+function renderSkeletonForItem(item: TemplateAwareLayoutItem, style?: React.CSSProperties, className?: string) {
+  const kind = getSkeletonKind(item.type)
+  if (kind === 'calendar') return <CalendarWidgetSkeleton key={item.i} className={className} style={style} />
+  if (kind === 'recent-trades') return <TradeTableSkeleton key={item.i} className={className} style={style} />
+  return <WidgetSkeleton key={item.i} className={className} style={style} />
+}
+
 interface TemplateAwareLayoutItem {
   i: string
   type?: string
@@ -149,24 +170,25 @@ function GridSkeletonLayout({
 }) {
   return (
     <div
-      className={cn("gap-3", className)}
-      style={{ gridAutoRows: '76px', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+      className={cn("grid", className)}
+      style={{
+        gridAutoRows: `${SKELETON_ROW_HEIGHT}px`,
+        gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+        gap: `${SKELETON_GRID_GAP}px`,
+        padding: `${SKELETON_GRID_PADDING}px`,
+      }}
     >
       {items.map((item) => {
         const spanW = Math.max(1, Math.min(cols, item.w))
         const spanH = Math.max(1, item.h)
+        const x = Math.max(0, Math.min(cols - 1, item.x))
         const style = {
-          gridColumn: `span ${spanW} / span ${spanW}`,
-          gridRow: `span ${spanH} / span ${spanH}`,
+          gridColumn: `${x + 1} / span ${Math.min(spanW, cols - x)}`,
+          gridRow: `${Math.max(0, item.y) + 1} / span ${spanH}`,
+          minHeight: `${getSkeletonMinHeight(item)}px`,
         }
-        
-        if (item.type === 'calendar') {
-          return <CalendarWidgetSkeleton key={item.i} style={style} />
-        } else if (item.type === 'recent-trades') {
-          return <TradeTableSkeleton key={item.i} style={style} />
-        }
-        
-        return <WidgetSkeleton key={item.i} style={style} />
+
+        return renderSkeletonForItem(item, style)
       })}
     </div>
   )
@@ -182,7 +204,7 @@ export function TemplateAwareDashboardSkeleton({
   className?: string
 }) {
   const kpiWidgets = layout
-    .filter((item) => item.y === 0)
+    .filter((item) => item.y === 0 && item.h === 1)
     .sort((a, b) => a.x - b.x)
     .slice(0, 5)
 
@@ -218,16 +240,10 @@ export function TemplateAwareDashboardSkeleton({
 
       <div className="space-y-3 min-[768px]:hidden">
         {layouts.mobile.map((item) => {
-          const style = { minHeight: `${Math.max(220, item.h * 76)}px` }
-          const className = "min-h-[220px]"
-          
-          if (item.type === 'calendar') {
-            return <CalendarWidgetSkeleton key={item.i} className={className} style={style} />
-          } else if (item.type === 'recent-trades') {
-            return <TradeTableSkeleton key={item.i} className={className} style={style} />
-          }
-          
-          return <WidgetSkeleton key={item.i} className={className} style={style} />
+          const style = { minHeight: `${getSkeletonMinHeight(item)}px` }
+          const className = "min-h-[160px]"
+
+          return renderSkeletonForItem(item, style, className)
         })}
       </div>
 

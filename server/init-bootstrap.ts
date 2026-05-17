@@ -3,6 +3,7 @@ import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { cloneDefaultTemplateLayout } from '@/lib/dashboard/default-template-layout'
 import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 import { USER_SETTINGS_SELECT, mergeUserSettings } from '@/lib/user-settings'
+import { ensureActiveTemplateForUser } from '@/server/seed-default-template'
 
 interface ActiveTemplateShell {
   id: string
@@ -77,22 +78,7 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
       select: TRADE_COUNT_SELECT,
     })
 
-    const activeTemplate = await prisma.dashboardTemplate.findFirst({
-      where: {
-        userId: internalUserId,
-        isActive: true,
-      },
-      select: {
-        id: true,
-        userId: true,
-        name: true,
-        isDefault: true,
-        isActive: true,
-        layout: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    })
+    const activeTemplate = await ensureActiveTemplateForUser(internalUserId)
 
     const groupedCounts = buildGroupedTradeCountSummary(allTrades as any)
 

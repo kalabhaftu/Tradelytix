@@ -12,11 +12,9 @@ import {
   endOfMonth,
   getISOWeek,
 } from "date-fns"
-import { BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { useDashboardDisplay } from "@/hooks/use-dashboard-display"
-import { useJournalData } from "@/app/dashboard/hooks/use-journal-data"
 
 import { CalendarData } from "@/app/dashboard/types/calendar"
 import { useCalendarViewStore } from "@/store/calendar-view"
@@ -39,7 +37,6 @@ const formatCompact = (value: number) => {
 const DayCell = memo(function DayCell({
   date,
   dayData,
-  hasNotes,
   isCurrentMonth,
   hideWeekends,
   isMiniCalendar,
@@ -47,7 +44,6 @@ const DayCell = memo(function DayCell({
 }: {
   date: Date
   dayData: CalendarData[string] | undefined
-  hasNotes: boolean
   isCurrentMonth: boolean
   hideWeekends?: boolean
   isMiniCalendar?: boolean
@@ -108,11 +104,6 @@ const DayCell = memo(function DayCell({
         "flex flex-col items-center justify-center w-full h-full relative p-1",
         !isMiniCalendar && "min-[1024px]:hidden"
       )}>
-        {/* Simple Note Dot */}
-        {hasNotes && (
-          <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary" aria-label="Has notes" />
-        )}
-        
         {/* Centered Date Number for Simple View */}
         <span
           className={cn(
@@ -145,13 +136,6 @@ const DayCell = memo(function DayCell({
         "hidden flex-col w-full h-full relative p-1.5",
         !isMiniCalendar && "min-[1024px]:flex"
       )}>
-        {/* Note Icon — top left */}
-        {hasNotes && (
-          <div className="absolute top-1.5 left-1.5 opacity-80" title="Has journal entry">
-            <BookOpen className="h-[13px] w-[13px] text-foreground/70" strokeWidth={2.25} />
-          </div>
-        )}
-
         {/* Day number — top right  */}
         <span
           className={cn(
@@ -302,16 +286,6 @@ export default function MonthlyView({
   const timezone = useUserStore((state) => state.timezone)
   const isCompactAdvancedCalendar = useMediaQuery('(max-width: 1439px)')
   const shouldUseWeekdayOnlyLayout = hideWeekends || (!isMiniCalendar && isCompactAdvancedCalendar)
-  const visibleRangeStart = useMemo(
-    () => startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 }),
-    [currentDate]
-  )
-  const visibleRangeEnd = useMemo(
-    () => endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 }),
-    [currentDate]
-  )
-  const { journals } = useJournalData(visibleRangeStart, visibleRangeEnd, null)
-
   // Sunday-start weeks
   const weeks = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 })
@@ -369,14 +343,11 @@ export default function MonthlyView({
                 const dateKey = format(date, 'yyyy-MM-dd')
                 const dayData = calendarData[dateKey]
                 const isCurrentMonth = isSameMonth(date, currentDate)
-                const hasNotes = !!journals[dateKey]
-
                 return (
                   <DayCell
                     key={date.toISOString()}
                     date={date}
                     dayData={dayData}
-                    hasNotes={hasNotes}
                     isCurrentMonth={isCurrentMonth}
                     hideWeekends={shouldUseWeekdayOnlyLayout}
                     isMiniCalendar={isMiniCalendar}

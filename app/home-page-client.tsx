@@ -50,10 +50,10 @@ const PRICING_FEATURES = [
   'Unlimited trade tracking',
   'Advanced analytics dashboard',
   'Prop firm phase management',
-  'AI-powered trade reviews',
+  'AI-assisted trade reviews',
   'Custom dashboard templates',
   'Shareable performance reports',
-  'Risk & drawdown alerts',
+  'Risk and drawdown alerts',
   'Priority support',
 ]
 
@@ -177,8 +177,8 @@ export default function HomePage() {
       <section id="pricing" className="py-20 px-6 border-t border-border/40">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">Simple Pricing</h2>
-            <p className="text-muted-foreground text-sm">One plan with crypto payment through NOWPayments.</p>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">One plan. Full trading workflow.</h2>
+            <p className="text-muted-foreground text-sm">One subscription for journaling, analytics, reports, templates, and prop firm workflows.</p>
           </div>
 
           <motion.div
@@ -189,8 +189,8 @@ export default function HomePage() {
           >
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="font-bold text-lg">Pro</h3>
-                <p className="text-xs text-muted-foreground">Full access to everything</p>
+                <h3 className="font-bold text-lg">Complete</h3>
+                <p className="text-xs text-muted-foreground">Every trading workflow in one workspace</p>
               </div>
               <div className="text-right">
                 <div className="flex items-baseline gap-0.5">

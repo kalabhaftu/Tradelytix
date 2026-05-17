@@ -33,8 +33,26 @@ function setStoredSelection(value: string) {
   window.dispatchEvent(new CustomEvent('prop-firm-widget-account-change', { detail: value }))
 }
 
+function getCurrentPhase(account: DashboardPropFirmAccountOption) {
+  return account.PhaseAccount?.find((phase) => phase.phaseNumber === account.currentPhase) ?? null
+}
+
+function isSelectableChallengeAccount(account: DashboardPropFirmAccountOption) {
+  const accountStatus = String(account.status || '').toLowerCase()
+  const currentPhase = getCurrentPhase(account)
+  const currentPhaseStatus = String(currentPhase?.status || '').toLowerCase()
+  const evaluationType = String(account.evaluationType || '').toLowerCase()
+
+  return (
+    accountStatus === 'active' &&
+    currentPhaseStatus === 'active' &&
+    !evaluationType.includes('instant') &&
+    !evaluationType.includes('funded')
+  )
+}
+
 function getPreferredAccount(accounts: DashboardPropFirmAccountOption[]) {
-  return accounts.find((account) => ['active', 'funded'].includes(String(account.status).toLowerCase())) ?? accounts[0] ?? null
+  return accounts[0] ?? null
 }
 
 export function useDashboardPropFirmAccount() {
@@ -56,7 +74,7 @@ export function useDashboardPropFirmAccount() {
           throw new Error(payload.error || 'Failed to load prop firm accounts')
         }
 
-        const nextAccounts = Array.isArray(payload.data) ? payload.data : []
+        const nextAccounts = (Array.isArray(payload.data) ? payload.data : []).filter(isSelectableChallengeAccount)
         if (cancelled) return
 
         setAccounts(nextAccounts)

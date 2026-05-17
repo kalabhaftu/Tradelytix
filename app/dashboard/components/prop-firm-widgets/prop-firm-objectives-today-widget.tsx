@@ -5,7 +5,9 @@ import { cn } from '@/lib/utils'
 import { PropFirmWidgetShell } from './prop-firm-widget-shell'
 import { clampPercent, formatInteger, formatMoney, formatPercent, getObjectiveTone } from './prop-firm-widget-utils'
 
-function ObjectiveCard({ title, icon: Icon, current, limit, remaining, progress, danger }: any) {
+function ObjectiveCard({ title, icon: Icon, rows, progress, danger }: any) {
+  const remainingRow = rows.find((row: any) => row.tone === 'remaining')
+  const remaining = Number(remainingRow?.rawValue ?? 0)
   const tone = danger || getObjectiveTone(remaining) === 'short' ? 'short' : 'long'
   return (
     <div className="rounded-xl border border-border/25 bg-card/55 p-4">
@@ -21,10 +23,15 @@ function ObjectiveCard({ title, icon: Icon, current, limit, remaining, progress,
       <div className="h-2 overflow-hidden rounded-full bg-muted/35">
         <div className={cn('h-full rounded-full', tone === 'long' ? 'bg-long' : 'bg-short')} style={{ width: `${clampPercent(progress)}%` }} />
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
-        <div><p className="text-muted-foreground">Current</p><p className="font-mono font-bold">{formatMoney(current)}</p></div>
-        <div><p className="text-muted-foreground">Limit</p><p className="font-mono font-bold">{formatMoney(limit)}</p></div>
-        <div><p className="text-muted-foreground">Remaining</p><p className={cn('font-mono font-bold', remaining <= 0 ? 'text-short' : 'text-long')}>{formatMoney(remaining)}</p></div>
+      <div className="mt-4 divide-y divide-border/20 rounded-lg border border-border/20 bg-background/20">
+        {rows.map((row: any) => (
+          <div key={row.label} className="flex items-center justify-between gap-3 px-3 py-2 text-xs">
+            <span className="text-muted-foreground">{row.label}</span>
+            <span className={cn('font-mono font-bold', row.tone === 'positive' && 'text-long', row.tone === 'negative' && 'text-short', row.tone === 'remaining' && (remaining <= 0 ? 'text-short' : 'text-long'))}>
+              {row.value}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -61,9 +68,38 @@ export function PropFirmObjectivesTodayWidget() {
         return (
           <div className="grid h-full gap-4 xl:grid-cols-[1.35fr_0.85fr]">
             <div className="grid gap-3 lg:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
-              <ObjectiveCard title="Profit target" icon={Target} current={grossPnl} limit={targetAmount} remaining={Math.max(0, targetAmount - grossPnl)} progress={targetAmount > 0 ? (grossPnl / targetAmount) * 100 : 0} />
-              <ObjectiveCard title="Maximum loss limit" icon={ShieldAlert} current={maxUsed} limit={maxLossLimit} remaining={maxRemaining} progress={maxLossLimit > 0 ? (maxUsed / maxLossLimit) * 100 : 0} danger={maxRemaining <= maxLossLimit * 0.25} />
-              <ObjectiveCard title="Daily loss limit" icon={CalendarClock} current={dailyUsed} limit={dailyLossLimit} remaining={dailyRemaining} progress={dailyLossLimit > 0 ? (dailyUsed / dailyLossLimit) * 100 : 0} danger={dailyRemaining <= dailyLossLimit * 0.25} />
+              <ObjectiveCard
+                title="Profit target"
+                icon={Target}
+                progress={targetAmount > 0 ? (grossPnl / targetAmount) * 100 : 0}
+                rows={[
+                  { label: 'Current result', value: formatMoney(grossPnl), tone: grossPnl >= 0 ? 'positive' : 'negative' },
+                  { label: 'Total profits target', value: formatMoney(targetAmount) },
+                  { label: 'Remaining', value: formatMoney(Math.max(0, targetAmount - grossPnl)), rawValue: Math.max(0, targetAmount - grossPnl), tone: 'remaining' },
+                ]}
+              />
+              <ObjectiveCard
+                title="Maximum loss limit"
+                icon={ShieldAlert}
+                progress={maxLossLimit > 0 ? (maxUsed / maxLossLimit) * 100 : 0}
+                danger={maxRemaining <= maxLossLimit * 0.25}
+                rows={[
+                  { label: 'Current drawdown used', value: formatMoney(maxUsed), tone: maxUsed > 0 ? 'negative' : undefined },
+                  { label: 'Drawdown limit', value: formatMoney(maxLossLimit) },
+                  { label: 'Remaining', value: formatMoney(maxRemaining), rawValue: maxRemaining, tone: 'remaining' },
+                ]}
+              />
+              <ObjectiveCard
+                title="Daily loss limit"
+                icon={CalendarClock}
+                progress={dailyLossLimit > 0 ? (dailyUsed / dailyLossLimit) * 100 : 0}
+                danger={dailyRemaining <= dailyLossLimit * 0.25}
+                rows={[
+                  { label: 'Today drawdown used', value: formatMoney(dailyUsed), tone: dailyUsed > 0 ? 'negative' : undefined },
+                  { label: 'Daily drawdown limit', value: formatMoney(dailyLossLimit) },
+                  { label: 'Remaining today', value: formatMoney(dailyRemaining), rawValue: dailyRemaining, tone: 'remaining' },
+                ]}
+              />
             </div>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
               <StatTile label="Today P&L" icon={Activity} value={formatMoney(data.todayStats.pnl)} tone={data.todayStats.pnl >= 0 ? 'positive' : 'negative'} />

@@ -3,6 +3,17 @@
 import { useEffect, useRef } from 'react'
 import { logger } from '@/lib/logger'
 
+function isNextRedirectError(error: unknown): boolean {
+  if (!error) return false
+
+  const message = error instanceof Error ? error.message : String(error)
+  const digest = typeof error === 'object' && error !== null && 'digest' in error
+    ? String(error.digest)
+    : ''
+
+  return message.includes('NEXT_REDIRECT') || digest.startsWith('NEXT_REDIRECT')
+}
+
 /**
  * Client-side error reporter.
  * Captures unhandled errors and promise rejections, sends to centralized logger.
@@ -13,6 +24,8 @@ export function ClientErrorReporter() {
 
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
+      if (isNextRedirectError(event.error || event.message)) return
+
       const key = `${event.message}:${event.filename}:${event.lineno}`
       if (sentErrors.current.has(key)) return
       sentErrors.current.add(key)
@@ -30,9 +43,11 @@ export function ClientErrorReporter() {
 
     const handleRejection = (event: PromiseRejectionEvent) => {
       const error = event.reason
+      if (isNextRedirectError(error)) return
+
       const message = error?.message || String(error) || 'Unhandled Promise Rejection'
       const key = `rejection:${message}`
-      
+
       if (sentErrors.current.has(key)) return
       sentErrors.current.add(key)
 

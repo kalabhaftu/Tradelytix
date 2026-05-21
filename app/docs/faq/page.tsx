@@ -7,10 +7,10 @@ export default function FAQDocsPage() {
       title="FAQ & Troubleshooting"
       description="Common questions about sign-in, imports, dashboard totals, and where to look when something feels off."
     >
-      <DocsSection title="Is Deltalytix free?" className="scroll-mt-24" >
-        <div id="is-deltalytix-free" />
+      <DocsSection title="Is Tradelytix free?" className="scroll-mt-24" >
+        <div id="is-tradelytix-free" />
         <p>
-          Yes. Deltalytix is available as a free trading journal and analytics product. Donation
+          Yes. Tradelytix is available as a free trading journal and analytics product. Donation
           support helps cover hosting and ongoing maintenance.
         </p>
       </DocsSection>

@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     select: { title: true },
   })
   return {
-    title: report?.title ? `${report.title} | Deltalytix` : 'Shared Trading Report | Deltalytix',
+    title: report?.title ? `${report.title} | Tradelytix` : 'Shared Trading Report | Tradelytix',
     description: 'View this shared trading performance report',
   }
 }

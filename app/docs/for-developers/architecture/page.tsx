@@ -7,7 +7,7 @@ export default function ArchitectureDocsPage() {
     <DocsPage
       badge="For Developers"
       title="Architecture"
-      description="Deltalytix is organized around a few stable product systems: public support surfaces, an authenticated dashboard shell, shared UI primitives, and server-owned analytics/data flows."
+      description="Tradelytix is organized around a few stable product systems: public support surfaces, an authenticated dashboard shell, shared UI primitives, and server-owned analytics/data flows."
     >
       <DocsSection title="Main architectural layers">
         <DocsCardGrid>

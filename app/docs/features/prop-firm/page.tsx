@@ -7,7 +7,7 @@ export default function PropFirmDocsPage() {
     <DocsPage
       badge="Feature Guide"
       title="Prop Firm Tracking"
-      description="Deltalytix tracks prop-firm accounts at the master-account level so reporting reflects the real lifecycle of an evaluation instead of treating every historical phase like an active account."
+      description="Tradelytix tracks prop-firm accounts at the master-account level so reporting reflects the real lifecycle of an evaluation instead of treating every historical phase like an active account."
     >
       <DocsSection title="Tracking model">
         <DocsCardGrid>

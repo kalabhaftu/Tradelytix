@@ -81,7 +81,7 @@ export default function FeedbackPage() {
         </div>
         <h1 className="text-2xl font-bold mb-2">Thank You!</h1>
         <p className="text-muted-foreground max-w-md">
-          Your feedback has been submitted successfully. We appreciate you taking the time to help us improve Deltalytix.
+          Your feedback has been submitted successfully. We appreciate you taking the time to help us improve Tradelytix.
         </p>
         <Button className="mt-6" onClick={() => { setSubmitted(false); setCategory(''); setSubject(''); setMessage(''); setFiles([]) }}>
           Submit Another

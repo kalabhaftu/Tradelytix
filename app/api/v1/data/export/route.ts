@@ -374,7 +374,7 @@ export async function POST(request: NextRequest) {
     return new NextResponse(stream as any, {
       headers: {
         'Content-Type': 'application/zip',
-        'Content-Disposition': `attachment; filename="deltalytix-export-${new Date().toISOString().split('T')[0]}.zip"`
+        'Content-Disposition': `attachment; filename="tradelytix-export-${new Date().toISOString().split('T')[0]}.zip"`
       }
     })
 

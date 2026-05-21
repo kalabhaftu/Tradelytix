@@ -1194,7 +1194,7 @@ export default function SettingsPage() {
                 variant="outline"
                 className="gap-2"
                 onClick={() => {
-                  localStorage.removeItem('deltalytix_user_data')
+                  localStorage.removeItem('tradelytix_user_data')
                   signOut()
                 }}
               >

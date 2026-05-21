@@ -67,7 +67,7 @@ export default function SubscribeSuccessPage() {
       >
         <div className="flex items-center justify-center gap-2 mb-8">
           <Logo className="w-8 h-8" />
-          <span className="text-lg font-bold tracking-tight">Deltalytix</span>
+          <span className="text-lg font-bold tracking-tight">Tradelytix</span>
         </div>
 
         {status === 'checking' && (
@@ -94,7 +94,7 @@ export default function SubscribeSuccessPage() {
             </motion.div>
             <h1 className="text-xl font-semibold">Payment Confirmed!</h1>
             <p className="text-sm text-muted-foreground">
-              Your subscription is now active. Welcome to Deltalytix Pro!
+              Your subscription is now active. Welcome to Tradelytix Pro!
             </p>
             <Button onClick={() => {
               router.refresh()

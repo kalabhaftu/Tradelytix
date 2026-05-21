@@ -195,7 +195,7 @@ export function SharedReportView({ report }: Props) {
             )}
 
             <footer className="flex flex-col gap-2 border-t border-slate-200 px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 md:flex-row md:items-center md:justify-between">
-              <span>Generated with Deltalytix</span>
+              <span>Generated with Tradelytix</span>
               <span className="flex items-center gap-1.5">
                 <LockKeyhole className="h-3.5 w-3.5" />
                 Read-only public snapshot

@@ -37,7 +37,7 @@ export function WeeklyReviewTrigger() {
       startOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 }),
       'yyyy-MM-dd'
     )
-    const sessionKey = `deltalytix_weekly_review_checked_${internalUser.id}_${reviewWeekKey}`
+    const sessionKey = `tradelytix_weekly_review_checked_${internalUser.id}_${reviewWeekKey}`
     if (sessionStorage.getItem(sessionKey)) return
 
     const scheduleRetry = () => {

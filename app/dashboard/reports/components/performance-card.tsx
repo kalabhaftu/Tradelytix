@@ -77,7 +77,7 @@ export function PerformanceCard({ period, stats, userName }: PerformanceCardProp
                 const url = URL.createObjectURL(blob)
                 const a = document.createElement('a')
                 a.href = url
-                a.download = `deltalytix-performance-${Date.now()}.png`
+                a.download = `tradelytix-performance-${Date.now()}.png`
                 a.style.display = 'none'
                 document.body.appendChild(a)
                 a.click()
@@ -96,7 +96,7 @@ export function PerformanceCard({ period, stats, userName }: PerformanceCardProp
     const handleCopyStats = useCallback(() => {
         const sign = isProfit ? '+' : '-'
         const text = [
-            `DELTALYTIX PERFORMANCE REPORT`,
+            `TRADELYTIX PERFORMANCE REPORT`,
             `Period: ${period.toUpperCase()}`,
             `Trader: ${displayName}`,
             ``,
@@ -108,7 +108,7 @@ export function PerformanceCard({ period, stats, userName }: PerformanceCardProp
             `Worst Streak:  ${stats.longestLoseStreak} losses`,
             `Trades/Month:  ${stats.avgTradesPerMonth}`,
             ``,
-            `Verified via Deltalytix`,
+            `Verified via Tradelytix`,
         ].join('\n')
 
         navigator.clipboard.writeText(text).then(() => {
@@ -216,7 +216,7 @@ export function PerformanceCard({ period, stats, userName }: PerformanceCardProp
 
                     <div className="flex items-center gap-1.5 opacity-40">
                         <Logo className="w-3.5 h-3.5" />
-                        <span className="text-[9px] font-black tracking-tighter uppercase">Deltalytix</span>
+                        <span className="text-[9px] font-black tracking-tighter uppercase">Tradelytix</span>
                     </div>
                 </div>
             </div>

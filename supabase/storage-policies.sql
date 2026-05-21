@@ -1,4 +1,4 @@
--- Supabase Storage hardening policy draft for Deltalytix.
+-- Supabase Storage hardening policy draft for Tradelytix.
 --
 -- IMPORTANT:
 -- The application currently stores public Supabase URLs for trade images and

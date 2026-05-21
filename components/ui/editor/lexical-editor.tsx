@@ -180,7 +180,7 @@ export function LexicalEditor({
   const initialEditorState = toLexicalStateString(value)
 
   const initialConfig = {
-    namespace: 'DeltalytixEditor',
+    namespace: 'TradelytixEditor',
     theme,
     editorState: initialEditorState,
     nodes: [

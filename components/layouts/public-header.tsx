@@ -42,7 +42,7 @@ export async function PublicHeader({
         >
           <Logo className="h-7 w-7 shrink-0" />
           <div className="min-w-0">
-            <p className="truncate text-sm font-black tracking-tight">Deltalytix</p>
+            <p className="truncate text-sm font-black tracking-tight">Tradelytix</p>
           </div>
         </Link>
 

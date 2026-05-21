@@ -23,7 +23,7 @@ export default function PrivacyPage() {
           <div className="flex items-center gap-3">
             <Logo className="w-8 h-8" />
             <span className="text-lg font-bold tracking-tight text-foreground">
-              Deltalytix
+              Tradelytix
             </span>
           </div>
           <Button
@@ -49,7 +49,7 @@ export default function PrivacyPage() {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold">Our Approach</h2>
             <p className="text-muted-foreground leading-relaxed text-sm">
-              Deltalytix is a personal trading analytics dashboard. We believe in absolute privacy and data ownership. 
+              Tradelytix is a personal trading analytics dashboard. We believe in absolute privacy and data ownership. 
               The application is designed to give you full control over your trading data.
             </p>
           </section>
@@ -83,7 +83,7 @@ export default function PrivacyPage() {
 
           <footer className="pt-10 border-t border-border/40">
             <p className="text-[11px] text-muted-foreground uppercase tracking-widest font-medium">
-              &copy; {new Date().getFullYear()} Deltalytix — Privacy First
+              &copy; {new Date().getFullYear()} Tradelytix — Privacy First
             </p>
           </footer>
         </div>

@@ -25,8 +25,8 @@ export default function DocsHome() {
   return (
     <DocsPage
       badge="Documentation"
-      title="Deltalytix Knowledge Base"
-      description="Use these guides to get started, understand the product surface, and navigate the parts of Deltalytix you actually use day to day."
+      title="Tradelytix Knowledge Base"
+      description="Use these guides to get started, understand the product surface, and navigate the parts of Tradelytix you actually use day to day."
     >
       <DocsSection
         title="Start here"
@@ -126,7 +126,7 @@ export default function DocsHome() {
             {
               href: '/docs/donate',
               label: 'Support the project',
-              description: 'Donation options and non-code ways to support Deltalytix.',
+              description: 'Donation options and non-code ways to support Tradelytix.',
             },
           ]}
         />

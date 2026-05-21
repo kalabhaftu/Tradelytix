@@ -68,7 +68,7 @@ export default function SubscribeStatusPage() {
         <CardContent className="pt-6 text-center space-y-6">
           <div className="flex items-center justify-center gap-2">
             <Logo className="h-8 w-8" />
-            <span className="text-lg font-bold tracking-tight">Deltalytix</span>
+            <span className="text-lg font-bold tracking-tight">Tradelytix</span>
           </div>
 
           {loading ? (

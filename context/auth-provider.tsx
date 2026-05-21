@@ -192,7 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     lastSyncedSessionRef.current = null
     
     // Clear any cached auth data
-    localStorage.removeItem('deltalytix_user_data')
+    localStorage.removeItem('tradelytix_user_data')
     // Clear Supabase auth tokens (they start with 'sb-')
     clearBrowserAuthStorage()
   }, [clearBrowserAuthStorage, resetUser, setSupabaseUser])

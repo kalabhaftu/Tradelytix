@@ -1,90 +1,91 @@
-# Deltalytix
+# Tradelytix
 
-Deltalytix is a comprehensive personal trading analytics platform designed to help traders journal, track, and improve their performance. It provides deep insights into trading habits through advanced metrics like the Zella Score, supports multiple account types (Master, Phase, Live), and offers a rich dashboard for data visualization.
+Tradelytix is a trading analytics and journaling platform built to help traders find consistency through the charts. It combines trade tracking, account analytics, journaling, reports, prop-firm workflows, and data-management tools in one dashboard.
 
-> **Note**: This project is a fork of [Deltalytix](https://github.com/hugodemenez/deltalytix/) by Hugo De Menez.
+## What Tradelytix helps with
 
-## Features
+- Track trading performance across master, phase, live, and linked accounts.
+- Review PnL, equity curves, win rate, profit factor, risk/reward, drawdown, and consistency metrics.
+- Journal trades with screenshots, tags, setups, emotions, notes, and execution details.
+- Build and refine playbooks with entry, target, confirmation, confluence, risk, and exit rules.
+- Analyze daily and weekly behavior through calendar views, daily notes, and weekly reviews.
+- Manage prop-firm challenges, objectives, phase transitions, payouts, and reference values.
+- Import, export, back up, and clean trading data with user-controlled data tools.
+- Share read-only reports with public links when needed.
 
-### 1. Account Management
-- **Master Accounts**: Track overall progress across different funding programs or personal accounts.
-- **Phase Accounts**: specifically designed for prop firm challenges (Evaluation, Verification, Funded phases).
-- **Live Accounts**: Monitor real money trading performance.
-- **Linked Accounts**: View and manage multiple accounts in a unified interface.
+## Tech stack
 
-### 2. Advanced Analytics & Journaling
-- **Zella Score**: A proprietary scoring system (0-100) specifically calibrated for trader performance, weighing metrics like Recovery Factor, Win Rate, Profit Factor, and Consistency.
-- **Trade Journaling**: Detailed trade entry with support for:
-    - Custom tags and strategies.
-    - Screenshot attachments.
-    - Emotional state tracking.
-    - Setup and exit reasoning.
-- **Performance Statistics**: comprehensive breakdown of win rates, risk/reward ratios, average win/loss, and more, grouped by execution to handle partial closes correctly.
-- **Backtesting Support**: Log and analyze backtested trades alongside live performance.
-
-### 3. Dashboard & Visualization
-- **Interactive Charts**: Visualizations for PnL, equity curves, and volume using Recharts and Lightweight Charts.
-- **Calendar View**: Monthly performance overview with daily PnL and trade counts.
-- **Customizable Widgets**: Tailor the dashboard layout to focus on the metrics that matter most.
-
-### 4. Productivity Tools
-- **Daily Notes**: Capture thoughts, market observations, and psychological state for each trading day.
-- **Weekly Reviews**: Structured review process to analyze weekly performance against expectations.
-- **Notifications**: Alerts for phase transitions, payouts, and system events.
-
-## Tech Stack
-
-- **Framework**: [Next.js 15](https://nextjs.org/) (App Router, Turbo)
+- **Framework**: Next.js App Router
 - **Language**: TypeScript
-- **Styling**: Tailwind CSS, Shadcn UI, Framer Motion
-- **Database**: PostgreSQL (via Supabase)
+- **Styling**: Tailwind CSS, shadcn/ui, Framer Motion
+- **Database**: PostgreSQL via Supabase
 - **ORM**: Prisma
-- **State Management**: Zustand, React Query (TanStack Query)
-- **Authentication**: Supabase Auth
-- **Utilities**: `date-fns`, `xlsx` (Excel export), `jspdf` (PDF reports)
+- **Auth**: Supabase Auth
+- **State/data**: Zustand and TanStack Query
+- **Reports/exports**: PDF, image, CSV, Excel, and JSON export utilities
+- **Testing**: Vitest, ESLint, TypeScript checks, Playwright support
 
-## Getting Started
+## Getting started
 
 ### Prerequisites
 
-- Node.js (Latest LTS recommended)
-- npm or pnpm
+- Node.js LTS
+- npm
+- PostgreSQL/Supabase project credentials
 
 ### Installation
 
-1.  Clone the repository:
-    ```bash
-    git clone <repository-url>
-    cd deltalytixC
-    ```
+```bash
+git clone <repository-url>
+cd <project-directory>
+npm install
+```
 
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
+### Environment
 
-3.  Set up environment variables:
-    - Copy `.env.example` to `.env` (if available) or ensure you have the required Supabase and Database credentials:
-        - `NEXT_PUBLIC_SUPABASE_URL`
-        - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-        - `DATABASE_URL`
-        - `DIRECT_URL`
+Create `.env` and `.env.local` with the required app, database, Supabase, auth, payment, and admin values for your environment. At minimum, local development usually needs:
 
-4.  Generate Prisma client:
-    ```bash
-    npx prisma generate
-    ```
+```bash
+DATABASE_URL=
+DIRECT_URL=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_APP_NAME=Tradelytix
+```
 
-### Running the App
+Then generate the Prisma client:
 
-To run the development server:
+```bash
+npx prisma generate
+```
+
+### Run locally
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
+
+## Useful scripts
+
+```bash
+npm run type-check   # TypeScript validation
+npm run lint         # ESLint checks
+npm test -- --run    # Vitest suite
+npm run build        # Production build
+npx prisma studio    # Inspect local database data
+```
+
+## Project notes
+
+- Keep production-facing branding as **Tradelytix**.
+- Use `https://www.tradelytix.eu.cc` for production URLs.
+- Do not commit real secrets. Keep credentials in local environment files or deployment secrets.
+- Review Supabase storage and database policies before production changes.
 
 ## License
 
-Personal Use / Proprietary.
+Copyright (c) 2026-present Tradelytix.
+All rights reserved unless a separate written license says otherwise.

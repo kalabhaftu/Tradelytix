@@ -71,7 +71,7 @@ const docsNavigation: DocsNavSection[] = [
         title: 'FAQ & Troubleshooting',
         href: '/docs/faq',
         subsections: [
-          { title: 'Is Deltalytix free?', href: '/docs/faq#is-deltalytix-free' },
+          { title: 'Is Tradelytix free?', href: '/docs/faq#is-tradelytix-free' },
           { title: 'What can I import?', href: '/docs/faq#what-can-i-import' },
           { title: 'Where is my data stored?', href: '/docs/faq#where-is-my-data-stored' },
           { title: 'Why does the dashboard look empty?', href: '/docs/faq#why-does-the-dashboard-look-empty' },

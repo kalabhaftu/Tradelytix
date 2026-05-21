@@ -69,7 +69,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Logo className="w-7 h-7" />
-            <span className="font-bold tracking-tight">Deltalytix</span>
+            <span className="font-bold tracking-tight">Tradelytix</span>
           </div>
           <div className="flex items-center gap-3">
             <Button
@@ -111,7 +111,7 @@ export default function HomePage() {
               Trading journal and analytics
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] mb-4">
-              Deltalytix{' '}
+              Tradelytix{' '}
               <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                 Pro
               </span>
@@ -229,7 +229,7 @@ export default function HomePage() {
           <div className="flex items-center gap-2">
             <Logo className="w-5 h-5" />
             <span className="text-xs text-muted-foreground">
-              &copy; {new Date().getFullYear()} Deltalytix. All rights reserved.
+              &copy; {new Date().getFullYear()} Tradelytix. All rights reserved.
             </span>
           </div>
           <div className="flex items-center gap-4">

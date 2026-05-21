@@ -70,7 +70,7 @@ export default async function ContactPage() {
                   <div>
                     <h3 className="font-bold mb-1">Support the Project</h3>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Want to help keep Deltalytix free? Consider a crypto donation.
+                      Want to help keep Tradelytix free? Consider a crypto donation.
                     </p>
                     <Button asChild variant="outline" size="sm">
                       <Link href="/donate">Donate</Link>

@@ -20,10 +20,37 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
+type RuleCategory = 'entry' | 'target' | 'confirmation' | 'confluence' | 'exit' | 'risk' | 'general'
+
 interface Rule {
   text: string
-  category: 'entry' | 'exit' | 'risk' | 'general'
+  category: RuleCategory
 }
+
+const DEFAULT_RULES: Rule[] = [
+  { text: '', category: 'entry' },
+  { text: '', category: 'target' },
+  { text: '', category: 'confirmation' },
+  { text: '', category: 'confluence' }
+]
+
+const RULE_CATEGORIES: { value: RuleCategory; label: string; placeholder: string }[] = [
+  { value: 'entry', label: 'Entry', placeholder: 'What must be true before entering?' },
+  { value: 'target', label: 'Target', placeholder: 'Where is the trade expected to reach?' },
+  { value: 'confirmation', label: 'Confirm', placeholder: 'What confirms execution?' },
+  { value: 'confluence', label: 'Confluence', placeholder: 'What supporting factors strengthen the setup?' },
+  { value: 'exit', label: 'Exit', placeholder: 'Legacy exit rule...' },
+  { value: 'risk', label: 'Risk', placeholder: 'Legacy risk rule...' },
+  { value: 'general', label: 'General', placeholder: 'Define specific condition...' },
+]
+
+const normalizeRule = (rule: Rule | string): Rule => {
+  if (typeof rule === 'string') return { text: rule, category: 'general' }
+  const category = RULE_CATEGORIES.some(item => item.value === rule.category) ? rule.category : 'general'
+  return { text: rule.text || '', category }
+}
+
+const normalizeSetups = (value?: string[]) => Array.isArray(value) ? value.filter(Boolean) : []
 
 interface TradingModel {
   id: string
@@ -45,11 +72,7 @@ interface AddEditModelModalProps {
 
 export function AddEditModelModal({ isOpen, onClose, onSave, model, mode }: AddEditModelModalProps) {
   const [name, setName] = useState('')
-  const [rules, setRules] = useState<Rule[]>([
-    { text: '', category: 'entry' },
-    { text: '', category: 'exit' },
-    { text: '', category: 'risk' }
-  ])
+  const [rules, setRules] = useState<Rule[]>(DEFAULT_RULES)
   const [setups, setSetups] = useState<string[]>([])
   const [newSetup, setNewSetup] = useState('')
   const [notes, setNotes] = useState('')
@@ -64,24 +87,13 @@ export function AddEditModelModal({ isOpen, onClose, onSave, model, mode }: AddE
         setName(model.name)
         // Handle migration from string[] to Rule[]
         const modelRules = Array.isArray(model.rules) ? model.rules : []
-        const formattedRules = modelRules.map((r: any) => {
-          if (typeof r === 'string') return { text: r, category: 'general' as const }
-          return r as Rule
-        })
-        setRules(formattedRules.length > 0 ? [...formattedRules] : [
-          { text: '', category: 'entry' },
-          { text: '', category: 'exit' },
-          { text: '', category: 'risk' }
-        ])
-        setSetups(Array.isArray(model.setups) ? [...model.setups] : [])
+        const formattedRules = modelRules.map(normalizeRule)
+        setRules(formattedRules.length > 0 ? [...formattedRules] : DEFAULT_RULES)
+        setSetups(normalizeSetups(model.setups))
         setNotes(model.notes || '')
       } else {
         setName('')
-        setRules([
-          { text: '', category: 'entry' },
-          { text: '', category: 'exit' },
-          { text: '', category: 'risk' }
-        ])
+        setRules(DEFAULT_RULES)
         setSetups([])
         setNewSetup('')
         setNotes('')
@@ -96,21 +108,19 @@ export function AddEditModelModal({ isOpen, onClose, onSave, model, mode }: AddE
 
     if (mode === 'edit' && model) {
       const nameChanged = name !== model.name
-      
-      // Normalize both sides for comparison
-      const currentRules = rules.filter(r => r.text.trim())
-      const modelRules = (model.rules || []).map((r: any) => {
-        if (typeof r === 'string') return { text: r, category: 'general' }
-        return { text: r.text, category: r.category }
-      })
+      const currentRules = rules.filter(r => r.text.trim()).map(normalizeRule)
+      const modelRules = (model.rules || []).map(normalizeRule)
+      const currentSetups = normalizeSetups(setups)
+      const modelSetups = normalizeSetups(model.setups)
 
       const rulesChanged = JSON.stringify(currentRules) !== JSON.stringify(modelRules)
+      const setupsChanged = JSON.stringify(currentSetups) !== JSON.stringify(modelSetups)
       const notesChanged = notes !== (model.notes || '')
-      setHasChanges(nameChanged || rulesChanged || notesChanged)
+      setHasChanges(nameChanged || rulesChanged || setupsChanged || notesChanged)
     } else {
-      setHasChanges(name.trim() !== '' || rules.some(r => r.text.trim() !== '') || notes.trim() !== '')
+      setHasChanges(name.trim() !== '' || rules.some(r => r.text.trim() !== '') || setups.length > 0 || notes.trim() !== '')
     }
-  }, [name, rules, notes, model, mode, isOpen])
+  }, [name, rules, setups, notes, model, mode, isOpen])
 
   const handleAddRule = () => {
     setRules([...rules, { text: '', category: 'general' }])
@@ -206,40 +216,44 @@ export function AddEditModelModal({ isOpen, onClose, onSave, model, mode }: AddE
                 </Button>
               </div>
               <div className="space-y-3">
-                {rules.map((rule, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <Select value={rule.category} onValueChange={(v) => handleRuleChange(index, 'category', v as any)}>
-                      <SelectTrigger className="h-10 w-[90px] shrink-0 text-[10px] font-black uppercase tracking-tighter border-border/40 bg-background">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="entry" className="text-[10px] font-bold uppercase">Entry</SelectItem>
-                        <SelectItem value="exit" className="text-[10px] font-bold uppercase">Exit</SelectItem>
-                        <SelectItem value="risk" className="text-[10px] font-bold uppercase">Risk</SelectItem>
-                        <SelectItem value="general" className="text-[10px] font-bold uppercase">Gen</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      placeholder="Define specific condition..."
-                      className="font-medium text-sm h-10 bg-muted/10 border-border/40"
-                      value={rule.text}
-                      onChange={(e) => handleRuleChange(index, 'text', e.target.value)}
-                      maxLength={100}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemoveRule(index)}
-                      className="h-10 w-10 shrink-0 opacity-40 hover:opacity-100 transition-opacity"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                {rules.map((rule, index) => {
+                  const category = RULE_CATEGORIES.find(item => item.value === rule.category) || RULE_CATEGORIES[RULE_CATEGORIES.length - 1]
+                  return (
+                    <div key={index} className="flex items-center gap-3">
+                      <Select value={rule.category} onValueChange={(v) => handleRuleChange(index, 'category', v as RuleCategory)}>
+                        <SelectTrigger className="h-10 w-[118px] shrink-0 text-[10px] font-black uppercase tracking-tighter border-border/40 bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {RULE_CATEGORIES.map(item => (
+                            <SelectItem key={item.value} value={item.value} className="text-[10px] font-bold uppercase">
+                              {item.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        placeholder={category.placeholder}
+                        className="font-medium text-sm h-10 bg-muted/10 border-border/40"
+                        value={rule.text}
+                        onChange={(e) => handleRuleChange(index, 'text', e.target.value)}
+                        maxLength={100}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveRule(index)}
+                        className="h-10 w-10 shrink-0 opacity-40 hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )
+                })}
               </div>
               <p className="text-[10px] text-muted-foreground/50 font-medium italic">
-                Structured protocols ensure consistency. Define criteria for entry, exit, and risk management.
+                Structured protocols ensure consistency. Define Entry, Target, Confirmation, and Confluence rules for the setup.
               </p>
             </div>
 

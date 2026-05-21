@@ -8,16 +8,51 @@ import { randomUUID } from 'crypto'
 import { calculateWinRate, classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { getRuntimeBreakEvenThreshold } from '@/server/user-settings'
 
+const ruleCategorySchema = z.enum(['entry', 'target', 'confirmation', 'confluence', 'exit', 'risk', 'general'])
+
 const ruleSchema = z.object({
   text: z.string(),
-  category: z.enum(['entry', 'exit', 'risk', 'general'])
+  category: ruleCategorySchema
 })
 
 const tradingModelSchema = z.object({
   name: z.string().min(1, 'Model name is required').max(100),
   rules: z.array(ruleSchema).default([]),
+  setups: z.array(z.string()).default([]),
   notes: z.string().nullable().optional(),
 })
+
+function boundedList(value: string | null, max = 50) {
+  if (!value) return []
+  return value
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean)
+    .slice(0, max)
+}
+
+function buildTradeFilterWhere(params: URLSearchParams) {
+  const accounts = boundedList(params.get('accounts'))
+  const dateFrom = params.get('dateFrom')
+  const dateTo = params.get('dateTo')
+  const where: Record<string, unknown> = {}
+
+  if (accounts.length > 0) {
+    where.OR = [
+      { accountNumber: { in: accounts } },
+      { phaseAccountId: { in: accounts } },
+    ]
+  }
+
+  if (dateFrom || dateTo) {
+    where.entryDate = {
+      ...(dateFrom ? { gte: dateFrom.includes('T') ? dateFrom : `${dateFrom}T00:00:00.000Z` } : {}),
+      ...(dateTo ? { lte: dateTo.includes('T') ? dateTo : `${dateTo}T23:59:59.999Z` } : {}),
+    }
+  }
+
+  return where
+}
 
 // GET - List all trading models for user
 export async function GET(request: NextRequest) {
@@ -37,6 +72,7 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' },
         include: {
           Trade: {
+            where: buildTradeFilterWhere(request.nextUrl.searchParams),
             select: {
               pnl: true,
               selectedRules: true
@@ -173,6 +209,7 @@ export async function POST(request: NextRequest) {
         userId,
         name: validated.name,
         rules: validated.rules,
+        setups: validated.setups,
         notes: validated.notes,
       },
     })

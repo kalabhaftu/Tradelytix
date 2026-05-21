@@ -66,7 +66,10 @@ export function useDataProviderTradeMutations({
     })
 
     try {
-      await updateTradesAction(tradeIds, update)
+      const updatedCount = await updateTradesAction(tradeIds, update)
+      if (updatedCount < tradeIds.length) {
+        throw new Error('Trade update did not save. Refresh and try again.')
+      }
       await queryClient.invalidateQueries({ queryKey: ['v1', 'trades'] })
     } catch (error) {
       await queryClient.invalidateQueries({ queryKey: ['v1', 'trades'] })

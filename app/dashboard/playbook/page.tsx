@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn, formatCurrency, formatNoteContent } from '@/lib/utils'
 import { motion } from 'framer-motion'
-import { Eye, FileText, MoreVertical, Pencil, Plus, Trash2 as Trash } from 'lucide-react'
+import { Eye, FileText, MoreVertical, Pencil, Plus, Trash2 as Trash, Calendar } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { AddEditModelModal } from './components/add-edit-model-modal'
@@ -31,6 +31,10 @@ import { PlaybookCardsSkeleton } from './components/playbook-page-skeleton'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { useData } from '@/context/data-provider'
 import { PageHeader } from '@/components/ui/page-header'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { CustomDateRangePicker } from '@/components/ui/custom-date-range-picker'
+import { format } from 'date-fns'
 
 interface TradingModel {
   id: string
@@ -178,11 +182,22 @@ function StrategyBlock({
 }
 
 export default function PlaybookPage() {
-  const { statistics } = useData()
+  const { statistics, accounts, accountNumbers, setAccountNumbers, dateRange, setDateRange } = useData()
   const queryClient = useQueryClient()
-  const { tradingModels: fetchedModels, isLoading } = useTradingModels()
+  const tradingModelFilters = useMemo(() => ({
+    accounts: accountNumbers.length > 0 ? accountNumbers : undefined,
+    dateFrom: dateRange?.from?.toISOString(),
+    dateTo: dateRange?.to?.toISOString(),
+  }), [accountNumbers, dateRange])
+  const { tradingModels: fetchedModels, isLoading } = useTradingModels(tradingModelFilters)
   const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
   const models = useMemo(() => (fetchedModels || []) as TradingModel[], [fetchedModels])
+  const selectedAccountValue = accountNumbers.length === 1 ? accountNumbers[0] : accountNumbers.length > 1 ? '__multiple__' : '__all__'
+  const dateRangeLabel = dateRange?.from
+    ? dateRange.to
+      ? `${format(dateRange.from, 'MMM d')} - ${format(dateRange.to, 'MMM d, yyyy')}`
+      : `From ${format(dateRange.from, 'MMM d, yyyy')}`
+    : 'Date range'
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add')
   const [selectedModel, setSelectedModel] = useState<TradingModel | null>(null)
@@ -213,9 +228,14 @@ export default function PlaybookPage() {
   }
 
   const handleSaveModel = async (data: { name: string; rules: any[]; setups?: string[]; notes?: string | null }) => {
+    const modelId = selectedModel?.id
+    if (modalMode === 'edit' && !modelId) {
+      throw new Error('Missing model id for update')
+    }
+
     const url = modalMode === 'add'
       ? '/api/v1/user/trading-models'
-      : `/api/v1/user/trading-models/${selectedModel?.id}`
+      : `/api/v1/user/trading-models/${modelId}`
 
     const response = await fetch(url, {
       method: modalMode === 'add' ? 'POST' : 'PATCH',
@@ -276,7 +296,7 @@ export default function PlaybookPage() {
               <p className="mt-2 text-2xl font-black font-mono tracking-tighter">{models.length}</p>
             </div>
             <div className="rounded-2xl border border-border/14 bg-background/35 p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground/55">Logged Trades</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground/55">Filtered Trades</p>
               <p className="mt-2 text-2xl font-black font-mono tracking-tighter">{playbookStats.totalTrades}</p>
             </div>
             <div className="rounded-2xl border border-border/14 bg-background/35 p-4">
@@ -285,6 +305,68 @@ export default function PlaybookPage() {
             </div>
           </div>
         )}
+
+        <div className="mb-6 flex flex-col gap-3 rounded-[24px] border border-border/20 bg-card/30 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/55">Playbook Range</p>
+            <p className="mt-1 text-xs font-bold text-muted-foreground">Stats use the selected account and date range.</p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Select
+              value={selectedAccountValue}
+              onValueChange={(value) => {
+                if (value === '__all__') setAccountNumbers([])
+                else if (value !== '__multiple__') setAccountNumbers([value])
+              }}
+            >
+              <SelectTrigger className="h-9 w-full min-w-[180px] text-xs font-bold sm:w-[220px]">
+                <SelectValue placeholder="All accounts" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All accounts</SelectItem>
+                {selectedAccountValue === '__multiple__' && <SelectItem value="__multiple__">Multiple accounts</SelectItem>}
+                {accounts.map((account: any) => {
+                  const value = account.accountNumber || account.phaseAccountId || account.id
+                  return (
+                    <SelectItem key={account.id || value} value={value}>
+                      {account.accountName || account.name || value}
+                    </SelectItem>
+                  )
+                })}
+              </SelectContent>
+            </Select>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="h-9 justify-start gap-2 text-xs font-bold">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {dateRangeLabel}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <CustomDateRangePicker
+                  selected={dateRange}
+                  onSelect={(range) => {
+                    if (range?.from) setDateRange({ from: range.from, to: range.to ?? range.from })
+                    else setDateRange(undefined)
+                  }}
+                  className="w-fit"
+                />
+              </PopoverContent>
+            </Popover>
+            {(accountNumbers.length > 0 || dateRange?.from || dateRange?.to) && (
+              <Button
+                variant="ghost"
+                className="h-9 text-xs font-black uppercase tracking-tighter"
+                onClick={() => {
+                  setAccountNumbers([])
+                  setDateRange(undefined)
+                }}
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+        </div>
 
         {/* Models Grid */}
         {isLoading ? (
@@ -384,7 +466,7 @@ export default function PlaybookPage() {
           <div className="space-y-6">
             {viewModel?.rules && viewModel.rules.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {(['entry', 'exit', 'risk', 'general'] as const).map(cat => {
+                {(['entry', 'target', 'confirmation', 'confluence', 'exit', 'risk', 'general'] as const).map(cat => {
                   const catRules = viewModel.rules.filter((r: any) =>
                     (typeof r === 'string' && cat === 'general') ||
                     (typeof r === 'object' && r.category === cat)

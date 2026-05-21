@@ -18,6 +18,8 @@ import {
   Play,
   Copy,
   Check,
+  ChevronLeft,
+  ChevronRight,
   PenLine,
   Zap
 } from 'lucide-react'
@@ -25,7 +27,7 @@ import { Trade } from '@prisma/client'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 import { toast } from 'sonner'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
@@ -67,8 +69,7 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
   const pnlDisplayMode = normalizePnlDisplayMode(
     useUserStore((state) => state.user?.pnlDisplayMode)
   )
-  const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -92,6 +93,42 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
     tradeData.imageFive,
     tradeData.imageSix,
   ].filter((img: any) => img && String(img).trim() !== '')
+
+  const selectedImage = selectedImageIndex === null ? null : images[selectedImageIndex]
+  const selectedImageNumber = selectedImageIndex === null ? 0 : selectedImageIndex + 1
+  const showImageNavigation = images.length > 1
+
+  const goToPreviousImage = useCallback(() => {
+    setSelectedImageIndex(current => {
+      if (current === null || images.length === 0) return current
+      return (current - 1 + images.length) % images.length
+    })
+  }, [images.length])
+
+  const goToNextImage = useCallback(() => {
+    setSelectedImageIndex(current => {
+      if (current === null || images.length === 0) return current
+      return (current + 1) % images.length
+    })
+  }, [images.length])
+
+  useEffect(() => {
+    if (selectedImageIndex === null) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault()
+        goToPreviousImage()
+      }
+      if (event.key === 'ArrowRight') {
+        event.preventDefault()
+        goToNextImage()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [goToNextImage, goToPreviousImage, selectedImageIndex])
 
   // Chart links
   const chartLinks = parseTradeChartLinks(tradeData)
@@ -471,10 +508,7 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
                     <div
                       key={index}
                       className="group relative aspect-video rounded-xl overflow-hidden border border-border/40 bg-muted/30 cursor-pointer hover:border-border/60 transition-all active:scale-[0.98]"
-                      onClick={() => {
-                        setSelectedImage(img)
-                        setSelectedImageIndex(index + 1)
-                      }}
+                      onClick={() => setSelectedImageIndex(index)}
                     >
                       <Image
                         src={img}
@@ -516,23 +550,23 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
 
       {/* ── Image Viewer Modal ── */}
       {selectedImage && (
-        <Dialog open={!!selectedImage} onOpenChange={(open) => { if (!open) setSelectedImage(null) }} modal>
+        <Dialog open={!!selectedImage} onOpenChange={(open) => { if (!open) setSelectedImageIndex(null) }} modal>
           <DialogContent
             className="max-w-[95vw] sm:max-w-[90vw] max-h-[95vh] p-0 gap-0 z-[100]"
-            onInteractOutside={(e) => { e.preventDefault(); setSelectedImage(null) }}
-            onEscapeKeyDown={(e) => { e.preventDefault(); setSelectedImage(null) }}
-            onPointerDownOutside={(e) => { e.preventDefault(); setSelectedImage(null) }}
+            onInteractOutside={(e) => { e.preventDefault(); setSelectedImageIndex(null) }}
+            onEscapeKeyDown={(e) => { e.preventDefault(); setSelectedImageIndex(null) }}
+            onPointerDownOutside={(e) => { e.preventDefault(); setSelectedImageIndex(null) }}
           >
             <DialogHeader className="px-4 pt-4 pb-2">
-              <DialogTitle>Screenshot {selectedImageIndex}</DialogTitle>
+              <DialogTitle>Screenshot {selectedImageNumber}</DialogTitle>
               <VisuallyHidden><DialogDescription>Full size image viewer</DialogDescription></VisuallyHidden>
             </DialogHeader>
             <div className="relative flex-1 bg-black">
-              <TransformWrapper>
+              <TransformWrapper key={selectedImage} minScale={0.35} maxScale={5} limitToBounds={false} centerZoomedOut={false}>
                 <TransformComponent wrapperClass="!w-full !h-[calc(95vh-8rem)]" contentClass="!w-full !h-full flex items-center justify-center">
                   <Image
                     src={selectedImage}
-                    alt={`Screenshot ${selectedImageIndex}`}
+                    alt={`Screenshot ${selectedImageNumber}`}
                     width={1920}
                     height={1080}
                     className="max-w-full max-h-full object-contain"
@@ -541,11 +575,36 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
                   />
                 </TransformComponent>
               </TransformWrapper>
+              {showImageNavigation && (
+                <>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="absolute left-4 top-1/2 h-10 w-10 -translate-y-1/2 rounded-full bg-background/80"
+                    onClick={goToPreviousImage}
+                    aria-label="Previous screenshot"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="absolute right-4 top-1/2 h-10 w-10 -translate-y-1/2 rounded-full bg-background/80"
+                    onClick={goToNextImage}
+                    aria-label="Next screenshot"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                  <div className="absolute bottom-4 left-4 rounded-full bg-background/80 px-3 py-1 text-xs font-bold text-foreground">
+                    {selectedImageNumber} / {images.length}
+                  </div>
+                </>
+              )}
               <Button
                 variant="secondary"
                 size="sm"
                 className="absolute bottom-4 right-4"
-                onClick={() => downloadImage(stripTradePreviewImageConfig(selectedImage) || selectedImage!, trade, selectedImageIndex)}
+                onClick={() => downloadImage(stripTradePreviewImageConfig(selectedImage) || selectedImage, trade, selectedImageNumber)}
               >
                 <Download className="h-4 w-4 mr-2" />
                 Download

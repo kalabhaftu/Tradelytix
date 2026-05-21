@@ -11,30 +11,32 @@ export const DEFAULT_TRADE_PREVIEW_TRANSFORM: TradePreviewTransform = {
   y: 0,
 }
 
-export const MIN_TRADE_PREVIEW_ZOOM = 1
+export const MIN_TRADE_PREVIEW_ZOOM = 0.35
 export const MAX_TRADE_PREVIEW_ZOOM = 3
+export const MIN_TRADE_PREVIEW_OFFSET = -500
+export const MAX_TRADE_PREVIEW_OFFSET = 500
 
 export function clampTradePreviewZoom(zoom: number) {
   if (!Number.isFinite(zoom)) return DEFAULT_TRADE_PREVIEW_TRANSFORM.zoom
   return Math.min(MAX_TRADE_PREVIEW_ZOOM, Math.max(MIN_TRADE_PREVIEW_ZOOM, zoom))
 }
 
-export function getTradePreviewMaxOffset(zoom: number) {
-  return Math.max(0, (clampTradePreviewZoom(zoom) - 1) * 50)
+export function clampTradePreviewOffset(offset: number, fallback = 0) {
+  if (!Number.isFinite(offset)) return fallback
+  return Math.min(MAX_TRADE_PREVIEW_OFFSET, Math.max(MIN_TRADE_PREVIEW_OFFSET, offset))
 }
 
 export function clampTradePreviewTransform(
   transform?: Partial<TradePreviewTransform> | null
 ): TradePreviewTransform {
   const zoom = clampTradePreviewZoom(transform?.zoom ?? DEFAULT_TRADE_PREVIEW_TRANSFORM.zoom)
-  const maxOffset = getTradePreviewMaxOffset(zoom)
-  const x = Number.isFinite(transform?.x) ? Number(transform?.x) : DEFAULT_TRADE_PREVIEW_TRANSFORM.x
-  const y = Number.isFinite(transform?.y) ? Number(transform?.y) : DEFAULT_TRADE_PREVIEW_TRANSFORM.y
+  const x = clampTradePreviewOffset(Number(transform?.x), DEFAULT_TRADE_PREVIEW_TRANSFORM.x)
+  const y = clampTradePreviewOffset(Number(transform?.y), DEFAULT_TRADE_PREVIEW_TRANSFORM.y)
 
   return {
     zoom,
-    x: Math.min(maxOffset, Math.max(-maxOffset, x)),
-    y: Math.min(maxOffset, Math.max(-maxOffset, y)),
+    x,
+    y,
   }
 }
 

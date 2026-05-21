@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { TradePreviewImage } from '@/components/trades/trade-preview-image'
 import {
+  MAX_TRADE_PREVIEW_ZOOM,
+  MIN_TRADE_PREVIEW_ZOOM,
   clampTradePreviewTransform,
   clampTradePreviewZoom,
   DEFAULT_TRADE_PREVIEW_TRANSFORM,
@@ -132,7 +134,7 @@ export function TradePreviewCropEditor({
             Drag to frame
           </div>
           <div className="rounded-full border border-border/50 bg-background/80 px-2 py-1 text-[10px] font-semibold text-foreground">
-            {transform.zoom.toFixed(1)}x
+            {Math.round(transform.zoom * 100)}%
           </div>
         </div>
       </div>
@@ -152,8 +154,8 @@ export function TradePreviewCropEditor({
         <div className="min-w-[160px] flex-1 px-1">
           <Slider
             value={[transform.zoom]}
-            min={1}
-            max={3}
+            min={MIN_TRADE_PREVIEW_ZOOM}
+            max={MAX_TRADE_PREVIEW_ZOOM}
             step={0.05}
             onValueChange={([zoom]) => updateTransform({ zoom })}
             disabled={disabled}

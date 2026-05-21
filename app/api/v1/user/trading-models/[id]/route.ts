@@ -5,26 +5,44 @@ import { logger } from '@/lib/logger'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+const ruleCategorySchema = z.enum(['entry', 'target', 'confirmation', 'confluence', 'exit', 'risk', 'general'])
+
 const ruleSchema = z.object({
   text: z.string(),
-  category: z.enum(['entry', 'exit', 'risk', 'general'])
+  category: ruleCategorySchema
 })
 
 const tradingModelSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   rules: z.array(ruleSchema).optional(),
+  setups: z.array(z.string()).optional(),
   notes: z.string().nullable().optional(),
 })
+
+type TradingModelRouteContext = {
+  params: { id?: string } | Promise<{ id?: string }>
+}
+
+async function getTradingModelId(context: TradingModelRouteContext) {
+  const params = await context.params
+  return typeof params?.id === 'string' && params.id.trim() ? params.id : null
+}
 
 // PATCH - Update trading model
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: TradingModelRouteContext
 ) {
   const rateLimitRes = await applyRateLimit(request, apiLimiter)
   if (rateLimitRes) return rateLimitRes
 
   try {
+    const id = await getTradingModelId(context)
+    if (!id) {
+      logger.warn('Missing trading model id for PATCH')
+      return NextResponse.json({ error: 'Missing trading model id' }, { status: 400 })
+    }
+
     const identity = await getResolvedUserIdentitySafe()
     if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -36,7 +54,7 @@ export async function PATCH(
 
     // Verify model belongs to user
     const existing = await prisma.tradingModel.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!existing) {
@@ -67,10 +85,11 @@ export async function PATCH(
     }
 
     const model = await prisma.tradingModel.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(validated.name && { name: validated.name }),
         ...(validated.rules !== undefined && { rules: validated.rules }),
+        ...(validated.setups !== undefined && { setups: validated.setups }),
         ...(validated.notes !== undefined && { notes: validated.notes }),
       },
     })
@@ -93,12 +112,18 @@ export async function PATCH(
 // DELETE - Delete trading model
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: TradingModelRouteContext
 ) {
   const rateLimitRes = await applyRateLimit(request, apiLimiter)
   if (rateLimitRes) return rateLimitRes
 
   try {
+    const id = await getTradingModelId(context)
+    if (!id) {
+      logger.warn('Missing trading model id for DELETE')
+      return NextResponse.json({ error: 'Missing trading model id' }, { status: 400 })
+    }
+
     const identity = await getResolvedUserIdentitySafe()
     if (!identity) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -107,7 +132,7 @@ export async function DELETE(
 
     // Verify model belongs to user
     const existing = await prisma.tradingModel.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         _count: {
           select: { Trade: true },
@@ -128,7 +153,7 @@ export async function DELETE(
 
     // Delete the model (trades will have modelId set to null due to onDelete: SetNull)
     await prisma.tradingModel.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     return NextResponse.json({

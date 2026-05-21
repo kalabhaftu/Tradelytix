@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { grantFreeAccess, revokeFreeAccess } from '@/lib/services/subscription'
 import { applyRateLimit, adminLimiter } from '@/lib/rate-limiter'
 import { createErrorResponse } from '@/lib/api-response'
+import { getErrorStatusCode, sanitizeErrorMessage } from '@/lib/api-error'
 
 const freeAccessSchema = z.object({
   email: z.string().trim().email().max(254),
@@ -32,8 +33,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: invites })
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unauthorized'
-    return NextResponse.json({ success: false, error: msg }, { status: 403 })
+    const msg = sanitizeErrorMessage(error)
+    return NextResponse.json({ success: false, error: msg }, { status: getErrorStatusCode(error) })
   }
 }
 
@@ -69,8 +70,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: invite })
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Failed'
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+    const msg = sanitizeErrorMessage(error)
+    return NextResponse.json({ success: false, error: msg }, { status: getErrorStatusCode(error) })
   }
 }
 
@@ -93,7 +94,7 @@ export async function PATCH(request: NextRequest) {
     }
     return NextResponse.json({ success: true, data: result })
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Failed'
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+    const msg = sanitizeErrorMessage(error)
+    return NextResponse.json({ success: false, error: msg }, { status: getErrorStatusCode(error) })
   }
 }

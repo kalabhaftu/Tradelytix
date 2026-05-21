@@ -9,16 +9,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runSubscriptionChecks } from '@/lib/services/subscription'
 import { validateCronRequest } from '@/lib/cron-auth'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
   const authError = validateCronRequest(request)
   if (authError) return authError
 
   try {
-    console.log('[Cron] Running subscription checks...')
+    logger.info('[Cron] Running subscription checks')
     const results = await runSubscriptionChecks()
 
-    console.log('[Cron] Subscription check results:', results)
+    logger.info('[Cron] Subscription check completed', results)
 
     return NextResponse.json({
       success: true,
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
-    console.error('[Cron] Subscription check failed:', error)
+    logger.error('[Cron] Subscription check failed', error)
     return NextResponse.json(
       { success: false, error: 'Subscription check failed', timestamp: new Date().toISOString() },
       { status: 500 }

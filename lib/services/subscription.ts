@@ -3,6 +3,7 @@
  * Core business logic for managing subscriptions, payments, promos, and free access.
  */
 
+import { logger } from '@/lib/logger'
 import { prisma } from '@/lib/prisma'
 import { NotificationPriority, NotificationType, SubscriptionStatus } from '@prisma/client'
 import { revalidatePath, revalidateTag } from 'next/cache'
@@ -296,7 +297,7 @@ export async function createSubscriptionInvoice(
 export async function handleIpnWebhook(payload: IpnPayload) {
   const { payment_id, payment_status, order_id, invoice_id } = payload
 
-  console.log('[Subscription] IPN received:', { payment_id, payment_status, order_id })
+  logger.info('[Subscription] IPN received', { payment_id, payment_status, order_id })
 
   // Find the payment record by invoice ID or order_id
   const lookupClauses = [
@@ -322,7 +323,7 @@ export async function handleIpnWebhook(payload: IpnPayload) {
 
   // Idempotency: skip if already in terminal state
   if (paymentRecord.providerStatus === 'finished' && payment_status !== 'refunded') {
-    console.log('[Subscription] Payment already finished, skipping:', paymentRecord.id)
+    logger.info('[Subscription] Payment already finished, skipping', { paymentId: paymentRecord.id })
     return { processed: true, reason: 'Already processed' }
   }
 
@@ -617,7 +618,7 @@ export async function expireAbandonedPayments(userId?: string) {
 
   if (pendingPayments.length === 0) return { expired: 0 }
 
-  console.log(`[Subscription] Reconciling ${pendingPayments.length} pending payments.`)
+  logger.info('[Subscription] Reconciling pending payments', { count: pendingPayments.length })
 
   let expiredCount = 0
   for (const record of pendingPayments) {

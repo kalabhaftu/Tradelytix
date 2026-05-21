@@ -29,7 +29,8 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LexicalEditor } from '@/components/ui/editor/lexical-editor'
-import { JOURNAL_EMOTIONS, type JournalEmotion } from '@/lib/journal-emotions'
+import { JOURNAL_EMOTIONS, getJournalEmotionLabel, type JournalEmotion } from '@/lib/journal-emotions'
+import { useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -75,6 +76,7 @@ const EMOTION_ICONS: Record<JournalEmotion, LucideIcon> = {
 }
 
 export function DailyNotePanel({ date, onClose, dailyStats }: DailyNotePanelProps) {
+  const queryClient = useQueryClient()
   const [isMounted, setIsMounted] = useState(false)
   const [note, setNote] = useState<DailyNote | null>(null)
   const [noteContent, setNoteContent] = useState<string>('')
@@ -133,6 +135,7 @@ export function DailyNotePanel({ date, onClose, dailyStats }: DailyNotePanelProp
         if (!res.ok) throw new Error('Failed to update')
         const data = await res.json()
         setNote(data.journal)
+        queryClient.invalidateQueries({ queryKey: ['journal-data'] })
         toast.success('Daily note updated')
       } else {
         // Create new
@@ -147,6 +150,7 @@ export function DailyNotePanel({ date, onClose, dailyStats }: DailyNotePanelProp
         }
         const data = await res.json()
         setNote(data.journal)
+        queryClient.invalidateQueries({ queryKey: ['journal-data'] })
         toast.success('Daily note saved')
       }
     } catch (error) {
@@ -154,7 +158,7 @@ export function DailyNotePanel({ date, onClose, dailyStats }: DailyNotePanelProp
     } finally {
       setIsSaving(false)
     }
-  }, [date, dateStr, note, noteContent, selectedEmotion])
+  }, [date, dateStr, note, noteContent, queryClient, selectedEmotion])
 
   const handleDelete = useCallback(async () => {
     if (!note) return
@@ -166,13 +170,14 @@ export function DailyNotePanel({ date, onClose, dailyStats }: DailyNotePanelProp
       setNote(null)
       setNoteContent('')
       setSelectedEmotion(null)
+      queryClient.invalidateQueries({ queryKey: ['journal-data'] })
       toast.success('Daily note deleted')
     } catch {
       toast.error('Failed to delete note')
     } finally {
       setIsDeleting(false)
     }
-  }, [note])
+  }, [note, queryClient])
 
   if (!date || !isMounted) return null
 
@@ -225,6 +230,22 @@ export function DailyNotePanel({ date, onClose, dailyStats }: DailyNotePanelProp
             {/* Emotion Selector */}
             <div className="px-6 py-4 border-b border-border/20">
               <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-3">How were you feeling?</p>
+              <div className="mb-3 rounded-2xl border border-border/25 bg-muted/15 px-3 py-2">
+                {selectedEmotion ? (() => {
+                  const SelectedEmotionIcon = EMOTION_ICONS[selectedEmotion]
+                  return (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Logged emotion</span>
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-primary">
+                        <SelectedEmotionIcon className="h-3 w-3" aria-hidden="true" />
+                        {getJournalEmotionLabel(selectedEmotion)}
+                      </span>
+                    </div>
+                  )
+                })() : (
+                  <p className="text-[10px] font-bold text-muted-foreground/70">No emotion logged yet.</p>
+                )}
+              </div>
               <div className="flex flex-wrap gap-1.5">
                 {JOURNAL_EMOTIONS.map((emotion) => {
                   const EmotionIcon = EMOTION_ICONS[emotion]
@@ -240,7 +261,7 @@ export function DailyNotePanel({ date, onClose, dailyStats }: DailyNotePanelProp
                       )}
                     >
                       <EmotionIcon className="h-3 w-3" aria-hidden="true" />
-                      {emotion}
+                      {getJournalEmotionLabel(emotion)}
                     </button>
                   )
                 })}

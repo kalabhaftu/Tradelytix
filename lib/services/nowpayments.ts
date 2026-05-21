@@ -4,6 +4,7 @@
  */
 
 import crypto from 'crypto'
+import { logger } from '@/lib/logger'
 
 const API_BASE_URL = process.env.NOWPAYMENTS_API_BASE_URL || 'https://api.nowpayments.io/v1'
 const API_KEY = process.env.NOWPAYMENTS_API_KEY || ''
@@ -103,7 +104,7 @@ export async function createInvoice(params: CreateInvoiceParams): Promise<Invoic
     cancel_url: params.cancel_url || process.env.NOWPAYMENTS_CANCEL_URL,
   }
 
-  console.log('[NOWPayments] Creating invoice:', { order_id: body.order_id, price_amount: body.price_amount })
+  logger.info('[NOWPayments] Creating invoice', { order_id: body.order_id, price_amount: body.price_amount })
 
   const res = await fetch(`${API_BASE_URL}/invoice`, {
     method: 'POST',
@@ -114,12 +115,12 @@ export async function createInvoice(params: CreateInvoiceParams): Promise<Invoic
 
   if (!res.ok) {
     const errorBody = await res.text().catch(() => 'unknown error')
-    console.error('[NOWPayments] Invoice creation failed:', res.status, errorBody)
+    logger.error('[NOWPayments] Invoice creation failed', { status: res.status })
     throw new Error(`Failed to create invoice: ${res.status} — ${errorBody}`)
   }
 
   const data: InvoiceResponse = await res.json()
-  console.log('[NOWPayments] Invoice created:', { id: data.id, invoice_url: data.invoice_url })
+  logger.info('[NOWPayments] Invoice created', { id: data.id })
   return data
 }
 
@@ -164,7 +165,7 @@ export async function getPaymentStatus(paymentId: string | number): Promise<Paym
 /** Verify HMAC-SHA512 IPN signature from NOWPayments */
 export function verifyIpnSignature(payload: Record<string, unknown>, signature: string): boolean {
   if (!IPN_SECRET || !signature) {
-    console.error('[NOWPayments] Missing IPN_SECRET or signature')
+    logger.warn('[NOWPayments] Missing IPN secret or signature')
     return false
   }
 
@@ -183,7 +184,7 @@ export function verifyIpnSignature(payload: Record<string, unknown>, signature: 
       Buffer.from(normalizedSignature, 'hex')
     )
   } catch (error) {
-    console.error('[NOWPayments] IPN signature verification error:', error)
+    logger.error('[NOWPayments] IPN signature verification error', error)
     return false
   }
 }

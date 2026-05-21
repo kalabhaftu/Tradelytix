@@ -6,6 +6,8 @@ import { prisma, safeDbOperation } from '@/lib/prisma'
 import { headers } from "next/headers"
 import { logActivity } from '@/lib/activity-logger'
 import { extractUserSettingsWriteData } from '@/lib/user-settings'
+import { emailOtpLimiter, consumeRateLimitKey, getEmailRateLimitKey } from '@/lib/rate-limiter'
+import { getSafeRedirectPath } from '@/lib/security/redirects'
 // Removed locales import - using plain English strings
 
 // Helper function to determine if we're in local development
@@ -87,7 +89,7 @@ export async function signInWithDiscord(next: string | null = null) {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'discord',
     options: {
-      redirectTo: `${websiteURL}api/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ''}`,
+      redirectTo: `${websiteURL}api/auth/callback${next ? `?next=${encodeURIComponent(getSafeRedirectPath(next))}` : ''}`,
     },
   })
   if (data.url) {
@@ -102,7 +104,7 @@ export async function signInWithGoogle(next: string | null = null) {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${websiteURL}api/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ''}`,
+      redirectTo: `${websiteURL}api/auth/callback${next ? `?next=${encodeURIComponent(getSafeRedirectPath(next))}` : ''}`,
     },
   })
   if (data.url) {
@@ -122,12 +124,24 @@ export async function signOut() {
 }
 
 export async function signInWithEmail(email: string, next: string | null = null) {
+  const normalizedEmail = email.trim().toLowerCase()
+  const emailLimit = await consumeRateLimitKey(getEmailRateLimitKey(normalizedEmail), emailOtpLimiter)
+
+  if (!emailLimit.allowed) {
+    return {
+      error: 'Too many sign-in code requests. Please wait before trying again.',
+      rateLimited: true,
+      isExistingUser: false,
+      emailSent: false
+    }
+  }
+
   const supabase = await createClient()
   const websiteURL = await getWebsiteURL()
 
   const existingUser = await safeDbOperation(
     () => prisma.user.findUnique({
-      where: { email: email }
+      where: { email: normalizedEmail }
     }),
     null
   )
@@ -136,7 +150,7 @@ export async function signInWithEmail(email: string, next: string | null = null)
   if (isExistingUser) {
     // For existing users in Prisma DB, send OTP (code) instead of magic link
     const { error } = await supabase.auth.signInWithOtp({
-      email: email,
+      email: normalizedEmail,
       options: {
         emailRedirectTo: undefined, // Providing undefined forces OTP code
       }
@@ -146,16 +160,16 @@ export async function signInWithEmail(email: string, next: string | null = null)
       // Handle Supabase's built-in rate limiting
       if (error.status === 429 && (error.message.includes('rate limit') || error.code === 'over_email_send_rate_limit')) {
         return {
-          error: error.message,
+          error: 'Too many sign-in code requests. Please wait before trying again.',
           rateLimited: true,
           isExistingUser: true,
           emailSent: false // Supabase didn't send the email due to rate limit
         }
       }
 
-      // Return error result instead of throwing
+      // Return generic error result instead of exposing provider details
       return {
-        error: error.message,
+        error: 'Unable to send sign-in code. Please try again.',
         rateLimited: false,
         isExistingUser: true,
         emailSent: false
@@ -166,12 +180,12 @@ export async function signInWithEmail(email: string, next: string | null = null)
   } else {
     // For new users, use signUp with OTP
     const { error } = await supabase.auth.signUp({
-      email: email,
+      email: normalizedEmail,
       password: generateTemporaryPassword(),
       options: {
         emailRedirectTo: undefined, // This forces OTP mode for new users
         data: {
-          email: email,
+          email: normalizedEmail,
         }
       }
     })
@@ -180,16 +194,16 @@ export async function signInWithEmail(email: string, next: string | null = null)
       // Handle Supabase's built-in rate limiting
       if (error.status === 429 && (error.message.includes('rate limit') || error.code === 'over_email_send_rate_limit')) {
         return {
-          error: error.message,
+          error: 'Too many sign-in code requests. Please wait before trying again.',
           rateLimited: true,
           isExistingUser: false,
           emailSent: false // Supabase didn't send the email due to rate limit
         }
       }
 
-      // Return error result instead of throwing
+      // Return generic error result instead of exposing provider details
       return {
-        error: error.message,
+        error: 'Unable to send sign-in code. Please try again.',
         rateLimited: false,
         isExistingUser: false,
         emailSent: false

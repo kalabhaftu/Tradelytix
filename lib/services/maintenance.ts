@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger'
 import { prisma } from '@/lib/prisma'
 
 /**
@@ -13,7 +14,7 @@ export async function cleanupActivityLogs(daysOld = 90) {
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - daysOld)
 
-  console.log(`[Maintenance] Cleaning up activity logs older than ${daysOld} days (before ${cutoff.toISOString()})...`)
+  logger.info('[Maintenance] Cleaning up activity logs', { daysOld, cutoff: cutoff.toISOString() })
   
   const result = await prisma.activityLog.deleteMany({
     where: {
@@ -34,7 +35,7 @@ export async function cleanupImportJobs(daysOld = 7) {
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - daysOld)
 
-  console.log(`[Maintenance] Cleaning up import jobs older than ${daysOld} days (before ${cutoff.toISOString()})...`)
+  logger.info('[Maintenance] Cleaning up import jobs', { daysOld, cutoff: cutoff.toISOString() })
   
   const result = await prisma.importJob.deleteMany({
     where: {

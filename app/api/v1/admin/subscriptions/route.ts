@@ -13,6 +13,7 @@ import { reconcilePendingPayments } from '@/lib/services/subscription'
 import { deriveAccessSource, derivePaymentState, getAccessDescriptor } from '@/server/admin-subscription-state'
 import { applyRateLimit, adminLimiter } from '@/lib/rate-limiter'
 import { createErrorResponse } from '@/lib/api-response'
+import { getErrorStatusCode, sanitizeErrorMessage } from '@/lib/api-error'
 
 function boundedInt(value: string | null, fallback: number, min: number, max: number) {
   const parsed = Number.parseInt(value || '', 10)
@@ -112,9 +113,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data, total, page, limit })
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Unauthorized'
-    const status = msg.includes('Unauthorized') || msg.includes('Forbidden') ? 403 : 500
-    return NextResponse.json({ success: false, error: msg }, { status })
+    const msg = sanitizeErrorMessage(error)
+    return NextResponse.json({ success: false, error: msg }, { status: getErrorStatusCode(error) })
   }
 }
 
@@ -246,8 +246,7 @@ export async function PATCH(request: NextRequest) {
       }
     }
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'Failed'
-    const status = msg.includes('Unauthorized') || msg.includes('Forbidden') ? 403 : 500
-    return NextResponse.json({ success: false, error: msg }, { status })
+    const msg = sanitizeErrorMessage(error)
+    return NextResponse.json({ success: false, error: msg }, { status: getErrorStatusCode(error) })
   }
 }

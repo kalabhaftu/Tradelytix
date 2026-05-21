@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateCronRequest } from '@/lib/cron-auth'
+import { logger } from '@/lib/logger'
 import { evaluateAllActivePhases } from '@/lib/services/phase-service'
 
 /**
@@ -19,9 +20,10 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
+    logger.error('[Cron] Phase evaluation failed', error)
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Evaluation failed',
+      error: 'Evaluation failed',
       timestamp: new Date().toISOString()
     }, { status: 500 })
   }

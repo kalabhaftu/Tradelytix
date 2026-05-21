@@ -1,3 +1,4 @@
+import { getSafeRedirectPath } from '@/lib/security/redirects'
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient, type CookieOptions } from "@supabase/ssr"
 
@@ -128,7 +129,7 @@ export default async function proxy(request: NextRequest) {
     }
 
     if (isAuthenticated && pathname === "/app-launch") {
-      const redirectPath = request.nextUrl.searchParams.get("next") || "/dashboard"
+      const redirectPath = getSafeRedirectPath(request.nextUrl.searchParams.get("next"), "/dashboard")
       return secureRedirect(new URL(redirectPath, request.url), authResponse)
     }
 

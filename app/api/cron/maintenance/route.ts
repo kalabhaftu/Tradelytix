@@ -4,6 +4,7 @@ import { runSubscriptionChecks, reconcilePendingPayments } from '@/lib/services/
 import { evaluateAllActivePhases } from '@/lib/services/phase-service'
 import { createAllDailyAnchors } from '@/lib/services/anchor-service'
 import { runDailyMaintenance } from '@/lib/services/maintenance'
+import { logger } from '@/lib/logger'
 
 /**
  * GET /api/cron/maintenance
@@ -21,39 +22,39 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log('[Maintenance Cron] Starting daily maintenance...')
+    logger.info('[Maintenance Cron] Starting daily maintenance')
 
     // 1. Payment Reconciliation
-    console.log('[Maintenance Cron] Task: Payment Reconciliation')
+    logger.info('[Maintenance Cron] Task: Payment Reconciliation')
     results.tasks.payments = await reconcilePendingPayments()
 
     // 2. Subscription Checks (Due dates, expiries)
-    console.log('[Maintenance Cron] Task: Subscription Checks')
+    logger.info('[Maintenance Cron] Task: Subscription Checks')
     results.tasks.subscriptions = await runSubscriptionChecks()
 
     // 3. Phase Evaluation (Prop firm breaches/passes)
-    console.log('[Maintenance Cron] Task: Phase Evaluation')
+    logger.info('[Maintenance Cron] Task: Phase Evaluation')
     results.tasks.phaseEvaluation = await evaluateAllActivePhases()
 
     // 4. Daily Anchors (Equity snapshots)
-    console.log('[Maintenance Cron] Task: Daily Anchors')
+    logger.info('[Maintenance Cron] Task: Daily Anchors')
     results.tasks.dailyAnchors = await createAllDailyAnchors()
 
     // 5. System Cleanup (Logs, Imports)
-    console.log('[Maintenance Cron] Task: System Cleanup')
+    logger.info('[Maintenance Cron] Task: System Cleanup')
     results.tasks.systemCleanup = await runDailyMaintenance()
 
-    console.log('[Maintenance Cron] Completed successfully.')
+    logger.info('[Maintenance Cron] Completed successfully')
 
     return NextResponse.json({
       success: true,
       ...results
     })
   } catch (error) {
-    console.error('[Maintenance Cron] Execution failed:', error)
+    logger.error('[Maintenance Cron] Execution failed', error)
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown maintenance error',
+      error: 'Maintenance failed',
       timestamp
     }, { status: 500 })
   }

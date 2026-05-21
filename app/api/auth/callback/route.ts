@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { logActivity } from '@/lib/activity-logger'
 import { captureUserGeo, extractIP } from '@/server/geolocation'
 import { resolveInternalUserId } from '@/server/user-identity'
+import { getSafeRedirectPath } from '@/lib/security/redirects'
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
@@ -12,23 +13,6 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
       setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
     ),
   ])
-}
-
-function getSafeRedirectPath(next: string | null) {
-  if (!next) return '/dashboard'
-
-  let decoded: string
-  try {
-    decoded = decodeURIComponent(next)
-  } catch {
-    return '/dashboard'
-  }
-
-  if (!decoded.startsWith('/') || decoded.startsWith('//') || decoded.includes('://')) {
-    return '/dashboard'
-  }
-
-  return decoded
 }
 
 export async function GET(request: Request) {

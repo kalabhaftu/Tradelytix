@@ -52,9 +52,9 @@ export class MediaUploadService {
       return supabaseResult
       
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Upload failed' 
+      return {
+        success: false,
+        error: 'Upload failed'
       }
     }
   }
@@ -159,14 +159,7 @@ export class MediaUploadService {
         })
 
       if (uploadError) {
-        // Provide helpful error messages for common issues
-        let errorMessage = uploadError.message
-        
-        if (errorMessage.includes('row-level security') || errorMessage.includes('RLS')) {
-          errorMessage = 'Storage permissions not configured. Please run the setup-supabase-storage-rls.sql script in your Supabase SQL Editor.'
-        }
-        
-        return { success: false, error: errorMessage }
+        return { success: false, error: 'Unable to upload file' }
       }
 
       // Get public URL
@@ -177,9 +170,9 @@ export class MediaUploadService {
       return { success: true, url: urlData.publicUrl }
 
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Supabase upload failed' 
+      return {
+        success: false,
+        error: 'Unable to upload file'
       }
     }
   }

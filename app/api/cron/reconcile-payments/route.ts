@@ -6,13 +6,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateCronRequest } from '@/lib/cron-auth'
 import { reconcilePendingPayments } from '@/lib/services/subscription'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
   const authError = validateCronRequest(request)
   if (authError) return authError
 
   try {
-    console.log('[Cron] Running payment reconciliation...')
+    logger.info('[Cron] Running payment reconciliation')
     const results = await reconcilePendingPayments()
 
     return NextResponse.json({
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
-    console.error('[Cron] Payment reconciliation failed:', error)
+    logger.error('[Cron] Payment reconciliation failed', error)
     return NextResponse.json(
       { success: false, error: 'Payment reconciliation failed', timestamp: new Date().toISOString() },
       { status: 500 }

@@ -1,3 +1,4 @@
+import { createHash } from 'crypto'
 import { RateLimiterMemory } from 'rate-limiter-flexible'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -70,6 +71,7 @@ export const feedbackLimiter: LimiterConfig = { points: 5, duration: 60 }
 export const adminLimiter: LimiterConfig = { points: 200, duration: 60 }
 export const publicLimiter: LimiterConfig = { points: 30, duration: 60 }
 export const errorReportLimiter: LimiterConfig = { points: 10, duration: 60 }
+export const emailOtpLimiter: LimiterConfig = { points: 3, duration: 3600 }
 
 /**
  * Get identifier for rate limiting.
@@ -79,6 +81,30 @@ export function getRateLimitIdentifier(req: NextRequest): string {
   const forwarded = req.headers.get('x-forwarded-for')
   const ip = forwarded ? forwarded.split(',')[0].trim() : req.headers.get('x-real-ip') || 'unknown'
   return `ip:${ip}`
+}
+
+export function getEmailRateLimitKey(email: string) {
+  const normalized = email.trim().toLowerCase()
+  const hash = createHash('sha256').update(normalized).digest('hex')
+  return `email-otp:${hash}`
+}
+
+export async function consumeRateLimitKey(
+  key: string,
+  limiter: LimiterConfig
+): Promise<{ allowed: boolean; remaining: number }> {
+  if (isKvAvailable()) {
+    const result = await kvConsume(key, limiter.points, limiter.duration)
+    return { allowed: result.success, remaining: result.remaining }
+  }
+
+  const memLimiter = getMemoryLimiter(limiter)
+  try {
+    const result = await memLimiter.consume(key)
+    return { allowed: true, remaining: result.remainingPoints }
+  } catch {
+    return { allowed: false, remaining: 0 }
+  }
 }
 
 /**

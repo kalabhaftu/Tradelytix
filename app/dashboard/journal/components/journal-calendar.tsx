@@ -15,7 +15,7 @@ import {
   isToday
 } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, LayoutGrid, Calendar as CalendarIcon, MousePointerClick, FileText, BookOpen } from 'lucide-react'
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, LayoutGrid, Calendar as CalendarIcon, MousePointerClick, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { cn, formatCurrency, groupTradesByExecution, type GroupedTrade } from '@/lib/utils'
@@ -23,7 +23,7 @@ import { Trade } from '@prisma/client'
 import { getTradePnlByMode, getPnlDisplayLabel, normalizePnlDisplayMode } from '@/lib/metrics/pnl'
 import { useUserStore } from '@/store/user-store'
 import { useJournalData } from '@/app/dashboard/hooks/use-journal-data'
-import { JournalEmotion } from '@/lib/journal-emotions'
+import { getJournalEmotionLabel, isJournalEmotion } from '@/lib/journal-emotions'
 
 interface JournalCalendarProps {
   trades: Trade[]
@@ -154,7 +154,10 @@ export function JournalCalendar({ trades, onDayClick, onDayNoteClick }: JournalC
             const isCurrentMonth = isSameMonth(day, currentDate)
             const isCurrentDay = isToday(day)
             const hasNote = Boolean(journal?.note?.trim())
-            const emotionLabel = journal?.emotion ? getEmotionLabel(journal.emotion as JournalEmotion) : null
+            const emotion = journal?.emotion && isJournalEmotion(journal.emotion) ? journal.emotion : null
+            const hasEmotion = Boolean(emotion)
+            const hasJournalEntry = hasNote || hasEmotion
+            const emotionLabel = emotion ? getJournalEmotionLabel(emotion) : null
             
             let dailyPnl = 0
             dailyTrades.forEach(t => dailyPnl += getTradePnlByMode(t, pnlDisplayMode))
@@ -190,14 +193,12 @@ export function JournalCalendar({ trades, onDayClick, onDayNoteClick }: JournalC
                         {dailyTrades.length} {dailyTrades.length === 1 ? 'Trade' : 'Trades'}
                       </span>
                     )}
-                    {journal && isCurrentMonth && (
-                      <div className="max-w-full flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-1.5 py-0.5">
-                        <BookOpen className="h-3 w-3 text-primary" />
-                        {emotionLabel && (
-                          <span className="truncate text-[9px] font-bold uppercase tracking-wide text-primary">
-                            {emotionLabel}
-                          </span>
-                        )}
+                    {emotionLabel && isCurrentMonth && (
+                      <div
+                        className="max-w-full rounded-full border border-primary/15 bg-primary/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-primary"
+                        title={`Emotion: ${emotionLabel}`}
+                      >
+                        {emotionLabel}
                       </div>
                     )}
                   </div>
@@ -224,9 +225,10 @@ export function JournalCalendar({ trades, onDayClick, onDayNoteClick }: JournalC
                     }}
                     className={cn(
                       "absolute bottom-2 right-2 transition-opacity h-6 w-6 rounded-md bg-primary/10 hover:bg-primary/20 flex items-center justify-center border border-primary/20",
-                      journal ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                      hasJournalEntry ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                     )}
-                    title={journal ? "Open journal note" : "Daily note"}
+                    title={hasJournalEntry ? "Open daily journal" : "Add daily journal"}
+                    aria-label={`${hasJournalEntry ? 'Open' : 'Add'} daily journal for ${format(day, 'MMMM d, yyyy')}`}
                   >
                     <FileText className="h-3 w-3 text-primary" />
                   </button>
@@ -240,7 +242,7 @@ export function JournalCalendar({ trades, onDayClick, onDayNoteClick }: JournalC
                     </span>
                   ) : isCurrentMonth ? (
                     <span className="bg-background/90 text-muted-foreground border shadow-sm px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1">
-                      <FileText className="w-3 h-3" /> {journal ? 'Open Note' : 'Add Note'}
+                      {journal ? 'Open Note' : 'Add Note'}
                     </span>
                   ) : null}
                 </div>
@@ -251,8 +253,4 @@ export function JournalCalendar({ trades, onDayClick, onDayNoteClick }: JournalC
       </Card>
     </div>
   )
-}
-
-function getEmotionLabel(emotion: JournalEmotion) {
-  return emotion.slice(0, 3)
 }

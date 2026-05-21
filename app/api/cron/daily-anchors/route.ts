@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateCronRequest } from '@/lib/cron-auth'
+import { logger } from '@/lib/logger'
 import { createAllDailyAnchors } from '@/lib/services/anchor-service'
 
 /**
@@ -19,9 +20,10 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
+    logger.error('[Cron] Daily anchor creation failed', error)
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Anchor creation failed',
+      error: 'Anchor creation failed',
       timestamp: new Date().toISOString()
     }, { status: 500 })
   }

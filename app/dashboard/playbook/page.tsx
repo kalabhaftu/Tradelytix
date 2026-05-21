@@ -182,21 +182,27 @@ function StrategyBlock({
 }
 
 export default function PlaybookPage() {
-  const { statistics, accounts, accountNumbers, setAccountNumbers, dateRange, setDateRange } = useData()
-  const queryClient = useQueryClient()
+  const { statistics, accounts } = useData()
+  const [playbookAccountFilter, setPlaybookAccountFilter] = useState<string>('__all__')
+  const [playbookDateRange, setPlaybookDateRange] = useState<{ from: Date | undefined; to: Date | undefined } | undefined>(undefined)
+  const activeAccounts = useMemo(() => accounts.filter((account: any) => !account.isArchived), [accounts])
+  const playbookAccountNumbers = useMemo(() => {
+    if (playbookAccountFilter === '__all__') return []
+    return [playbookAccountFilter]
+  }, [playbookAccountFilter])
   const tradingModelFilters = useMemo(() => ({
-    accounts: accountNumbers.length > 0 ? accountNumbers : undefined,
-    dateFrom: dateRange?.from?.toISOString(),
-    dateTo: dateRange?.to?.toISOString(),
-  }), [accountNumbers, dateRange])
+    accounts: playbookAccountNumbers.length > 0 ? playbookAccountNumbers : undefined,
+    dateFrom: playbookDateRange?.from?.toISOString(),
+    dateTo: playbookDateRange?.to?.toISOString(),
+  }), [playbookAccountNumbers, playbookDateRange])
+  const queryClient = useQueryClient()
   const { tradingModels: fetchedModels, isLoading } = useTradingModels(tradingModelFilters)
   const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
   const models = useMemo(() => (fetchedModels || []) as TradingModel[], [fetchedModels])
-  const selectedAccountValue = accountNumbers.length === 1 ? accountNumbers[0] : accountNumbers.length > 1 ? '__multiple__' : '__all__'
-  const dateRangeLabel = dateRange?.from
-    ? dateRange.to
-      ? `${format(dateRange.from, 'MMM d')} - ${format(dateRange.to, 'MMM d, yyyy')}`
-      : `From ${format(dateRange.from, 'MMM d, yyyy')}`
+  const dateRangeLabel = playbookDateRange?.from
+    ? playbookDateRange.to
+      ? `${format(playbookDateRange.from, 'MMM d')} - ${format(playbookDateRange.to, 'MMM d, yyyy')}`
+      : `From ${format(playbookDateRange.from, 'MMM d, yyyy')}`
     : 'Date range'
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add')
@@ -313,19 +319,15 @@ export default function PlaybookPage() {
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Select
-              value={selectedAccountValue}
-              onValueChange={(value) => {
-                if (value === '__all__') setAccountNumbers([])
-                else if (value !== '__multiple__') setAccountNumbers([value])
-              }}
+              value={playbookAccountFilter}
+              onValueChange={(value) => setPlaybookAccountFilter(value)}
             >
               <SelectTrigger className="h-9 w-full min-w-[180px] text-xs font-bold sm:w-[220px]">
                 <SelectValue placeholder="All accounts" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__all__">All accounts</SelectItem>
-                {selectedAccountValue === '__multiple__' && <SelectItem value="__multiple__">Multiple accounts</SelectItem>}
-                {accounts.map((account: any) => {
+                {activeAccounts.map((account: any) => {
                   const value = account.accountNumber || account.phaseAccountId || account.id
                   return (
                     <SelectItem key={account.id || value} value={value}>
@@ -344,22 +346,22 @@ export default function PlaybookPage() {
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
                 <CustomDateRangePicker
-                  selected={dateRange}
+                  selected={playbookDateRange}
                   onSelect={(range) => {
-                    if (range?.from) setDateRange({ from: range.from, to: range.to ?? range.from })
-                    else setDateRange(undefined)
+                    if (range?.from) setPlaybookDateRange({ from: range.from, to: range.to ?? range.from })
+                    else setPlaybookDateRange(undefined)
                   }}
                   className="w-fit"
                 />
               </PopoverContent>
             </Popover>
-            {(accountNumbers.length > 0 || dateRange?.from || dateRange?.to) && (
+            {(playbookAccountFilter !== '__all__' || playbookDateRange?.from || playbookDateRange?.to) && (
               <Button
                 variant="ghost"
                 className="h-9 text-xs font-black uppercase tracking-tighter"
                 onClick={() => {
-                  setAccountNumbers([])
-                  setDateRange(undefined)
+                  setPlaybookAccountFilter('__all__')
+                  setPlaybookDateRange(undefined)
                 }}
               >
                 Clear

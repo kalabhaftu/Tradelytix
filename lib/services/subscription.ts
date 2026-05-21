@@ -258,7 +258,7 @@ export async function createSubscriptionInvoice(
     price_currency: 'usd',
     pay_currency: payCurrency || undefined,
     order_id: orderId,
-    order_description: `Deltalytix Pro — Monthly Subscription`,
+    order_description: `Tradelytix Pro — Monthly Subscription`,
   })
 
   // Create payment record
@@ -375,7 +375,7 @@ export async function handleIpnWebhook(payload: IpnPayload) {
       paymentRecord.userId,
       'ACCESS_RESTORED',
       'Access Restored',
-      'Your Deltalytix Pro access is active again.',
+      'Your Tradelytix Pro access is active again.',
       {
         priority: NotificationPriority.HIGH,
         invalidationKey: `access-restored-${paymentRecord.subscriptionId}`,
@@ -566,7 +566,7 @@ export async function grantFreeAccess(params: {
       user.id,
       'ADMIN_FREE_ACCESS_GRANTED',
       'Free Access Granted',
-      params.note || 'You have been granted free access to Deltalytix Pro.'
+      params.note || 'You have been granted free access to Tradelytix Pro.'
     )
   }
 
@@ -592,7 +592,7 @@ export async function revokeFreeAccess(email: string) {
       invite.registeredUserId,
       'ADMIN_FREE_ACCESS_REVOKED',
       'Free Access Revoked',
-      'Your free access to Deltalytix Pro has been revoked.'
+      'Your free access to Tradelytix Pro has been revoked.'
     )
   }
 

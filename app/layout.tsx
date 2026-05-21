@@ -18,15 +18,15 @@ import Script from "next/script"
 
 // Font configuration now imported from lib/fonts.ts
 
-const DEFAULT_SITE_URL = 'https://www.deltalytix.eu.cc'
+const DEFAULT_SITE_URL = 'https://www.tradelytix.eu.cc'
 const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || DEFAULT_SITE_URL
 const normalizedSiteUrl = rawSiteUrl.startsWith('http') ? rawSiteUrl : `https://${rawSiteUrl}`
 
 // Simplified metadata for personal app (no SEO needed)
 export const metadata: Metadata = {
   metadataBase: new URL(normalizedSiteUrl),
-  title: "Deltalytix",
-  description: "Personal trading analytics dashboard",
+  title: "Tradelytix",
+  description: "Where traders find consistency through the charts",
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },

@@ -82,9 +82,9 @@ export default function SubscribePage() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Logo className="w-8 h-8" />
-            <span className="text-lg font-bold tracking-tight">Deltalytix</span>
+            <span className="text-lg font-bold tracking-tight">Tradelytix</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight mb-2">Unlock Deltalytix Pro</h1>
+          <h1 className="text-2xl font-bold tracking-tight mb-2">Unlock Tradelytix Pro</h1>
           <p className="text-muted-foreground text-sm">
             Get full access to your trading journal and analytics
           </p>

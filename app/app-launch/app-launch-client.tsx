@@ -120,7 +120,7 @@ export function AppLaunchClient({ nextPath }: AppLaunchClientProps) {
       <div className="flex max-w-sm flex-col items-center gap-4 text-center">
         <Spinner className="h-8 w-8 text-primary" />
         <div className="space-y-1">
-          <p className="text-sm font-medium">Launching Deltalytix</p>
+          <p className="text-sm font-medium">Launching Tradelytix</p>
           <p className="text-sm text-muted-foreground">{status}</p>
         </div>
       </div>

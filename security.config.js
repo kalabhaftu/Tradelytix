@@ -1,4 +1,4 @@
-// Security Configuration for Deltalytix
+// Security Configuration for Tradelytix
 // This file contains security-related configurations and best practices
 
 const securityConfig = {

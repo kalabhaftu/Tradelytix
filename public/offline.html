@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Offline - Deltalytix</title>
+    <title>Offline - Tradelytix</title>
     <link rel="icon" href="/favicon.ico">
     <style>
         * {
@@ -252,9 +252,9 @@
 <body>
     <div class="offline-container">
         <div class="logo" aria-hidden="true">
-            <svg viewBox="0 0 255 255" xmlns="http://www.w3.org/2000/svg">
-                <path fill-rule="evenodd" clip-rule="evenodd" d="M159 63L127.5 0V255H255L236.5 218H159V63Z"></path>
-                <path fill-rule="evenodd" clip-rule="evenodd" d="M0 255L127.5 0L127.5 255L0 255ZM64 217L121 104L121 217L64 217Z"></path>
+            <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                <rect width="512" height="512" rx="104" fill="currentColor"></rect>
+                <path fill="var(--surface-alt)" d="M128 136h256v72H292v216h-72V208h-92z"></path>
             </svg>
         </div>
         <h1>You're Offline</h1>
@@ -302,7 +302,7 @@
             if (navigator.onLine) {
                 statusIndicator.className = 'status-indicator status-online';
                 statusText.textContent = 'Connection restored';
-                retryBtn.textContent = 'Continue to Deltalytix';
+                retryBtn.textContent = 'Continue to Tradelytix';
                 retryBtn.onclick = () => window.location.href = '/';
             } else {
                 statusIndicator.className = 'status-indicator status-offline';

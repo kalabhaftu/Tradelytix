@@ -76,7 +76,7 @@ export function DeleteAllDataDialog({ open, onOpenChange }: DeleteAllDataDialogP
       // Extract filename from Content-Disposition header or use default
       const contentDisposition = response.headers.get('Content-Disposition')
       const filenameMatch = contentDisposition?.match(/filename="(.+)"/)
-      a.download = filenameMatch?.[1] || 'deltalytix-backup.json'
+      a.download = filenameMatch?.[1] || 'tradelytix-backup.json'
 
       document.body.appendChild(a)
       a.click()

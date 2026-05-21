@@ -31,7 +31,7 @@ export default function TradeTableDocsPage() {
 
       <DocsSection title="Trade counts">
         <p>
-          Where the UI says <strong>Trades</strong>, Deltalytix uses grouped trade/execution counts.
+          Where the UI says <strong>Trades</strong>, Tradelytix uses grouped trade/execution counts.
           Raw imported rows are considered a lower-level data detail rather than the primary product
           count shown in normal analytics surfaces.
         </p>

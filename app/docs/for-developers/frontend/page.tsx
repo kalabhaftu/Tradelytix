@@ -7,7 +7,7 @@ export default function FrontendDocsPage() {
     <DocsPage
       badge="For Developers"
       title="Frontend Guidelines"
-      description="Frontend work in Deltalytix should preserve product hierarchy, shell consistency, and the responsive behavior expected across dashboard, public pages, and support flows."
+      description="Frontend work in Tradelytix should preserve product hierarchy, shell consistency, and the responsive behavior expected across dashboard, public pages, and support flows."
     >
       <DocsSection title="Frontend priorities">
         <DocsCardGrid>

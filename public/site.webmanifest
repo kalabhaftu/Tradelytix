@@ -1,7 +1,7 @@
 {
-  "name": "Deltalytix",
-  "short_name": "Deltalytix",
-  "description": "Next generation trading dashboard",
+  "name": "Tradelytix",
+  "short_name": "Tradelytix",
+  "description": "Where traders find consistency through the charts",
   "id": "/app-launch",
   "start_url": "/app-launch",
   "scope": "/",

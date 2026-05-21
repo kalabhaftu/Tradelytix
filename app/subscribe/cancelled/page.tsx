@@ -19,7 +19,7 @@ export default function SubscribeCancelledPage() {
       >
         <div className="flex items-center justify-center gap-2 mb-8">
           <Logo className="w-8 h-8" />
-          <span className="text-lg font-bold tracking-tight">Deltalytix</span>
+          <span className="text-lg font-bold tracking-tight">Tradelytix</span>
         </div>
 
         <div className="space-y-4">

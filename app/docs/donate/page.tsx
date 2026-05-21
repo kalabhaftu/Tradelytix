@@ -7,7 +7,7 @@ export default function DonateGuideDocsPage() {
     <DocsPage
       badge="Resources"
       title="Support the Project"
-      description="Deltalytix stays free to use. If you want to support hosting, maintenance, and continued product work, the donation page lists the current wallet options."
+      description="Tradelytix stays free to use. If you want to support hosting, maintenance, and continued product work, the donation page lists the current wallet options."
     >
       <DocsSection title="How to donate">
         <ol>

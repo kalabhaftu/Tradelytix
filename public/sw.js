@@ -1,10 +1,10 @@
-// Deltalytix Service Worker - Optimized for performance
+// Tradelytix Service Worker - Optimized for performance
 // Provides offline functionality, caching, and background sync
 
-const CACHE_NAME = 'deltalytix-v1.2.0'
-const STATIC_CACHE = 'deltalytix-static-v1.2.0'
-const API_CACHE = 'deltalytix-api-v1.2.0'
-const IMAGE_CACHE = 'deltalytix-images-v1.2.0'
+const CACHE_NAME = 'tradelytix-v1.3.0'
+const STATIC_CACHE = 'tradelytix-static-v1.3.0'
+const API_CACHE = 'tradelytix-api-v1.3.0'
+const IMAGE_CACHE = 'tradelytix-images-v1.3.0'
 
 // Minimal files to cache for performance
 const STATIC_FILES = [
@@ -154,8 +154,8 @@ async function handleAPIRequest(request) {
     if (response.ok) {
       // Cache successful read-only responses with a marker for offline-aware UI.
       const headers = new Headers(response.headers)
-      headers.set('X-Deltalytix-Cache-Source', 'network')
-      headers.set('X-Deltalytix-Cached-At', new Date().toISOString())
+      headers.set('X-Tradelytix-Cache-Source', 'network')
+      headers.set('X-Tradelytix-Cached-At', new Date().toISOString())
       const cacheableResponse = new Response(response.clone().body, {
         status: response.status,
         statusText: response.statusText,
@@ -247,7 +247,7 @@ async function handlePageRequest(request) {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Offline - Deltalytix</title>
+          <title>Offline - Tradelytix</title>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <style>
@@ -264,13 +264,13 @@ async function handlePageRequest(request) {
         <body>
           <div class="offline-message">
             <div class="mark" aria-hidden="true">
-              <svg viewBox="0 0 255 255" xmlns="http://www.w3.org/2000/svg">
-                <path fill-rule="evenodd" clip-rule="evenodd" d="M159 63L127.5 0V255H255L236.5 218H159V63Z"></path>
-                <path fill-rule="evenodd" clip-rule="evenodd" d="M0 255L127.5 0L127.5 255L0 255ZM64 217L121 104L121 217L64 217Z"></path>
+              <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                <rect width="512" height="512" rx="104" fill="currentColor"></rect>
+                <path fill="var(--surface-alt)" d="M128 136h256v72H292v216h-72V208h-92z"></path>
               </svg>
             </div>
             <h1>You're Offline</h1>
-            <p>Deltalytix needs an internet connection to sync live data. Reconnect and try again.</p>
+            <p>Tradelytix needs an internet connection to sync live data. Reconnect and try again.</p>
             <button onclick="window.location.reload()">Retry</button>
           </div>
         </body>
@@ -454,7 +454,7 @@ function isImageRequest(url) {
 // IndexedDB helpers for offline storage
 function openIndexedDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('DeltalytixOffline', 1)
+    const request = indexedDB.open('TradelytixOffline', 1)
     
     request.onerror = () => reject(request.error)
     request.onsuccess = () => resolve(request.result)

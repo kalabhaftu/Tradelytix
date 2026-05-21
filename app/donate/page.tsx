@@ -46,9 +46,9 @@ export default function DonatePage() {
         <div className="inline-flex items-center justify-center p-4 rounded-full bg-primary/10 mb-6">
           <Heart className="h-10 w-10 text-primary" />
         </div>
-        <h1 className="text-4xl font-bold tracking-tight mb-4">Support Deltalytix</h1>
+        <h1 className="text-4xl font-bold tracking-tight mb-4">Support Tradelytix</h1>
         <p className="mx-auto max-w-2xl leading-relaxed text-muted-foreground">
-          Deltalytix is a free trading journal and analytics platform. Donations help cover hosting,
+          Tradelytix is a free trading journal and analytics platform. Donations help cover hosting,
           storage, and the ongoing work required to keep the product stable and improving.
         </p>
         <p className="mt-3 text-sm text-muted-foreground">
@@ -139,7 +139,7 @@ export default function DonatePage() {
       {/* Footer */}
       <div className="mt-12 border-t pt-8 text-center">
         <p className="text-sm text-muted-foreground">
-          Thank you for helping keep Deltalytix available to traders who need it.
+          Thank you for helping keep Tradelytix available to traders who need it.
         </p>
       </div>
     </div>

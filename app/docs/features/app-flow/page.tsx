@@ -7,7 +7,7 @@ export default function AppFlowDocsPage() {
     <DocsPage
       badge="Feature Guide"
       title="Application Flow"
-      description="Deltalytix has two major surfaces: the public support/docs experience and the authenticated trading workspace. This page explains how users move between them."
+      description="Tradelytix has two major surfaces: the public support/docs experience and the authenticated trading workspace. This page explains how users move between them."
     >
       <DocsSection title="Public surface">
         <p>

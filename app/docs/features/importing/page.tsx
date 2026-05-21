@@ -7,7 +7,7 @@ export default function ImportingDocsPage() {
     <DocsPage
       badge="Feature Guide"
       title="Trade Import"
-      description="The import flow is the main way to bring broker or platform trade history into Deltalytix without re-entering trades manually."
+      description="The import flow is the main way to bring broker or platform trade history into Tradelytix without re-entering trades manually."
     >
       <DocsSection title="What the import flow does">
         <DocsCardGrid>

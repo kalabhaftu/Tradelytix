@@ -24,7 +24,7 @@ export default function OnboardingModal() {
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">
-                                                   Welcome to Deltalytix
+                                                   Welcome to Tradelytix
           </DialogTitle>
           <DialogDescription>
                                                    Discover powerful trading analytics and insights to improve your performance.

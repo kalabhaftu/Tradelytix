@@ -12,7 +12,7 @@ export default async function AboutPage() {
     <PublicLayout>
       <div className="space-y-10">
         <div className="text-center py-8">
-          <h1 className="text-4xl font-bold tracking-tight mb-4">About Deltalytix</h1>
+          <h1 className="text-4xl font-bold tracking-tight mb-4">About Tradelytix</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed text-lg">
             A free, open-source trading analytics platform built for traders who want 
             professional-grade journaling without the premium price tag.
@@ -42,9 +42,10 @@ export default async function AboutPage() {
             <h2 className="text-xl font-bold mb-4">The Story</h2>
             <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
               <p>
-                Deltalytix started as a personal project — a fork of another tool that I heavily 
-                customized to fit my own trading workflow. Over 5+ months of development, it evolved 
-                into something almost entirely rewritten, from the UI to the core functionality.
+                Tradelytix started as a personal trading workflow project and grew into a dedicated
+                analytics platform shaped around real journaling, review, and performance-tracking needs.
+                Over months of development, the product evolved from a simple tracker into a full trading
+                dashboard with account management, reports, playbooks, reviews, and data controls.
               </p>
               <p>
                 As a CFD trader myself, I know how hard it is to properly journal trades and visualize 

@@ -132,7 +132,7 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
       ctx.fillStyle = 'rgba(255,255,255,0.5)'
       ctx.textAlign = 'left'
       ctx.textBaseline = 'middle'
-      ctx.fillText('DELTALYTIX', logoX + logoSize + Math.round(10 * scale), logoYPos)
+      ctx.fillText('TRADELYTIX', logoX + logoSize + Math.round(10 * scale), logoYPos)
 
       out.toBlob((blob) => {
         if (!blob) { toast.error("Failed to capture screenshot"); return }

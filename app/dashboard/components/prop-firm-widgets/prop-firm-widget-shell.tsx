@@ -2,7 +2,7 @@
 
 import { ReactNode } from 'react'
 import { WidgetCard } from '../widget-card'
-import { PropFirmWidgetAccountSelector } from './prop-firm-widget-account-selector'
+import { PropFirmWidgetAccountSelector, PropFirmWidgetTimezoneSelector } from './prop-firm-widget-account-selector'
 import { usePropFirmDashboardWidgetData } from '@/hooks/use-prop-firm-dashboard-widget-data'
 
 type Props = {
@@ -12,18 +12,21 @@ type Props = {
 
 export function PropFirmWidgetShell({ title, children }: Props) {
   const state = usePropFirmDashboardWidgetData()
-  const { accounts, selectedMasterAccountId, setSelectedMasterAccountId, isLoading, error, data } = state
+  const { accounts, selectedMasterAccountId, setSelectedMasterAccountId, resetTimezone, setResetTimezone, isLoading, error, data } = state
 
   return (
     <WidgetCard
       title={title}
       headerRight={
-        <PropFirmWidgetAccountSelector
-          accounts={accounts}
-          selectedMasterAccountId={selectedMasterAccountId}
-          onChange={setSelectedMasterAccountId}
-          isLoading={isLoading && accounts.length === 0}
-        />
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <PropFirmWidgetTimezoneSelector value={resetTimezone} onChange={setResetTimezone} />
+          <PropFirmWidgetAccountSelector
+            accounts={accounts}
+            selectedMasterAccountId={selectedMasterAccountId}
+            onChange={setSelectedMasterAccountId}
+            isLoading={isLoading && accounts.length === 0}
+          />
+        </div>
       }
     >
       {error ? (

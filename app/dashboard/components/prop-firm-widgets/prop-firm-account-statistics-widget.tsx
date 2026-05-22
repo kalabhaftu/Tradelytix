@@ -29,7 +29,8 @@ export function PropFirmAccountStatisticsWidget() {
         const account = data.account
         const phase = account.currentPhase
         const stats = account.statistics || data.statistics || {}
-        const winRate = Number(stats.winRate ?? data.todayStats.winRate ?? 0)
+        const currentPhaseTrades = data.groupedTradeCount
+        const winRate = currentPhaseTrades > 0 ? data.todayStats.winRate : Number(stats.winRate ?? 0)
         const netPnl = Number(account.currentNetPnL || 0)
         const grossPnl = Number(account.currentGrossPnL || 0)
 
@@ -38,7 +39,7 @@ export function PropFirmAccountStatisticsWidget() {
           { label: 'Current equity', value: formatMoney(account.currentEquity), icon: Scale, tone: 'neutral' },
           { label: 'Net P&L', value: formatMoney(netPnl), icon: netPnl >= 0 ? TrendingUp : TrendingDown, tone: netPnl >= 0 ? 'positive' : 'negative' },
           { label: 'Gross P&L', value: formatMoney(grossPnl), icon: BarChart3, tone: grossPnl >= 0 ? 'positive' : 'negative' },
-          { label: 'Trades', value: formatInteger(stats.totalTrades ?? data.trades.length), sublabel: 'Current phase', icon: Activity },
+          { label: 'Trades', value: formatInteger(currentPhaseTrades), sublabel: 'Current phase · partials counted once', icon: Activity },
           { label: 'Win rate', value: formatPercent(winRate), icon: Trophy, tone: winRate >= 50 ? 'positive' : 'negative' },
           { label: 'Winners', value: formatInteger(stats.wins ?? stats.winningTrades ?? 0), icon: TrendingUp, tone: 'positive' },
           { label: 'Losers', value: formatInteger(stats.losses ?? stats.losingTrades ?? 0), icon: TrendingDown, tone: 'negative' },

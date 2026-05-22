@@ -16,22 +16,22 @@ const PRESETS: CalendarGradientPreset[] = [
   {
     id: 'midnight-prism',
     label: 'Midnight Prism',
-    description: 'Deep indigo base with violet and cobalt glow',
+    description: 'Deep purple-violet to midnight indigo with neon accents',
   },
   {
     id: 'aurora-glass',
     label: 'Aurora Glass',
-    description: 'Emerald-to-cyan backdrop with glassy light',
+    description: 'Rich forest green/emerald to dark teal and indigo',
   },
   {
     id: 'ocean-glow',
     label: 'Ocean Glow',
-    description: 'Blue horizon with bright teal bloom',
+    description: 'Royal deep blue to sapphire with soft cyan highlight',
   },
   {
     id: 'sunset-bloom',
     label: 'Sunset Bloom',
-    description: 'Warm coral and plum with soft golden haze',
+    description: 'Warm plum to dark violet with golden haze',
   },
 ]
 
@@ -119,69 +119,61 @@ export function drawCalendarGradientBackground(
   switch (presetId) {
     case 'aurora-glass': {
       const base = ctx.createLinearGradient(0, 0, width, height)
-      base.addColorStop(0, '#081118')
-      base.addColorStop(0.38, '#0f2d36')
-      base.addColorStop(1, '#11336d')
+      base.addColorStop(0, '#020d08')
+      base.addColorStop(0.45, '#041f17')
+      base.addColorStop(1, '#020a1c')
       ctx.fillStyle = base
       ctx.fillRect(0, 0, width, height)
 
-      paintOrb(ctx, width * 0.18, height * 0.12, 210 * scale, 'rgba(70, 255, 182, 0.9)')
-      paintOrb(ctx, width * 0.78, height * 0.16, 260 * scale, 'rgba(68, 170, 255, 0.8)')
-      paintOrb(ctx, width * 0.55, height * 0.85, 320 * scale, 'rgba(82, 109, 255, 0.55)')
+      paintOrb(ctx, width * 0.2, height * 0.2, 280 * scale, 'rgba(16, 185, 129, 0.75)')
+      paintOrb(ctx, width * 0.8, height * 0.25, 300 * scale, 'rgba(20, 184, 166, 0.65)')
+      paintOrb(ctx, width * 0.5, height * 0.85, 420 * scale, 'rgba(79, 70, 229, 0.5)')
       break
     }
 
     case 'ocean-glow': {
       const base = ctx.createLinearGradient(width * 0.1, 0, width * 0.9, height)
-      base.addColorStop(0, '#050b1c')
-      base.addColorStop(0.5, '#0a2559')
-      base.addColorStop(1, '#0f6dd8')
+      base.addColorStop(0, '#02071a')
+      base.addColorStop(0.5, '#07153b')
+      base.addColorStop(1, '#010614')
       ctx.fillStyle = base
       ctx.fillRect(0, 0, width, height)
 
-      paintOrb(ctx, width * 0.14, height * 0.18, 190 * scale, 'rgba(39, 225, 171, 0.75)')
-      paintOrb(ctx, width * 0.85, height * 0.2, 240 * scale, 'rgba(56, 153, 255, 0.82)')
-      paintOrb(ctx, width * 0.55, height * 0.94, 360 * scale, 'rgba(28, 108, 255, 0.65)')
+      paintOrb(ctx, width * 0.2, height * 0.25, 310 * scale, 'rgba(29, 78, 216, 0.8)')
+      paintOrb(ctx, width * 0.75, height * 0.2, 290 * scale, 'rgba(37, 99, 235, 0.7)')
+      paintOrb(ctx, width * 0.5, height * 0.85, 380 * scale, 'rgba(6, 182, 212, 0.55)')
       break
     }
 
     case 'sunset-bloom': {
       const base = ctx.createLinearGradient(0, 0, width, height)
-      base.addColorStop(0, '#100a14')
-      base.addColorStop(0.44, '#40204b')
-      base.addColorStop(1, '#130d26')
+      base.addColorStop(0, '#0d0514')
+      base.addColorStop(0.45, '#240a2f')
+      base.addColorStop(1, '#0b0410')
       ctx.fillStyle = base
       ctx.fillRect(0, 0, width, height)
 
-      paintOrb(ctx, width * 0.3, height * 0.14, 180 * scale, 'rgba(255, 123, 86, 0.78)')
-      paintOrb(ctx, width * 0.64, height * 0.18, 170 * scale, 'rgba(255, 216, 116, 0.42)')
-      paintOrb(ctx, width * 0.74, height * 0.8, 300 * scale, 'rgba(255, 76, 149, 0.42)')
+      paintOrb(ctx, width * 0.25, height * 0.2, 300 * scale, 'rgba(124, 58, 237, 0.7)')
+      paintOrb(ctx, width * 0.78, height * 0.22, 280 * scale, 'rgba(219, 39, 119, 0.6)')
+      paintOrb(ctx, width * 0.5, height * 0.85, 410 * scale, 'rgba(245, 158, 11, 0.4)')
       break
     }
 
     case 'midnight-prism':
     default: {
       const base = ctx.createLinearGradient(0, 0, width, height)
-      base.addColorStop(0, '#0f0c29')
-      base.addColorStop(0.5, '#302b63')
-      base.addColorStop(1, '#24243e')
+      base.addColorStop(0, '#05020c')
+      base.addColorStop(0.5, '#16082b')
+      base.addColorStop(1, '#060210')
       ctx.fillStyle = base
       ctx.fillRect(0, 0, width, height)
 
-      paintOrb(ctx, width * 0.3, height * 0.18, 170 * scale, 'rgba(255, 115, 64, 0.45)')
-      paintOrb(ctx, width * 0.62, height * 0.16, 180 * scale, 'rgba(72, 155, 255, 0.42)')
-      paintOrb(ctx, width * 0.5, height * 0.86, 310 * scale, 'rgba(124, 72, 255, 0.32)')
+      paintOrb(ctx, width * 0.3, height * 0.2, 280 * scale, 'rgba(139, 92, 246, 0.7)')
+      paintOrb(ctx, width * 0.75, height * 0.3, 320 * scale, 'rgba(59, 130, 246, 0.6)')
+      paintOrb(ctx, width * 0.5, height * 0.8, 400 * scale, 'rgba(236, 72, 153, 0.4)')
       break
     }
   }
-
-  ctx.save()
-  ctx.globalAlpha = 0.08
-  ctx.fillStyle = '#ffffff'
-  for (let y = 0; y < height; y += 14 * scale) {
-    ctx.fillRect(0, y, width, 1)
-  }
-  ctx.restore()
 }
 
 export function clipCalendarCardSurface(

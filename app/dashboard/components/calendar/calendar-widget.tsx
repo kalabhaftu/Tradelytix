@@ -24,6 +24,7 @@ import { CalendarData } from "@/app/dashboard/types/calendar"
 import { WidgetCard } from "../widget-card"
 import {
   type CalendarGradientPresetId,
+  CALENDAR_GRADIENT_PRESETS,
   clipCalendarCardSurface,
   drawCalendarGradientBackground,
   resolveCalendarGradientPreset,
@@ -75,15 +76,6 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
       const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim()
       const resolvedBg = bgColor ? `hsl(${bgColor})` : '#0d0d0d'
 
-      // Load actual logo image
-      const logoImg = new Image()
-      logoImg.crossOrigin = 'anonymous'
-      await new Promise<void>((resolve, reject) => {
-        logoImg.onload = () => resolve()
-        logoImg.onerror = () => reject(new Error('Failed to load logo'))
-        logoImg.src = '/android-chrome-512x512.png'
-      })
-
       // Capture just the card
       const cardCanvas = await html2canvas(calendarRef.current, {
         backgroundColor: resolvedBg,
@@ -91,37 +83,40 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         logging: false,
         useCORS: true,
         windowWidth: Math.round(rect.width),
-        windowHeight: Math.round(rect.height),
         onclone: (_clonedDoc, clonedElem) => {
           clonedElem.style.width = `${rect.width}px`
-          clonedElem.style.height = `${rect.height}px`
-          clonedElem.style.overflow = 'hidden'
+          clonedElem.style.height = 'auto'
+          
+          const innerCard = clonedElem.querySelector('[data-widget-card="true"]') as HTMLElement
+          if (innerCard) {
+            innerCard.style.height = 'auto'
+          }
+
+          // Show the logo bar
+          const logoBar = clonedElem.querySelector('.screenshot-logo-bar') as HTMLElement
+          if (logoBar) {
+            logoBar.style.display = 'flex'
+          }
+
           clonedElem.querySelectorAll('.screenshot-btn').forEach((el) => {
             (el as HTMLElement).style.display = 'none'
           })
         },
       })
 
-      // Logo bar height - increased for larger logo
-      const logoBarHeight = 70
       const cardW = cardCanvas.width
       const cardH = cardCanvas.height
-      // Padding only for gradient (around the entire card+logo unit)
       const withGradient = variant !== 'basic'
       const selectedGradient = withGradient ? resolveCalendarGradientPreset(variant) : null
       const padding = withGradient ? Math.round(32 * scale) : 0
       const totalW = cardW + padding * 2
-      // Logo bar is INSIDE the card, so total height = card + logo bar + padding (if gradient)
-      const totalH = cardH + Math.round(logoBarHeight * scale) + (withGradient ? padding * 2 : 0)
+      const totalH = cardH + padding * 2
 
       const out = document.createElement('canvas')
       out.width = totalW
       out.height = totalH
       const ctx = out.getContext('2d')!
 
-      // Combined card height including logo bar
-      const combinedCardH = cardH + Math.round(logoBarHeight * scale)
-      
       if (withGradient && selectedGradient) {
         drawCalendarGradientBackground(ctx, selectedGradient.id, totalW, totalH)
 
@@ -130,36 +125,15 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         ctx.shadowBlur = 50 * scale
         ctx.shadowOffsetY = 15 * scale
         const r = 20 * scale
-        clipCalendarCardSurface(ctx, padding, padding, cardW, combinedCardH, r, resolvedBg)
+        clipCalendarCardSurface(ctx, padding, padding, cardW, cardH, r, resolvedBg)
         // Draw the card content
         ctx.drawImage(cardCanvas, padding, padding)
         ctx.restore()
-      } else {
-        // For basic: no padding, logo is attached to card
-        ctx.fillStyle = resolvedBg
-        ctx.fillRect(0, 0, totalW, totalH)
-        ctx.drawImage(cardCanvas, 0, 0)
       }
 
-      // Logo bar is INSIDE the card area (same dark background)
-      // For gradient: padding + cardH, for basic: just cardH
-      const barY = (withGradient ? padding : 0) + cardH
-      const logoYPos = barY + Math.round((logoBarHeight / 2) * scale)
-      
-      // Draw actual logo image - LARGER size like Tradezella
-      const logoSize = Math.round(24 * scale)
-      const logoX = totalW / 2 - Math.round(85 * scale)
-      ctx.drawImage(logoImg, logoX, logoYPos - logoSize / 2, logoSize, logoSize)
-      
-      // Draw text - LARGER font
-      const fontSize = Math.round(16 * scale)
-      ctx.font = `800 ${fontSize}px -apple-system, BlinkMacSystemFont, "Inter", sans-serif`
-      ctx.fillStyle = 'rgba(255,255,255,0.5)'
-      ctx.textAlign = 'left'
-      ctx.textBaseline = 'middle'
-      ctx.fillText('TRADELYTIX', logoX + logoSize + Math.round(12 * scale), logoYPos)
+      const finalCanvas = withGradient ? out : cardCanvas
 
-      out.toBlob((blob) => {
+      finalCanvas.toBlob((blob) => {
         if (!blob) { toast.error("Failed to capture screenshot"); return }
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
@@ -172,7 +146,8 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         URL.revokeObjectURL(url)
         toast.success("Screenshot saved!")
       }, 'image/png')
-    } catch {
+    } catch (err) {
+      console.error(err)
       toast.error("Failed to capture screenshot")
     }
   }, [currentDate])
@@ -241,15 +216,35 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
             <Camera className="h-3.5 w-3.5" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuContent align="end" className="w-44">
           <DropdownMenuItem onClick={() => handleScreenshot('basic')} className="gap-2 text-xs font-medium">
-            <ImageIcon className="h-3.5 w-3.5" />
-            Basic
+            <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
+            Basic (No Gradient)
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => handleScreenshot('random')} className="gap-2 text-xs font-medium">
-            <Sparkles className="h-3.5 w-3.5" />
+            <Sparkles className="h-3.5 w-3.5 text-yellow-500" />
             Random Gradient
           </DropdownMenuItem>
+          <div className="h-px bg-border/40 my-1" />
+          <div className="px-2 py-1 text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
+            Premium Gradients
+          </div>
+          {CALENDAR_GRADIENT_PRESETS.map((preset) => (
+            <DropdownMenuItem
+              key={preset.id}
+              onClick={() => handleScreenshot(preset.id)}
+              className="gap-2 text-xs font-medium"
+            >
+              <div className={cn(
+                "h-2.5 w-2.5 rounded-full shrink-0",
+                preset.id === 'midnight-prism' && "bg-gradient-to-tr from-purple-600 to-indigo-600",
+                preset.id === 'aurora-glass' && "bg-gradient-to-tr from-emerald-600 to-teal-600",
+                preset.id === 'ocean-glow' && "bg-gradient-to-tr from-blue-600 to-cyan-500",
+                preset.id === 'sunset-bloom' && "bg-gradient-to-tr from-purple-700 to-orange-500"
+              )} />
+              {preset.label}
+            </DropdownMenuItem>
+          ))}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -400,6 +395,12 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
           dayData={selectedDate ? localCalendarData[format(selectedDate, 'yyyy-MM-dd')] : undefined}
           isLoading={isLoading}
         />
+
+        {/* Logo Footer - only shown in screenshots, hidden in live view */}
+        <div className="screenshot-logo-bar hidden border-t border-border/10 bg-muted/5 py-4 flex items-center justify-center gap-2 flex-shrink-0">
+          <Logo className="h-4 w-4 text-foreground/70" transparent />
+          <span className="text-[10px] font-black tracking-[0.2em] text-foreground/60">TRADELYTIX</span>
+        </div>
       </WidgetCard>
 
       <WeeklyModal

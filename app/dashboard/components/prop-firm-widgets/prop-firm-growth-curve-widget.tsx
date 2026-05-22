@@ -97,7 +97,7 @@ export function PropFirmGrowthCurveWidget() {
         const yDomain = getYAxisDomain(chartData, refs)
 
         return (
-          <div className="flex h-full min-h-[18rem] flex-col gap-4">
+          <div className="flex h-full min-h-0 flex-col gap-4">
             <div className="grid gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground sm:grid-cols-4">
               <span>Start <b className="font-mono text-foreground">{formatMoney(refs.accountSize)}</b></span>
               <span>Target <b className="font-mono text-long">{formatMoney(refs.targetBalance)}</b></span>

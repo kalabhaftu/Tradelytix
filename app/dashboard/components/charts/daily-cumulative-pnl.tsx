@@ -25,6 +25,7 @@ import { useWidgetData } from '@/hooks/use-widget-data'
 import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { formatNumber } from "@/lib/utils"
 import { WidgetSize } from '@/app/dashboard/types/dashboard'
+import { useTheme } from '@/context/theme-provider'
 
 // ============================================================================
 // TYPES
@@ -82,6 +83,7 @@ function formatAxisValue(value: number): string {
 export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulativePnLProps) {
   const { data: rawChartData, isLoading } = useWidgetData('dailyCumulativePnl')
   const { mode, formatValue, transformValue } = useDashboardDisplay()
+  const { chartStyle } = useTheme()
   const displayMode = mode === 'rMultiple' ? 'dollars' : mode
   const chartData = React.useMemo(
     () =>
@@ -210,7 +212,7 @@ export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulat
 
               {/* Area with Gradient Fill */}
               <Area
-                type="monotone"
+                type={chartStyle === 'sharp' ? 'linear' : 'monotone'}
                 dataKey="cumulativePnL"
                 stroke="url(#cumulativeStroke)"
                 strokeWidth={CHART_CONFIG.strokeWidth}

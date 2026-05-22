@@ -23,6 +23,7 @@ import {
 import { WidgetCard, ChartTooltip as SharedChartTooltip } from '../widget-card'
 import { useWidgetData } from '@/hooks/use-widget-data'
 import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
+import { useTheme } from '@/context/theme-provider'
 import { useUserStore } from "@/store/user-store"
 import { formatNumber } from "@/lib/utils"
 import { WidgetSize } from '@/app/dashboard/types/dashboard'
@@ -72,7 +73,7 @@ const CHART_CONFIG = {
 // ============================================================================
 
 function CustomDot(props: any) {
-  const { cx, cy, payload } = props
+  const { cx, cy, payload, fill } = props
   if (!payload.hasActivity) return null
 
   return (
@@ -80,7 +81,7 @@ function CustomDot(props: any) {
       cx={cx}
       cy={cy}
       r={CHART_CONFIG.dotRadius}
-      fill={COLORS.profit}
+      fill={fill || COLORS.profit}
       stroke="hsl(var(--background))"
       strokeWidth={2}
     />
@@ -109,6 +110,7 @@ function formatAxisValue(value: number): string {
 function AccountBalanceChart({ size = 'small-long' }: AccountBalanceChartProps) {
   const { data: rawChartData, isLoading } = useWidgetData('accountBalanceChart')
   const { formatValue, transformValue } = useDashboardDisplay()
+  const { chartStyle } = useTheme()
   const chartData = React.useMemo(
     () =>
       (rawChartData ?? []).map((item: any) => ({
@@ -207,11 +209,11 @@ function AccountBalanceChart({ size = 'small-long' }: AccountBalanceChartProps) 
 
               {/* Line */}
               <Line
-                type="monotone"
+                type={chartStyle === 'sharp' ? 'linear' : 'monotone'}
                 dataKey="balance"
-                stroke={isPositive ? COLORS.profit : COLORS.loss}
+                stroke={chartStyle === 'sharp' ? '#a78bfa' : (isPositive ? COLORS.profit : COLORS.loss)}
                 strokeWidth={CHART_CONFIG.strokeWidth}
-                dot={<CustomDot />}
+                dot={<CustomDot fill={chartStyle === 'sharp' ? '#a78bfa' : COLORS.profit} />}
                 activeDot={{
                   r: 6,
                   strokeWidth: 2,

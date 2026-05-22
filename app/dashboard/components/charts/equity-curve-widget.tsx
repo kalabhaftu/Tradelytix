@@ -4,6 +4,7 @@ import React from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { useWidgetData } from '@/hooks/use-widget-data'
 import { WidgetCard, ChartTooltip } from '../widget-card'
+import { useTheme } from '@/context/theme-provider'
 
 const COLORS = {
   bullish: 'hsl(var(--chart-profit))',
@@ -12,6 +13,7 @@ const COLORS = {
 
 export default function EquityCurveWidget() {
   const { data: chartData, isLoading } = useWidgetData('equityCurve')
+  const { chartStyle } = useTheme()
 
   // Split gradient offset — green above zero, red below zero
   const gradientOffset = React.useMemo(() => {
@@ -43,6 +45,11 @@ export default function EquityCurveWidget() {
     )
   }
 
+  const isSharp = chartStyle === 'sharp'
+  const strokeVal = isSharp ? '#a78bfa' : 'url(#equityStrokeGrad)'
+  const fillVal = isSharp ? 'url(#equityPurpleGrad)' : 'url(#equityFillGrad)'
+  const curveType = isSharp ? 'linear' : 'monotone'
+
   return (
     <WidgetCard title="Cumulative Equity Curve">
       <ResponsiveContainer width="100%" height="100%">
@@ -59,6 +66,11 @@ export default function EquityCurveWidget() {
             <linearGradient id="equityStrokeGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset={`${gradientOffset * 100}%`} stopColor={COLORS.bullish} />
               <stop offset={`${gradientOffset * 100}%`} stopColor={COLORS.bearish} />
+            </linearGradient>
+            {/* Purple gradient for sharp mode */}
+            <linearGradient id="equityPurpleGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.4} />
+              <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.03} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border)/0.15)" vertical={false} />
@@ -80,11 +92,11 @@ export default function EquityCurveWidget() {
           <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.4} />
           <Tooltip content={<ChartTooltip />} />
           <Area
-            type="monotone"
+            type={curveType}
             dataKey="equity"
-            stroke="url(#equityStrokeGrad)"
+            stroke={strokeVal}
             strokeWidth={2}
-            fill="url(#equityFillGrad)"
+            fill={fillVal}
             dot={false}
             name="Equity"
           />

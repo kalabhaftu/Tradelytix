@@ -6,15 +6,18 @@ import { useUserStore } from '@/store/user-store'
 type Theme = 'light' | 'dark' | 'system'
 type AccentPack = 'classic' | 'reports'
 type WidgetSurfaceStyle = 'default' | 'glass'
+type ChartStyle = 'smooth' | 'sharp'
 
 type ThemeContextType = {
   theme: Theme
   effectiveTheme: 'light' | 'dark'
   accentPack: AccentPack
   widgetStyle: WidgetSurfaceStyle
+  chartStyle: ChartStyle
   setTheme: (theme: Theme) => void
   setAccentPack: (pack: AccentPack) => void
   setWidgetStyle: (style: WidgetSurfaceStyle) => void
+  setChartStyle: (style: ChartStyle) => void
   toggleTheme: () => void
 }
 
@@ -23,9 +26,11 @@ const ThemeContext = createContext<ThemeContextType>({
   effectiveTheme: 'dark',
   accentPack: 'classic',
   widgetStyle: 'default',
+  chartStyle: 'smooth',
   setTheme: () => {},
   setAccentPack: () => {},
   setWidgetStyle: () => {},
+  setChartStyle: () => {},
   toggleTheme: () => {},
 })
 
@@ -49,6 +54,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('dark')
   const [accentPack, setAccentPackState] = useState<AccentPack>('classic')
   const [widgetStyle, setWidgetStyleState] = useState<WidgetSurfaceStyle>('default')
+  const [chartStyle, setChartStyleState] = useState<ChartStyle>('smooth')
   const [mounted, setMounted] = useState(false)
   const user = useUserStore(state => state.user)
 
@@ -95,6 +101,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const resolvedWidget = savedWidget && validWidgets.includes(savedWidget) ? savedWidget : 'default'
     setWidgetStyleState(resolvedWidget)
 
+    // Restore chart style from localStorage
+    const savedChart = localStorage.getItem('chartStyle') as ChartStyle | null
+    const validCharts: ChartStyle[] = ['smooth', 'sharp']
+    const resolvedChart = savedChart && validCharts.includes(savedChart) ? savedChart : 'smooth'
+    setChartStyleState(resolvedChart)
+
     // Listen for system preference changes when in system mode
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
     const handler = () => {
@@ -136,6 +148,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('widgetStyle', dbWidget)
         }
       }
+
+      if (user.chartStyle) {
+        const dbChart = user.chartStyle as ChartStyle
+        const currentChart = localStorage.getItem('chartStyle') as ChartStyle | null
+        if (dbChart !== currentChart) {
+          setChartStyleState(dbChart)
+          localStorage.setItem('chartStyle', dbChart)
+        }
+      }
     }
   }, [user, mounted, applyTheme])
 
@@ -158,6 +179,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('widgetStyle', widgetStyle)
     }
   }, [widgetStyle, mounted])
+
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem('chartStyle', chartStyle)
+    }
+  }, [chartStyle, mounted])
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme)
@@ -188,6 +215,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }).catch(() => {})
   }
 
+  const setChartStyle = (style: ChartStyle) => {
+    setChartStyleState(style)
+    fetch('/api/auth/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chartStyle: style }),
+    }).catch(() => {})
+  }
+
   const toggleTheme = () => {
     const nextTheme = resolveEffective(theme) === 'dark' ? 'light' : 'dark'
     setTheme(nextTheme)
@@ -198,9 +234,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     effectiveTheme: resolveEffective(theme),
     accentPack,
     widgetStyle,
+    chartStyle,
     setTheme,
     setAccentPack,
     setWidgetStyle,
+    setChartStyle,
     toggleTheme,
   }
 

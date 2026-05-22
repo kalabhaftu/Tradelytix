@@ -464,6 +464,7 @@ model User {
   pnlDisplayMode         String                   @default("net")
   accentPack             String                   @default("classic")
   widgetStyle            String                   @default("default")
+  chartStyle             String                   @default("smooth")
   role                   UserRole                 @default(user)
   autoAdjustAccountDate  Boolean                  @default(false)
   Account                Account[]
@@ -517,6 +518,7 @@ model UserSettings {
   pnlDisplayMode        String   @default("net")
   accentPack            String   @default("classic")
   widgetStyle           String   @default("default")
+  chartStyle            String   @default("smooth")
   autoAdjustAccountDate Boolean  @default(false)
   webhookToken          String?  @unique
   createdAt             DateTime @default(now())

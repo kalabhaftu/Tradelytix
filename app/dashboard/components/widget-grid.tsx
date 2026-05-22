@@ -387,7 +387,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
             if (!config) return null
 
             return (
-              <div key={widget.i} className={cn("group", isEditMode && "ring-1 ring-border/30 ring-inset rounded-2xl hover:ring-primary/40 transition-all")}>
+              <div key={widget.i} data-is-chart={config.category === 'charts'} className={cn("group", isEditMode && "ring-1 ring-border/30 ring-inset rounded-2xl hover:ring-primary/40 transition-all")}>
                 <div className="relative h-full w-full">
                   {/* Edit mode overlay controls */}
                   {isEditMode && (

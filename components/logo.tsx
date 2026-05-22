@@ -1,6 +1,13 @@
 import { cn } from "@/lib/utils";
 
-export function Logo({ className }: { className?: string }) {
+export function Logo({ className, transparent = false }: { className?: string; transparent?: boolean }) {
+    if (transparent) {
+        return (
+            <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" className={cn("fill-current", className)} aria-label="Tradelytix T logo" role="img">
+                <path d="M128 136h256v72H292v216h-72V208h-92z" />
+            </svg>
+        )
+    }
     return (
         <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" className={cn("fill-foreground", className)} aria-label="Tradelytix T logo" role="img">
             <rect width="512" height="512" rx="104" className="fill-current opacity-100" />

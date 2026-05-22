@@ -76,7 +76,7 @@ const DayCell = memo(function DayCell({
         // Advanced calendar: cells fill grid space with minimum height
         isMiniCalendar 
           ? "min-h-[68px] sm:min-h-[76px] lg:min-h-[84px]" 
-          : "min-h-[92px] lg:min-h-[104px] cursor-pointer",
+          : "min-h-[52px] md:min-h-[92px] lg:min-h-[104px] cursor-pointer",
 
         // No trades — uses theme tokens so it works in any color scheme
         !hasTrades && isCurrentMonth && "bg-muted/5 border-border/20 hover:border-border/40",
@@ -235,7 +235,7 @@ function WeeklySummary({
   return (
     <div
       className={cn(
-        "flex h-full min-h-[92px] flex-col items-start justify-center rounded-[8px] border p-2.5 cursor-pointer transition-all hover:bg-muted/30 group lg:min-h-[104px]",
+        "flex h-full min-h-[64px] md:min-h-[92px] flex-col items-start justify-center rounded-[8px] border p-2 md:p-2.5 cursor-pointer transition-all hover:bg-muted/30 group lg:min-h-[104px]",
         "bg-muted/10 border-border/20"
       )}
       onClick={() => onReviewWeek?.(weekDays[0])}
@@ -315,12 +315,15 @@ export default function MonthlyView({
   const displayWeekdays = shouldUseWeekdayOnlyLayout 
     ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] 
     : WEEKDAYS
+  const isMobile = useMediaQuery('(max-width: 767px)')
   const rowTemplate = isMiniCalendar
     ? `repeat(${weeks.length}, minmax(68px, 1fr))`
-    : `repeat(${weeks.length}, minmax(92px, 1fr))`
+    : isMobile
+      ? `repeat(${weeks.length}, minmax(52px, 1fr))`
+      : `repeat(${weeks.length}, minmax(92px, 1fr))`
 
   return (
-    <div className={cn("flex h-full w-full overflow-hidden", isMiniCalendar ? "flex-col" : "flex-row")}>
+    <div className={cn("flex h-full w-full overflow-hidden flex-col", isMiniCalendar ? "" : "md:flex-row")}>
       {/* Main Calendar Grid Container */}
       <div className={cn("flex flex-col flex-1 h-full min-h-0", isMiniCalendar ? "min-w-[300px]" : "min-w-0")}>
         {/* Weekday Headers */}
@@ -361,16 +364,34 @@ export default function MonthlyView({
       </div>
 
       {!isMiniCalendar && (
-        <>
-        {/* Weekly Summaries Sidebar — kept at the side so weekday cells gain width on smaller screens */}
-        <div className="flex h-full w-[78px] shrink-0 flex-col border-l border-border/10 min-[420px]:w-[88px] sm:w-[96px] lg:w-[104px] xl:w-[116px] 2xl:w-[125px]">
-          {/* Spacer matches weekday-header height exactly (py-1.5 md:py-2 + text line = ~34px on md) */}
-          <div className="shrink-0 py-1.5 md:py-2">
-            <div className="h-[16px]" /> {/* text-[11px] line height */}
-          </div>
+        <div className={cn(
+          "shrink-0 flex-col border-border/10",
+          isMobile 
+            ? "flex w-full border-t p-3 bg-muted/5 gap-2" 
+            : "flex h-full w-[78px] border-l min-[420px]:w-[88px] sm:w-[96px] lg:w-[104px] xl:w-[116px] 2xl:w-[125px]"
+        )}>
+          {/* Desktop Spacer matches weekday-header height exactly (py-1.5 md:py-2 + text line = ~34px on md) */}
+          {!isMobile && (
+            <div className="shrink-0 py-1.5 md:py-2">
+              <div className="h-[16px]" />
+            </div>
+          )}
+
+          {/* Title on mobile view */}
+          {isMobile && (
+            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em] mb-1">
+              Weekly Performance
+            </div>
+          )}
 
           {/* Week rows — grid to align perfectly with calendar rows */}
-          <div className="flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 pl-1 md:pl-2 min-h-0" style={{ gridTemplateRows: rowTemplate }}>
+          <div 
+            className={cn(
+              "grid gap-1 md:gap-1.5 min-h-0",
+              isMobile ? "grid-cols-3 sm:grid-cols-5 w-full" : "flex-1 pt-0 pl-1 md:pl-2"
+            )} 
+            style={isMobile ? undefined : { gridTemplateRows: rowTemplate }}
+          >
             {weeks.map((week, index) => (
               <WeeklySummary
                 key={index}
@@ -383,7 +404,6 @@ export default function MonthlyView({
             ))}
           </div>
         </div>
-        </>
       )}
     </div>
   )

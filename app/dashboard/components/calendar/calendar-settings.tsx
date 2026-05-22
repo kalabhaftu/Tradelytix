@@ -23,11 +23,10 @@ export function CalendarSettings() {
                 <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 w-8 p-0 sm:w-auto sm:px-2.5 text-[11px] font-bold gap-1.5 border-dashed bg-transparent hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all"
+                    className="h-6 w-6 max-[420px]:h-5 max-[420px]:w-5 sm:h-7 sm:w-7 p-0 border border-border/30 rounded-lg bg-muted/20 hover:bg-primary/5 hover:text-primary transition-all"
                     title="Calendar Settings"
                 >
-                    <SettingsIcon className="h-4 w-4" />
-                    <span className="hidden sm:inline">Settings</span>
+                    <SettingsIcon className="h-3.5 w-3.5" />
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[200px] p-0" align="end">

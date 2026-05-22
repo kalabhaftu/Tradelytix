@@ -90,8 +90,8 @@ export function AccountCurveWidget({ initialMode = 'cumulative' }: { initialMode
       ]} />}
     >
       {isLoading ? <EmptyWidget label="Loading account curve..." /> : chartData.length === 0 ? <EmptyWidget label="No account curve data yet" /> : (
-        <div className="flex h-full min-h-[240px] flex-col gap-3 xl:flex-row">
-          <div className="min-h-[210px] flex-1">
+        <div className="flex h-full min-h-0 flex-col gap-3 xl:flex-row">
+          <div className="min-h-0 flex-1">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 8, right: 4, bottom: 0, left: -18 }}>
                 <defs>

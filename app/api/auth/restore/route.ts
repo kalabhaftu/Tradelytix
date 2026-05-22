@@ -5,9 +5,9 @@ import { z } from "zod"
 import { ensureUserInDatabase } from "@/server/auth"
 
 const restoreSessionSchema = z.object({
-  accessToken: z.string().trim().min(20).max(8192),
-  refreshToken: z.string().trim().min(20).max(8192),
-}).strict()
+  accessToken: z.string().trim().min(1).max(8192),
+  refreshToken: z.string().trim().min(1).max(8192),
+})
 
 type SupabaseCookie = {
   name: string
@@ -27,6 +27,9 @@ export async function POST(request: NextRequest) {
   const parsed = restoreSessionSchema.safeParse(body)
 
   if (!parsed.success) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Session restore schema validation failed:", parsed.error.format(), "Body received:", body)
+    }
     return NextResponse.json({ authenticated: false, error: "invalid_tokens" }, { status: 400 })
   }
 

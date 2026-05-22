@@ -50,7 +50,9 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
 
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://vercel.live",
+    process.env.NODE_ENV === "production"
+      ? "script-src 'self' 'unsafe-inline' https://vercel.live"
+      : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live",
     "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
     "font-src 'self' fonts.gstatic.com",
     "img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com",

@@ -67,7 +67,7 @@ function MiniMonth({
   }, [monthDate])
 
   return (
-    <div className="flex flex-col gap-2 p-3 md:p-4 rounded-xl border border-border/30 bg-card/30 hover:bg-card/50 transition-all group">
+    <div className="flex flex-col gap-1.5 p-2.5 md:p-3 rounded-xl border border-border/30 bg-card/30 hover:bg-card/50 transition-all group">
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-sm font-black tracking-tight text-muted-foreground/70 group-hover:text-foreground transition-colors italic">
@@ -90,7 +90,7 @@ function MiniMonth({
       </div>
 
       {/* Weekday Headers */}
-      <div className="grid grid-cols-7 gap-0.5">
+      <div className="grid grid-cols-7 gap-[1px]">
         {WEEKDAYS.map((day) => (
           <div
             key={day}
@@ -103,7 +103,7 @@ function MiniMonth({
 
       {/* Day Grid */}
       <TooltipProvider>
-        <div className="grid grid-cols-7 gap-0.5">
+        <div className="grid grid-cols-7 gap-[1px]">
           {gridDays.map((day) => {
             const isCurrentMonth = isSameMonth(day, monthDate)
             const isTodayDate = isToday(day)
@@ -212,8 +212,8 @@ export default function YearlyView({
   )
 
   return (
-    <div className="h-full overflow-y-auto p-3 md:p-5">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4 max-w-[1600px] mx-auto">
+    <div className="h-full overflow-y-auto p-2.5 md:p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-3 max-w-[1600px] mx-auto">
         {months.map((month) => (
           <MiniMonth
             key={month.toISOString()}

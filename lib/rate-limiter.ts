@@ -44,6 +44,27 @@ async function kvConsume(key: string, points: number, duration: number): Promise
 interface LimiterConfig {
   points: number
   duration: number
+  failClosed?: boolean
+}
+
+function allowInMemoryProductionLimits() {
+  return process.env.ALLOW_IN_MEMORY_RATE_LIMITS_IN_PRODUCTION === 'true' || process.env.ALLOW_IN_MEMORY_RATE_LIMITS_IN_PRODUCTION === '1'
+}
+
+function shouldFailClosed(limiter: LimiterConfig) {
+  return process.env.NODE_ENV === 'production' && limiter.failClosed && !allowInMemoryProductionLimits()
+}
+
+function rateLimitUnavailableResponse() {
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'Service temporarily unavailable',
+      code: 'RATE_LIMIT_BACKEND_UNAVAILABLE',
+      retryable: true,
+    },
+    { status: 503 }
+  )
 }
 
 // ─── In-memory fallback instances (used when KV is unavailable) ───
@@ -61,17 +82,17 @@ function getMemoryLimiter(config: LimiterConfig): RateLimiterMemory {
 
 // ─── Exported limiter configs (drop-in compatible with existing imports) ───
 export const apiLimiter: LimiterConfig = { points: 100, duration: 60 }
-export const authLimiter: LimiterConfig = { points: 10, duration: 60 }
+export const authLimiter: LimiterConfig = { points: 10, duration: 60, failClosed: true }
 export const aiLimiter: LimiterConfig = { points: 20, duration: 60 }
 export const importLimiter: LimiterConfig = { points: 10, duration: 60 }
 export const uploadLimiter: LimiterConfig = { points: 30, duration: 60 }
-export const webhookLimiter: LimiterConfig = { points: 20, duration: 60 }
-export const paymentLimiter: LimiterConfig = { points: 30, duration: 60 }
+export const webhookLimiter: LimiterConfig = { points: 20, duration: 60, failClosed: true }
+export const paymentLimiter: LimiterConfig = { points: 30, duration: 60, failClosed: true }
 export const feedbackLimiter: LimiterConfig = { points: 5, duration: 60 }
-export const adminLimiter: LimiterConfig = { points: 200, duration: 60 }
+export const adminLimiter: LimiterConfig = { points: 200, duration: 60, failClosed: true }
 export const publicLimiter: LimiterConfig = { points: 30, duration: 60 }
-export const errorReportLimiter: LimiterConfig = { points: 10, duration: 60 }
-export const emailOtpLimiter: LimiterConfig = { points: 3, duration: 3600 }
+export const errorReportLimiter: LimiterConfig = { points: 10, duration: 60, failClosed: true }
+export const emailOtpLimiter: LimiterConfig = { points: 3, duration: 3600, failClosed: true }
 
 /**
  * Get identifier for rate limiting.
@@ -96,6 +117,10 @@ export async function consumeRateLimitKey(
   if (isKvAvailable()) {
     const result = await kvConsume(key, limiter.points, limiter.duration)
     return { allowed: result.success, remaining: result.remaining }
+  }
+
+  if (shouldFailClosed(limiter)) {
+    return { allowed: false, remaining: 0 }
   }
 
   const memLimiter = getMemoryLimiter(limiter)
@@ -144,6 +169,10 @@ export async function applyRateLimit(
       )
     }
     return null
+  }
+
+  if (shouldFailClosed(limiter)) {
+    return rateLimitUnavailableResponse()
   }
 
   // Fallback: in-memory rate limiting

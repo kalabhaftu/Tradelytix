@@ -5,6 +5,7 @@
 
 import { createClient } from '@/lib/supabase'
 import { STORAGE_BUCKETS } from '@/lib/constants/storage'
+import { buildTradeImagePath } from '@/lib/storage/paths'
 
 export interface UploadResult {
   success: boolean
@@ -141,11 +142,12 @@ export class MediaUploadService {
       // This preserves the original name while ensuring uniqueness
       const fileName = `${nameWithoutExt}_${timestamp}_${randomId}.${fileExtension}`
 
-      // Create file path - structure: trades/{userId}/{tradeId}/{fileName}
-      let filePath = `${options.folder}/${options.userId}/${fileName}`
-      if (options.tradeId) {
-        filePath = `${options.folder}/${options.userId}/${options.tradeId}/${fileName}`
-      }
+      const filePath = buildTradeImagePath({
+        folder: options.folder,
+        userId: options.userId,
+        tradeId: options.tradeId,
+        fileName,
+      })
 
       // Try to get or create the appropriate bucket
       const bucketName = await this.ensureBucket()

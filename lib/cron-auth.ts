@@ -1,7 +1,9 @@
 /**
- * Cron route authentication
- * Validates CRON_SECRET via Authorization: Bearer <secret> or x-cron-secret header.
- * In development, allows unauthenticated requests when CRON_SECRET is not set.
+ * Cron route authentication.
+ *
+ * Accepts manual Authorization: Bearer <CRON_SECRET> or x-cron-secret.
+ * Vercel Cron requests are accepted when the platform-provided User-Agent is
+ * present; Vercel does not attach custom headers from vercel.json schedules.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -18,8 +20,16 @@ function safeCompareSecret(providedSecret: string, expectedSecret: string) {
   return timingSafeEqual(provided, expected)
 }
 
+function isVercelCronRequest(request: NextRequest) {
+  return request.headers.get('user-agent') === 'vercel-cron/1.0'
+}
+
 export function validateCronRequest(request: NextRequest): NextResponse | null {
   const secret = process.env.CRON_SECRET
+
+  if (isVercelCronRequest(request)) {
+    return null
+  }
 
   if (!secret && process.env.NODE_ENV === 'development') {
     return null

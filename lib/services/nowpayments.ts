@@ -10,6 +10,11 @@ const API_BASE_URL = process.env.NOWPAYMENTS_API_BASE_URL || 'https://api.nowpay
 const API_KEY = process.env.NOWPAYMENTS_API_KEY || ''
 const IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET || ''
 
+function providerError(action: string, status: number) {
+  logger.error(`NOWPayments ${action} failed`, { status })
+  return new Error(`Unable to ${action}. Please try again.`)
+}
+
 function getHeaders(): Record<string, string> {
   if (!API_KEY) throw new Error('NOWPAYMENTS_API_KEY is not configured')
   return { 'x-api-key': API_KEY, 'Content-Type': 'application/json' }
@@ -114,9 +119,8 @@ export async function createInvoice(params: CreateInvoiceParams): Promise<Invoic
   })
 
   if (!res.ok) {
-    const errorBody = await res.text().catch(() => 'unknown error')
-    logger.error('[NOWPayments] Invoice creation failed', { status: res.status })
-    throw new Error(`Failed to create invoice: ${res.status} — ${errorBody}`)
+    await res.text().catch(() => null)
+    throw providerError('create invoice', res.status)
   }
 
   const data: InvoiceResponse = await res.json()
@@ -138,8 +142,8 @@ export async function getMinAmount(currencyFrom: string, currencyTo: string): Pr
   })
 
   if (!res.ok) {
-    const errorBody = await res.text().catch(() => 'unknown error')
-    throw new Error(`Failed to get minimum payment amount: ${res.status} — ${errorBody}`)
+    await res.text().catch(() => null)
+    throw providerError('get minimum payment amount', res.status)
   }
 
   const data = await res.json() as { min_amount?: number | string }
@@ -155,8 +159,8 @@ export async function getPaymentStatus(paymentId: string | number): Promise<Paym
   })
 
   if (!res.ok) {
-    const errorBody = await res.text().catch(() => 'unknown error')
-    throw new Error(`Failed to get payment status: ${res.status} — ${errorBody}`)
+    await res.text().catch(() => null)
+    throw providerError('get payment status', res.status)
   }
 
   return res.json()

@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-const STORAGE_KEY = 'dashboard.propFirmWidgets.selectedMasterAccountId'
+const ACCOUNT_STORAGE_KEY = 'dashboard.propFirmWidgets.selectedMasterAccountId'
+const RESET_TIMEZONE_STORAGE_KEY = 'dashboard.propFirmWidgets.resetTimezone'
+const DEFAULT_RESET_TIMEZONE = 'UTC'
 
 type PhaseSummary = {
   id: string
@@ -24,13 +26,24 @@ export type DashboardPropFirmAccountOption = {
 
 function getStoredSelection() {
   if (typeof window === 'undefined') return null
-  return window.localStorage.getItem(STORAGE_KEY)
+  return window.localStorage.getItem(ACCOUNT_STORAGE_KEY)
 }
 
 function setStoredSelection(value: string) {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(STORAGE_KEY, value)
+  window.localStorage.setItem(ACCOUNT_STORAGE_KEY, value)
   window.dispatchEvent(new CustomEvent('prop-firm-widget-account-change', { detail: value }))
+}
+
+function getStoredResetTimezone() {
+  if (typeof window === 'undefined') return DEFAULT_RESET_TIMEZONE
+  return window.localStorage.getItem(RESET_TIMEZONE_STORAGE_KEY) || DEFAULT_RESET_TIMEZONE
+}
+
+function setStoredResetTimezone(value: string) {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(RESET_TIMEZONE_STORAGE_KEY, value)
+  window.dispatchEvent(new CustomEvent('prop-firm-widget-timezone-change', { detail: value }))
 }
 
 function getCurrentPhase(account: DashboardPropFirmAccountOption) {
@@ -58,6 +71,7 @@ function getPreferredAccount(accounts: DashboardPropFirmAccountOption[]) {
 export function useDashboardPropFirmAccount() {
   const [accounts, setAccounts] = useState<DashboardPropFirmAccountOption[]>([])
   const [selectedMasterAccountId, setSelectedMasterAccountIdState] = useState<string | null>(null)
+  const [resetTimezone, setResetTimezoneState] = useState(DEFAULT_RESET_TIMEZONE)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -78,6 +92,7 @@ export function useDashboardPropFirmAccount() {
         if (cancelled) return
 
         setAccounts(nextAccounts)
+        setResetTimezoneState(getStoredResetTimezone())
         const stored = getStoredSelection()
         const storedExists = stored && nextAccounts.some((account: DashboardPropFirmAccountOption) => account.id === stored)
         const preferred = storedExists ? stored : getPreferredAccount(nextAccounts)?.id ?? null
@@ -93,25 +108,36 @@ export function useDashboardPropFirmAccount() {
     loadAccounts()
 
     const handleStorage = (event: StorageEvent) => {
-      if (event.key === STORAGE_KEY) setSelectedMasterAccountIdState(event.newValue)
+      if (event.key === ACCOUNT_STORAGE_KEY) setSelectedMasterAccountIdState(event.newValue)
+      if (event.key === RESET_TIMEZONE_STORAGE_KEY) setResetTimezoneState(event.newValue || DEFAULT_RESET_TIMEZONE)
     }
     const handleCustom = (event: Event) => {
       setSelectedMasterAccountIdState((event as CustomEvent<string>).detail)
     }
+    const handleTimezoneCustom = (event: Event) => {
+      setResetTimezoneState((event as CustomEvent<string>).detail || DEFAULT_RESET_TIMEZONE)
+    }
 
     window.addEventListener('storage', handleStorage)
     window.addEventListener('prop-firm-widget-account-change', handleCustom)
+    window.addEventListener('prop-firm-widget-timezone-change', handleTimezoneCustom)
 
     return () => {
       cancelled = true
       window.removeEventListener('storage', handleStorage)
       window.removeEventListener('prop-firm-widget-account-change', handleCustom)
+      window.removeEventListener('prop-firm-widget-timezone-change', handleTimezoneCustom)
     }
   }, [])
 
   const setSelectedMasterAccountId = useCallback((value: string) => {
     setSelectedMasterAccountIdState(value)
     setStoredSelection(value)
+  }, [])
+
+  const setResetTimezone = useCallback((value: string) => {
+    setResetTimezoneState(value)
+    setStoredResetTimezone(value)
   }, [])
 
   const selectedAccount = useMemo(
@@ -124,6 +150,8 @@ export function useDashboardPropFirmAccount() {
     selectedAccount,
     selectedMasterAccountId,
     setSelectedMasterAccountId,
+    resetTimezone,
+    setResetTimezone,
     isLoading,
     error,
   }

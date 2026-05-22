@@ -4,6 +4,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils'
 import type { DashboardPropFirmAccountOption } from '@/hooks/use-dashboard-prop-firm-account'
 
+const RESET_TIMEZONES = [
+  { value: 'UTC', label: 'UTC reset' },
+  { value: 'America/New_York', label: 'NY reset' },
+  { value: 'Europe/London', label: 'London reset' },
+]
+
 type Props = {
   accounts: DashboardPropFirmAccountOption[]
   selectedMasterAccountId: string | null
@@ -12,9 +18,31 @@ type Props = {
   className?: string
 }
 
+type TimezoneProps = {
+  value: string
+  onChange: (value: string) => void
+}
+
 function getLabel(account: DashboardPropFirmAccountOption) {
   const phase = account.currentPhase ? `Phase ${account.currentPhase}` : 'No current phase'
   return `${account.accountName || account.propFirmName} · ${phase}`
+}
+
+export function PropFirmWidgetTimezoneSelector({ value, onChange }: TimezoneProps) {
+  return (
+    <Select value={value || 'UTC'} onValueChange={onChange}>
+      <SelectTrigger className="h-8 w-[8.5rem] rounded-lg border-border/40 bg-muted/15 text-xs">
+        <SelectValue placeholder="UTC reset" />
+      </SelectTrigger>
+      <SelectContent>
+        {RESET_TIMEZONES.map((timezone) => (
+          <SelectItem key={timezone.value} value={timezone.value}>
+            {timezone.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
 }
 
 export function PropFirmWidgetAccountSelector({ accounts, selectedMasterAccountId, onChange, isLoading, className }: Props) {

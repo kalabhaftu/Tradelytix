@@ -58,12 +58,13 @@ export function PropFirmObjectivesTodayWidget() {
         const accountSize = Number(account.accountSize || 0)
         const targetAmount = accountSize * (Number(phase.profitTargetPercent || 0) / 100)
         const maxLossLimit = accountSize * (Number(phase.maxDrawdownPercent || 0) / 100)
-        const dailyLossLimit = accountSize * (Number(phase.dailyDrawdownPercent || 0) / 100)
+        const dailyLossLimit = data.dailyDrawdown.dailyLimit
         const grossPnl = Number(account.currentGrossPnL || 0)
         const maxRemaining = Number(data.drawdown?.maxDrawdownRemaining ?? account.maxDrawdownRemaining ?? 0)
-        const dailyRemaining = Number(data.drawdown?.dailyDrawdownRemaining ?? account.dailyDrawdownRemaining ?? 0)
+        const dailyRemaining = data.dailyDrawdown.dailyDrawdownRemaining
         const maxUsed = Math.max(0, maxLossLimit - maxRemaining)
-        const dailyUsed = Math.max(0, dailyLossLimit - dailyRemaining)
+        const dailyUsed = data.dailyDrawdown.dailyDrawdownUsed
+        const resetLabel = data.resetTimezone === 'UTC' ? 'UTC' : data.resetTimezone
 
         return (
           <div className="grid h-full gap-4 xl:grid-cols-[1.35fr_0.85fr]">
@@ -95,19 +96,19 @@ export function PropFirmObjectivesTodayWidget() {
                 progress={dailyLossLimit > 0 ? (dailyUsed / dailyLossLimit) * 100 : 0}
                 danger={dailyRemaining <= dailyLossLimit * 0.25}
                 rows={[
-                  { label: 'Today drawdown used', value: formatMoney(dailyUsed), tone: dailyUsed > 0 ? 'negative' : undefined },
+                  { label: `Drawdown used (${resetLabel})`, value: formatMoney(dailyUsed), tone: dailyUsed > 0 ? 'negative' : undefined },
                   { label: 'Daily drawdown limit', value: formatMoney(dailyLossLimit) },
-                  { label: 'Remaining today', value: formatMoney(dailyRemaining), rawValue: dailyRemaining, tone: 'remaining' },
+                  { label: `Remaining this ${resetLabel} day`, value: formatMoney(dailyRemaining), rawValue: dailyRemaining, tone: 'remaining' },
                 ]}
               />
             </div>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-              <StatTile label="Today P&L" icon={Activity} value={formatMoney(data.todayStats.pnl)} tone={data.todayStats.pnl >= 0 ? 'positive' : 'negative'} />
-              <StatTile label="Today trades" icon={CalendarClock} value={formatInteger(data.todayStats.trades)} />
+              <StatTile label={`Today P&L (${resetLabel})`} icon={Activity} value={formatMoney(data.todayStats.pnl)} tone={data.todayStats.pnl >= 0 ? 'positive' : 'negative'} />
+              <StatTile label={`Today trades (${resetLabel})`} icon={CalendarClock} value={formatInteger(data.todayStats.trades)} />
               <StatTile label="Today win rate" icon={Trophy} value={formatPercent(data.todayStats.winRate)} tone="positive" />
-              <StatTile label="Wins / Losses" icon={TrendingDown} value={`${data.todayStats.wins} / ${data.todayStats.losses}`} />
-              <StatTile label="Best trade" icon={Trophy} value={formatMoney(data.todayStats.bestTrade)} tone="positive" />
-              <StatTile label="Worst trade" icon={TrendingDown} value={formatMoney(data.todayStats.worstTrade)} tone="negative" />
+              <StatTile label="Today W / L" icon={TrendingDown} value={`${data.todayStats.wins} / ${data.todayStats.losses}`} />
+              <StatTile label="Best phase trade" icon={Trophy} value={formatMoney(data.accountExtremes.bestTrade)} tone="positive" />
+              <StatTile label="Worst phase trade" icon={TrendingDown} value={formatMoney(data.accountExtremes.worstTrade)} tone="negative" />
             </div>
           </div>
         )

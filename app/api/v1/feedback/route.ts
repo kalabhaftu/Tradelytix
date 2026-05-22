@@ -7,7 +7,7 @@ import { logServerError } from '@/lib/error-logger'
 import { createErrorResponse, createSuccessResponse } from '@/lib/api-response'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
-import { randomUUID } from 'crypto'
+import { buildFeedbackAttachmentPath } from '@/lib/storage/paths'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 const MAX_FILES = 3
@@ -65,6 +65,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const formData = await req.formData()
+    const identity = await getResolvedUserIdentitySafe()
+    const submissionId = crypto.randomUUID()
     const parsed = feedbackSchema.safeParse({
       category: formData.get('category'),
       subject: formData.get('subject'),
@@ -107,12 +109,14 @@ export async function POST(req: NextRequest) {
           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
         )
 
-        const fileName = `${randomUUID()}${ext}`
+        const fileName = `${crypto.randomUUID()}${ext}`
+        const ownerId = identity?.authUserId || identity?.internalUserId || 'anonymous'
+        const filePath = buildFeedbackAttachmentPath({ ownerId, submissionId, fileName })
         const buffer = Buffer.from(await file.arrayBuffer())
 
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('feedback-attachments')
-          .upload(fileName, buffer, {
+          .upload(filePath, buffer, {
             contentType: file.type,
             metadata: { originalName: sanitizeOriginalFileName(file.name) },
           })
@@ -122,22 +126,17 @@ export async function POST(req: NextRequest) {
           continue
         }
 
-        const { data: urlData } = supabase.storage
-          .from('feedback-attachments')
-          .getPublicUrl(fileName)
-
         attachments.push({
           name: sanitizeOriginalFileName(file.name),
           size: file.size,
           type: file.type,
-          url: urlData.publicUrl,
+          url: `storage://feedback-attachments/${uploadData.path}`,
         })
       } catch {
         logger.warn('Feedback attachment upload failed', { type: file.type, size: file.size }, 'api')
       }
     }
 
-    const identity = await getResolvedUserIdentitySafe()
     const ip = extractIP(req.headers)
     const userAgent = req.headers.get('user-agent') || undefined
 

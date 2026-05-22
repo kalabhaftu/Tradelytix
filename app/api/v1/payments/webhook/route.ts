@@ -40,10 +40,11 @@ export async function POST(request: NextRequest) {
     })
 
     const result = await handleIpnWebhook(payload)
+    const status = typeof result.status === 'number' ? result.status : 200
 
-    return NextResponse.json({ success: true, ...result })
+    return NextResponse.json({ success: status < 400, ...result }, { status })
   } catch (error) {
     logger.error('NOWPayments webhook processing failed', { error })
-    return NextResponse.json({ success: false, error: 'Internal processing error' }, { status: 200 })
+    return NextResponse.json({ success: false, error: 'Internal processing error' }, { status: 500 })
   }
 }

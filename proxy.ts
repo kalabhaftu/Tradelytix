@@ -1,4 +1,5 @@
 import { getSafeRedirectPath } from '@/lib/security/redirects'
+import { getCorsHeaders } from '@/lib/security/origins'
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient, type CookieOptions } from "@supabase/ssr"
 
@@ -19,6 +20,23 @@ function copyAuthCookies(source: NextResponse, target: NextResponse) {
   })
 }
 
+function addCorsHeaders(request: NextRequest, response: NextResponse): NextResponse {
+  if (!request.nextUrl.pathname.startsWith('/api/')) {
+    return response
+  }
+
+  const headers = getCorsHeaders(request.headers.get('origin'))
+  if (!headers) {
+    return response
+  }
+
+  for (const [key, value] of Object.entries(headers)) {
+    response.headers.set(key, value)
+  }
+
+  return response
+}
+
 function addSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set("X-Content-Type-Options", "nosniff")
   response.headers.set("X-Frame-Options", "DENY")
@@ -32,10 +50,10 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
 
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live",
+    "script-src 'self' 'unsafe-inline' https://vercel.live",
     "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
     "font-src 'self' fonts.gstatic.com",
-    "img-src 'self' data: blob: *.supabase.co https://lh3.googleusercontent.com",
+    "img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co api.x.ai ip-api.com",
     "frame-src 'self' https://vercel.live",
     "object-src 'none'",
@@ -50,10 +68,10 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
   return response
 }
 
-function secureRedirect(url: URL, authResponse: NextResponse) {
+function secureRedirect(request: NextRequest, url: URL, authResponse: NextResponse) {
   const response = NextResponse.redirect(url)
   copyAuthCookies(authResponse, response)
-  return addSecurityHeaders(response)
+  return addCorsHeaders(request, addSecurityHeaders(response))
 }
 
 type SupabaseCookie = {
@@ -88,9 +106,9 @@ export default async function proxy(request: NextRequest) {
     if (isProtectedRoute) {
       const authUrl = new URL("/", request.url)
       authUrl.searchParams.set("error", "config")
-      return addSecurityHeaders(NextResponse.redirect(authUrl))
+      return addCorsHeaders(request, addSecurityHeaders(NextResponse.redirect(authUrl)))
     }
-    return addSecurityHeaders(NextResponse.next())
+    return addCorsHeaders(request, addSecurityHeaders(NextResponse.next()))
   }
 
   let authResponse = NextResponse.next({
@@ -125,12 +143,12 @@ export default async function proxy(request: NextRequest) {
     const isAuthenticated = !!user && !authError
 
     if (isAuthenticated && pathname === "/") {
-      return secureRedirect(new URL("/dashboard", request.url), authResponse)
+      return secureRedirect(request, new URL("/dashboard", request.url), authResponse)
     }
 
     if (isAuthenticated && pathname === "/app-launch") {
       const redirectPath = getSafeRedirectPath(request.nextUrl.searchParams.get("next"), "/dashboard")
-      return secureRedirect(new URL(redirectPath, request.url), authResponse)
+      return secureRedirect(request, new URL(redirectPath, request.url), authResponse)
     }
 
     if (
@@ -140,7 +158,7 @@ export default async function proxy(request: NextRequest) {
       !pathname.startsWith("/api/auth") &&
       pathname !== "/not-found"
     ) {
-      return secureRedirect(new URL("/dashboard", request.url), authResponse)
+      return secureRedirect(request, new URL("/dashboard", request.url), authResponse)
     }
 
     if (!isAuthenticated && isProtectedRoute) {
@@ -156,7 +174,7 @@ export default async function proxy(request: NextRequest) {
       if (!isPostAuthRequest) {
         const authUrl = new URL("/", request.url)
         authUrl.searchParams.set("next", pathname)
-        return secureRedirect(authUrl, authResponse)
+        return secureRedirect(request, authUrl, authResponse)
       }
     }
 
@@ -167,15 +185,15 @@ export default async function proxy(request: NextRequest) {
       // Server-side auth reads email directly from Supabase session.
     }
 
-    return addSecurityHeaders(authResponse)
+    return addCorsHeaders(request, addSecurityHeaders(authResponse))
   } catch (error) {
     console.error("Proxy error:", error)
     if (isProtectedRoute) {
       const authUrl = new URL("/", request.url)
       authUrl.searchParams.set("error", "exception")
-      return secureRedirect(authUrl, authResponse)
+      return secureRedirect(request, authUrl, authResponse)
     }
-    return addSecurityHeaders(authResponse)
+    return addCorsHeaders(request, addSecurityHeaders(authResponse))
   }
 }
 

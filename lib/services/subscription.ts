@@ -35,14 +35,34 @@ function isPendingProviderStatus(status: string | null | undefined): status is N
   return typeof status === 'string' && PENDING_PROVIDER_STATUSES.includes(status as NowPaymentStatus)
 }
 
+function amountsMatch(actual: number | string | null | undefined, expected: number) {
+  const value = Number(actual)
+  return Number.isFinite(value) && Math.abs(value - expected) < 0.01
+}
+
 function shouldMirrorExpiredByAge(record: { createdAt: Date; providerStatus: string | null | undefined }) {
   if (!isPendingProviderStatus(record.providerStatus)) return false
   return Date.now() - record.createdAt.getTime() >= PROVIDER_PENDING_EXPIRY_MS
 }
 
-// ---------------------------------------------------------------------------
-// Access Checks
-// ---------------------------------------------------------------------------
+function validateIpnPayload(paymentRecord: Awaited<ReturnType<typeof prisma.paymentRecord.findFirst>>, payload: IpnPayload) {
+  if (!paymentRecord) return 'Payment record not found'
+
+  if (paymentRecord.providerInvoiceId && String(payload.invoice_id) !== paymentRecord.providerInvoiceId) {
+    return 'Payment invoice mismatch'
+  }
+
+  if (!amountsMatch(payload.price_amount, paymentRecord.amountUsd)) {
+    return 'Payment amount mismatch'
+  }
+
+  if (String(payload.price_currency || '').toLowerCase() !== 'usd') {
+    return 'Payment currency mismatch'
+  }
+
+  return null
+}
+
 
 export interface AccessResult {
   hasAccess: boolean
@@ -317,8 +337,14 @@ export async function handleIpnWebhook(payload: IpnPayload) {
   })
 
   if (!paymentRecord) {
-    console.error('[Subscription] No payment record found for IPN:', { payment_id, invoice_id, order_id })
-    return { processed: false, reason: 'Payment record not found' }
+    logger.warn('[Subscription] No payment record found for IPN', { payment_id, invoice_id, order_id })
+    return { processed: false, reason: 'Payment record not found', status: 404 }
+  }
+
+  const validationError = validateIpnPayload(paymentRecord, payload)
+  if (validationError) {
+    logger.warn('[Subscription] Rejected IPN payload', { reason: validationError, payment_id, invoice_id, order_id })
+    return { processed: false, reason: validationError, status: 400 }
   }
 
   // Idempotency: skip if already in terminal state

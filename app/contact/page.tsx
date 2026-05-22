@@ -85,7 +85,7 @@ export default async function ContactPage() {
         <div className="text-center pt-4">
           <p className="text-sm text-muted-foreground">
             For direct inquiries:{' '}
-            <a href="mailto:kalabhaftu1@gmail.com" className="text-primary hover:underline">kalabhaftu1@gmail.com</a>
+            <a href="mailto:support@tradelytix.eu.cc" className="text-primary hover:underline">support@tradelytix.eu.cc</a>
           </p>
         </div>
       </div>

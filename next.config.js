@@ -47,15 +47,15 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**.supabase.co',
+        hostname: '*.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
       {
         protocol: 'https',
-        hostname: '**',
+        hostname: 'lh3.googleusercontent.com',
       },
     ],
-    dangerouslyAllowSVG: true,
+    dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     minimumCacheTTL: 3600, // Cache for 1 hour
     formats: ['image/webp', 'image/avif'], // Modern formats

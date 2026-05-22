@@ -19,14 +19,45 @@ import Script from "next/script"
 // Font configuration now imported from lib/fonts.ts
 
 const DEFAULT_SITE_URL = 'https://www.tradelytix.eu.cc'
+const SITE_NAME = 'Tradelytix'
+const SITE_DESCRIPTION = 'Where traders find consistency through the charts'
+const SOCIAL_PREVIEW_VERSION = 'tradelytix-20260522'
 const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || DEFAULT_SITE_URL
 const normalizedSiteUrl = rawSiteUrl.startsWith('http') ? rawSiteUrl : `https://${rawSiteUrl}`
+const socialImage = `/opengraph-image.png?v=${SOCIAL_PREVIEW_VERSION}`
+const twitterImage = `/twitter-image.png?v=${SOCIAL_PREVIEW_VERSION}`
 
-// Simplified metadata for personal app (no SEO needed)
 export const metadata: Metadata = {
   metadataBase: new URL(normalizedSiteUrl),
-  title: "Tradelytix",
-  description: "Where traders find consistency through the charts",
+  title: SITE_NAME,
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  appleWebApp: {
+    title: SITE_NAME,
+    capable: true,
+    statusBarStyle: 'black-translucent',
+  },
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    url: normalizedSiteUrl,
+    images: [
+      {
+        url: socialImage,
+        width: 1200,
+        height: 630,
+        alt: 'Tradelytix social preview',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    images: [twitterImage],
+  },
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },

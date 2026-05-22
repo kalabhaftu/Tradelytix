@@ -1,4 +1,9 @@
 import { z } from 'zod'
+import { assertProductionUrl, getAllowedOrigins } from '@/lib/security/origins'
+
+function isTruthy(value: string | undefined) {
+  return value === '1' || value === 'true'
+}
 
 const envSchema = z.object({
   // Database
@@ -18,6 +23,8 @@ const envSchema = z.object({
   // Next.js
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
   NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
+  NEXT_PUBLIC_ALLOWED_ORIGINS: z.string().optional(),
+  ALLOWED_ORIGINS: z.string().optional(),
   NEXT_PUBLIC_VERCEL_URL: z.string().optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   
@@ -39,6 +46,13 @@ const envSchema = z.object({
   NOWPAYMENTS_IPN_CALLBACK_URL: z.string().url().optional(),
   APP_BASE_URL: z.string().url().optional(),
 
+  // Rate limiting
+  KV_REST_API_URL: z.string().url().optional(),
+  KV_REST_API_TOKEN: z.string().optional(),
+  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+  ALLOW_IN_MEMORY_RATE_LIMITS_IN_PRODUCTION: z.string().optional(),
+
   // Subscription
   SUBSCRIPTION_PRICE_USD: z.string().optional(),
   SUBSCRIPTION_BILLING_INTERVAL: z.string().optional(),
@@ -52,6 +66,34 @@ const envSchema = z.object({
         code: z.ZodIssueCode.custom,
         path: ['NEXT_PUBLIC_APP_URL'],
         message: 'NEXT_PUBLIC_APP_URL or equivalent canonical app URL is required in production',
+      })
+    }
+
+    for (const [key, value, required] of [
+      ['NEXT_PUBLIC_APP_URL', env.NEXT_PUBLIC_APP_URL, true],
+      ['NEXT_PUBLIC_SITE_URL', env.NEXT_PUBLIC_SITE_URL, false],
+      ['NOWPAYMENTS_SUCCESS_URL', env.NOWPAYMENTS_SUCCESS_URL, false],
+      ['NOWPAYMENTS_CANCEL_URL', env.NOWPAYMENTS_CANCEL_URL, false],
+      ['NOWPAYMENTS_IPN_CALLBACK_URL', env.NOWPAYMENTS_IPN_CALLBACK_URL, false],
+      ['APP_BASE_URL', env.APP_BASE_URL, false],
+    ] as const) {
+      const issue = assertProductionUrl(key, value, { required })
+      if (issue) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: issue,
+        })
+      }
+    }
+
+    const allowedOrigins = getAllowedOrigins()
+    const canonicalOrigin = appUrl ? new URL(appUrl.startsWith('http') ? appUrl : `https://${appUrl}`).origin : null
+    if (canonicalOrigin && !allowedOrigins.includes(canonicalOrigin)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['ALLOWED_ORIGINS'],
+        message: 'Canonical app origin must be included in the production origin allowlist',
       })
     }
 
@@ -72,20 +114,16 @@ const envSchema = z.object({
       })
     }
 
-    for (const [key, value] of Object.entries({
-      NEXT_PUBLIC_APP_URL: env.NEXT_PUBLIC_APP_URL,
-      NOWPAYMENTS_SUCCESS_URL: env.NOWPAYMENTS_SUCCESS_URL,
-      NOWPAYMENTS_CANCEL_URL: env.NOWPAYMENTS_CANCEL_URL,
-      NOWPAYMENTS_IPN_CALLBACK_URL: env.NOWPAYMENTS_IPN_CALLBACK_URL,
-      APP_BASE_URL: env.APP_BASE_URL,
-    })) {
-      if (value?.includes('localhost') || value?.includes('127.0.0.1')) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: [key],
-          message: `${key} cannot point to localhost in production`,
-        })
-      }
+    const hasKv = Boolean(
+      (env.KV_REST_API_URL && env.KV_REST_API_TOKEN) ||
+        (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN)
+    )
+    if (!hasKv && !isTruthy(env.ALLOW_IN_MEMORY_RATE_LIMITS_IN_PRODUCTION)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['KV_REST_API_URL'],
+        message: 'Production requires Redis/KV-backed sensitive rate limits or an explicit unsafe override',
+      })
     }
   })
 function validateEnv() {

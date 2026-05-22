@@ -9,6 +9,7 @@ import {
   ChartTooltip,
 } from "@/components/ui/chart"
 import { cn } from "@/lib/utils"
+import { useTheme } from "@/context/theme-provider"
 
 const chartConfig = {
   balance: {
@@ -94,6 +95,7 @@ export function AccountEquityChart({
   trailingStopProfit = 0,
   resetDate
 }: AccountEquityChartProps) {
+  const { chartStyle } = useTheme()
   const chartData = React.useMemo(() => {
     if (!trades.length) return []
 
@@ -307,16 +309,16 @@ export function AccountEquityChart({
             }}
           />
           <Line
-            type="monotone"
+            type={chartStyle === 'sharp' ? 'linear' : 'monotone'}
             dataKey="balance"
             name="Balance"
-            stroke={chartConfig.balance.color}
+            stroke={chartStyle === 'sharp' ? '#a78bfa' : chartConfig.balance.color}
             strokeWidth={2}
             activeDot={false}
             dot={renderDot}
           />
           <Line
-            type="monotone"
+            type={chartStyle === 'sharp' ? 'linear' : 'monotone'}
             dataKey="target"
             name="Profit Target"
             stroke={chartConfig.target.color}
@@ -326,7 +328,7 @@ export function AccountEquityChart({
             connectNulls
           />
           <Line
-            type="monotone"
+            type={chartStyle === 'sharp' ? 'linear' : 'monotone'}
             dataKey="drawdownLevel"
             name="Drawdown Level"
             stroke={chartConfig.drawdown.color}

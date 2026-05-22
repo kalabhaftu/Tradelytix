@@ -26,6 +26,7 @@ import { LexicalEditor } from "@/components/ui/editor/lexical-editor"
 import { dashboardModalShell } from '@/components/ui/dashboard-modal-shell'
 import { useAuth } from "@/context/auth-provider"
 import { useData } from '@/context/data-provider'
+import { useTheme } from '@/context/theme-provider'
 import { useSupabaseUpload } from "@/hooks/use-supabase-upload"
 import { getTradingSession } from '@/lib/time-utils'
 import { cn, groupTradesByExecution, type GroupedTrade } from '@/lib/utils'
@@ -193,6 +194,7 @@ export function WeeklyModal({
   const dateLocale = enUS
   const { user } = useAuth()
   const { statistics } = useData()
+  const { chartStyle } = useTheme()
   const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
   const [reviewData, setReviewData] = useState<any>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -772,11 +774,11 @@ export function WeeklyModal({
                           />
                           <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" opacity={0.5} />
                           <Area
-                            type="monotone"
+                            type={chartStyle === 'sharp' ? 'linear' : 'monotone'}
                             dataKey="balance"
-                            stroke="hsl(var(--primary))"
+                            stroke={chartStyle === 'sharp' ? '#a78bfa' : 'hsl(var(--primary))'}
                             strokeWidth={2}
-                            fill="hsl(var(--primary))"
+                            fill={chartStyle === 'sharp' ? '#a78bfa' : 'hsl(var(--primary))'}
                             fillOpacity={0.12}
                           />
                         </AreaChart>

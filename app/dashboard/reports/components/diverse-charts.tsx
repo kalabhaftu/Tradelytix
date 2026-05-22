@@ -16,6 +16,8 @@ import {
     YAxis
 } from 'recharts'
 
+import { useTheme } from '@/context/theme-provider'
+
 interface DiverseChartsProps {
     chartData: {
         equityCurve: any[]
@@ -31,6 +33,7 @@ const COLORS = {
 }
 
 export function DiverseCharts({ chartData }: DiverseChartsProps) {
+    const { chartStyle } = useTheme()
     if (!chartData || chartData.equityCurve.length === 0) return null
 
     const { equityCurve: equityData, outcomeDistribution: outcomeData, dayOfWeekPerformance: dayOfWeekData } = chartData
@@ -57,6 +60,11 @@ export function DiverseCharts({ chartData }: DiverseChartsProps) {
         return null
     }
 
+    const isSharp = chartStyle === 'sharp'
+    const strokeColor = isSharp ? '#a78bfa' : COLORS.bullish
+    const gradientColor = isSharp ? '#a78bfa' : COLORS.bullish
+    const curveType = isSharp ? 'linear' : 'monotone'
+
     return (
         <div className="space-y-6">
             <h2 className={reportTypography.sectionTitle}>Portfolio Visualizations</h2>
@@ -72,8 +80,8 @@ export function DiverseCharts({ chartData }: DiverseChartsProps) {
                             <AreaChart data={equityData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorEquity" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor={COLORS.bullish} stopOpacity={0.3}/>
-                                        <stop offset="95%" stopColor={COLORS.bullish} stopOpacity={0}/>
+                                        <stop offset="5%" stopColor={gradientColor} stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor={gradientColor} stopOpacity={0}/>
                                     </linearGradient>
                                 </defs>
                                 <XAxis 
@@ -90,10 +98,10 @@ export function DiverseCharts({ chartData }: DiverseChartsProps) {
                                 />
                                 <RechartsTooltip content={<CustomTooltip />} />
                                 <Area 
-                                    type="monotone" 
+                                    type={curveType} 
                                     dataKey="equity" 
                                     name="Equity"
-                                    stroke={COLORS.bullish} 
+                                    stroke={strokeColor} 
                                     strokeWidth={3}
                                     fillOpacity={1} 
                                     fill="url(#colorEquity)" 

@@ -81,6 +81,7 @@ export async function PATCH(request: NextRequest) {
       lastName,
       accentPack,
       theme,
+      chartStyle,
       autoAdjustAccountDate,
       breakEvenThreshold,
       pnlDisplayMode,
@@ -88,6 +89,12 @@ export async function PATCH(request: NextRequest) {
     } = body
 
     // Validate input — only check fields that are actually provided
+    if (chartStyle !== undefined && chartStyle !== 'smooth' && chartStyle !== 'sharp') {
+      return NextResponse.json(
+        { error: 'Invalid chartStyle format' },
+        { status: 400 }
+      )
+    }
     if (firstName !== undefined && typeof firstName !== 'string' && firstName !== null) {
       return NextResponse.json(
         { error: 'Invalid firstName format' },
@@ -144,6 +151,7 @@ export async function PATCH(request: NextRequest) {
     const settingsPatch = pickSettingsPatch({
       accentPack,
       theme,
+      chartStyle,
       autoAdjustAccountDate: autoAdjustAccountDate !== undefined ? !!autoAdjustAccountDate : undefined,
       breakEvenThreshold: breakEvenThreshold !== undefined ? getBreakEvenThreshold(breakEvenThreshold) : undefined,
       pnlDisplayMode: pnlDisplayMode !== undefined ? normalizePnlDisplayMode(pnlDisplayMode) : undefined,

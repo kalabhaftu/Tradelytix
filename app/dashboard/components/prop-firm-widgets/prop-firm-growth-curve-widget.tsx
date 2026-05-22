@@ -61,6 +61,8 @@ function getYAxisDomain(chartData: any[], refs: ReturnType<typeof getReferenceVa
   return [Math.floor(min - padding), Math.ceil(max + padding)] as [number, number]
 }
 
+import { useTheme } from '@/context/theme-provider'
+
 function GrowthTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null
   const point = payload[0]?.payload
@@ -88,6 +90,8 @@ function GrowthTooltip({ active, payload }: any) {
 }
 
 export function PropFirmGrowthCurveWidget() {
+  const { chartStyle } = useTheme()
+
   return (
     <PropFirmWidgetShell title="Prop Firm Growth Curve">
       {({ data }) => {
@@ -95,6 +99,11 @@ export function PropFirmGrowthCurveWidget() {
         const refs = getReferenceValues(account, data)
         const chartData = buildChartData(account, data, refs)
         const yDomain = getYAxisDomain(chartData, refs)
+
+        const isSharp = chartStyle === 'sharp'
+        const strokeColor = isSharp ? '#a78bfa' : 'hsl(var(--primary))'
+        const gradientColor = isSharp ? '#a78bfa' : 'hsl(var(--primary))'
+        const curveType = isSharp ? 'linear' : 'monotone'
 
         return (
           <div className="flex h-full min-h-0 flex-col gap-4">
@@ -109,8 +118,8 @@ export function PropFirmGrowthCurveWidget() {
                 <AreaChart data={chartData} margin={{ top: 18, right: 28, bottom: 8, left: 20 }}>
                   <defs>
                     <linearGradient id="propFirmGrowth" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.32} />
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+                      <stop offset="5%" stopColor={gradientColor} stopOpacity={0.32} />
+                      <stop offset="95%" stopColor={gradientColor} stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.35} />
@@ -123,12 +132,12 @@ export function PropFirmGrowthCurveWidget() {
                     tick={{ fontSize: 10 }}
                     tickFormatter={(value) => formatPropFirmAxisMoney(Number(value))}
                   />
-                  <Tooltip content={<GrowthTooltip />} cursor={{ stroke: 'hsl(var(--primary))', strokeDasharray: '4 4', strokeWidth: 1.5 }} />
+                  <Tooltip content={<GrowthTooltip />} cursor={{ stroke: strokeColor, strokeDasharray: '4 4', strokeWidth: 1.5 }} />
                   <ReferenceLine y={refs.accountSize} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" label={{ value: 'Start', position: 'right', fontSize: 10 }} />
                   <ReferenceLine y={refs.targetBalance} stroke="hsl(var(--long))" strokeDasharray="5 5" label={{ value: 'Target', position: 'right', fontSize: 10 }} />
                   <ReferenceLine y={refs.dailyLossFloor} stroke="#f59e0b" strokeDasharray="5 5" label={{ value: 'Daily DD', position: 'right', fontSize: 10 }} />
                   <ReferenceLine y={refs.maxLossFloor} stroke="hsl(var(--short))" strokeDasharray="5 5" label={{ value: 'Max DD', position: 'right', fontSize: 10 }} />
-                  <Area type="monotone" dataKey="balance" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#propFirmGrowth)" dot={false} activeDot={{ r: 4, strokeWidth: 2 }} />
+                  <Area type={curveType} dataKey="balance" stroke={strokeColor} strokeWidth={2.5} fill="url(#propFirmGrowth)" dot={false} activeDot={{ r: 4, strokeWidth: 2 }} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

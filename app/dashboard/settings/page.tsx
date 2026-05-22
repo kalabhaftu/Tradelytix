@@ -138,7 +138,7 @@ function buildTradingViewWebhookExample(token: string | null) {
 }
 
 export default function SettingsPage() {
-  const { theme, setTheme, accentPack, setAccentPack, widgetStyle, setWidgetStyle } = useTheme()
+  const { theme, setTheme, accentPack, setAccentPack, widgetStyle, setWidgetStyle, chartStyle, setChartStyle } = useTheme()
   const storeUser = useUserStore(state => state.supabaseUser)
   const dbUser = useUserStore(state => state.user)
   const setDbUser = useUserStore(state => state.setUser)
@@ -208,6 +208,14 @@ export default function SettingsPage() {
     setAccentPack(value)
     toast.success("Color accent updated", {
       description: `Accent changed to ${value === 'reports' ? 'Sage & Amber' : 'Classic'}.`,
+      duration: 2000
+    })
+  }
+
+  const handleChartStyleChange = (value: 'smooth' | 'sharp') => {
+    setChartStyle(value)
+    toast.success("Chart style updated", {
+      description: value === 'sharp' ? 'Charts now use sharp angular lines.' : 'Charts now use smooth curved lines.',
       duration: 2000
     })
   }
@@ -1054,6 +1062,34 @@ export default function SettingsPage() {
                     <DropdownMenuItem onClick={() => handleWidgetStyleChange('glass')}>
                       Glassmorphism
                       {widgetStyle === 'glass' && <Check className="ml-auto h-4 w-4" />}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              }
+            />
+
+            <Separator />
+
+            {/* Chart Edge Style */}
+            <SettingRow
+              icon={Zap}
+              label="Chart Edge Style"
+              description={chartStyle === 'sharp' ? 'Sharp angular lines with violet aesthetics' : 'Smooth curved lines with standard colors'}
+              action={
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2 min-w-[120px]">
+                      {chartStyle === 'sharp' ? 'Sharp' : 'Smooth'}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleChartStyleChange('smooth')}>
+                      Smooth
+                      {chartStyle === 'smooth' && <Check className="ml-auto h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleChartStyleChange('sharp')}>
+                      Sharp
+                      {chartStyle === 'sharp' && <Check className="ml-auto h-4 w-4" />}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

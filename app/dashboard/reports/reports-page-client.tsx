@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useData } from '@/context/data-provider'
+import { useTheme } from '@/context/theme-provider'
 import { formatTimeInZone } from '@/lib/time-utils'
 import { classifyTrade, cn } from '@/lib/utils'
 import {
@@ -176,8 +177,14 @@ export default function ReportsPageClient({
     initialPropFirmData,
 }: ReportsPageClientProps) {
     const { accounts } = useData()
+    const { chartStyle } = useTheme()
     const user = useUserStore(state => state.user)
     const pnlDisplayMode = normalizePnlDisplayMode(user?.pnlDisplayMode)
+
+    const isSharp = chartStyle === 'sharp'
+    const curveType = isSharp ? 'linear' : 'monotone'
+    const strokeVal = isSharp ? '#a78bfa' : 'hsl(var(--foreground))'
+    const fillVal = isSharp ? 'url(#colorRMultiplePurple)' : 'url(#colorRMultiple)'
 
     // Filter State
     const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
@@ -727,6 +734,10 @@ export default function ReportsPageClient({
                                                                         <stop offset="5%" stopColor="hsl(var(--foreground))" stopOpacity={0.15}/>
                                                                         <stop offset="95%" stopColor="hsl(var(--foreground))" stopOpacity={0}/>
                                                                     </linearGradient>
+                                                                    <linearGradient id="colorRMultiplePurple" x1="0" y1="0" x2="0" y2="1">
+                                                                        <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.4}/>
+                                                                        <stop offset="95%" stopColor="#a78bfa" stopOpacity={0.03}/>
+                                                                    </linearGradient>
                                                                 </defs>
                                                                 <XAxis 
                                                                     dataKey="name" 
@@ -737,12 +748,12 @@ export default function ReportsPageClient({
                                                                 <YAxis hide />
                                                                 <RechartsTooltip content={<RMultipleTooltip />} cursor={{ stroke: 'hsl(var(--border))', strokeWidth: 1, strokeDasharray: '4 4' }} />
                                                                 <Area 
-                                                                    type="monotone" 
+                                                                    type={curveType} 
                                                                     dataKey="count" 
-                                                                    stroke="hsl(var(--foreground))" 
+                                                                    stroke={strokeVal} 
                                                                     strokeWidth={2}
                                                                     fillOpacity={1} 
-                                                                    fill="url(#colorRMultiple)"
+                                                                    fill={fillVal}
                                                                     animationDuration={1000}
                                                                 />
                                                             </AreaChart>

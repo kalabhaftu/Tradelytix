@@ -93,8 +93,8 @@ export default function DrawdownChart({ size = 'small-long' }: DrawdownChartProp
   }
 
   const isSharp = chartStyle === 'sharp'
-  const strokeColor = isSharp ? '#a78bfa' : COLORS.loss
-  const gradientColor = isSharp ? '#a78bfa' : COLORS.loss
+  const strokeColor = COLORS.loss
+  const gradientColor = COLORS.loss
   const curveType = isSharp ? 'linear' : 'monotone'
 
   return (

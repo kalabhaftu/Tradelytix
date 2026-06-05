@@ -4,7 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import { useUserStore } from '@/store/user-store'
 
 type Theme = 'light' | 'dark' | 'system'
-type AccentPack = 'classic' | 'reports'
+type AccentPack = 'classic' | 'reports' | 'violet'
 type WidgetSurfaceStyle = 'default' | 'glass'
 type ChartStyle = 'smooth' | 'sharp'
 
@@ -44,9 +44,11 @@ function getSystemTheme(): 'light' | 'dark' {
 function applyAccentClass(pack: AccentPack) {
   if (typeof window === 'undefined') return
   const root = window.document.documentElement
-  root.classList.remove('accent-reports')
+  root.classList.remove('accent-reports', 'accent-violet')
   if (pack === 'reports') {
     root.classList.add('accent-reports')
+  } else if (pack === 'violet') {
+    root.classList.add('accent-violet')
   }
 }
 
@@ -90,7 +92,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     // Restore accent pack from localStorage as immediate source
     const savedAccent = localStorage.getItem('accentPack') as AccentPack | null
-    const validAccents: AccentPack[] = ['classic', 'reports']
+    const validAccents: AccentPack[] = ['classic', 'reports', 'violet']
     const resolvedAccent = savedAccent && validAccents.includes(savedAccent) ? savedAccent : 'classic'
     setAccentPackState(resolvedAccent)
     applyAccentClass(resolvedAccent)

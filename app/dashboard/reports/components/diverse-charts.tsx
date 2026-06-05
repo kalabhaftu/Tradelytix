@@ -61,8 +61,8 @@ export function DiverseCharts({ chartData }: DiverseChartsProps) {
     }
 
     const isSharp = chartStyle === 'sharp'
-    const strokeColor = isSharp ? '#a78bfa' : COLORS.bullish
-    const gradientColor = isSharp ? '#a78bfa' : COLORS.bullish
+    const strokeColor = COLORS.bullish
+    const gradientColor = COLORS.bullish
     const curveType = isSharp ? 'linear' : 'monotone'
 
     return (

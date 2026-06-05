@@ -183,8 +183,8 @@ export default function ReportsPageClient({
 
     const isSharp = chartStyle === 'sharp'
     const curveType = isSharp ? 'linear' : 'monotone'
-    const strokeVal = isSharp ? '#a78bfa' : 'hsl(var(--foreground))'
-    const fillVal = isSharp ? 'url(#colorRMultiplePurple)' : 'url(#colorRMultiple)'
+    const strokeVal = 'hsl(var(--foreground))'
+    const fillVal = 'url(#colorRMultiple)'
 
     // Filter State
     const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)

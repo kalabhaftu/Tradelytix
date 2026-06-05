@@ -101,8 +101,8 @@ export function PropFirmGrowthCurveWidget() {
         const yDomain = getYAxisDomain(chartData, refs)
 
         const isSharp = chartStyle === 'sharp'
-        const strokeColor = isSharp ? '#a78bfa' : 'hsl(var(--primary))'
-        const gradientColor = isSharp ? '#a78bfa' : 'hsl(var(--primary))'
+        const strokeColor = 'hsl(var(--primary))'
+        const gradientColor = 'hsl(var(--primary))'
         const curveType = isSharp ? 'linear' : 'monotone'
 
         return (

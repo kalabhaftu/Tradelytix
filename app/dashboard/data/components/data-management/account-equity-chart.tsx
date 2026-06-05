@@ -312,7 +312,7 @@ export function AccountEquityChart({
             type={chartStyle === 'sharp' ? 'linear' : 'monotone'}
             dataKey="balance"
             name="Balance"
-            stroke={chartStyle === 'sharp' ? '#a78bfa' : chartConfig.balance.color}
+            stroke={chartConfig.balance.color}
             strokeWidth={2}
             activeDot={false}
             dot={renderDot}

@@ -390,7 +390,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
                   <TooltipProvider delayDuration={100}>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-help h-6 w-6 flex items-center justify-center rounded-md hover:bg-primary/5 hover:text-primary transition-colors shrink-0">
+                        <div className="cursor-help h-6 w-6 flex items-center justify-center rounded-md hover:bg-primary/5 hover:text-primary transition-colors shrink-0">
                           <Info className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-muted-foreground" />
                         </div>
                       </TooltipTrigger>

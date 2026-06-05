@@ -86,10 +86,10 @@ const DayCell = memo(function DayCell({
         !hasTrades && isCurrentMonth && "bg-[#0c0e12]/40 border-border/20 hover:border-border/40",
 
         // Profit — green tint via CSS token
-        hasTrades && isProfit && "bg-emerald-950/85 border-emerald-800/80 hover:bg-emerald-900/95 hover:border-emerald-700 text-emerald-100",
+        hasTrades && isProfit && "bg-long/15 border-long/35 hover:bg-long/25 hover:border-long/55 text-long",
 
         // Loss — red tint via CSS token
-        hasTrades && isLoss && "bg-rose-950/85 border-rose-800/80 hover:bg-rose-900/95 hover:border-rose-700 text-rose-100",
+        hasTrades && isLoss && "bg-short/15 border-short/35 hover:bg-short/25 hover:border-short/55 text-short",
 
         // Breakeven — neutral muted tint
         hasTrades && isBreakEven && "bg-muted/40 border border-muted/50 text-foreground hover:bg-muted/50",
@@ -107,9 +107,9 @@ const DayCell = memo(function DayCell({
           "absolute top-2 left-2 h-3.5 w-3.5",
           hasTrades
             ? isProfit 
-              ? "text-emerald-300/85" 
+              ? "text-long/70" 
               : isLoss 
-                ? "text-rose-300/85" 
+                ? "text-short/70" 
                 : "text-muted-foreground/85"
             : "text-muted-foreground/60"
         )} />
@@ -141,7 +141,7 @@ const DayCell = memo(function DayCell({
           <span
             className={cn(
               "text-[9px] md:text-[10px] font-bold mt-0.5 leading-none",
-              isProfit ? "text-emerald-400" : isLoss ? "text-rose-400" : "text-muted-foreground"
+              isProfit ? "text-long" : isLoss ? "text-short" : "text-muted-foreground"
             )}
           >
             {dayData && dayData.pnl !== undefined && formatValue(dayData.pnl, { kind: 'money', compact: true, rValue: dayData.dailyRMultiple ?? null, emptyLabel: '$0' })}
@@ -177,7 +177,7 @@ const DayCell = memo(function DayCell({
             <div
               className={cn(
                 "font-extrabold tracking-tight text-center text-xs md:text-sm lg:text-sm xl:text-base",
-                isProfit ? "text-white" : isLoss ? "text-white" : "text-foreground"
+                isProfit ? "text-long" : isLoss ? "text-short" : "text-foreground"
               )}
             >
               {formatValue(dayData.pnl, { kind: 'money', compact: true, rValue: dayData.dailyRMultiple ?? null, emptyLabel: '$0' })}
@@ -190,9 +190,9 @@ const DayCell = memo(function DayCell({
               "font-semibold leading-none text-[10px] md:text-[11px] mt-0.5",
               hasTrades
                 ? isProfit 
-                  ? "text-emerald-300/80" 
+                  ? "text-long/80" 
                   : isLoss 
-                    ? "text-rose-300/80" 
+                    ? "text-short/80" 
                     : "text-muted-foreground/85"
                 : "text-muted-foreground/80"
             )}>
@@ -208,9 +208,9 @@ const DayCell = memo(function DayCell({
                   "text-[9px] md:text-[10px] font-medium whitespace-nowrap",
                   hasTrades
                     ? isProfit 
-                      ? "text-emerald-300/85" 
+                      ? "text-long/85" 
                       : isLoss 
-                        ? "text-rose-300/85" 
+                        ? "text-short/85" 
                         : "text-foreground"
                     : "text-foreground"
                 )}>
@@ -222,9 +222,9 @@ const DayCell = memo(function DayCell({
                   "text-[9px] md:text-[10px] font-medium whitespace-nowrap",
                   hasTrades
                     ? isProfit 
-                      ? "text-emerald-300/85" 
+                      ? "text-long/85" 
                       : isLoss 
-                        ? "text-rose-300/85" 
+                        ? "text-short/85" 
                         : "text-foreground"
                     : "text-foreground"
                 )}>

@@ -464,24 +464,28 @@ export default function ImportButton() {
     // Show saving state
     if (isSaving) {
       return (
-        <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          >
-            <Spinner className="h-12 w-12 text-primary" />
-          </motion.div>
-          <div className="text-center space-y-2">
-            <h3 className="text-lg font-semibold">Saving Trades</h3>
-            <p className="text-sm text-muted-foreground">
-              Processing {processedTrades.length} trades...
+        <div className="flex flex-col items-center justify-center h-full gap-6 p-8 bg-background/30 backdrop-blur-sm">
+          <div className="relative">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+            >
+              <Spinner className="h-12 w-12 text-primary" />
+            </motion.div>
+            <div className="absolute inset-0 bg-primary/10 rounded-full blur-md animate-pulse" />
+          </div>
+          <div className="text-center space-y-1">
+            <h3 className="text-base font-semibold text-foreground/90">Saving Your Trades</h3>
+            <p className="text-xs text-muted-foreground">
+              Processing and linking {processedTrades.length} trades...
             </p>
           </div>
-          <div className="w-full max-w-xs">
-            <Progress value={saveProgress} className="h-2" />
-            <p className="text-xs text-center text-muted-foreground mt-2">
-              {saveProgress}% complete
-            </p>
+          <div className="w-full max-w-xs space-y-2">
+            <Progress value={saveProgress} className="h-1.5" />
+            <div className="flex justify-between items-center text-[10px] text-muted-foreground font-semibold px-0.5">
+              <span>{saveProgress}% complete</span>
+              <span>Please wait</span>
+            </div>
           </div>
         </div>
       )
@@ -652,7 +656,7 @@ export default function ImportButton() {
         }}
       >
         <DialogContent
-          className="flex flex-col w-full max-w-[95vw] sm:max-w-4xl h-[85vh] p-0 bg-background border border-border shadow-lg overflow-hidden gap-0 duration-200 sm:rounded-lg rounded-none"
+          className="flex flex-col w-full max-w-[95vw] sm:max-w-4xl h-[85vh] p-0 bg-background/95 backdrop-blur-md border border-border/40 shadow-2xl overflow-hidden gap-0 duration-200 sm:rounded-2xl rounded-none"
           onOpenAutoFocus={(e) => {
             // Prevent auto-focus on mobile devices to avoid keyboard popup
             if (typeof window !== 'undefined' && window.innerWidth < 768) {
@@ -666,13 +670,13 @@ export default function ImportButton() {
 
           {/* Header - only show for non-manual entry or show simplified for manual */}
           {!isManualEntry && (
-            <div className="flex-none border-b p-4">
-              <div className="flex items-center justify-between mb-3">
+            <div className="flex-none border-b border-border/40 p-5 bg-muted/10">
+              <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-lg font-semibold">
+                  <h2 className="text-base font-bold text-foreground/90">
                     {currentStep?.title || 'Import Trades'}
                   </h2>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground/80 mt-0.5">
                     {currentStep?.description || 'Import your trading data'}
                   </p>
                 </div>
@@ -680,34 +684,43 @@ export default function ImportButton() {
 
               {/* Progress steps */}
               {platform && totalSteps > 1 && (
-                <div className="flex items-center gap-1">
-                  {platform.steps.map((s, idx) => (
-                    <React.Fragment key={s.id}>
-                      <div
-                        className={cn(
-                          "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-all",
-                          currentStepIndex === idx
-                            ? "bg-primary text-primary-foreground font-medium"
-                            : currentStepIndex > idx
-                              ? "bg-primary/20 text-primary"
-                              : "bg-muted text-muted-foreground"
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                  {platform.steps.map((s, idx) => {
+                    const isActive = currentStepIndex === idx;
+                    const isCompleted = currentStepIndex > idx;
+                    return (
+                      <React.Fragment key={s.id}>
+                        <div
+                          className={cn(
+                            "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all duration-200 shrink-0 border",
+                            isActive
+                              ? "bg-primary text-primary-foreground font-semibold border-primary shadow-sm shadow-primary/10"
+                              : isCompleted
+                                ? "bg-primary/5 text-primary border-primary/20"
+                                : "bg-muted/40 text-muted-foreground border-transparent"
+                          )}
+                        >
+                          {isCompleted ? (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                          ) : (
+                            <div className={cn(
+                              "flex items-center justify-center h-4 w-4 rounded-full text-[10px] font-bold",
+                              isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted-foreground/20 text-muted-foreground"
+                            )}>
+                              {idx + 1}
+                            </div>
+                          )}
+                          <span className="hidden sm:inline font-medium">{s.title}</span>
+                        </div>
+                        {idx < platform.steps.length - 1 && (
+                          <div className={cn(
+                            "h-[1.5px] w-6 shrink-0 transition-colors duration-300",
+                            isCompleted ? "bg-primary/40" : "bg-border/40"
+                          )} />
                         )}
-                      >
-                        {currentStepIndex > idx ? (
-                          <CheckCircle2 className="h-3 w-3" />
-                        ) : (
-                          stepIcons[s.id] || <span className="text-xs">{idx + 1}</span>
-                        )}
-                        <span className="hidden sm:inline">{s.title}</span>
-                      </div>
-                      {idx < platform.steps.length - 1 && (
-                        <div className={cn(
-                          "h-px w-4 transition-colors",
-                          currentStepIndex > idx ? "bg-primary" : "bg-border"
-                        )} />
-                      )}
-                    </React.Fragment>
-                  ))}
+                      </React.Fragment>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -716,15 +729,15 @@ export default function ImportButton() {
           {/* Content */}
           <div className={cn(
             "flex-1 overflow-hidden",
-            !isManualEntry && "p-4"
+            !isManualEntry && "p-5"
           )}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={step}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18 }}
                 className="h-full"
               >
                 {renderStep()}
@@ -734,22 +747,25 @@ export default function ImportButton() {
 
           {/* Footer - only show for non-manual entry */}
           {!isManualEntry && (
-            <div className="flex-none p-4 border-t">
-              <div className="flex justify-between items-center">
-                <div className="text-xs text-muted-foreground">
+            <div className="flex-none p-4 border-t border-border/30 bg-muted/10">
+              <div className="flex justify-between items-center max-w-4xl mx-auto w-full">
+                <div className="text-xs text-muted-foreground/80 font-medium pl-1">
                   {processedTrades.length > 0 && (
-                    <span>{processedTrades.length} trades ready</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                      {processedTrades.length} trades processed
+                    </span>
                   )}
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   {currentStepIndex > 0 && (
                     <Button
                       variant="outline"
                       onClick={handleBackStep}
                       disabled={isSaving}
-                      className="gap-2"
+                      className="gap-1.5 text-xs h-9 border-border/50 hover:bg-muted"
                     >
-                      <ArrowLeft className="h-4 w-4" />
+                      <ArrowLeft className="h-3.5 w-3.5" />
                       Back
                     </Button>
                   )}
@@ -757,24 +773,24 @@ export default function ImportButton() {
                     onClick={handleNextStep}
                     disabled={isNextDisabled || isSaving}
                     className={cn(
-                      "gap-2 min-w-[100px]",
+                      "gap-1.5 text-xs h-9 min-w-[100px] shadow-sm",
                       currentStepIndex === 0 && importType === 'rithmic-sync' && "invisible"
                     )}
                   >
                     {isSaving ? (
                       <>
-                        <Spinner className="h-4 w-4" />
+                        <Spinner className="h-3.5 w-3.5" />
                         Saving...
                       </>
                     ) : currentStep?.isLastStep ? (
                       <>
-                        <CheckCircle2 className="h-4 w-4" />
+                        <CheckCircle2 className="h-3.5 w-3.5" />
                         Save Trades
                       </>
                     ) : (
                       <>
                         Next
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowRight className="h-3.5 w-3.5" />
                       </>
                     )}
                   </Button>

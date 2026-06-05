@@ -488,35 +488,35 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Import Trades</CardTitle>
-        <CardDescription>Choose a method to import your trades</CardDescription>
+    <Card className="w-full border border-border/40 bg-card/30 backdrop-blur-md rounded-2xl shadow-xl overflow-hidden">
+      <CardHeader className="border-b border-border/30 bg-muted/10 p-5">
+        <CardTitle className="text-base font-bold text-foreground/90">Import Trades</CardTitle>
+        <CardDescription className="text-xs text-muted-foreground mt-0.5">Select a synchronization method to pull in your trading history</CardDescription>
       </CardHeader>
-      <CardContent className="p-0">
-        <div className="p-6">
+      <CardContent className="p-0 flex flex-col">
+        <div className="p-5">
           {renderStep()}
         </div>
 
-        <div className="p-4 border-t bg-background">
-          <div className="flex justify-end items-center gap-4">
+        <div className="p-4 border-t border-border/30 bg-muted/10">
+          <div className="flex justify-end items-center gap-2">
             {step !== 'select-import-type' && (
               <Button 
                 variant="outline" 
                 onClick={handleBackStep}
-                className="w-fit min-w-[100px]"
+                className="w-fit min-w-[90px] h-9 text-xs border-border/50 hover:bg-muted"
               >
-                {"Back"}
+                Back
               </Button>
             )}
             {(step !== 'select-import-type' || (step === 'select-import-type' && importType)) && (
               <Button 
                 onClick={handleNextStep}
-                className="w-fit min-w-[100px]"
+                className="w-fit min-w-[90px] h-9 text-xs shadow-sm"
                 disabled={isNextDisabled()}
               >
                 {isSaving ? "Saving..." : 
-                 step === 'preview-trades' || step === 'process-file' ? "Save" : 
+                 step === 'preview-trades' || step === 'process-file' ? "Save Trades" : 
                  "Next"}
               </Button>
             )}

@@ -152,44 +152,46 @@ export default function FileUpload({
   }, [parsedFiles, uploadProgress, concatenateFiles, uploadedFiles.length])
 
   return (
-    <div className="space-y-4 w-full h-full p-8 flex flex-col items-center justify-center">
+    <div className="space-y-4 w-full h-full flex flex-col items-center justify-center max-w-3xl mx-auto p-4 overflow-y-auto">
       <div 
         {...getRootProps()} 
         className={cn(
-          "h-80 w-full max-w-2xl border-2 border-dashed rounded-lg p-12 text-center transition-all duration-300 ease-in-out",
-          "hover:border-foreground/50 group relative",
+          "h-64 w-full border border-dashed rounded-2xl p-8 text-center transition-all duration-300 ease-in-out",
+          "hover:border-primary/30 group relative bg-gradient-to-br from-card/30 via-muted/5 to-transparent backdrop-blur-sm shadow-inner",
           isDragActive 
-            ? "border-foreground bg-muted/30 scale-[0.99]" 
-            : "border-border hover:bg-muted/20",
+            ? "border-primary bg-primary/5 scale-[0.99] shadow-md shadow-primary/5" 
+            : "border-border/60 hover:bg-muted/10",
           "cursor-pointer flex items-center justify-center"
         )}
       >
         <input {...getInputProps()} />
-        <div className="flex flex-col items-center gap-4">
-          <ArrowUpCircle 
-            className={cn(
-              "h-14 w-14 transition-all duration-300 ease-bounce",
-              isDragActive 
-                ? "text-foreground scale-110 -translate-y-2" 
-                : "text-muted-foreground group-hover:text-foreground group-hover:scale-110 group-hover:-translate-y-2"
-            )} 
-          />
+        <div className="flex flex-col items-center gap-3.5">
+          <div className="relative p-3 rounded-2xl bg-background/50 border border-border/40 group-hover:scale-105 group-hover:border-primary/25 transition-all duration-300 shadow-sm">
+            <ArrowUpCircle 
+              className={cn(
+                "h-10 w-10 transition-all duration-300",
+                isDragActive 
+                  ? "text-primary scale-110 -translate-y-1" 
+                  : "text-muted-foreground group-hover:text-primary group-hover:-translate-y-1"
+              )} 
+            />
+          </div>
           {isDragActive ? (
-            <div className="space-y-2 relative">
-              <p className="text-xl font-medium text-foreground animate-in fade-in slide-in-from-bottom-2">
+            <div className="space-y-1">
+              <p className="text-base font-semibold text-foreground animate-in fade-in slide-in-from-bottom-2">
                 Drop CSV files here
               </p>
-              <p className="text-sm text-muted-foreground animate-in fade-in slide-in-from-bottom-3">
-                Release to upload
+              <p className="text-xs text-muted-foreground animate-in fade-in slide-in-from-bottom-3">
+                Release your mouse to start importing
               </p>
             </div>
           ) : (
-            <div className="space-y-2 relative">
-              <p className="text-xl font-medium group-hover:text-foreground transition-colors">
+            <div className="space-y-1">
+              <p className="text-base font-semibold text-foreground/90 group-hover:text-primary transition-colors">
                 Upload CSV Files
               </p>
-              <p className="text-sm text-muted-foreground">
-                Drag and drop CSV files here or click to browse
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Drag and drop CSV files here, or <span className="text-primary font-medium underline underline-offset-2 hover:text-primary/80">browse files</span>
               </p>
             </div>
           )}
@@ -197,60 +199,59 @@ export default function FileUpload({
       </div>
 
       {uploadedFiles.length > 0 && (
-        <div className="space-y-2 animate-in slide-in-from-bottom-4 duration-500 w-full max-w-2xl">
-          <h3 className="text-lg font-semibold">Uploaded Files</h3>
-          {uploadedFiles.map((file, index) => (
-            <div 
-              key={index} 
-              className={cn(
-                "flex items-center justify-between",
-                "bg-muted rounded-lg",
-                "p-3 hover:bg-muted/80",
-                "transition-all duration-200 ease-in-out",
-                "animate-in slide-in-from-bottom fade-in",
-                "group"
-              )}
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="bg-muted/50 p-2 rounded-md group-hover:bg-muted transition-colors">
-                  <File className="h-5 w-5 text-foreground" />
+        <div className="space-y-2.5 animate-in slide-in-from-bottom-4 duration-500 w-full">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground/85 px-1">Uploaded Files</h4>
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            {uploadedFiles.map((file, index) => (
+              <div 
+                key={index} 
+                className={cn(
+                  "flex items-center justify-between border border-border/30 bg-card/40 backdrop-blur-sm rounded-xl p-3 hover:border-primary/20",
+                  "transition-all duration-200 ease-in-out",
+                  "animate-in slide-in-from-bottom fade-in",
+                  "group"
+                )}
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div className="flex items-center space-x-3 min-w-0">
+                  <div className="bg-background/80 p-2 rounded-lg border border-border/50 group-hover:scale-102 transition-transform">
+                    <File className="h-4 w-4 text-foreground/70" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold text-foreground/90 truncate max-w-[200px] sm:max-w-[320px]">{file.name}</span>
+                    <span className="text-[10px] text-muted-foreground mt-0.5">
+                      {`${(file.size / 1024).toFixed(1)} KB`}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">{file.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {`${(file.size / 1024).toFixed(1)} KB`}
-                  </span>
+                <div className="flex items-center space-x-3">
+                  <Progress 
+                    value={uploadProgress[file.name] || 0} 
+                    className="w-16 sm:w-24 h-1.5"
+                  />
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => removeFile(index)}
+                    className="opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive text-muted-foreground h-8 w-8 rounded-lg transition-all"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    <span className="sr-only">Remove file</span>
+                  </Button>
                 </div>
               </div>
-              <div className="flex items-center space-x-3">
-                <Progress 
-                  value={uploadProgress[file.name] || 0} 
-                  className="w-24 h-2"
-                />
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => removeFile(index)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="h-4 w-4" />
-                  <span className="sr-only">Remove file</span>
-                </Button>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
       {uploadedFiles.length > 0 && (
-        <Alert className="animate-in slide-in-from-bottom-5 duration-700 w-full max-w-2xl">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Note</AlertTitle>
-          <AlertDescription>
-            All uploaded files will be processed using the selected import type.
-          </AlertDescription>
-        </Alert>
+        <div className="flex items-start gap-3 bg-muted/20 border border-border/30 p-3.5 rounded-xl text-xs text-muted-foreground w-full animate-in slide-in-from-bottom-5">
+          <AlertCircle className="h-4 w-4 text-muted-foreground/80 shrink-0 mt-0.5" />
+          <p className="leading-relaxed">
+            Note: All uploaded files will be concatenated and processed using the selected import type configuration.
+          </p>
+        </div>
       )}
     </div>
   )

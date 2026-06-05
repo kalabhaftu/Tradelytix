@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { X, AlertTriangle, Info, RefreshCw, Sparkles } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Badge } from "@/components/ui/badge"
 import { experimental_useObject as useObject } from '@ai-sdk/react'
 import { ImportType } from './import-type-selection'
 import { mappingSchema } from '@/app/api/v1/ai/mappings/schema'
@@ -111,113 +112,155 @@ export default function ColumnMapping({ headers, csvData, mappings, setMappings,
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="mb-4">
+    <div className="h-full flex flex-col gap-4">
+      <div className="flex-none space-y-3">
         {getRemainingFieldsToMap().length > 0 && (
-          <div className="flex-none bg-warning/10 border-l-4 border-warning text-warning-foreground p-4 rounded-r mb-4" role="alert">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Sparkles className="h-6 w-6 text-warning animate-pulse" />
+          <div className="bg-warning/5 border border-warning/20 backdrop-blur-md p-4 rounded-xl relative overflow-hidden transition-all duration-300" role="alert">
+            <div className="absolute inset-0 bg-gradient-to-r from-warning/10 via-transparent to-transparent pointer-events-none" />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+              <div className="flex items-start gap-3">
+                <div className="relative mt-0.5">
+                  <Sparkles className="h-5 w-5 text-warning animate-pulse" />
                   <div className="absolute -inset-1 bg-warning/30 rounded-full blur-sm opacity-50 animate-ping" />
                 </div>
                 <div>
-                  <p className="font-bold">Unmapped Fields</p>
-                  <p className="text-sm mt-1">Use AI to automatically map your CSV columns to the correct fields.</p>
+                  <p className="font-semibold text-foreground text-sm">Unmapped Fields Remaining</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Automate matching using AI or select mappings manually below.</p>
                 </div>
               </div>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => submit({ fieldColumns: headers, firstRows: csvData.slice(1, 6) })}
-                className="flex items-center gap-2 bg-warning/10 hover:bg-warning/20 text-warning border-warning/20 transition-colors"
+                className="flex items-center gap-2 bg-warning/10 hover:bg-warning/20 text-warning border-warning/20 transition-all duration-200"
               >
-                {isLoading ? <Spinner className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" />}
-                Use AI for mapping
+                {isLoading ? <Spinner className="h-3.5 w-3.5" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                <span>Auto-Map with AI</span>
               </Button>
             </div>
           </div>
         )}
-        <div className="flex flex-wrap gap-2">
+        
+        <div className="flex flex-wrap gap-1.5 py-1">
           {getRemainingFieldsToMap().map((field, index) => (
-            <span key={index} className={`bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-sm`}>
-              {field}
+            <Badge
+              key={index}
+              variant="outline"
+              className={cn(
+                "px-2.5 py-1 text-[11px] font-medium transition-all duration-200",
+                columnConfig[field]?.required
+                  ? "border-destructive/30 bg-destructive/5 text-destructive/90 hover:bg-destructive/10"
+                  : "border-warning/30 bg-warning/5 text-warning/90 hover:bg-warning/10"
+              )}
+            >
+              <span>
+                {field === 'instrument' ? 'Instrument' :
+                 field === 'entryId' ? 'Entry ID' :
+                 field === 'quantity' ? 'Quantity' :
+                 field === 'entryPrice' ? 'Entry Price' :
+                 field === 'closePrice' ? 'Close Price' :
+                 field === 'entryDate' ? 'Entry Date' :
+                 field === 'closeDate' ? 'Close Date' :
+                 field === 'pnl' ? 'PnL' :
+                 field === 'timeInPosition' ? 'Time in Position' :
+                 field === 'side' ? 'Side' :
+                 field === 'commission' ? 'Commission' :
+                 field === 'stopLoss' ? 'Stop Loss' :
+                 field === 'takeProfit' ? 'Take Profit' :
+                 field === 'closeReason' ? 'Close Reason' :
+                 field === 'symbol' ? 'Symbol' :
+                 field}
+              </span>
               {columnConfig[field] && (
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger>
-                      {columnConfig[field].required ? <AlertTriangle className="h-4 w-4 ml-1 text-destructive inline" /> : <Info className="h-4 w-4 ml-1 text-warning inline" />}
+                    <TooltipTrigger asChild>
+                      <span className="cursor-help ml-1 opacity-70 hover:opacity-100">
+                        {columnConfig[field].required ? (
+                          <AlertTriangle className="h-3 w-3 text-destructive inline-block align-middle" />
+                        ) : (
+                          <Info className="h-3 w-3 text-warning inline-block align-middle" />
+                        )}
+                      </span>
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent className="text-xs">
                       <p>{columnConfig[field].required ? "Required field" : "Optional field"}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               )}
-            </span>
+            </Badge>
           ))}
         </div>
       </div>
-      <div className="flex-1 overflow-auto">
+
+      <div className="flex-1 min-h-0 overflow-auto border border-border/40 rounded-xl bg-card/50 backdrop-blur-sm">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Instrument</TableHead>
-              <TableHead>Entry Date</TableHead>
-              <TableHead>Close Date</TableHead>
-              <TableHead>Quantity</TableHead>
+          <TableHeader className="bg-muted/40 sticky top-0 z-10">
+            <TableRow className="hover:bg-transparent border-b border-border/40">
+              <TableHead className="font-semibold text-foreground/80 text-xs py-3">CSV Column</TableHead>
+              <TableHead className="font-semibold text-foreground/80 text-xs py-3">Sample Values</TableHead>
+              <TableHead className="font-semibold text-foreground/80 text-xs py-3 w-[240px]">Mapped Field</TableHead>
+              <TableHead className="w-[50px] py-3"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {headers.map((header, index) => (
-              <TableRow key={index}>
-                <TableCell>{header}</TableCell>
-                <TableCell>
-                  {csvData.slice(1, 4).map((row, i) => (
-                    <span key={i} className="mr-2">{row[index]}</span>
-                  ))}
+              <TableRow key={index} className="hover:bg-muted/20 border-b border-border/30 transition-colors">
+                <TableCell className="font-medium text-sm text-foreground/90">{header}</TableCell>
+                <TableCell className="max-w-[300px] truncate">
+                  <div className="flex flex-wrap gap-1">
+                    {csvData.slice(1, 4).map((row, i) => (
+                      <span key={i} className="text-xs bg-muted/60 px-1.5 py-0.5 rounded text-muted-foreground font-mono">
+                        {row[index] || "-"}
+                      </span>
+                    ))}
+                  </div>
                 </TableCell>
-                <TableCell>
-                  <Select 
-                    onValueChange={(value) => handleMapping(header, value)} 
-                    value={Object.entries(object || {}).find(([_, value]) => value === header)?.[0] || ""}
+                <TableCell className="py-2">
+                  <Select
+                    onValueChange={(value) => handleMapping(header, value)}
+                    value={mappings[header] || (isLoading ? Object.entries(object || {}).find(([_, value]) => value === header)?.[0] : "") || ""}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Side" />
+                    <SelectTrigger className="w-[220px] bg-background/50 border-border/50 hover:bg-muted/50 transition-colors h-9">
+                      <SelectValue placeholder="Select field..." />
                     </SelectTrigger>
                     <SelectContent>
                       {destinationColumns.map((column, i) => (
                         <SelectItem key={i} value={column} disabled={Object.values(mappings).includes(column) && mappings[header] !== column}>
-                          {column === 'instrument' ? 'Instrument' :
-                           column === 'entryId' ? 'Entry ID' :
-                           column === 'quantity' ? 'Quantity' :
-                           column === 'entryPrice' ? 'Entry Price' :
-                           column === 'closePrice' ? 'Close Price' :
-                           column === 'entryDate' ? 'Entry Date' :
-                           column === 'closeDate' ? 'Close Date' :
-                           column === 'pnl' ? 'PnL' :
-                           column === 'timeInPosition' ? 'Time in Position' :
-                           column === 'side' ? 'Side' :
-                           column === 'commission' ? 'Commission' :
-                           column === 'stopLoss' ? 'Stop Loss' :
-                           column === 'takeProfit' ? 'Take Profit' :
-                           column === 'closeReason' ? 'Close Reason' :
-                           column === 'symbol' ? 'Symbol' :
-                           column}
-                          {columnConfig[column].required && (
-                            <span className="ml-1 text-warning">*</span>
-                          )}
+                          <span className="flex items-center gap-1.5">
+                            {column === 'instrument' ? 'Instrument' :
+                             column === 'entryId' ? 'Entry ID' :
+                             column === 'quantity' ? 'Quantity' :
+                             column === 'entryPrice' ? 'Entry Price' :
+                             column === 'closePrice' ? 'Close Price' :
+                             column === 'entryDate' ? 'Entry Date' :
+                             column === 'closeDate' ? 'Close Date' :
+                             column === 'pnl' ? 'PnL' :
+                             column === 'timeInPosition' ? 'Time in Position' :
+                             column === 'side' ? 'Side' :
+                             column === 'commission' ? 'Commission' :
+                             column === 'stopLoss' ? 'Stop Loss' :
+                             column === 'takeProfit' ? 'Take Profit' :
+                             column === 'closeReason' ? 'Close Reason' :
+                             column === 'symbol' ? 'Symbol' :
+                             column}
+                            {columnConfig[column].required && (
+                              <span className="text-destructive font-bold text-xs">*</span>
+                            )}
+                          </span>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </TableCell>
-                <TableCell>
+                <TableCell className="py-2">
                   {mappings[header] && (
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="icon"
                       onClick={() => handleRemoveMapping(header)}
+                      className="hover:bg-destructive/10 hover:text-destructive text-muted-foreground h-8 w-8 rounded-lg transition-all"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -228,7 +271,7 @@ export default function ColumnMapping({ headers, csvData, mappings, setMappings,
           </TableBody>
         </Table>
       </div>
-      {error && <p className="text-destructive mt-2">{error}</p>}
+      {error && <p className="text-destructive text-sm font-medium mt-1">{error}</p>}
     </div>
   )
 }

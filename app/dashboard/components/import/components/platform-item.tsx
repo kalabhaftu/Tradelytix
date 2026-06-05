@@ -32,54 +32,52 @@ export function PlatformItem({
         onMouseEnter={() => onHover(platform.category)}
         onMouseLeave={onLeave}
         className={cn(
-          "flex items-stretch gap-4 ml-6 border-l-2 border-muted pl-4 transition-all duration-200 rounded-none",
-          platform.isDisabled && "opacity-50 select-none",
+          "flex items-center gap-4 p-3.5 my-1.5 ml-4 mr-2 rounded-xl transition-all duration-200 border",
+          platform.isDisabled && "opacity-40 select-none pointer-events-none",
           !platform.isDisabled && "cursor-pointer",
-          isSelected && "border-l-foreground bg-muted/30",
-          !platform.isDisabled && "hover:border-l-foreground/50"
+          isSelected 
+            ? "border-primary/40 bg-primary/5 shadow-md shadow-primary/5 scale-[1.01] translate-x-0.5" 
+            : "border-border/40 bg-card/40 backdrop-blur-sm hover:border-primary/20 hover:bg-muted/30 hover:translate-x-0.5"
         )}
         disabled={platform.isDisabled || platform.isComingSoon}
       >
-        <div className="flex items-center py-1">
+        <div className="flex items-center justify-center h-10 w-10 bg-background/80 rounded-xl border border-border/50 shadow-sm p-1.5 shrink-0 transition-transform duration-200 group-hover:scale-105">
           {platform.logo.path && (
             <Image
               src={platform.logo.path}
               alt={platform.logo.alt || ''}
-              width={32}
-              height={32}
-              className="object-contain rounded-lg border border-border/50"
+              width={28}
+              height={28}
+              className="object-contain rounded-md"
             />
           )}
           {platform.logo.component && (
-            <platform.logo.component />
+            <div className="text-foreground/80">
+              <platform.logo.component />
+            </div>
           )}
         </div>
-        <div className="flex-1">
-          <div className="font-medium flex items-center gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-sm flex flex-wrap items-center gap-1.5 text-foreground/90">
             {platform.name}
             {platform.isDisabled && (
-              <>
-                <Badge variant="secondary" className="ml-2 transition-transform duration-200 hover:scale-105">
-                  Disabled
-                </Badge>
-                <AlertTriangle className="h-4 w-4 text-warning animate-pulse" />
-              </>
+              <Badge variant="secondary" className="px-1.5 py-0 text-[10px] bg-muted text-muted-foreground border-none">
+                Disabled
+              </Badge>
             )}
             {platform.isComingSoon && !platform.isDisabled && (
-              <>
-                <Badge variant="secondary" className="ml-2 transition-transform duration-200 hover:scale-105 bg-muted text-foreground hover:bg-muted/80">
-                  Coming Soon
-                </Badge>
-              </>
+              <Badge variant="secondary" className="px-1.5 py-0 text-[10px] bg-muted/80 text-foreground border-none">
+                Coming Soon
+              </Badge>
             )}
             {!platform.isDisabled && platform.isRithmic && isWeekend && (
-              <div className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-warning/15 text-warning hover:bg-warning/25 gap-1.5 ml-2">
-                <AlertTriangle className="h-3 w-3" />
-                Weekend Data Warning
-              </div>
+              <Badge variant="outline" className="px-1.5 py-0 text-[10px] border-warning/30 bg-warning/5 text-warning/90 gap-1">
+                <AlertTriangle className="h-2.5 w-2.5" />
+                Weekend
+              </Badge>
             )}
           </div>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
             {platform.description}
           </div>
         </div>

@@ -74,64 +74,76 @@ export default function ImportTypeSelection({ selectedType, setSelectedType, set
 
   return (
     <div className="flex flex-col h-full">
-      <div className="grid md:grid-cols-2 gap-6 h-full min-h-0 p-2">
+      <div className="grid md:grid-cols-2 gap-6 h-full min-h-0 p-1">
         {/* Platform List */}
         <div className="h-full min-h-0">
-          <Command className="border rounded-lg h-full">
-            <div className="flex flex-col h-full">
+          <Command className="border border-border/30 bg-card/25 backdrop-blur-md rounded-2xl h-full shadow-lg overflow-hidden flex flex-col">
+            <div className="border-b border-border/30 bg-muted/10 shrink-0">
               <CommandInput
-                className="h-auto rounded-none shrink-0"
+                className="h-12 bg-transparent"
                 placeholder="Search platforms..."
                 value={searchQuery}
                 onValueChange={setSearchQuery}
               />
-              <ScrollArea className="h-[calc(100%-45px)]">
-                <CommandList className="h-full">
-                  <CommandEmpty>No platforms found</CommandEmpty>
-                  {categories.map(category => {
-                    const categoryPlatforms = filteredPlatforms.filter(platform => platform.category === category)
-                    if (categoryPlatforms.length === 0) return null
-
-                    return (
-                      <CommandGroup key={category} heading={
-                        <div className={cn(
-                          "flex items-center gap-2 text-muted-foreground transition-all duration-200 px-2",
-                          hoveredCategory === category ? "text-foreground scale-[1.02] translate-x-1" : "hover:text-foreground"
-                        )}>
-                          {categoryIcons[category]}
-                          <span>{getTranslatedCategory(category)}</span>
-                        </div>
-                      }>
-                        {categoryPlatforms.map((platform) => (
-                          <PlatformItem
-                            key={platform.type}
-                            platform={platform}
-                            isSelected={selectedType === platform.type}
-                            onSelect={(type) => setSelectedType(type as ImportType)}
-                            onHover={(category) => setHoveredCategory(category as PlatformConfig['category'])}
-                            onLeave={() => setHoveredCategory(null)}
-                            isWeekend={isWeekend()}
-                          />
-                        ))}
-                      </CommandGroup>
-                    )
-                  })}
-                </CommandList>
-              </ScrollArea>
             </div>
+            <ScrollArea className="flex-1">
+              <CommandList className="h-full py-2">
+                <CommandEmpty className="py-8 text-center text-xs text-muted-foreground">
+                  No platforms found
+                </CommandEmpty>
+                {categories.map(category => {
+                  const categoryPlatforms = filteredPlatforms.filter(platform => platform.category === category)
+                  if (categoryPlatforms.length === 0) return null
+
+                  return (
+                    <CommandGroup
+                      key={category}
+                      heading={
+                        <div className={cn(
+                          "flex items-center gap-2 text-muted-foreground/75 font-bold uppercase tracking-wider text-[10px] transition-all duration-200 px-1 py-1.5",
+                          hoveredCategory === category ? "text-foreground scale-[1.01] translate-x-0.5" : ""
+                        )}
+                        style={{ contentVisibility: 'auto' }}
+                      >
+                        {categoryIcons[category]}
+                        <span>{getTranslatedCategory(category)}</span>
+                      </div>
+                    }>
+                      {categoryPlatforms.map((platform) => (
+                        <PlatformItem
+                          key={platform.type}
+                          platform={platform}
+                          isSelected={selectedType === platform.type}
+                          onSelect={(type) => setSelectedType(type as ImportType)}
+                          onHover={(category) => setHoveredCategory(category as PlatformConfig['category'])}
+                          onLeave={() => setHoveredCategory(null)}
+                          isWeekend={isWeekend()}
+                        />
+                      ))}
+                    </CommandGroup>
+                  )
+                })}
+              </CommandList>
+            </ScrollArea>
           </Command>
         </div>
 
         {/* Right Panel - Tutorial/Info */}
-        <div className="h-full min-h-0 overflow-y-auto">
-          {selectedType !== '' && selectedPlatform && !selectedPlatform.customComponent && (
-            <div className="pr-4">
+        <div className="h-full min-h-0">
+          {selectedType !== '' && selectedPlatform && !selectedPlatform.customComponent ? (
+            <div className="h-full overflow-y-auto bg-card/10 border border-border/30 rounded-2xl p-6 backdrop-blur-md shadow-lg">
               <PlatformTutorial selectedPlatform={selectedPlatform} setIsOpen={setIsOpen} />
             </div>
-          )}
-          {!selectedType && (
-            <div className="h-full flex items-center justify-center text-muted-foreground">
-              <p>Select an import method to get started</p>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-card/10 border border-border/30 rounded-2xl backdrop-blur-md shadow-lg">
+              <div className="relative mb-4">
+                <FileSpreadsheet className="h-12 w-12 text-muted-foreground/60 animate-pulse" />
+                <div className="absolute -inset-2 bg-primary/5 rounded-full blur-md" />
+              </div>
+              <h3 className="font-semibold text-foreground/80 text-sm mb-1">No Platform Selected</h3>
+              <p className="text-xs text-muted-foreground max-w-[240px] leading-relaxed">
+                Choose an import source from the list on the left to view instructions and start syncing your trades.
+              </p>
             </div>
           )}
         </div>

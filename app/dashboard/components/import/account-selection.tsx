@@ -176,83 +176,108 @@ export default function AccountSelection({
   }
 
   return (
-    <div className="h-full flex flex-col">
-        <div className="space-y-2">
-          <Label className="text-lg font-semibold">
-            Select Account
-          </Label>
-          <p className="text-sm text-muted-foreground">
-            {accounts.length === 0
-              ? "No accounts found"
-              : "Choose an existing account or create a new one"
-            }
-          </p>
-        </div>
+    <div className="h-full flex flex-col gap-4">
+      <div className="space-y-1.5 flex-none">
+        <Label className="text-lg font-semibold text-foreground/90">
+          Select Account
+        </Label>
+        <p className="text-xs text-muted-foreground">
+          {accounts.length === 0
+            ? "No accounts found"
+            : "Choose an active account to link these imported trades to"
+          }
+        </p>
+      </div>
 
       {accounts.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <Card className="p-8 text-center">
-            <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">
-              {hasError ? "Failed to fetch accounts" : "No accounts found"}
+        <div className="flex-1 flex items-center justify-center p-4">
+          <Card className="p-8 text-center max-w-md bg-card/40 border-border/40 backdrop-blur-sm rounded-2xl shadow-lg">
+            <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground mb-3 animate-pulse" />
+            <h3 className="text-base font-semibold mb-1">
+              {hasError ? "Failed to Fetch Accounts" : "No Accounts Found"}
             </h3>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
               {hasError
-                ? "There was an error loading your accounts. Please try again."
-                : "You need to create an account first before importing trades"
+                ? "There was an error loading your accounts. Please try again or check your connection."
+                : "You need to create an account first before importing trades."
               }
             </p>
             {hasError ? (
               <Button
                 onClick={() => refetch()}
                 disabled={isLoading}
-                className="mb-4"
+                size="sm"
+                className="gap-2"
               >
-                {isLoading ? <Spinner className="mr-2 h-4 w-4" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                {isLoading ? 'Retrying...' : 'Retry'}
+                {isLoading ? <Spinner className="h-3.5 w-3.5" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                <span>Retry</span>
               </Button>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                Go to Accounts page to create new accounts
+              <p className="text-xs text-primary font-medium">
+                Go to the Accounts section to initialize one.
               </p>
             )}
           </Card>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto mt-4 py-2 min-h-[200px]">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {accountsWithPhases.map((account) => (
-              <Card
-                key={account.id}
-                className={cn(
-                  "p-6 cursor-pointer hover:border-foreground hover:shadow-md transition-all duration-200 relative group",
-                  selectedAccountId === account.id ? "border-foreground bg-muted/30 shadow-md" : "border-border"
-                )}
-                onClick={() => {
-                  setAccountNumber(account.number)
-                  setSelectedAccountId?.(account.id)
-                }}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      {account.accountType === 'prop-firm' ? (
-                        <Building2 className="h-4 w-4 text-foreground" />
-                      ) : (
-                        <User className="h-4 w-4 text-long" />
-                      )}
-                      <p className="font-medium">{account.displayName}</p>
+        <div className="flex-1 overflow-y-auto py-2 pr-1 min-h-[200px]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {accountsWithPhases.map((account) => {
+              const isSelected = selectedAccountId === account.id;
+              return (
+                <Card
+                  key={account.id}
+                  className={cn(
+                    "p-5 cursor-pointer hover:border-primary/30 hover:bg-muted/10 hover:scale-[1.015] hover:shadow-md transition-all duration-200 relative group flex flex-col justify-between rounded-2xl border",
+                    isSelected 
+                      ? "border-primary bg-primary/5 shadow-md shadow-primary/5 ring-1 ring-primary/20 scale-[1.015]" 
+                      : "border-border/40 bg-card/40 backdrop-blur-sm"
+                  )}
+                  onClick={() => {
+                    setAccountNumber(account.number)
+                    setSelectedAccountId?.(account.id)
+                  }}
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1.5 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <div className={cn(
+                            "p-1.5 rounded-lg border",
+                            isSelected ? "bg-background/80 border-primary/20 text-primary" : "bg-muted/40 border-border/40 text-muted-foreground"
+                          )}>
+                            {account.accountType === 'prop-firm' ? (
+                              <Building2 className="h-3.5 w-3.5" />
+                            ) : (
+                              <User className="h-3.5 w-3.5 text-long" />
+                            )}
+                          </div>
+                          <p className="font-semibold text-sm text-foreground/90 truncate">{account.displayName}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground/80 font-mono">
+                          {account.number}
+                        </p>
+                        {account.broker && account.accountType === 'live' && (
+                          <p className="text-[10px] text-muted-foreground">
+                            Broker: {account.broker}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="relative shrink-0">
+                        {isSelected ? (
+                          <div className="relative">
+                            <CheckCircle2 className="h-5 w-5 text-primary relative z-10" />
+                            <div className="absolute -inset-1 bg-primary/20 rounded-full blur-sm animate-pulse" />
+                          </div>
+                        ) : (
+                          <div className="h-5 w-5 rounded-full border border-border/40 group-hover:border-primary/30 transition-colors" />
+                        )}
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground font-mono">
-                      {account.number}
-                    </p>
-                    {account.broker && account.accountType === 'live' && (
-                      <p className="text-xs text-muted-foreground">
-                        {account.broker}
-                      </p>
-                    )}
+
                     {account.accountType === 'prop-firm' && account.currentPhase && (
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-2 mt-3">
                         {(() => {
                           const phaseInfo = account.currentPhase;
                           const phaseNumber = typeof phaseInfo === 'number' ? phaseInfo : phaseInfo?.phaseNumber || 1;
@@ -262,19 +287,20 @@ export default function AccountSelection({
 
                           return (
                             <Badge
-                              variant={
-                                phaseStatus === 'active' ? 'default' :
-                                phaseStatus === 'passed' ? 'secondary' :
-                                'destructive'
-                              }
-                              className="text-xs"
+                              variant="outline"
+                              className={cn(
+                                "text-[10px] px-2 py-0.5 border font-semibold gap-1",
+                                phaseStatus === 'active' ? 'border-primary/30 bg-primary/5 text-primary' :
+                                phaseStatus === 'passed' ? 'border-success/30 bg-success/5 text-success-foreground' :
+                                'border-destructive/30 bg-destructive/5 text-destructive-foreground'
+                              )}
                             >
-                              {phaseStatus === 'active' && <Target className="h-3 w-3 mr-1" />}
-                              {phaseStatus === 'passed' && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                              {phaseStatus === 'failed' && <AlertTriangle className="h-3 w-3 mr-1" />}
-                              {getPhaseLabel(evaluationType, phaseNumber)}
+                              {phaseStatus === 'active' && <Target className="h-2.5 w-2.5" />}
+                              {phaseStatus === 'passed' && <CheckCircle2 className="h-2.5 w-2.5" />}
+                              {phaseStatus === 'failed' && <AlertTriangle className="h-2.5 w-2.5" />}
+                              <span>{getPhaseLabel(evaluationType, phaseNumber)}</span>
                               {phaseId && (
-                                <span className="text-xs font-mono text-muted-foreground ml-1">
+                                <span className="text-[9px] font-mono opacity-80">
                                   #{phaseId}
                                 </span>
                               )}
@@ -284,12 +310,16 @@ export default function AccountSelection({
                       </div>
                     )}
                   </div>
-                  {selectedAccountId === account.id && (
-                    <CheckCircle2 className="h-5 w-5 text-foreground" />
-                  )}
-                </div>
-              </Card>
-            ))}
+
+                  <div className="mt-4 pt-3 border-t border-border/30 flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground/75 font-semibold">Starting Bal</span>
+                    <span className="text-xs font-semibold font-mono text-foreground/90">
+                      ${account.startingBalance.toLocaleString()}
+                    </span>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         </div>
       )}

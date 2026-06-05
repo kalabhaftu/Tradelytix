@@ -74,6 +74,14 @@ function shouldFailClosed(limiter: LimiterConfig) {
 }
 
 function rateLimitUnavailableResponse() {
+  console.error('[Rate Limiter] Fail-closed triggered. Environment variables status:', {
+    has_KV_URL: !!process.env.KV_REST_API_URL,
+    has_KV_TOKEN: !!process.env.KV_REST_API_TOKEN,
+    has_UPSTASH_URL: !!process.env.UPSTASH_REDIS_REST_URL,
+    has_UPSTASH_TOKEN: !!process.env.UPSTASH_REDIS_REST_TOKEN,
+    ALLOW_IN_MEMORY: process.env.ALLOW_IN_MEMORY_RATE_LIMITS_IN_PRODUCTION,
+    NODE_ENV: process.env.NODE_ENV
+  })
   return NextResponse.json(
     {
       success: false,
@@ -84,6 +92,7 @@ function rateLimitUnavailableResponse() {
     { status: 503 }
   )
 }
+
 
 // ─── In-memory fallback instances (used when KV is unavailable) ───
 const memoryLimiters = new Map<string, RateLimiterMemory>()

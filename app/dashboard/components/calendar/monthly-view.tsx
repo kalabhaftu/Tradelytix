@@ -388,7 +388,7 @@ export default function MonthlyView({
         </div>
 
         {/* Day Grid - flex-1 to fill remaining space, grid-rows set to number of weeks */}
-        <div className={cn("flex-1 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 min-h-0", shouldUseWeekdayOnlyLayout ? "grid-cols-5" : "grid-cols-7")} style={{ gridTemplateRows: rowTemplate }}>
+        <div className={cn("flex-1 h-0 grid gap-1 md:gap-1.5 p-2 md:p-3 pt-0 min-h-0", shouldUseWeekdayOnlyLayout ? "grid-cols-5" : "grid-cols-7")} style={{ gridTemplateRows: rowTemplate }}>
           {weeks.map((week, weekIndex) => (
             <React.Fragment key={weekIndex}>
               {week.map((date) => {
@@ -420,7 +420,7 @@ export default function MonthlyView({
           "shrink-0 flex flex-col border-border/10",
           isMobile 
             ? "w-full border-t p-3 bg-muted/5 gap-2" 
-            : "h-full w-[78px] border-l min-[420px]:w-[88px] sm:w-[96px] lg:w-[104px] xl:w-[116px] 2xl:w-[125px] pr-2 md:pr-3 pb-2 md:pb-3"
+            : "h-full min-h-0 w-[90px] border-l min-[420px]:w-[100px] sm:w-[110px] lg:w-[125px] xl:w-[140px] 2xl:w-[150px] pr-2 md:pr-3 pb-2 md:pb-3"
         )}>
           {/* Desktop Spacer matches weekday-header height exactly */}
           {!isMobile ? (
@@ -440,7 +440,7 @@ export default function MonthlyView({
           <div 
             className={cn(
               "grid gap-1 md:gap-1.5 min-h-0",
-              isMobile ? "grid-cols-3 sm:grid-cols-5 w-full" : "flex-1 pt-0 pl-2 md:pl-3"
+              isMobile ? "grid-cols-3 sm:grid-cols-5 w-full" : "flex-1 h-0 pt-0 pl-2 md:pl-3"
             )} 
             style={isMobile ? undefined : { gridTemplateRows: rowTemplate }}
           >

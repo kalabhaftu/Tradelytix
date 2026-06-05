@@ -127,17 +127,17 @@ function MiniMonth({
                       // Profit — green
                       hasTrades &&
                         classifyOutcome(data.pnl, breakEvenThreshold) === 'win' &&
-                        "bg-emerald-950/85 border-emerald-800/80 text-emerald-100",
+                        "bg-long/15 border-long/35 text-long",
 
                       // Loss — red/orange
                       hasTrades &&
                         classifyOutcome(data.pnl, breakEvenThreshold) === 'loss' &&
-                        "bg-rose-950/85 border-rose-800/80 text-rose-100",
+                        "bg-short/15 border-short/35 text-short",
 
                       // Breakeven
                       hasTrades &&
                         classifyOutcome(data.pnl, breakEvenThreshold) === 'breakeven' &&
-                        "bg-muted/40 border-muted/50 text-foreground",
+                        "bg-muted/40 border border-muted/50 text-foreground",
 
                       // Today
                       isTodayDate &&

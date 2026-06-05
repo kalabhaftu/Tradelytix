@@ -108,6 +108,14 @@ export async function deleteCachePattern(pattern: string): Promise<number> {
  * Check if Redis is available
  */
 export function isRedisAvailable(): boolean {
+  if (typeof process !== 'undefined') {
+    if (!process.env.KV_REST_API_URL && process.env.UPSTASH_REDIS_REST_URL) {
+      process.env.KV_REST_API_URL = process.env.UPSTASH_REDIS_REST_URL
+    }
+    if (!process.env.KV_REST_API_TOKEN && process.env.UPSTASH_REDIS_REST_TOKEN) {
+      process.env.KV_REST_API_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN
+    }
+  }
   return !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
 }
 

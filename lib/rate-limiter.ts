@@ -12,6 +12,14 @@ import { NextRequest, NextResponse } from 'next/server'
 
 // ─── KV availability check ───
 function isKvAvailable(): boolean {
+  if (typeof process !== 'undefined') {
+    if (!process.env.KV_REST_API_URL && process.env.UPSTASH_REDIS_REST_URL) {
+      process.env.KV_REST_API_URL = process.env.UPSTASH_REDIS_REST_URL
+    }
+    if (!process.env.KV_REST_API_TOKEN && process.env.UPSTASH_REDIS_REST_TOKEN) {
+      process.env.KV_REST_API_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN
+    }
+  }
   return !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
 }
 

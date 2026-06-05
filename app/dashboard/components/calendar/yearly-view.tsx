@@ -76,12 +76,12 @@ function MiniMonth({
         {stats.trades > 0 && (
           <span
             className={cn(
-              "text-[10px] font-black px-1.5 py-0.5 rounded border",
+              "text-[10px] font-black px-2 py-0.5 rounded-full border shadow-sm",
               classifyOutcome(stats.pnl, breakEvenThreshold) === 'win'
-                ? "bg-long/10 border-long/20 text-long"
+                ? "bg-emerald-500/15 border-emerald-500/25 text-emerald-400"
                 : classifyOutcome(stats.pnl, breakEvenThreshold) === 'loss'
-                  ? "bg-short/10 border-short/20 text-short"
-                  : "bg-muted/30 border-border/20 text-muted-foreground",
+                  ? "bg-rose-500/15 border-rose-500/25 text-rose-400"
+                  : "bg-muted/35 border-border/30 text-muted-foreground",
             )}
           >
             {formatValue(stats.pnl, { kind: 'money', compact: true, precision: 0, emptyLabel: '$0' })}
@@ -122,22 +122,22 @@ function MiniMonth({
                       // No trades
                       isCurrentMonth &&
                         !hasTrades &&
-                        "bg-muted/5 border-transparent text-muted-foreground/20",
+                        "bg-[#0c0e12]/40 border-transparent text-muted-foreground/20",
 
                       // Profit — green
                       hasTrades &&
                         classifyOutcome(data.pnl, breakEvenThreshold) === 'win' &&
-                        "bg-long/20 border-long/25 text-long/80",
+                        "bg-emerald-950/85 border-emerald-800/80 text-emerald-100",
 
                       // Loss — red/orange
                       hasTrades &&
                         classifyOutcome(data.pnl, breakEvenThreshold) === 'loss' &&
-                        "bg-short/20 border-short/25 text-short/80",
+                        "bg-rose-950/85 border-rose-800/80 text-rose-100",
 
                       // Breakeven
                       hasTrades &&
                         classifyOutcome(data.pnl, breakEvenThreshold) === 'breakeven' &&
-                        "bg-muted/30 border-border/20 text-muted-foreground/40",
+                        "bg-muted/40 border-muted/50 text-foreground",
 
                       // Today
                       isTodayDate &&
@@ -170,9 +170,9 @@ function MiniMonth({
                           !hasTrades
                             ? "text-muted-foreground/50"
                             : classifyOutcome(data.pnl, breakEvenThreshold) === 'win'
-                              ? "text-long"
+                              ? "text-emerald-400"
                               : classifyOutcome(data.pnl, breakEvenThreshold) === 'loss'
-                                ? "text-short"
+                                ? "text-rose-400"
                                 : "text-muted-foreground",
                         )}
                       >

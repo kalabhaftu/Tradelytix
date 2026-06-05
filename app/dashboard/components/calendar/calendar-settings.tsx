@@ -4,52 +4,63 @@
 import { Check, Settings as SettingsIcon } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
-import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command"
 import { useCalendarViewStore, VisibleStats } from "@/store/calendar-view"
+import { cn } from "@/lib/utils"
 
 export function CalendarSettings() {
     const { visibleStats, setVisibleStats } = useCalendarViewStore()
 
     const stats: { key: keyof VisibleStats; label: string }[] = [
+        { key: "rMultiple", label: "R Multiple" },
         { key: "pnl", label: "Daily P/L" },
         { key: "trades", label: "Number of Trades" },
         { key: "winRate", label: "Day Winrate" },
-        { key: "rMultiple", label: "R Multiple" },
     ]
 
     return (
         <Popover>
             <PopoverTrigger asChild>
                 <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-6 w-6 max-[420px]:h-5 max-[420px]:w-5 sm:h-7 sm:w-7 p-0 border border-border/30 rounded-lg bg-muted/20 hover:bg-primary/5 hover:text-primary transition-all"
-                    title="Calendar Settings"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 p-0 hover:bg-primary/5 hover:text-primary transition-all rounded-md"
+                    title="Display Stats Settings"
                 >
-                    <SettingsIcon className="h-3.5 w-3.5" />
+                    <SettingsIcon className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-foreground transition-colors" />
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0" align="end">
-                <Command>
-                    <CommandList>
-                        <CommandGroup heading="Display Stats">
-                            {stats.map((stat) => (
-                                <CommandItem
-                                    key={stat.key}
-                                    onSelect={() => {
-                                        setVisibleStats({ [stat.key]: !visibleStats[stat.key] })
-                                    }}
-                                    className="flex items-center justify-between py-2.5"
-                                >
-                                    <span className="text-sm">{stat.label}</span>
-                                    {visibleStats[stat.key] && (
-                                        <Check className="h-4 w-4 text-primary" />
+            <PopoverContent className="w-[210px] p-3 bg-[#0d0e12] border border-border/40 rounded-xl space-y-2.5 shadow-xl animate-in fade-in-50 zoom-in-95 duration-100" align="end">
+                <div className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-wider px-1">
+                    Display stats
+                </div>
+                <div className="space-y-1">
+                    {stats.map((stat) => {
+                        const isChecked = visibleStats[stat.key]
+                        return (
+                            <div
+                                key={stat.key}
+                                onClick={() => {
+                                    setVisibleStats({ [stat.key]: !isChecked })
+                                }}
+                                className="flex items-center gap-2.5 py-1.5 px-2 hover:bg-muted/30 rounded-md cursor-pointer select-none transition-colors"
+                            >
+                                <div className={cn(
+                                    "h-4 w-4 rounded flex items-center justify-center transition-all",
+                                    isChecked
+                                        ? "bg-indigo-600 border border-indigo-500 text-white animate-in zoom-in-75 duration-75"
+                                        : "border border-muted-foreground/45 bg-[#0f1115]"
+                                )}>
+                                    {isChecked && (
+                                        <Check className="h-3 w-3 stroke-[3]" />
                                     )}
-                                </CommandItem>
-                            ))}
-                        </CommandGroup>
-                    </CommandList>
-                </Command>
+                                </div>
+                                <span className="text-xs font-semibold text-foreground/80 tracking-tight">
+                                    {stat.label}
+                                </span>
+                            </div>
+                        )
+                    })}
+                </div>
             </PopoverContent>
         </Popover>
     )

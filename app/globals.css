@@ -177,6 +177,32 @@
     --chart-profit: 123 27% 62%;
     --chart-loss: 25 70% 50%;
   }
+
+  /* Accent Pack: Violet & Pink */
+  .accent-violet {
+    --primary: 255 85% 60%;
+    --success: 255 85% 60%;               /* Violet (#a78bfa-like in light) */
+    --success-foreground: 0 0% 100%;
+    --destructive: 329 80% 55%;            /* Pink (#f472b6-like in light) */
+    --destructive-foreground: 0 0% 100%;
+    --chart-profit: 255 85% 60%;
+    --chart-loss: 329 80% 55%;
+    --chart-bullish: 255 85% 60%;
+    --chart-bearish: 329 80% 55%;
+  }
+
+  .dark.accent-violet,
+  .accent-violet.dark {
+    --primary: 255 92% 76%;               /* Violet (#a78bfa) */
+    --success: 255 92% 76%;
+    --success-foreground: 222 33% 6%;
+    --destructive: 329 86% 70%;            /* Pink (#f472b6) */
+    --destructive-foreground: 0 0% 100%;
+    --chart-profit: 255 92% 76%;
+    --chart-loss: 329 86% 70%;
+    --chart-bullish: 255 92% 76%;
+    --chart-bearish: 329 86% 70%;
+  }
 }
 
 @layer base {

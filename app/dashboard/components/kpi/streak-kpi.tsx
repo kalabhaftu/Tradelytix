@@ -4,9 +4,15 @@ import React, { useMemo } from 'react'
 import { WidgetCard } from '../widget-card'
 import { useData } from '@/context/data-provider'
 import { cn } from '@/lib/utils'
-import { Flame, TrendingUp, TrendingDown } from "lucide-react"
+import { Flame, TrendingUp, TrendingDown, Info } from "lucide-react"
 import { calculateTradingOverviewKpis } from '@/lib/dashboard-math'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface StreakKpiProps {
   size?: string
@@ -42,11 +48,25 @@ const StreakKpi = React.memo(function StreakKpi({ size }: StreakKpiProps) {
       <div className="h-full flex flex-col justify-between">
         {/* Header */}
         <div className="flex items-start justify-between gap-2">
-          <span className="text-xs font-medium text-muted-foreground">
-            Trade Streak
-          </span>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-xs font-medium text-muted-foreground">
+              Trade Streak
+            </span>
+            <TooltipProvider delayDuration={100}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="cursor-help w-4 h-4 rounded-full border border-border/60 flex items-center justify-center shrink-0">
+                    <Info className="h-2.5 w-2.5 text-muted-foreground/60" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={5} className="max-w-[220px]">
+                  <p className="text-xs">Your current consecutive win or loss streak, along with your best streaks of all time.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           <div className={cn(
-            "rounded-lg p-1.5 min-[1440px]:p-2",
+            "rounded-lg p-1.5 min-[1440px]:p-2 shrink-0",
             streakInfo.currentStreak > 0 && streakInfo.isWinning
               ? "bg-long/10"
               : streakInfo.currentStreak > 0

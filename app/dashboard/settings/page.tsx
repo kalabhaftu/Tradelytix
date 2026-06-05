@@ -204,10 +204,10 @@ export default function SettingsPage() {
     })
   }
 
-  const handleAccentChange = (value: 'classic' | 'reports') => {
+  const handleAccentChange = (value: 'classic' | 'reports' | 'violet') => {
     setAccentPack(value)
     toast.success("Color accent updated", {
-      description: `Accent changed to ${value === 'reports' ? 'Sage & Amber' : 'Classic'}.`,
+      description: `Accent changed to ${value === 'reports' ? 'Sage & Amber' : value === 'violet' ? 'Violet & Pink' : 'Classic'}.`,
       duration: 2000
     })
   }
@@ -885,43 +885,53 @@ export default function SettingsPage() {
 
             <Separator />
 
-            {/* Color Accent */}
-            <SettingRow
-              icon={Palette}
-              label="Color Accent"
-              description={accentPack === 'reports' ? 'Sage & Amber' : 'Classic (Red & Green)'}
-              action={
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2 min-w-[120px]">
-                      {accentPack === 'reports' ? 'Sage & Amber' : 'Classic'}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleAccentChange('classic')}>
-                      <div className="flex items-center gap-2">
-                        <div className="flex gap-1">
-                          <div className="w-3 h-3 rounded-full bg-long" />
-                          <div className="w-3 h-3 rounded-full bg-short" />
-                        </div>
-                        Classic
-                      </div>
-                      {accentPack === 'classic' && <Check className="ml-auto h-4 w-4" />}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleAccentChange('reports')}>
-                      <div className="flex items-center gap-2">
-                        <div className="flex gap-1">
-                          <div className="w-3 h-3 rounded-full bg-[hsl(var(--chart-bullish))]" />
-                          <div className="w-3 h-3 rounded-full bg-[hsl(var(--chart-bearish))]" />
-                        </div>
-                        Sage & Amber
-                      </div>
-                      {accentPack === 'reports' && <Check className="ml-auto h-4 w-4" />}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              }
-            />
+             {/* Color Accent */}
+             <SettingRow
+               icon={Palette}
+               label="Color Accent"
+               description={accentPack === 'reports' ? 'Sage & Amber' : accentPack === 'violet' ? 'Violet & Pink' : 'Classic (Red & Green)'}
+               action={
+                 <DropdownMenu>
+                   <DropdownMenuTrigger asChild>
+                     <Button variant="outline" size="sm" className="gap-2 min-w-[120px]">
+                       {accentPack === 'reports' ? 'Sage & Amber' : accentPack === 'violet' ? 'Violet & Pink' : 'Classic'}
+                     </Button>
+                   </DropdownMenuTrigger>
+                   <DropdownMenuContent align="end">
+                     <DropdownMenuItem onClick={() => handleAccentChange('classic')}>
+                       <div className="flex items-center gap-2">
+                         <div className="flex gap-1">
+                           <div className="w-3 h-3 rounded-full bg-long" />
+                           <div className="w-3 h-3 rounded-full bg-short" />
+                         </div>
+                         Classic
+                       </div>
+                       {accentPack === 'classic' && <Check className="ml-auto h-4 w-4" />}
+                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => handleAccentChange('reports')}>
+                       <div className="flex items-center gap-2">
+                         <div className="flex gap-1">
+                           <div className="w-3 h-3 rounded-full bg-[hsl(var(--chart-bullish))]" />
+                           <div className="w-3 h-3 rounded-full bg-[hsl(var(--chart-bearish))]" />
+                         </div>
+                         Sage & Amber
+                       </div>
+                       {accentPack === 'reports' && <Check className="ml-auto h-4 w-4" />}
+                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => handleAccentChange('violet')}>
+                       <div className="flex items-center gap-2">
+                         <div className="flex gap-1">
+                           <div className="w-3 h-3 rounded-full bg-[#a78bfa]" />
+                           <div className="w-3 h-3 rounded-full bg-[#f472b6]" />
+                         </div>
+                         Violet & Pink
+                       </div>
+                       {accentPack === 'violet' && <Check className="ml-auto h-4 w-4" />}
+                     </DropdownMenuItem>
+                   </DropdownMenuContent>
+                 </DropdownMenu>
+               }
+             />
 
             <Separator />
 
@@ -1074,7 +1084,7 @@ export default function SettingsPage() {
             <SettingRow
               icon={Zap}
               label="Chart Edge Style"
-              description={chartStyle === 'sharp' ? 'Sharp angular lines with violet aesthetics' : 'Smooth curved lines with standard colors'}
+              description={chartStyle === 'sharp' ? 'Sharp angular lines following your color accent' : 'Smooth curved lines following your color accent'}
               action={
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

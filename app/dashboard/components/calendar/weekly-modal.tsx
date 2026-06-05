@@ -776,9 +776,9 @@ export function WeeklyModal({
                           <Area
                             type={chartStyle === 'sharp' ? 'linear' : 'monotone'}
                             dataKey="balance"
-                            stroke={chartStyle === 'sharp' ? '#a78bfa' : 'hsl(var(--primary))'}
+                            stroke="hsl(var(--primary))"
                             strokeWidth={2}
-                            fill={chartStyle === 'sharp' ? '#a78bfa' : 'hsl(var(--primary))'}
+                            fill="hsl(var(--primary))"
                             fillOpacity={0.12}
                           />
                         </AreaChart>

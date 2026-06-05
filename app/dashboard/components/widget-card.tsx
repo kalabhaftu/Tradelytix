@@ -33,6 +33,11 @@ function getWidgetDescription(title: string): string | null {
   if (t.includes('STRATEGY')) return 'Net P&L performance broken down by individual strategies to evaluate strategy edge.'
   if (t.includes('DURATION')) return 'Compares holding times (minutes/hours) to trade outcomes to optimize trade duration.'
   if (t.includes('SESSION')) return 'Analyzes trade metrics grouped by market sessions (Asia, London, New York).'
+  if (t.includes('ACCOUNT STATISTICS') || t.includes('PROP FIRM ACCOUNT')) return 'Shows detailed prop-firm account statistics, active phase, start date, and overall duration.'
+  if (t.includes('PROP FIRM GROWTH') || t.includes('GROWTH CURVE')) return 'Visualizes your equity and balance growth curve for the active prop-firm challenge phase.'
+  if (t.includes('OBJECTIVES') || t.includes('TRADING OBJECTIVES')) {
+    return 'Tracks your active prop-firm trading objectives (profit target, max daily loss, max overall loss, minimum trading days) alongside today\'s current performance.'
+  }
   if (t.includes('CALENDAR')) return 'Displays daily and weekly trade performance statistics, net P&L, traded days, win rate, and R-Multiple.'
   
   return null
@@ -107,7 +112,7 @@ export function WidgetCard({
               <TooltipProvider delayDuration={100}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-help flex items-center justify-center shrink-0">
+                    <div className="cursor-help flex items-center justify-center shrink-0">
                       <Info className="h-3 w-3 text-muted-foreground/60 hover:text-muted-foreground transition-colors" />
                     </div>
                   </TooltipTrigger>

@@ -43,7 +43,7 @@ const ProfitFactor = React.memo(function ProfitFactor({ size }: ProfitFactorProp
           <TooltipProvider delayDuration={100}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="w-4 h-4 rounded-full border border-border/60 flex items-center justify-center cursor-help">
+                <div className="cursor-help w-4 h-4 rounded-full border border-border/60 flex items-center justify-center shrink-0">
                   <Info className="h-2.5 w-2.5 text-muted-foreground/60" />
                 </div>
               </TooltipTrigger>

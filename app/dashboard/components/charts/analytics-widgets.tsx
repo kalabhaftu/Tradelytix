@@ -85,8 +85,8 @@ export function AccountCurveWidget({ initialMode = 'cumulative' }: { initialMode
   const summary = data?.summary || {}
 
   const isSharp = chartStyle === 'sharp'
-  const strokeColor = isSharp ? '#a78bfa' : 'hsl(var(--chart-bullish))'
-  const gradientColor = isSharp ? '#a78bfa' : 'hsl(var(--chart-bullish))'
+  const strokeColor = 'hsl(var(--chart-bullish))'
+  const gradientColor = 'hsl(var(--chart-bullish))'
   const curveType = isSharp ? 'linear' : 'monotone'
 
   return (

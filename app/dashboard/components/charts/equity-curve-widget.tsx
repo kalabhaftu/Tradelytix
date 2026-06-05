@@ -46,8 +46,8 @@ export default function EquityCurveWidget() {
   }
 
   const isSharp = chartStyle === 'sharp'
-  const strokeVal = isSharp ? '#a78bfa' : 'url(#equityStrokeGrad)'
-  const fillVal = isSharp ? 'url(#equityPurpleGrad)' : 'url(#equityFillGrad)'
+  const strokeVal = 'url(#equityStrokeGrad)'
+  const fillVal = 'url(#equityFillGrad)'
   const curveType = isSharp ? 'linear' : 'monotone'
 
   return (

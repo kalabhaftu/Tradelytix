@@ -10,7 +10,19 @@
  * 3. Use cache functions in API routes
  */
 
-import { kv } from '@vercel/kv'
+import { createClient } from '@vercel/kv'
+
+let customKv: ReturnType<typeof createClient> | null = null
+
+function getKvClient() {
+  if (!customKv) {
+    customKv = createClient({
+      url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '',
+      token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '',
+    })
+  }
+  return customKv
+}
 
 // Cache key prefixes for organization
 export const CachePrefix = {
@@ -40,7 +52,8 @@ export async function getFromCache<T>(key: string): Promise<T | null> {
       return null
     }
 
-    const data = await kv.get<T>(key)
+    const client = getKvClient()
+    const data = await client.get<T>(key)
     return data
   } catch (error) {
     return null
@@ -60,7 +73,8 @@ export async function setInCache<T>(
       return false
     }
 
-    await kv.set(key, value, { ex: ttl })
+    const client = getKvClient()
+    await client.set(key, value, { ex: ttl })
     return true
   } catch (error) {
     return false
@@ -76,7 +90,8 @@ export async function deleteFromCache(key: string): Promise<boolean> {
       return false
     }
 
-    await kv.del(key)
+    const client = getKvClient()
+    await client.del(key)
     return true
   } catch (error) {
     return false
@@ -92,12 +107,13 @@ export async function deleteCachePattern(pattern: string): Promise<number> {
       return 0
     }
 
+    const client = getKvClient()
     // Get all keys matching pattern
-    const keys = await kv.keys(pattern)
+    const keys = await client.keys(pattern)
     if (keys.length === 0) return 0
 
     // Delete all matching keys
-    await kv.del(...keys)
+    await client.del(...keys)
     return keys.length
   } catch (error) {
     return 0
@@ -108,15 +124,10 @@ export async function deleteCachePattern(pattern: string): Promise<number> {
  * Check if Redis is available
  */
 export function isRedisAvailable(): boolean {
-  if (typeof process !== 'undefined') {
-    if (!process.env.KV_REST_API_URL && process.env.UPSTASH_REDIS_REST_URL) {
-      process.env.KV_REST_API_URL = process.env.UPSTASH_REDIS_REST_URL
-    }
-    if (!process.env.KV_REST_API_TOKEN && process.env.UPSTASH_REDIS_REST_TOKEN) {
-      process.env.KV_REST_API_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN
-    }
-  }
-  return !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
+  return !!(
+    (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) ||
+    (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+  )
 }
 
 /**

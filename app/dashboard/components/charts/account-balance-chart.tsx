@@ -212,9 +212,9 @@ function AccountBalanceChart({ size = 'small-long' }: AccountBalanceChartProps) 
               <Line
                 type={chartStyle === 'sharp' ? 'linear' : 'monotone'}
                 dataKey="balance"
-                stroke={isPositive ? COLORS.profit : COLORS.loss}
+                stroke={chartStyle === 'sharp' ? 'hsl(var(--primary))' : (isPositive ? COLORS.profit : COLORS.loss)}
                 strokeWidth={CHART_CONFIG.strokeWidth}
-                dot={<CustomDot fill={COLORS.profit} />}
+                dot={<CustomDot fill={chartStyle === 'sharp' ? 'hsl(var(--primary))' : COLORS.profit} />}
                 activeDot={{
                   r: 6,
                   strokeWidth: 2,

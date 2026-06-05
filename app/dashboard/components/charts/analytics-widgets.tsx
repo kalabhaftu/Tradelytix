@@ -85,8 +85,8 @@ export function AccountCurveWidget({ initialMode = 'cumulative' }: { initialMode
   const summary = data?.summary || {}
 
   const isSharp = chartStyle === 'sharp'
-  const strokeColor = 'hsl(var(--chart-bullish))'
-  const gradientColor = 'hsl(var(--chart-bullish))'
+  const strokeColor = isSharp ? 'hsl(var(--primary))' : 'hsl(var(--chart-bullish))'
+  const gradientColor = isSharp ? 'hsl(var(--primary))' : 'hsl(var(--chart-bullish))'
   const curveType = isSharp ? 'linear' : 'monotone'
 
   return (
@@ -107,12 +107,16 @@ export function AccountCurveWidget({ initialMode = 'cumulative' }: { initialMode
                     <stop offset="0%" stopColor={gradientColor} stopOpacity={0.35} />
                     <stop offset="100%" stopColor={gradientColor} stopOpacity={0.03} />
                   </linearGradient>
+                  <linearGradient id="accountCurveAccentFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.03} />
+                  </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border)/0.2)" />
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={54} />
                 <Tooltip content={<ChartTooltip />} />
-                <Area type={curveType} dataKey="value" name={mode === 'balance' ? 'Balance' : 'Cumulative P&L'} stroke={strokeColor} strokeWidth={2} fill="url(#accountCurveFill)" dot={false} />
+                <Area type={curveType} dataKey="value" name={mode === 'balance' ? 'Balance' : 'Cumulative P&L'} stroke={strokeColor} strokeWidth={2} fill={isSharp ? "url(#accountCurveAccentFill)" : "url(#accountCurveFill)"} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>

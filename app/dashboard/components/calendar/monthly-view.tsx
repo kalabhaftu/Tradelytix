@@ -76,7 +76,7 @@ const DayCell = memo(function DayCell({
         // Advanced calendar: cells fill grid space with minimum height
         isMiniCalendar 
           ? "min-h-[68px] sm:min-h-[76px] lg:min-h-[84px]" 
-          : "min-h-[52px] md:min-h-[92px] lg:min-h-[104px] cursor-pointer",
+          : "min-h-[48px] md:min-h-[60px] lg:min-h-[68px] cursor-pointer",
 
         // No trades — uses theme tokens so it works in any color scheme
         !hasTrades && isCurrentMonth && "bg-muted/5 border-border/20 hover:border-border/40",
@@ -133,7 +133,7 @@ const DayCell = memo(function DayCell({
           DESKTOP VIEW (Detailed)
           ======================= */}
       <div className={cn(
-        "hidden flex-col w-full h-full relative p-1.5",
+        "hidden flex-col w-full h-full relative p-2 justify-center items-center",
         !isMiniCalendar && "min-[1024px]:flex"
       )}>
         {/* Day number — top right  */}
@@ -149,12 +149,12 @@ const DayCell = memo(function DayCell({
         </span>
 
         {/* Main Content Container (P&L, trades, stats) */}
-        <div className="flex flex-col items-center justify-center w-full mt-4">
+        <div className="flex-grow flex flex-col items-center justify-center w-full pt-4 min-h-0">
           {/* P&L */}
           {hasTrades && visibleStats.pnl && (
             <div
               className={cn(
-                "font-bold tracking-tight text-center text-[14px] lg:text-[16px] xl:text-[20px]",
+                "font-extrabold tracking-tight text-center text-xs md:text-sm lg:text-sm xl:text-base",
                 isProfit ? "text-long" : isLoss ? "text-short" : "text-foreground"
               )}
             >
@@ -164,17 +164,17 @@ const DayCell = memo(function DayCell({
 
           {/* Trade Count */}
           {hasTrades && visibleStats.trades && (
-            <span className="font-medium leading-none text-foreground/70 text-[10px] lg:text-[11px] mt-0.5 xl:mt-1">
+            <span className="font-semibold leading-none text-muted-foreground/80 text-[10px] md:text-[11px] mt-0.5">
               {dayData.tradeNumber} trade{dayData.tradeNumber !== 1 ? 's' : ''}
             </span>
           )}
 
           {/* Secondary Stats Row (R & WinRate) */}
-          {hasTrades && (
-            <div className="flex flex-wrap items-center justify-center gap-0.5 mt-1 xl:mt-1.5 w-full">
+          {hasTrades && (visibleStats.rMultiple || visibleStats.winRate) && (
+            <div className="flex flex-wrap items-center justify-center gap-1 mt-1 w-full">
               {visibleStats.rMultiple && dayData.dailyRMultiple !== undefined && (
                 <span className={cn(
-                  "text-[9px] lg:text-[10px] font-medium opacity-80 whitespace-nowrap",
+                  "text-[9px] md:text-[10px] font-medium opacity-80 whitespace-nowrap",
                   isProfit ? "text-long" : isLoss ? "text-short" : "text-foreground"
                 )}>
                   {dayData.dailyRMultiple.toFixed(2)}R{visibleStats.winRate ? ',' : ''}
@@ -182,7 +182,7 @@ const DayCell = memo(function DayCell({
               )}
               {visibleStats.winRate && (
                 <span className={cn(
-                  "text-[9px] lg:text-[10px] font-medium opacity-80 ml-0.5 whitespace-nowrap",
+                  "text-[9px] md:text-[10px] font-medium opacity-80 whitespace-nowrap",
                   isProfit ? "text-long" : isLoss ? "text-short" : "text-foreground"
                 )}>
                   {winRateValue.toFixed(1)}%
@@ -235,7 +235,7 @@ function WeeklySummary({
   return (
     <div
       className={cn(
-        "flex h-full min-h-[64px] md:min-h-[92px] flex-col items-start justify-center rounded-[8px] border p-2 md:p-2.5 cursor-pointer transition-all hover:bg-muted/30 group lg:min-h-[104px]",
+        "flex h-full min-h-[48px] md:min-h-[60px] flex-col items-start justify-center rounded-[8px] border p-2 md:p-2.5 cursor-pointer transition-all hover:bg-muted/30 group lg:min-h-[68px]",
         "bg-muted/10 border-border/20"
       )}
       onClick={() => onReviewWeek?.(weekDays[0])}
@@ -319,8 +319,8 @@ export default function MonthlyView({
   const rowTemplate = isMiniCalendar
     ? `repeat(${weeks.length}, minmax(68px, 1fr))`
     : isMobile
-      ? `repeat(${weeks.length}, minmax(52px, 1fr))`
-      : `repeat(${weeks.length}, minmax(92px, 1fr))`
+      ? `repeat(${weeks.length}, minmax(48px, 1fr))`
+      : `repeat(${weeks.length}, minmax(68px, 1fr))`
 
   return (
     <div className={cn("flex h-full w-full overflow-hidden flex-col", isMiniCalendar ? "" : "md:flex-row")}>
@@ -365,20 +365,20 @@ export default function MonthlyView({
 
       {!isMiniCalendar && (
         <div className={cn(
-          "shrink-0 flex-col border-border/10",
+          "shrink-0 flex flex-col border-border/10",
           isMobile 
-            ? "flex w-full border-t p-3 bg-muted/5 gap-2" 
-            : "flex h-full w-[78px] border-l min-[420px]:w-[88px] sm:w-[96px] lg:w-[104px] xl:w-[116px] 2xl:w-[125px]"
+            ? "w-full border-t p-3 bg-muted/5 gap-2" 
+            : "h-full w-[78px] border-l min-[420px]:w-[88px] sm:w-[96px] lg:w-[104px] xl:w-[116px] 2xl:w-[125px] pr-2 md:pr-3 pb-2 md:pb-3"
         )}>
-          {/* Desktop Spacer matches weekday-header height exactly (py-1.5 md:py-2 + text line = ~34px on md) */}
-          {!isMobile && (
-            <div className="shrink-0 py-1.5 md:py-2">
-              <div className="h-[16px]" />
+          {/* Desktop Spacer matches weekday-header height exactly */}
+          {!isMobile ? (
+            <div className="grid px-2 md:px-3 py-1.5 md:py-2 shrink-0 grid-cols-1">
+              <div className="text-center text-[10px] md:text-[11px] font-semibold text-muted-foreground/80 capitalize invisible select-none">
+                Perf
+              </div>
             </div>
-          )}
-
-          {/* Title on mobile view */}
-          {isMobile && (
+          ) : (
+            /* Title on mobile view */
             <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em] mb-1">
               Weekly Performance
             </div>
@@ -388,7 +388,7 @@ export default function MonthlyView({
           <div 
             className={cn(
               "grid gap-1 md:gap-1.5 min-h-0",
-              isMobile ? "grid-cols-3 sm:grid-cols-5 w-full" : "flex-1 pt-0 pl-1 md:pl-2"
+              isMobile ? "grid-cols-3 sm:grid-cols-5 w-full" : "flex-1 pt-0 pl-2 md:pl-3"
             )} 
             style={isMobile ? undefined : { gridTemplateRows: rowTemplate }}
           >

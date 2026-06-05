@@ -55,56 +55,51 @@ export function PlatformTutorial({ selectedPlatform, setIsOpen }: PlatformTutori
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Tutorial</h2>
+        <h3 className="text-lg font-semibold text-foreground">Tutorial Guide</h3>
         {selectedPlatform.tutorialLink && (
           <Button
             variant="outline"
             size="sm"
-            className="gap-2"
+            className="gap-2 text-xs h-8 border-border/50 hover:bg-muted"
             onClick={() => window.open(selectedPlatform.tutorialLink, '_blank')}
           >
-            <ExternalLink className="h-4 w-4" />
-              View Documentation
+            <ExternalLink className="h-3.5 w-3.5" />
+            <span>Documentation</span>
           </Button>
         )}
       </div>
-          {selectedPlatform.videoUrl ? (
-      <div className="aspect-video rounded-lg overflow-hidden bg-muted transition-transform duration-300 hover:scale-[1.02]">
-        <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+
+      {selectedPlatform.videoUrl ? (
+        <div className="space-y-2">
+          <div className="aspect-video rounded-xl overflow-hidden bg-muted/30 border border-border/40 shadow-sm transition-transform duration-300 hover:scale-[1.01]">
             <video
               ref={videoRef}
-              height="600"
-              width="600"
               preload="metadata"
               loop
               muted
               controls
               playsInline
-              className="rounded-lg border border-border shadow-lg w-full h-full object-cover"
+              className="w-full h-full object-cover"
             >
               <source src={selectedPlatform.videoUrl} type="video/mp4" />
               <track
-                src="/path/to/captions.vtt"
                 kind="subtitles"
                 srcLang="en"
                 label="English"
               />
               Your browser does not support the video tag.
             </video>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed px-1">
+            Watch the video above to learn how to export and sync trades from {selectedPlatform.name}.
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground">
-          {selectedPlatform.videoUrl
-             ? `Watch this tutorial video to learn how to import data from ${selectedPlatform.type}.`
-             : `Tutorial video for ${selectedPlatform.type} is not available.`
-          }
-        </p>
-      </div>
-          ) : null}
+      ) : null}
 
       {selectedPlatform.details && (
-        <div className="text-sm text-muted-foreground flex items-start gap-2 bg-muted/50 p-4 rounded-lg transition-all duration-300 hover:bg-muted/70 animate-in slide-in-from-bottom-4">
-          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0 text-warning animate-pulse" />
-          <p>{selectedPlatform.details}</p>
+        <div className="text-xs text-muted-foreground flex items-start gap-2.5 bg-muted/20 border border-border/30 p-4 rounded-xl transition-all duration-200 hover:bg-muted/30 animate-in slide-in-from-bottom-4">
+          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0 text-warning opacity-90 animate-pulse" />
+          <p className="leading-relaxed">{selectedPlatform.details}</p>
         </div>
       )}
 

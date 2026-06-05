@@ -167,7 +167,8 @@ export default function NetDailyPnL({ size = 'small-long' }: NetDailyPnLProps) {
 
   return (
     <WidgetCard title="Net Daily P/L">
-      <ResponsiveContainer width="100%" height="100%">
+      <div className="w-full h-full">
+        <ResponsiveContainer width="100%" height="100%">
         <AnyBarChart
           data={chartData}
           margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
@@ -235,6 +236,7 @@ export default function NetDailyPnL({ size = 'small-long' }: NetDailyPnLProps) {
           </Bar>
         </AnyBarChart>
       </ResponsiveContainer>
+      </div>
     </WidgetCard>
   )
 }

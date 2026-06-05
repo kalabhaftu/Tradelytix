@@ -133,7 +133,7 @@ const AccountBalancePnl = React.memo(function AccountBalancePnl({ size }: Accoun
 
         {/* Main value area */}
         <div className="flex items-end justify-between gap-3">
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 min-w-0">
             {/* Large balance number */}
             {useNumberFlowBalance ? (
               <NumberFlow

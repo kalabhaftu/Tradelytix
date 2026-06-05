@@ -102,7 +102,7 @@ export default function PerformanceScore({ size = 'small-long' }: PerformanceSco
   if (isLoading) {
     return (
       <WidgetCard title="Performance Score">
-        <div className="flex items-center justify-center p-6 h-full min-h-[250px]">
+        <div className="flex items-center justify-center p-6 h-full">
           <div className="animate-pulse w-48 h-48 rounded-full bg-muted/20" />
         </div>
       </WidgetCard>

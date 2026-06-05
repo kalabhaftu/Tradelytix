@@ -122,7 +122,8 @@ export default function PnLByStrategy({ size = 'small-long' }: PnLByStrategyProp
   // ---------------------------------------------------------------------------
   return (
     <WidgetCard title="P/L by Strategy">
-      <ResponsiveContainer width="100%" height="100%">
+      <div className="w-full h-full">
+        <ResponsiveContainer width="100%" height="100%">
             <AnyBarChart
               data={chartData}
               layout="vertical"
@@ -194,6 +195,7 @@ export default function PnLByStrategy({ size = 'small-long' }: PnLByStrategyProp
               </Bar>
             </AnyBarChart>
           </ResponsiveContainer>
+      </div>
     </WidgetCard>
   )
 }

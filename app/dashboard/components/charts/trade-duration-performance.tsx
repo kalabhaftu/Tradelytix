@@ -160,7 +160,8 @@ export default function TradeDurationPerformance({ size = 'small-long' }: TradeD
   // ---------------------------------------------------------------------------
   return (
     <WidgetCard title="Duration Performance">
-                  <ResponsiveContainer width="100%" height="100%">
+      <div className="w-full h-full">
+        <ResponsiveContainer width="100%" height="100%">
             <AnyBarChart
               data={chartData}
               margin={{ top: 20, right: 20, left: 10, bottom: 20 }}
@@ -232,6 +233,7 @@ export default function TradeDurationPerformance({ size = 'small-long' }: TradeD
               </Bar>
             </AnyBarChart>
           </ResponsiveContainer>
+      </div>
     </WidgetCard>
   )
 }

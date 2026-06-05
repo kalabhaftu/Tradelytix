@@ -132,7 +132,8 @@ const WeekdayPnL = React.memo(function WeekdayPnL({ size = 'small-long' }: Weekd
   // ---------------------------------------------------------------------------
   return (
     <WidgetCard title="Weekday P/L">
-                  <ResponsiveContainer width="100%" height="100%">
+      <div className="w-full h-full">
+        <ResponsiveContainer width="100%" height="100%">
             <AnyBarChart
               data={chartData}
               margin={{ top: 20, right: 20, left: 10, bottom: 20 }}
@@ -202,6 +203,7 @@ const WeekdayPnL = React.memo(function WeekdayPnL({ size = 'small-long' }: Weekd
               </Bar>
             </AnyBarChart>
           </ResponsiveContainer>
+      </div>
     </WidgetCard>
   )
 })

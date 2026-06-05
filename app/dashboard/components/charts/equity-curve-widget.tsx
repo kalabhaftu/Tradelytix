@@ -52,7 +52,8 @@ export default function EquityCurveWidget() {
 
   return (
     <WidgetCard title="Cumulative Equity Curve">
-      <ResponsiveContainer width="100%" height="100%">
+      <div className="w-full h-full">
+        <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
           <defs>
             {/* Split gradient for fill */}
@@ -102,6 +103,7 @@ export default function EquityCurveWidget() {
           />
         </AreaChart>
       </ResponsiveContainer>
+      </div>
     </WidgetCard>
   )
 }

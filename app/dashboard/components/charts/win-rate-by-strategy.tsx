@@ -109,7 +109,8 @@ export default function WinRateByStrategy({ size = 'small-long' }: WinRateByStra
   // ---------------------------------------------------------------------------
   return (
     <WidgetCard title="Win Rate by Strategy">
-                  <ResponsiveContainer width="100%" height="100%">
+      <div className="w-full h-full">
+        <ResponsiveContainer width="100%" height="100%">
             <AnyBarChart
               data={chartData}
               layout="vertical"
@@ -182,6 +183,7 @@ export default function WinRateByStrategy({ size = 'small-long' }: WinRateByStra
               </Bar>
             </AnyBarChart>
           </ResponsiveContainer>
+      </div>
     </WidgetCard>
   )
 }

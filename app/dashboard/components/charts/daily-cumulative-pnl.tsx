@@ -137,7 +137,8 @@ export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulat
   // ---------------------------------------------------------------------------
   return (
     <WidgetCard title="Cumulative P/L">
-                  <ResponsiveContainer width="100%" height="100%">
+      <div className="w-full h-full">
+        <ResponsiveContainer width="100%" height="100%">
             <AnyAreaChart
               data={chartData}
               margin={{ top: 20, right: 20, left: 10, bottom: 20 }}
@@ -225,7 +226,8 @@ export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulat
                 }}
               />
             </AnyAreaChart>
-          </ResponsiveContainer>
+        </ResponsiveContainer>
+      </div>
     </WidgetCard>
   )
 }

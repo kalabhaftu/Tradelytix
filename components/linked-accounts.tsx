@@ -43,7 +43,7 @@ interface UserIdentity {
   last_sign_in_at?: string
 }
 
-export function LinkedAccounts() {
+export function LinkedAccounts({ plain = false }: { plain?: boolean }) {
   const [identities, setIdentities] = useState<UserIdentity[]>([])
   const [loading, setLoading] = useState(true)
   const [linking, setLinking] = useState(false)
@@ -139,6 +139,24 @@ export function LinkedAccounts() {
   const isGoogleLinked = identities.some(id => id.provider === 'google')
 
   if (loading) {
+    if (plain) {
+      return (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-base font-semibold flex items-center gap-2">
+              <Link2 className="h-5 w-5" />
+              Linked Accounts
+            </h3>
+            <p className="text-xs text-muted-foreground/85">
+              Manage your connected social accounts for authentication
+            </p>
+          </div>
+          <div className="text-center py-8 text-muted-foreground">
+            Loading linked accounts...
+          </div>
+        </div>
+      )
+    }
     return (
       <Card>
         <CardHeader>
@@ -159,6 +177,128 @@ export function LinkedAccounts() {
     )
   }
 
+  const content = (
+    <div className="space-y-6">
+      {/* Current Linked Accounts */}
+      {identities.length > 0 && (
+        <div>
+          <h4 className="text-sm font-medium mb-3">Primary Account</h4>
+          <div className="space-y-3">
+            {identities.map((identity, index) => (
+              <div key={identity.id || index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  {getProviderIcon(identity.provider)}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">
+                      {identity.identity_data?.email || getProviderName(identity.provider)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {getProviderName(identity.provider)}
+                    </p>
+                    {identity.last_sign_in_at && (
+                      <p className="text-xs text-muted-foreground">
+                        Last used: {new Date(identity.last_sign_in_at).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {identity.provider === 'email' && (
+                    <Badge variant="secondary">Primary</Badge>
+                  )}
+                  {identity.provider !== 'email' && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                          <Unlink className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Unlink</span>
+                          <span className="sm:hidden">Unlink Account</span>
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Unlink Account?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to unlink this account? You will need to use another linked account to sign in.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleUnlink(identity)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Unlink Account
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <Separator />
+
+      {/* Link New Accounts */}
+      <div>
+        <h4 className="text-sm font-medium mb-3">Link New Account</h4>
+        <p className="text-sm text-muted-foreground mb-4">
+          Connect additional accounts for easier sign-in
+        </p>
+        <div className="space-y-2">
+          {!isDiscordLinked && (
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={handleLinkDiscord}
+              disabled={linking}
+            >
+              <MessageSquare className="mr-2 h-4 w-4" />
+              Link Discord
+            </Button>
+          )}
+          {!isGoogleLinked && (
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={handleLinkGoogle}
+              disabled={linking}
+            >
+              <Globe className="mr-2 h-4 w-4" />
+              Link Google
+            </Button>
+          )}
+          {isDiscordLinked && isGoogleLinked && (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No accounts available to link
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+
+  if (plain) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-base font-semibold flex items-center gap-2">
+            <Link2 className="h-5 w-5" />
+            Linked Accounts
+          </h3>
+          <p className="text-xs text-muted-foreground/85">
+            Manage your connected social accounts for authentication
+          </p>
+        </div>
+        {content}
+      </div>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -171,106 +311,7 @@ export function LinkedAccounts() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Current Linked Accounts */}
-        {identities.length > 0 && (
-          <div>
-            <h4 className="text-sm font-medium mb-3">Primary Account</h4>
-            <div className="space-y-3">
-              {identities.map((identity, index) => (
-                <div key={identity.id || index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    {getProviderIcon(identity.provider)}
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium truncate">
-                        {identity.identity_data?.email || getProviderName(identity.provider)}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {getProviderName(identity.provider)}
-                      </p>
-                      {identity.last_sign_in_at && (
-                        <p className="text-xs text-muted-foreground">
-                          Last used: {new Date(identity.last_sign_in_at).toLocaleDateString()}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {identity.provider === 'email' && (
-                      <Badge variant="secondary">Primary</Badge>
-                    )}
-                    {identity.provider !== 'email' && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                            <Unlink className="h-4 w-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Unlink</span>
-                            <span className="sm:hidden">Unlink Account</span>
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Unlink Account?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to unlink this account? You will need to use another linked account to sign in.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleUnlink(identity)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Unlink Account
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <Separator />
-
-        {/* Link New Accounts */}
-        <div>
-          <h4 className="text-sm font-medium mb-3">Link New Account</h4>
-          <p className="text-sm text-muted-foreground mb-4">
-            Connect additional accounts for easier sign-in
-          </p>
-          <div className="space-y-2">
-            {!isDiscordLinked && (
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={handleLinkDiscord}
-                disabled={linking}
-              >
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Link Discord
-              </Button>
-            )}
-            {!isGoogleLinked && (
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={handleLinkGoogle}
-                disabled={linking}
-              >
-                <Globe className="mr-2 h-4 w-4" />
-                Link Google
-              </Button>
-            )}
-            {!isDiscordLinked && !isGoogleLinked && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No accounts available to link
-              </p>
-            )}
-          </div>
-        </div>
+        {content}
       </CardContent>
     </Card>
   )

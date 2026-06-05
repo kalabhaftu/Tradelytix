@@ -10,31 +10,40 @@ import { NextRequest, NextResponse } from 'next/server'
  * KV-backed limiters persist across all instances.
  */
 
+import { createClient } from '@vercel/kv'
+
+let customKv: ReturnType<typeof createClient> | null = null
+
+function getKvClient() {
+  if (!customKv) {
+    customKv = createClient({
+      url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '',
+      token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '',
+    })
+  }
+  return customKv
+}
+
 // ─── KV availability check ───
 function isKvAvailable(): boolean {
-  if (typeof process !== 'undefined') {
-    if (!process.env.KV_REST_API_URL && process.env.UPSTASH_REDIS_REST_URL) {
-      process.env.KV_REST_API_URL = process.env.UPSTASH_REDIS_REST_URL
-    }
-    if (!process.env.KV_REST_API_TOKEN && process.env.UPSTASH_REDIS_REST_TOKEN) {
-      process.env.KV_REST_API_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN
-    }
-  }
-  return !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
+  return !!(
+    (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) ||
+    (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+  )
 }
 
 // ─── KV-backed rate limiter (atomic increment with TTL) ───
 async function kvConsume(key: string, points: number, duration: number): Promise<{ success: boolean; remaining: number }> {
   try {
-    const { kv } = await import('@vercel/kv')
+    const client = getKvClient()
     const now = Math.floor(Date.now() / 1000)
     const windowKey = `rl:${key}:${Math.floor(now / duration)}`
 
-    const current = await kv.incr(windowKey)
+    const current = await client.incr(windowKey)
 
     // Set expiry on first hit of this window
     if (current === 1) {
-      await kv.expire(windowKey, duration)
+      await client.expire(windowKey, duration)
     }
 
     if (current > points) {
@@ -47,6 +56,7 @@ async function kvConsume(key: string, points: number, duration: number): Promise
     return { success: true, remaining: points }
   }
 }
+
 
 // ─── Limiter config type ───
 interface LimiterConfig {

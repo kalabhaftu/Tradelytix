@@ -215,7 +215,7 @@ export const WIDGET_GRID_DEFAULTS: Record<string, WidgetGridDefault> = {
   recentTrades: { defaultW: 4, defaultH: 5, minW: 3, minH: 4 },
 
   // Calendars — advanced unchanged, mini gets more height for taller cells
-  calendarAdvanced: { defaultW: 12, defaultH: 8, minW: 4, minH: 5 },
+  calendarAdvanced: { defaultW: 12, defaultH: 6, minW: 4, minH: 5 },
   calendarMini:     { defaultW: 8, defaultH: 8, minW: 4, minH: 6 },
 
   // New charts

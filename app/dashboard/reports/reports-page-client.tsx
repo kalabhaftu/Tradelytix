@@ -183,8 +183,8 @@ export default function ReportsPageClient({
 
     const isSharp = chartStyle === 'sharp'
     const curveType = isSharp ? 'linear' : 'monotone'
-    const strokeVal = 'hsl(var(--foreground))'
-    const fillVal = 'url(#colorRMultiple)'
+    const strokeVal = isSharp ? 'hsl(var(--primary))' : 'hsl(var(--foreground))'
+    const fillVal = isSharp ? 'url(#colorRMultipleAccent)' : 'url(#colorRMultiple)'
 
     // Filter State
     const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
@@ -734,9 +734,9 @@ export default function ReportsPageClient({
                                                                         <stop offset="5%" stopColor="hsl(var(--foreground))" stopOpacity={0.15}/>
                                                                         <stop offset="95%" stopColor="hsl(var(--foreground))" stopOpacity={0}/>
                                                                     </linearGradient>
-                                                                    <linearGradient id="colorRMultiplePurple" x1="0" y1="0" x2="0" y2="1">
-                                                                        <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.4}/>
-                                                                        <stop offset="95%" stopColor="#a78bfa" stopOpacity={0.03}/>
+                                                                    <linearGradient id="colorRMultipleAccent" x1="0" y1="0" x2="0" y2="1">
+                                                                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
+                                                                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.03}/>
                                                                     </linearGradient>
                                                                 </defs>
                                                                 <XAxis 

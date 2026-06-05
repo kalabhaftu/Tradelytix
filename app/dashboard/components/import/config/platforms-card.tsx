@@ -48,7 +48,7 @@ export interface PlatformConfig {
   skipHeaderSelection?: boolean
   requiresAccountSelection?: boolean
   processFile?: (data: string[][]) => ProcessedData
-  customComponent?: ComponentType<{ setIsOpen: React.Dispatch<React.SetStateAction<boolean>> }>
+  customComponent?: ComponentType<{ setIsOpen: React.Dispatch<React.SetStateAction<boolean>>; onBack?: () => void }>
   customCardComponent?: ComponentType<{ accountId: string }>
   processorComponent?: ComponentType<{
     csvData: string[][]

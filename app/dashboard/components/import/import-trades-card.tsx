@@ -343,7 +343,12 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
     if (!platform) return
 
     const currentStepIndex = platform.steps.findIndex(s => s.id === step)
-    if (currentStepIndex <= 0) return
+    if (currentStepIndex === 0) {
+      setImportType('')
+      setStep('select-import-type')
+      return
+    }
+    if (currentStepIndex < 0) return
 
     const prevStep = platform.steps[currentStepIndex - 1]
     if (!prevStep) return
@@ -449,7 +454,13 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
 
     // Handle custom components
     if (platform.customComponent) {
-      return <platform.customComponent setIsOpen={() => {}} /> // No-op for card version
+      const CustomComponent = platform.customComponent
+      return (
+        <CustomComponent
+          setIsOpen={() => {}}
+          onBack={resetImportState}
+        />
+      )
     }
     
     // Handle custom card components

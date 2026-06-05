@@ -398,7 +398,12 @@ export default function ImportButton() {
     if (!platform) return
 
     const currentIdx = platform.steps.findIndex(s => s.id === step)
-    if (currentIdx <= 0) return
+    if (currentIdx === 0) {
+      setImportType('')
+      setStep('select-import-type')
+      return
+    }
+    if (currentIdx < 0) return
 
     const prevStep = platform.steps[currentIdx - 1]
     if (prevStep) setStep(prevStep.id)
@@ -577,7 +582,18 @@ export default function ImportButton() {
 
     // Handle custom components (like ManualTradeForm) - render fullscreen
     if (platform.customComponent) {
-      return <platform.customComponent setIsOpen={setIsOpen} />
+      const CustomComponent = platform.customComponent
+      return (
+        <CustomComponent
+          setIsOpen={(open) => {
+            setIsOpen(open)
+            if (!open) {
+              resetImportState()
+            }
+          }}
+          onBack={resetImportState}
+        />
+      )
     }
 
     return null
@@ -757,7 +773,7 @@ export default function ImportButton() {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  {currentStepIndex > 0 && (
+                  {step !== 'select-import-type' && (
                     <Button
                       variant="outline"
                       onClick={handleBackStep}

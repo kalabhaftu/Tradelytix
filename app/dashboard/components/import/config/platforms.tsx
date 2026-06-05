@@ -53,7 +53,7 @@ export interface PlatformConfig {
   skipHeaderSelection?: boolean
   requiresAccountSelection?: boolean
   processFile?: (data: string[][]) => ProcessedData
-  customComponent?: ComponentType<{ setIsOpen: React.Dispatch<React.SetStateAction<boolean>> }>
+  customComponent?: ComponentType<{ setIsOpen: React.Dispatch<React.SetStateAction<boolean>>; onBack?: () => void }>
   processorComponent?: ComponentType<{
     csvData: string[][]
     headers: string[]

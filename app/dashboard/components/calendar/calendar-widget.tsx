@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, memo, useCallback, useMemo } from "react"
 import { format, addMonths, subMonths, getYear } from "date-fns"
 import { enUS } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Camera, ImageIcon, Sparkles } from "lucide-react"
+import { ChevronLeft, ChevronRight, Camera, ImageIcon, Sparkles, Info } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +38,14 @@ import { Logo } from "@/components/logo"
 const formatCompact = (value: number) => {
   if (Math.abs(value) >= 1000) return `$${(value / 1000).toFixed(1)}k`
   return `$${value.toFixed(0)}`
+}
+
+const formatFullCurrency = (value: number) => {
+  const formatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  })
+  return formatter.format(value)
 }
 
 interface CalendarPnlProps {
@@ -201,7 +209,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
     }
     return count;
   }, [localCalendarData, currentDate, viewMode])
-
+  
   // Header right content — settings gear + snapshot dropdown
   const headerControls = (
     <div className="flex items-center gap-1 max-[420px]:gap-0.5">
@@ -254,16 +262,18 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
   )
 
   const mobileInlineControls = (
-    <div className="flex shrink-0 items-center gap-0.5 whitespace-nowrap">
+    <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
       <div
         className={cn(
-          "flex h-6 max-[420px]:h-5 sm:h-7 shrink-0 items-center rounded-md border px-1.5 max-[420px]:px-1 sm:px-2 text-[10px] max-[420px]:text-[9px] font-black tracking-tight shadow-sm",
-          isPositive ? "border-long/20 bg-long/10 text-long" : "border-short/20 bg-short/10 text-short"
+          "flex h-6 shrink-0 items-center rounded-full border px-2 text-[10px] font-bold shadow-sm",
+          isPositive 
+            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400" 
+            : "border-rose-500/20 bg-rose-500/10 text-rose-400"
         )}
       >
-        {formatCompact(displayTotal)}
+        {formatFullCurrency(displayTotal)}
       </div>
-      <div className="flex h-6 max-[420px]:h-5 sm:h-7 shrink-0 items-center rounded-md border border-chart-4/20 bg-chart-4/10 px-1.5 max-[420px]:px-1 sm:px-2 text-[10px] max-[420px]:text-[9px] font-black tracking-tight text-chart-4 shadow-sm">
+      <div className="flex h-6 shrink-0 items-center rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2 text-[10px] font-bold text-indigo-300 shadow-sm">
         {tradedDaysCount}d
       </div>
       {headerControls}
@@ -278,94 +288,154 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         className="overflow-hidden flex flex-col h-full"
       >
         {/* Unified Header: Navigation + Stats + Controls */}
-        <div className="border-b border-border/20 bg-muted/5 px-3 py-2 flex-shrink-0">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 max-[420px]:gap-0.5">
-            {/* Left side: Navigation + This month button */}
-            <div className="flex min-w-0 flex-1 items-center gap-1">
-            {/* Navigation Group */}
-            <div className="flex items-center gap-0.5 bg-muted/30 rounded-lg p-0.5 border border-border/30 font-bold shrink-0">
-              <Button variant="ghost" size="icon" onClick={handlePrev} className="h-6 w-6 max-[420px]:h-5 max-[420px]:w-5 sm:h-7 sm:w-7 hover:bg-background" aria-label="Previous">
-                <ChevronLeft className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              </Button>
-              <div className="px-1 min-w-[48px] max-[420px]:min-w-[44px] sm:min-w-[64px] lg:min-w-[90px] text-center">
-                <span className="text-[10px] max-[420px]:text-[9px] font-black capitalize tracking-tight">
-                  {viewMode === 'daily'
-                    ? format(currentDate, 'MMM yyyy')
-                    : format(currentDate, 'yyyy')
-                  }
-                </span>
+        <div className="border-b border-border/20 bg-muted/5 px-3 py-2.5 flex-shrink-0">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 max-[420px]:gap-0.5">
+            {/* Left side: Navigation Group */}
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <div className="flex items-center bg-muted/20 border border-border/30 rounded-lg overflow-hidden p-0.5 shrink-0">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handlePrev} 
+                  className="h-6 w-6 hover:bg-background border-none" 
+                  aria-label="Previous"
+                >
+                  <ChevronLeft className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setCurrentDate(new Date())}
+                  className="h-6 px-2.5 text-[10px] font-black tracking-wider uppercase border-none hover:bg-background"
+                >
+                  TODAY
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleNext} 
+                  className="h-6 w-6 hover:bg-background border-none" 
+                  aria-label="Next"
+                >
+                  <ChevronRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                </Button>
               </div>
-              <Button variant="ghost" size="icon" onClick={handleNext} className="h-6 w-6 max-[420px]:h-5 max-[420px]:w-5 sm:h-7 sm:w-7 hover:bg-background" aria-label="Next">
-                <ChevronRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              </Button>
+              
+              <span className="text-sm font-semibold text-foreground/90 ml-1.5 whitespace-nowrap">
+                {viewMode === 'daily'
+                  ? format(currentDate, 'MMMM yyyy')
+                  : format(currentDate, 'yyyy')
+                }
+              </span>
             </div>
-
-            {/* This month button — consistent height with nav group */}
-            <Button
-              onClick={() => setCurrentDate(new Date())}
-              variant="outline"
-              className="h-7 px-2.5 text-[10px] font-black bg-muted/20 hover:bg-muted border-border/40 transition-colors hidden lg:inline-flex"
-            >
-              This month
-            </Button>
-          </div>
 
             <div className="lg:hidden">
               {mobileInlineControls}
             </div>
 
             {/* Right side: Stats + View switcher + Controls */}
-            <div className="hidden shrink-0 items-center gap-2 lg:flex">
-            {/* Stats label - hide on mobile */}
-            <span className="text-[9px] sm:text-[10px] font-bold text-muted-foreground hidden md:block">
-              {viewMode === 'daily' ? 'Monthly:' : 'Yearly:'}
-            </span>
-
-            {/* Stats Badges */}
-            <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider">
-              <div className={cn(
-                "px-1.5 py-0.5 rounded border shadow-sm flex items-center",
-                isPositive ? "bg-long/10 border-long/20 text-long" : "bg-short/10 border-short/20 text-short"
-              )}>
-                {formatCompact(displayTotal)}
+            <div className="hidden shrink-0 items-center gap-3 lg:flex">
+              {/* View Switcher — hide on small screens */}
+              <div className="hidden md:flex items-center p-0.5 bg-muted/20 border border-border/30 rounded-lg shrink-0">
+                <button
+                  onClick={() => setViewMode('daily')}
+                  className={cn(
+                    "px-2 py-1 text-[10px] font-black rounded-md transition-all",
+                    viewMode === 'daily'
+                      ? "bg-background shadow-sm text-foreground border border-border/40"
+                      : "text-muted-foreground/50 hover:text-foreground"
+                  )}
+                >
+                  Daily
+                </button>
+                <button
+                  onClick={() => setViewMode('weekly')}
+                  className={cn(
+                    "px-2 py-1 text-[10px] font-black rounded-md transition-all",
+                    viewMode === 'weekly'
+                      ? "bg-background shadow-sm text-foreground border border-border/40"
+                      : "text-muted-foreground/50 hover:text-foreground"
+                  )}
+                >
+                  Yearly
+                </button>
               </div>
-              <div className="px-1.5 py-0.5 rounded bg-chart-4/10 border border-chart-4/20 text-chart-4 border-solid shadow-sm">
-                {tradedDaysCount}d
+
+              {/* Monthly stats container */}
+              <div className="flex items-center gap-2 bg-[#0c0e12]/60 border border-border/20 rounded-xl px-3 py-1 text-[11px] font-bold shadow-md">
+                <span className="text-muted-foreground/75 font-semibold">
+                  {viewMode === 'daily' ? 'Monthly stats:' : 'Yearly stats:'}
+                </span>
+                <span className={cn(
+                  "px-2.5 py-0.5 rounded-full font-extrabold text-xs shadow-inner",
+                  isPositive ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25" : "bg-rose-500/15 text-rose-400 border border-rose-500/25"
+                )}>
+                  {formatFullCurrency(displayTotal)}
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 font-extrabold text-xs shadow-inner">
+                  {tradedDaysCount} {tradedDaysCount === 1 ? 'day' : 'days'}
+                </span>
+                
+                <div className="w-px h-3.5 bg-border/30 mx-1" />
+                
+                <div className="flex items-center gap-1.5">
+                  <CalendarSettings />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 p-0 hover:bg-primary/5 hover:text-primary transition-all rounded-md"
+                    onClick={() => toast.info("Advanced calendar displays trades, R-Multiple, and Winrate.")}
+                    title="Calendar Information"
+                  >
+                    <Info className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-foreground" />
+                  </Button>
+                </div>
               </div>
-            </div>
 
-            <div className="w-px h-4 bg-border/40 hidden sm:block" />
-
-            {/* View Switcher — hide on small screens */}
-            <div className="hidden md:flex items-center p-0.5 bg-muted/30 border border-border/30 rounded-lg">
-              <button
-                onClick={() => setViewMode('daily')}
-                className={cn(
-                  "px-2 py-1 text-[10px] font-black rounded-md transition-all",
-                  viewMode === 'daily'
-                    ? "bg-background shadow-sm text-foreground border border-border/40"
-                    : "text-muted-foreground/50 hover:text-foreground"
-                )}
-              >
-                Daily
-              </button>
-              <button
-                onClick={() => setViewMode('weekly')}
-                className={cn(
-                  "px-2 py-1 text-[10px] font-black rounded-md transition-all",
-                  viewMode === 'weekly'
-                    ? "bg-background shadow-sm text-foreground border border-border/40"
-                    : "text-muted-foreground/50 hover:text-foreground"
-                )}
-              >
-                Yearly
-              </button>
-            </div>
-
-            {headerControls}
+              {/* Camera icon button */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="screenshot-btn h-7 w-7 hover:bg-primary/5 hover:text-primary transition-all bg-muted/20 border border-border/30 rounded-lg"
+                    title="Capture Screenshot"
+                  >
+                    <Camera className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={() => handleScreenshot('basic')} className="gap-2 text-xs font-medium">
+                    <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                    Basic (No Gradient)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleScreenshot('random')} className="gap-2 text-xs font-medium">
+                    <Sparkles className="h-3.5 w-3.5 text-yellow-500" />
+                    Random Gradient
+                  </DropdownMenuItem>
+                  <div className="h-px bg-border/40 my-1" />
+                  <div className="px-2 py-1 text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Premium Gradients
+                  </div>
+                  {CALENDAR_GRADIENT_PRESETS.map((preset) => (
+                    <DropdownMenuItem
+                      key={preset.id}
+                      onClick={() => handleScreenshot(preset.id)}
+                      className="gap-2 text-xs font-medium"
+                    >
+                      <div className={cn(
+                        "h-2.5 w-2.5 rounded-full shrink-0",
+                        preset.id === 'midnight-prism' && "bg-gradient-to-tr from-purple-600 to-indigo-600",
+                        preset.id === 'aurora-glass' && "bg-gradient-to-tr from-emerald-600 to-teal-600",
+                        preset.id === 'ocean-glow' && "bg-gradient-to-tr from-blue-600 to-cyan-500",
+                        preset.id === 'sunset-bloom' && "bg-gradient-to-tr from-purple-700 to-orange-500"
+                      )} />
+                      {preset.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
-
         </div>
 
         {/* Calendar Content - fully responsive, fills available space */}

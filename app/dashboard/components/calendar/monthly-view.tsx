@@ -23,6 +23,8 @@ import { calculateDailyStats } from "./calendar-utils"
 import { useData } from '@/context/data-provider'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { getTradeNetPnl } from '@/lib/metrics/pnl'
+import { Calendar as CalendarIcon } from "lucide-react"
+import { useJournalData } from "@/app/dashboard/hooks/use-journal-data"
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 
@@ -40,6 +42,7 @@ const DayCell = memo(function DayCell({
   isCurrentMonth,
   hideWeekends,
   isMiniCalendar,
+  hasJournal,
   onClick,
 }: {
   date: Date
@@ -47,6 +50,7 @@ const DayCell = memo(function DayCell({
   isCurrentMonth: boolean
   hideWeekends?: boolean
   isMiniCalendar?: boolean
+  hasJournal?: boolean
   onClick?: () => void
 }) {
   const { visibleStats } = useCalendarViewStore()
@@ -79,16 +83,16 @@ const DayCell = memo(function DayCell({
           : "min-h-[48px] md:min-h-[60px] lg:min-h-[68px] cursor-pointer",
 
         // No trades — uses theme tokens so it works in any color scheme
-        !hasTrades && isCurrentMonth && "bg-muted/5 border-border/20 hover:border-border/40",
+        !hasTrades && isCurrentMonth && "bg-[#0c0e12]/40 border-border/20 hover:border-border/40",
 
         // Profit — green tint via CSS token
-        hasTrades && isProfit && "bg-long/10 border-long/30 hover:bg-long/20 hover:border-long/50",
+        hasTrades && isProfit && "bg-emerald-950/85 border-emerald-800/80 hover:bg-emerald-900/95 hover:border-emerald-700 text-emerald-100",
 
         // Loss — red tint via CSS token
-        hasTrades && isLoss && "bg-short/10 border-short/30 hover:bg-short/20 hover:border-short/50",
+        hasTrades && isLoss && "bg-rose-950/85 border-rose-800/80 hover:bg-rose-900/95 hover:border-rose-700 text-rose-100",
 
         // Breakeven — neutral muted tint
-        hasTrades && isBreakEven && "bg-muted/30 border-border/30 hover:bg-muted/40",
+        hasTrades && isBreakEven && "bg-muted/40 border border-muted/50 text-foreground hover:bg-muted/50",
 
         // Not current month
         !isCurrentMonth && "opacity-20 pointer-events-none",
@@ -97,6 +101,20 @@ const DayCell = memo(function DayCell({
         isTodayDate && isCurrentMonth && "ring-1 ring-primary ring-offset-0",
       )}
     >
+      {/* Journal Note Indicator */}
+      {!isMiniCalendar && hasJournal && (
+        <CalendarIcon className={cn(
+          "absolute top-2 left-2 h-3.5 w-3.5",
+          hasTrades
+            ? isProfit 
+              ? "text-emerald-300/85" 
+              : isLoss 
+                ? "text-rose-300/85" 
+                : "text-muted-foreground/85"
+            : "text-muted-foreground/60"
+        )} />
+      )}
+
       {/* =======================
           MOBILE & MINI VIEW (Simple)
           ======================= */}
@@ -110,7 +128,9 @@ const DayCell = memo(function DayCell({
             "text-xs md:text-sm font-bold leading-none",
             isTodayDate && isCurrentMonth
               ? "text-primary-foreground bg-primary rounded-full w-5 h-5 md:w-6 md:h-6 flex items-center justify-center text-[10px] md:text-xs"
-              : "text-foreground/80",
+              : hasTrades
+                ? "text-white/90"
+                : "text-foreground/80",
           )}
         >
           {format(date, 'd')}
@@ -121,7 +141,7 @@ const DayCell = memo(function DayCell({
           <span
             className={cn(
               "text-[9px] md:text-[10px] font-bold mt-0.5 leading-none",
-              isProfit ? "text-long" : isLoss ? "text-short" : "text-muted-foreground"
+              isProfit ? "text-emerald-400" : isLoss ? "text-rose-400" : "text-muted-foreground"
             )}
           >
             {dayData && dayData.pnl !== undefined && formatValue(dayData.pnl, { kind: 'money', compact: true, rValue: dayData.dailyRMultiple ?? null, emptyLabel: '$0' })}
@@ -142,7 +162,9 @@ const DayCell = memo(function DayCell({
             "absolute top-1.5 right-1.5 font-bold leading-none",
             isTodayDate
               ? "text-primary-foreground bg-primary rounded-full w-5 h-5 flex items-center justify-center text-[10px]"
-              : "text-muted-foreground/60 text-[11px]",
+              : hasTrades
+                ? "text-white/60 text-[11px]"
+                : "text-muted-foreground/60 text-[11px]",
           )}
         >
           {format(date, 'd')}
@@ -155,16 +177,25 @@ const DayCell = memo(function DayCell({
             <div
               className={cn(
                 "font-extrabold tracking-tight text-center text-xs md:text-sm lg:text-sm xl:text-base",
-                isProfit ? "text-long" : isLoss ? "text-short" : "text-foreground"
+                isProfit ? "text-white" : isLoss ? "text-white" : "text-foreground"
               )}
             >
-              {formatValue(dayData.pnl, { kind: 'money', rValue: dayData.dailyRMultiple ?? null, emptyLabel: '$0' })}
+              {formatValue(dayData.pnl, { kind: 'money', compact: true, rValue: dayData.dailyRMultiple ?? null, emptyLabel: '$0' })}
             </div>
           )}
 
           {/* Trade Count */}
           {hasTrades && visibleStats.trades && (
-            <span className="font-semibold leading-none text-muted-foreground/80 text-[10px] md:text-[11px] mt-0.5">
+            <span className={cn(
+              "font-semibold leading-none text-[10px] md:text-[11px] mt-0.5",
+              hasTrades
+                ? isProfit 
+                  ? "text-emerald-300/80" 
+                  : isLoss 
+                    ? "text-rose-300/80" 
+                    : "text-muted-foreground/85"
+                : "text-muted-foreground/80"
+            )}>
               {dayData.tradeNumber} trade{dayData.tradeNumber !== 1 ? 's' : ''}
             </span>
           )}
@@ -174,16 +205,28 @@ const DayCell = memo(function DayCell({
             <div className="flex flex-wrap items-center justify-center gap-1 mt-1 w-full">
               {visibleStats.rMultiple && dayData.dailyRMultiple !== undefined && (
                 <span className={cn(
-                  "text-[9px] md:text-[10px] font-medium opacity-80 whitespace-nowrap",
-                  isProfit ? "text-long" : isLoss ? "text-short" : "text-foreground"
+                  "text-[9px] md:text-[10px] font-medium whitespace-nowrap",
+                  hasTrades
+                    ? isProfit 
+                      ? "text-emerald-300/85" 
+                      : isLoss 
+                        ? "text-rose-300/85" 
+                        : "text-foreground"
+                    : "text-foreground"
                 )}>
                   {dayData.dailyRMultiple.toFixed(2)}R{visibleStats.winRate ? ',' : ''}
                 </span>
               )}
               {visibleStats.winRate && (
                 <span className={cn(
-                  "text-[9px] md:text-[10px] font-medium opacity-80 whitespace-nowrap",
-                  isProfit ? "text-long" : isLoss ? "text-short" : "text-foreground"
+                  "text-[9px] md:text-[10px] font-medium whitespace-nowrap",
+                  hasTrades
+                    ? isProfit 
+                      ? "text-emerald-300/85" 
+                      : isLoss 
+                        ? "text-rose-300/85" 
+                        : "text-foreground"
+                    : "text-foreground"
                 )}>
                   {winRateValue.toFixed(1)}%
                 </span>
@@ -235,31 +278,31 @@ function WeeklySummary({
   return (
     <div
       className={cn(
-        "flex h-full min-h-[48px] md:min-h-[60px] flex-col items-start justify-center rounded-[8px] border p-2 md:p-2.5 cursor-pointer transition-all hover:bg-muted/30 group lg:min-h-[68px]",
-        "bg-muted/10 border-border/20"
+        "flex h-full min-h-[48px] md:min-h-[60px] flex-col items-start justify-center rounded-xl border p-2.5 cursor-pointer transition-all hover:bg-muted/20 group lg:min-h-[68px]",
+        "bg-[#0c0e12]/60 border-border/20 shadow-md"
       )}
       onClick={() => onReviewWeek?.(weekDays[0])}
     >
-      <span className="text-[11px] font-medium text-muted-foreground/70 mb-0.5">
+      <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider mb-0.5">
         Week {weekIndex + 1}
       </span>
       <span
         className={cn(
-          "text-sm md:text-base font-bold tracking-tight",
+          "text-sm md:text-base font-extrabold tracking-tight",
           stats.tradedDays === 0
-            ? "text-foreground/60"
+            ? "text-muted-foreground/45"
             : isPositive
-              ? "text-long"
-              : "text-short",
+              ? "text-emerald-400"
+              : "text-rose-400",
         )}
       >
-        {stats.tradedDays === 0 ? "$0" : formatValue(stats.pnl, { kind: 'money', compact: true, emptyLabel: '$0' })}
+        {stats.tradedDays === 0 ? "$0.00" : formatValue(stats.pnl, { kind: 'money', compact: false, emptyLabel: '$0.00' })}
       </span>
       <div className={cn(
-        "text-[9px] font-bold mt-1.5 px-1.5 py-0.5 rounded",
-        "bg-primary/20 text-primary border border-primary/30"
+        "text-[9px] font-black mt-2 px-2 py-0.5 rounded-full",
+        "bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 shadow-sm"
       )}>
-        {stats.tradedDays} day{stats.tradedDays !== 1 ? 's' : ''}
+        {stats.tradedDays} {stats.tradedDays === 1 ? 'day' : 'days'}
       </div>
     </div>
   )
@@ -312,6 +355,12 @@ export default function MonthlyView({
     return weeksArray
   }, [currentDate, shouldUseWeekdayOnlyLayout])
 
+
+  // Start/End date bounds for journals
+  const startBound = useMemo(() => startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 }), [currentDate])
+  const endBound = useMemo(() => endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 }), [currentDate])
+  const { journals } = useJournalData(startBound, endBound, null)
+
   const displayWeekdays = shouldUseWeekdayOnlyLayout 
     ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] 
     : WEEKDAYS
@@ -346,6 +395,8 @@ export default function MonthlyView({
                 const dateKey = format(date, 'yyyy-MM-dd')
                 const dayData = calendarData[dateKey]
                 const isCurrentMonth = isSameMonth(date, currentDate)
+                const journal = journals?.[dateKey] || null
+                const hasJournal = !!journal && (Boolean(journal.note?.trim()) || Boolean(journal.emotion))
                 return (
                   <DayCell
                     key={date.toISOString()}
@@ -354,6 +405,7 @@ export default function MonthlyView({
                     isCurrentMonth={isCurrentMonth}
                     hideWeekends={shouldUseWeekdayOnlyLayout}
                     isMiniCalendar={isMiniCalendar}
+                    hasJournal={hasJournal}
                     onClick={() => onSelectDate?.(date)}
                   />
                 )

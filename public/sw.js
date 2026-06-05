@@ -6,6 +6,8 @@ const STATIC_CACHE = 'tradelytix-static-v1.3.0'
 const API_CACHE = 'tradelytix-api-v1.3.0'
 const IMAGE_CACHE = 'tradelytix-images-v1.3.0'
 
+let currentUserId = null
+
 // Minimal files to cache for performance
 const STATIC_FILES = [
   '/',
@@ -96,10 +98,6 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Never intercept Next.js static chunks/data. Let browser fetch these directly.
-  if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/_next/data/')) {
-    return
-  }
 
   // Handle different types of requests
   if (isStaticFile(url)) {
@@ -392,6 +390,12 @@ self.addEventListener('message', (event) => {
         event.ports[0].postMessage(status)
       })
       break
+    case 'SET_USER_ID':
+      if (currentUserId !== null && data.userId !== currentUserId) {
+        caches.delete(API_CACHE)
+      }
+      currentUserId = data.userId
+      break
   }
 })
 
@@ -438,8 +442,9 @@ async function getCacheStatus() {
 
 // Helper functions
 function isStaticFile(url) {
-  const staticExtensions = ['.woff', '.woff2', '.ttf', '.eot']
-  return staticExtensions.some(ext => url.pathname.endsWith(ext))
+  const staticExtensions = ['.woff', '.woff2', '.ttf', '.eot', '.js', '.css']
+  return staticExtensions.some(ext => url.pathname.endsWith(ext)) ||
+    url.pathname.startsWith('/_next/static/')
 }
 
 function isAPIRequest(url) {

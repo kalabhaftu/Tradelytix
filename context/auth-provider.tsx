@@ -119,6 +119,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         lastSyncedSessionRef.current = sessionKey
+        // Notify service worker of current user identity for cache isolation
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({ type: 'SET_USER_ID', userId: nextSession.user.id })
+        }
         setAuthCheckCache({
           timestamp: Date.now(),
           isAuthenticated: true
@@ -195,6 +199,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('tradelytix_user_data')
     // Clear Supabase auth tokens (they start with 'sb-')
     clearBrowserAuthStorage()
+
+    // Notify service worker to clear cached API data
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' })
+    }
   }, [clearBrowserAuthStorage, resetUser, setSupabaseUser])
 
   const refreshOnceForAuthEvent = useCallback((event: string, nextSession: Session | null) => {

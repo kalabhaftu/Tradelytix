@@ -373,28 +373,36 @@ async function syncAnalyticsRequests() {
 
 // Message handling for communication with main thread
 self.addEventListener('message', (event) => {
-  const { type, data } = event.data
+  if (!event.data) return
+  
+  const { type } = event.data
   
   switch (type) {
     case 'SKIP_WAITING':
       self.skipWaiting()
       break
     case 'CACHE_TRADE_DATA':
-      cacheTradeData(data)
+      if (event.data.data) {
+        cacheTradeData(event.data.data)
+      }
       break
     case 'CLEAR_CACHE':
       clearAllCaches()
       break
     case 'GET_CACHE_STATUS':
       getCacheStatus().then(status => {
-        event.ports[0].postMessage(status)
+        if (event.ports && event.ports[0]) {
+          event.ports[0].postMessage(status)
+        }
       })
       break
     case 'SET_USER_ID':
-      if (currentUserId !== null && data.userId !== currentUserId) {
+      const newUserId = event.data.userId
+      if (currentUserId !== null && newUserId !== currentUserId) {
+        // Clear API cache when user changes to prevent cross-user data leakage
         caches.delete(API_CACHE)
       }
-      currentUserId = data.userId
+      currentUserId = newUserId
       break
   }
 })

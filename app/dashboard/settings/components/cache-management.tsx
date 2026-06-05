@@ -15,7 +15,7 @@ import { invalidateAccountsCache } from '@/hooks/use-accounts'
 import { Trash2 as Trash, Info, CheckCircle2 as CheckCircle } from "lucide-react"
 import { toast } from 'sonner'
 
-export function CacheManagement() {
+export function CacheManagement({ plain = false }: { plain?: boolean }) {
   const [isClearing, setIsClearing] = useState(false)
   const [lastCleared, setLastCleared] = useState<Date | null>(null)
   const [stats, setStats] = useState({
@@ -93,6 +93,124 @@ export function CacheManagement() {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
   }
 
+  const content = (
+    <div className="space-y-6">
+      {/* Cache Statistics */}
+      <div className="space-y-2">
+        <h4 className="text-sm font-medium">Current Cache Status</h4>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-muted-foreground">Cache Version</p>
+            <p className="font-mono">{stats.version}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Storage Size</p>
+            <p className="font-mono">{formatBytes(stats.localStorageSize * 2)}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Cached Keys</p>
+            <p className="font-mono">{stats.localStorageKeys} items</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Session Data</p>
+            <p className="font-mono">{stats.sessionStorageKeys} items</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Information Alert */}
+      <Alert className="border-border/40 bg-muted/15">
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          The app automatically clears stale caches when detecting version changes.
+          Only use manual clearing if you&apos;re experiencing issues with outdated data.
+        </AlertDescription>
+      </Alert>
+
+      {/* Last Cleared */}
+      {lastCleared && (
+        <div className="flex items-center gap-2 text-sm text-profit">
+          <CheckCircle className="h-4 w-4" />
+          <span>
+            Cache cleared at {formatTimeInZone(lastCleared, 'HH:mm')} NY
+          </span>
+        </div>
+      )}
+
+      {/* Clear Options */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium">Clear Account Cache</p>
+            <p className="text-xs text-muted-foreground">
+              Clears cached account and trade data
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleClearAccountCache}
+            disabled={isClearing}
+          >
+            {isClearing ? (
+              <Spinner className="h-4 w-4" />
+            ) : (
+              <Trash className="h-4 w-4" />
+            )}
+            <span className="ml-2">Clear</span>
+          </Button>
+        </div>
+
+        <div className="flex items-center justify-between pt-3 border-t border-border/35">
+          <div>
+            <p className="text-sm font-medium">Clear All Cache</p>
+            <p className="text-xs text-muted-foreground">
+              Clears all cached data (theme and preferences preserved)
+            </p>
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleClearAllCache}
+            disabled={isClearing}
+          >
+            {isClearing ? (
+              <Spinner className="h-4 w-4" />
+            ) : (
+              <Trash className="h-4 w-4" />
+            )}
+            <span className="ml-2">Clear All</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Help Text */}
+      <div className="text-xs text-muted-foreground/85 space-y-1">
+        <p><strong>When to clear cache:</strong></p>
+        <ul className="list-disc list-inside space-y-1 ml-2">
+          <li>Seeing outdated account balances or trade data</li>
+          <li>Dashboard layout not updating correctly</li>
+          <li>App behaving unexpectedly after an update</li>
+          <li>Experiencing performance issues</li>
+        </ul>
+      </div>
+    </div>
+  )
+
+  if (plain) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-base font-semibold">Cache Management</h3>
+          <p className="text-xs text-muted-foreground/85">
+            Clear cached data to resolve display issues or free up space
+          </p>
+        </div>
+        {content}
+      </div>
+    )
+  }
+
   return (
     <Card className="border-border/40 bg-card/70">
       <CardHeader>
@@ -102,105 +220,7 @@ export function CacheManagement() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Cache Statistics */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium">Current Cache Status</h4>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-muted-foreground">Cache Version</p>
-              <p className="font-mono">{stats.version}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Storage Size</p>
-              <p className="font-mono">{formatBytes(stats.localStorageSize * 2)}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Cached Keys</p>
-              <p className="font-mono">{stats.localStorageKeys} items</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Session Data</p>
-              <p className="font-mono">{stats.sessionStorageKeys} items</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Information Alert */}
-        <Alert className="border-border/40 bg-muted/15">
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            The app automatically clears stale caches when detecting version changes.
-            Only use manual clearing if you&apos;re experiencing issues with outdated data.
-          </AlertDescription>
-        </Alert>
-
-        {/* Last Cleared */}
-        {lastCleared && (
-          <div className="flex items-center gap-2 text-sm text-profit">
-            <CheckCircle className="h-4 w-4" />
-            <span>
-              Cache cleared at {formatTimeInZone(lastCleared, 'HH:mm')} NY
-            </span>
-          </div>
-        )}
-
-        {/* Clear Options */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Clear Account Cache</p>
-              <p className="text-xs text-muted-foreground">
-                Clears cached account and trade data
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClearAccountCache}
-              disabled={isClearing}
-            >
-              {isClearing ? (
-                <Spinner className="h-4 w-4" />
-              ) : (
-                <Trash className="h-4 w-4" />
-              )}
-              <span className="ml-2">Clear</span>
-            </Button>
-          </div>
-
-          <div className="flex items-center justify-between pt-3 border-t border-border/35">
-            <div>
-              <p className="text-sm font-medium">Clear All Cache</p>
-              <p className="text-xs text-muted-foreground">
-                Clears all cached data (theme and preferences preserved)
-              </p>
-            </div>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleClearAllCache}
-              disabled={isClearing}
-            >
-              {isClearing ? (
-                <Spinner className="h-4 w-4" />
-              ) : (
-                <Trash className="h-4 w-4" />
-              )}
-              <span className="ml-2">Clear All</span>
-            </Button>
-          </div>
-        </div>
-
-        {/* Help Text */}
-        <div className="text-xs text-muted-foreground/85 space-y-1">
-          <p><strong>When to clear cache:</strong></p>
-          <ul className="list-disc list-inside space-y-1 ml-2">
-            <li>Seeing outdated account balances or trade data</li>
-            <li>Dashboard layout not updating correctly</li>
-            <li>App behaving unexpectedly after an update</li>
-            <li>Experiencing performance issues</li>
-          </ul>
-        </div>
+        {content}
       </CardContent>
     </Card>
   )

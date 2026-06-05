@@ -62,6 +62,12 @@ import {
   Target,
   LayoutGrid,
   Zap,
+  Globe,
+  SunMoon,
+  TrendingUp,
+  Activity,
+  Webhook,
+  Link2 as LinkIcon,
 } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from 'next/link'
@@ -594,149 +600,138 @@ export default function SettingsPage() {
 
   const themeInfo = getThemeDisplay()
 
-  return (
-    <div className="w-full max-w-7xl mx-auto py-8 px-4 sm:px-6 pb-20 md:pb-8">
-      {/* Header */}
-      <div className="mb-8">
-        <PageHeader title="Settings" className="gap-2" />
-      </div>
+  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'integrations' | 'connections' | 'security'>('profile')
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.4 }}
-        className="space-y-6"
-      >
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <div className="flex min-w-0 flex-col gap-6">
-        {/* Profile Section */}
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                  <User className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <CardTitle className="text-base">Profile</CardTitle>
-                  <CardDescription className="text-xs text-muted-foreground/85">Your personal information</CardDescription>
-                </div>
+  const categories = [
+    { id: 'profile' as const, label: 'Profile & Plan', icon: User },
+    { id: 'preferences' as const, label: 'Preferences', icon: SettingsIcon },
+    { id: 'integrations' as const, label: 'Integrations', icon: Webhook },
+    { id: 'connections' as const, label: 'Linked Accounts', icon: LinkIcon },
+    { id: 'security' as const, label: 'Security & Data', icon: Shield },
+  ]
+
+  const renderProfileTab = () => {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-lg font-semibold text-heading-text">Profile & Subscription</h2>
+          <p className="text-xs text-muted-foreground/85">Manage your personal information and subscription plan</p>
+        </div>
+
+        {/* Profile Card */}
+        <div className="rounded-xl border border-border/40 bg-card/45 p-6 space-y-6">
+          <div className="flex items-start justify-between gap-4">
+            <h3 className="text-sm font-semibold text-heading-text flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Personal Info
+            </h3>
+            <Button
+              variant={isEditingProfile ? "secondary" : "outline"}
+              size="sm"
+              className="gap-2 h-8"
+              onClick={() => setIsEditingProfile(true)}
+              disabled={isLoadingProfile || isEditingProfile}
+            >
+              <Pencil className="h-3 w-3" />
+              Edit
+            </Button>
+          </div>
+
+          {/* User Info details */}
+          <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/20 border border-border/10">
+            <Avatar className="h-12 w-12 shrink-0 border border-border/25">
+              <AvatarImage key={avatarUrl ?? 'settings-avatar-fallback'} src={avatarUrl} referrerPolicy="no-referrer" />
+              <AvatarFallback className="text-lg">
+                {user?.email?.[0].toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm truncate text-heading-text">{user?.email}</p>
+              <p className="text-xxs text-muted-foreground">
+                Member since {new Date(user?.created_at || '').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+            </div>
+            <Badge variant="secondary" className="shrink-0 bg-muted text-muted-foreground border-border/25 text-xxs font-normal">Active</Badge>
+          </div>
+
+          {isLoadingProfile ? (
+            <div className="space-y-4">
+              <div className="space-y-1.5"><Skeleton className="h-3 w-16" /><Skeleton className="h-9 w-full" /></div>
+              <div className="space-y-1.5"><Skeleton className="h-3 w-16" /><Skeleton className="h-9 w-full" /></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="firstName" className="text-xs text-muted-foreground">First Name</Label>
+                <Input
+                  id="firstName"
+                  placeholder="Enter your first name"
+                  value={profileData.firstName}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
+                  disabled={isLoadingProfile || !isEditingProfile}
+                  className="h-9 bg-background/50"
+                />
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="lastName" className="text-xs text-muted-foreground">Last Name</Label>
+                <Input
+                  id="lastName"
+                  placeholder="Enter your last name"
+                  value={profileData.lastName}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
+                  disabled={isLoadingProfile || !isEditingProfile}
+                  className="h-9 bg-background/50"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <Label htmlFor="email" className="text-xs text-muted-foreground">Email</Label>
+            <Input id="email" type="email" value={user?.email || ''} disabled className="h-9 bg-background/25 border-border/20 text-muted-foreground" />
+          </div>
+
+          {isEditingProfile && (
+            <div className="flex flex-col gap-2 sm:flex-row pt-2">
               <Button
-                variant={isEditingProfile ? "secondary" : "outline"}
-                size="sm"
-                className="gap-2"
-                onClick={() => setIsEditingProfile(true)}
-                disabled={isLoadingProfile || isEditingProfile}
+                variant="outline"
+                className="w-full sm:w-auto h-9 text-xs"
+                onClick={handleCancelProfileEdit}
+                disabled={isUpdatingProfile}
               >
-                <Pencil className="h-3.5 w-3.5" />
-                Edit
+                Cancel
               </Button>
+              <PrimaryButton
+                onClick={handleProfileUpdate}
+                loading={isUpdatingProfile || isLoadingProfile}
+                loadingText={isLoadingProfile ? "Fetching..." : "Updating..."}
+                className="w-full sm:w-auto h-9 text-xs"
+              >
+                Save Profile
+              </PrimaryButton>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* User Info */}
-            <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/30">
-              <Avatar className="h-12 w-12 shrink-0">
-                <AvatarImage key={avatarUrl ?? 'settings-avatar-fallback'} src={avatarUrl} referrerPolicy="no-referrer" />
-                <AvatarFallback className="text-lg">
-                  {user?.email?.[0].toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{user?.email}</p>
-                <p className="text-xs text-muted-foreground">
-                  Member since {new Date(user?.created_at || '').toLocaleDateString()}
-                </p>
-              </div>
-              <Badge variant="secondary" className="shrink-0">Active</Badge>
+          )}
+        </div>
+
+        {/* Subscription Plan details */}
+        <div className="rounded-xl border border-border/40 bg-card/45 p-6 space-y-6">
+          <h3 className="text-sm font-semibold text-heading-text flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Subscription Plan
+          </h3>
+
+          {isLoadingSubscription ? (
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-4 w-32" />
             </div>
-
-            {isLoadingProfile ? (
-              <div className="space-y-4">
-                <div className="space-y-1.5"><Skeleton className="h-3 w-16" /><Skeleton className="h-9 w-full" /></div>
-                <div className="space-y-1.5"><Skeleton className="h-3 w-16" /><Skeleton className="h-9 w-full" /></div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="firstName" className="text-xs">First Name</Label>
-                  <Input
-                    id="firstName"
-                    placeholder="Enter your first name"
-                    value={profileData.firstName}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
-                    disabled={isLoadingProfile || !isEditingProfile}
-                    className="h-9"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="lastName" className="text-xs">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    placeholder="Enter your last name"
-                    value={profileData.lastName}
-                    onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
-                    disabled={isLoadingProfile || !isEditingProfile}
-                    className="h-9"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs">Email</Label>
-              <Input id="email" type="email" value={user?.email || ''} disabled className="h-9" />
-            </div>
-
-            {isEditingProfile && (
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Button
-                  variant="outline"
-                  className="w-full sm:w-auto"
-                  onClick={handleCancelProfileEdit}
-                  disabled={isUpdatingProfile}
-                >
-                  Cancel
-                </Button>
-                <PrimaryButton
-                  onClick={handleProfileUpdate}
-                  loading={isUpdatingProfile || isLoadingProfile}
-                  loadingText={isLoadingProfile ? "Fetching..." : "Updating..."}
-                  className="w-full sm:w-auto"
-                >
-                  Save Profile
-                </PrimaryButton>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Subscription Status */}
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                <CreditCard className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <CardTitle className="text-base">Subscription</CardTitle>
-                <CardDescription className="text-xs text-muted-foreground/85">Your plan details</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isLoadingSubscription ? (
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-48" />
-                <Skeleton className="h-4 w-32" />
-              </div>
-            ) : subscriptionData ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+          ) : subscriptionData ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/20 border border-border/10">
                   <div>
-                    <p className="text-sm font-medium">Status</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">Status</p>
+                    <p className="text-sm font-semibold text-heading-text mt-0.5">
                       {subscriptionData.reason || subscriptionData.status}
                     </p>
                   </div>
@@ -744,11 +739,12 @@ export default function SettingsPage() {
                     {subscriptionData.hasAccess ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
+
                 {subscriptionData.currentPeriodEnd && (
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-muted/20 border border-border/10">
                     <div>
-                      <p className="text-sm font-medium">Current Period Ends</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">Period Ends</p>
+                      <p className="text-sm font-semibold text-heading-text mt-0.5">
                         {new Date(subscriptionData.currentPeriodEnd).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
                       </p>
                     </div>
@@ -760,45 +756,343 @@ export default function SettingsPage() {
                     </span>
                   </div>
                 )}
-                {subscriptionData.nextPaymentDue && (
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                    <div>
-                      <p className="text-sm font-medium">Next Payment</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(subscriptionData.nextPaymentDue).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {!subscriptionData.hasAccess && (
-                  <Link href="/subscribe">
-                    <Button size="sm" className="gap-2 w-full">
-                      <CreditCard className="h-3.5 w-3.5" />
-                      Subscribe
-                    </Button>
-                  </Link>
-                )}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Unable to load subscription info</p>
-            )}
-          </CardContent>
-        </Card>
 
-        {/* AI Preferences Section */}
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                <Bot className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <CardTitle className="text-base">AI Preferences</CardTitle>
-                <CardDescription className="text-xs">Control AI-generated insights and automation</CardDescription>
-              </div>
+              {subscriptionData.nextPaymentDue && (
+                <div className="p-4 rounded-lg bg-muted/20 border border-border/10 flex justify-between items-center">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Next Payment Due</p>
+                    <p className="text-sm font-semibold text-heading-text mt-0.5">
+                      {new Date(subscriptionData.nextPaymentDue).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {!subscriptionData.hasAccess && (
+                <Link href="/subscribe">
+                  <Button size="sm" className="gap-2 w-full mt-2 h-9 text-xs">
+                    <CreditCard className="h-3.5 w-3.5" />
+                    Subscribe to Premium
+                  </Button>
+                </Link>
+              )}
             </div>
-          </CardHeader>
-          <CardContent className="space-y-1">
+          ) : (
+            <p className="text-sm text-muted-foreground">Unable to load subscription info</p>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  const renderPreferencesTab = () => {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-lg font-semibold text-heading-text">Preferences</h2>
+          <p className="text-xs text-muted-foreground/85">Customize your platform experience and AI settings</p>
+        </div>
+
+        <div className="rounded-xl border border-border/40 bg-card/45 p-6 space-y-1">
+          {/* Theme selection */}
+          <SettingRow
+            icon={SunMoon}
+            label="Theme"
+            description="Choose your preferred color scheme"
+            action={
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 min-w-[110px] h-8 text-xs">
+                    <themeInfo.icon className="h-3.5 w-3.5" />
+                    {themeInfo.label}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleThemeChange("dark")}>
+                    <Moon className="mr-2 h-3.5 w-3.5" />
+                    Dark
+                    {theme === 'dark' && <Check className="ml-auto h-3.5 w-3.5" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleThemeChange("light")}>
+                    <Sun className="mr-2 h-3.5 w-3.5" />
+                    Light
+                    {theme === 'light' && <Check className="ml-auto h-3.5 w-3.5" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleThemeChange("system")}>
+                    <Laptop className="mr-2 h-3.5 w-3.5" />
+                    System
+                    {theme === 'system' && <Check className="ml-auto h-3.5 w-3.5" />}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            }
+          />
+
+          <Separator className="my-1 border-border/30" />
+
+          {/* Color Accent selection */}
+          <SettingRow
+            icon={Palette}
+            label="Color Accent"
+            description={accentPack === 'reports' ? 'Sage & Amber' : accentPack === 'violet' ? 'Violet & Pink' : accentPack === 'slate' ? 'Slate & Smoke' : 'Classic (Red & Green)'}
+            action={
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 min-w-[130px] h-8 text-xs">
+                    {accentPack === 'reports' ? 'Sage & Amber' : accentPack === 'violet' ? 'Violet & Pink' : accentPack === 'slate' ? 'Slate & Smoke' : 'Classic'}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleAccentChange('classic')}>
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1 shrink-0">
+                        <div className="w-3 h-3 rounded-full bg-[#10b981]" />
+                        <div className="w-3 h-3 rounded-full bg-[#ef4444]" />
+                      </div>
+                      Classic
+                    </div>
+                    {accentPack === 'classic' && <Check className="ml-auto h-3.5 w-3.5" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleAccentChange('reports')}>
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1 shrink-0">
+                        <div className="w-3 h-3 rounded-full bg-[#83b885]" />
+                        <div className="w-3 h-3 rounded-full bg-[#ce6730]" />
+                      </div>
+                      Sage & Amber
+                    </div>
+                    {accentPack === 'reports' && <Check className="ml-auto h-3.5 w-3.5" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleAccentChange('violet')}>
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1 shrink-0">
+                        <div className="w-3 h-3 rounded-full bg-[#a78bfa]" />
+                        <div className="w-3 h-3 rounded-full bg-[#f472b6]" />
+                      </div>
+                      Violet & Pink
+                    </div>
+                    {accentPack === 'violet' && <Check className="ml-auto h-3.5 w-3.5" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleAccentChange('slate')}>
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1 shrink-0">
+                        <div className="w-3 h-3 rounded-full bg-[#f8fafc]" />
+                        <div className="w-3 h-3 rounded-full bg-[#64748b]" />
+                      </div>
+                      Slate & Smoke
+                    </div>
+                    {accentPack === 'slate' && <Check className="ml-auto h-3.5 w-3.5" />}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            }
+          />
+
+          <Separator className="my-1 border-border/30" />
+
+          {/* Timezone selection */}
+          <SettingRow
+            icon={Globe}
+            label="Timezone"
+            description={timezone.replace('_', ' ')}
+            action={
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 h-8 text-xs">
+                    Change
+                    <CaretRight className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <ScrollArea className="h-[200px]">
+                    <DropdownMenuRadioGroup value={timezone} onValueChange={handleTimezoneChange}>
+                      {timezones.map((tz) => (
+                        <DropdownMenuRadioItem key={tz} value={tz} className="text-xs">
+                          {tz.replace('_', ' ')}
+                        </DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                  </ScrollArea>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            }
+          />
+
+          <Separator className="my-1 border-border/30" />
+
+          {/* Time Format */}
+          <SettingRow
+            icon={Clock}
+            label="Time Format"
+            description={use24HourFormat ? "24-hour" : "12-hour"}
+            action={
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 h-8 text-xs">
+                    Change
+                    <CaretRight className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuRadioGroup value={use24HourFormat ? "24h" : "12h"} onValueChange={(v) => {
+                    setUse24HourFormat(v === "24h")
+                    toast.success("Time format updated", {
+                      description: `Time format changed to ${v === "24h" ? "24-hour" : "12-hour"}.`,
+                      duration: 2000
+                    })
+                  }}>
+                    <DropdownMenuRadioItem value="24h" className="text-xs">24-hour (14:30)</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="12h" className="text-xs">12-hour (2:30 PM)</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            }
+          />
+
+          <Separator className="my-1 border-border/30" />
+
+          {/* Break-even band */}
+          <SettingRow
+            icon={Target}
+            label="Break-even threshold"
+            description={`Breakeven band: ${formatBreakevenBand(profileData.breakEvenThreshold)}. Counted as win above +$${profileData.breakEvenThreshold}, loss below -$${profileData.breakEvenThreshold}.`}
+            action={
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={breakEvenDraft}
+                  onChange={(e) => setBreakEvenDraft(e.target.value)}
+                  className="h-8 w-24 text-xs"
+                />
+                <Button
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={handleBreakEvenThresholdSave}
+                  disabled={isUpdatingBreakEven}
+                >
+                  {isUpdatingBreakEven ? 'Saving...' : 'Save'}
+                </Button>
+              </div>
+            }
+          />
+
+          <Separator className="my-1 border-border/30" />
+
+          {/* P&L display */}
+          <SettingRow
+            icon={TrendingUp}
+            label="P&L display"
+            description={profileData.pnlDisplayMode === 'gross'
+              ? 'Show gross P&L before commissions and swap on dashboard/report money surfaces.'
+              : 'Show net P&L after commissions and swap on dashboard/report money surfaces.'}
+            action={
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 h-8 text-xs">
+                    {profileData.pnlDisplayMode === 'gross' ? 'Gross' : 'Net'}
+                    <CaretRight className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuRadioGroup
+                    value={profileData.pnlDisplayMode}
+                    onValueChange={handlePnlDisplayModeChange}
+                  >
+                    <DropdownMenuRadioItem value="net" className="text-xs">Net (after fees)</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="gross" className="text-xs">Gross (before fees)</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            }
+          />
+
+          <Separator className="my-1 border-border/30" />
+
+          {/* Widget Style */}
+          <SettingRow
+            icon={LayoutGrid}
+            label="Widget Style"
+            description={widgetStyle === 'glass' ? 'Glassmorphism with distinct borders' : 'Standard muted panel style'}
+            action={
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 min-w-[120px] h-8 text-xs">
+                    {widgetStyle === 'glass' ? 'Glassmorphism' : 'Standard'}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleWidgetStyleChange('default')}>
+                    Standard
+                    {widgetStyle === 'default' && <Check className="ml-auto h-3.5 w-3.5" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleWidgetStyleChange('glass')}>
+                    Glassmorphism
+                    {widgetStyle === 'glass' && <Check className="ml-auto h-3.5 w-3.5" />}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            }
+          />
+
+          <Separator className="my-1 border-border/30" />
+
+          {/* Chart Style */}
+          <SettingRow
+            icon={Activity}
+            label="Chart Edge Style"
+            description={chartStyle === 'sharp' ? 'Sharp angular lines following your color accent' : 'Smooth curved lines following your color accent'}
+            action={
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 min-w-[120px] h-8 text-xs">
+                    {chartStyle === 'sharp' ? 'Sharp' : 'Smooth'}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleChartStyleChange('smooth')}>
+                    Smooth
+                    {chartStyle === 'smooth' && <Check className="ml-auto h-3.5 w-3.5" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleChartStyleChange('sharp')}>
+                    Sharp
+                    {chartStyle === 'sharp' && <Check className="ml-auto h-3.5 w-3.5" />}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            }
+          />
+
+          <Separator className="my-1 border-border/30" />
+
+          {/* Auto-adjust date */}
+          <SettingRow
+            icon={Calendar}
+            label="Auto-adjust Account Date"
+            description="Automatically set account start date to your first trade"
+            action={
+              <Button
+                variant={profileData.autoAdjustAccountDate ? "default" : "outline"}
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => handleAutoAdjustChange(!profileData.autoAdjustAccountDate)}
+              >
+                {profileData.autoAdjustAccountDate ? "Enabled" : "Disabled"}
+              </Button>
+            }
+          />
+        </div>
+
+        {/* AI Preferences */}
+        <div className="rounded-xl border border-border/40 bg-card/45 p-6 space-y-6">
+          <h3 className="text-sm font-semibold text-heading-text flex items-center gap-2">
+            <Bot className="h-4 w-4" />
+            AI Preferences
+          </h3>
+
+          <div className="space-y-1">
             <SettingRow
               icon={Sparkles}
               label="Weekly AI Performance Reviews"
@@ -812,7 +1106,7 @@ export default function SettingsPage() {
               }
             />
 
-            <Separator />
+            <Separator className="my-1 border-border/30" />
 
             <SettingRow
               icon={BellRing}
@@ -826,453 +1120,238 @@ export default function SettingsPage() {
                 />
               }
             />
-          </CardContent>
-        </Card>
-
-        {/* Cache Management */}
-        <CacheManagement />
-          </div>
-
-          <div className="flex min-w-0 flex-col gap-6">
-
-        {/* Preferences Section */}
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                <SettingsIcon className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <CardTitle className="text-base">Preferences</CardTitle>
-                <CardDescription className="text-xs text-muted-foreground/85">Customize your experience</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            {/* Theme */}
-            <SettingRow
-              icon={Palette}
-              label="Theme"
-              description="Choose your preferred color scheme"
-              action={
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2 min-w-[100px]">
-                      <themeInfo.icon className="h-3.5 w-3.5" />
-                      {themeInfo.label}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleThemeChange("dark")}>
-                      <Moon className="mr-2 h-4 w-4" />
-                      Dark
-                      {theme === 'dark' && <Check className="ml-auto h-4 w-4" />}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleThemeChange("light")}>
-                      <Sun className="mr-2 h-4 w-4" />
-                      Light
-                      {theme === 'light' && <Check className="ml-auto h-4 w-4" />}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleThemeChange("system")}>
-                      <Laptop className="mr-2 h-4 w-4" />
-                      System
-                      {theme === 'system' && <Check className="ml-auto h-4 w-4" />}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              }
-            />
-
-            <Separator />
-
-             {/* Color Accent */}
-             <SettingRow
-               icon={Palette}
-               label="Color Accent"
-               description={accentPack === 'reports' ? 'Sage & Amber' : accentPack === 'violet' ? 'Violet & Pink' : accentPack === 'slate' ? 'Slate & Smoke' : 'Classic (Red & Green)'}
-               action={
-                 <DropdownMenu>
-                   <DropdownMenuTrigger asChild>
-                     <Button variant="outline" size="sm" className="gap-2 min-w-[120px]">
-                       {accentPack === 'reports' ? 'Sage & Amber' : accentPack === 'violet' ? 'Violet & Pink' : accentPack === 'slate' ? 'Slate & Smoke' : 'Classic'}
-                     </Button>
-                   </DropdownMenuTrigger>
-                   <DropdownMenuContent align="end">
-                     <DropdownMenuItem onClick={() => handleAccentChange('classic')}>
-                       <div className="flex items-center gap-2">
-                         <div className="flex gap-1">
-                           <div className="w-3 h-3 rounded-full bg-long" />
-                           <div className="w-3 h-3 rounded-full bg-short" />
-                         </div>
-                         Classic
-                       </div>
-                       {accentPack === 'classic' && <Check className="ml-auto h-4 w-4" />}
-                     </DropdownMenuItem>
-                     <DropdownMenuItem onClick={() => handleAccentChange('reports')}>
-                       <div className="flex items-center gap-2">
-                         <div className="flex gap-1">
-                           <div className="w-3 h-3 rounded-full bg-[hsl(var(--chart-bullish))]" />
-                           <div className="w-3 h-3 rounded-full bg-[hsl(var(--chart-bearish))]" />
-                         </div>
-                         Sage & Amber
-                       </div>
-                       {accentPack === 'reports' && <Check className="ml-auto h-4 w-4" />}
-                     </DropdownMenuItem>
-                     <DropdownMenuItem onClick={() => handleAccentChange('violet')}>
-                       <div className="flex items-center gap-2">
-                         <div className="flex gap-1">
-                           <div className="w-3 h-3 rounded-full bg-[#a78bfa]" />
-                           <div className="w-3 h-3 rounded-full bg-[#f472b6]" />
-                         </div>
-                         Violet & Pink
-                       </div>
-                       {accentPack === 'violet' && <Check className="ml-auto h-4 w-4" />}
-                     </DropdownMenuItem>
-                     <DropdownMenuItem onClick={() => handleAccentChange('slate')}>
-                       <div className="flex items-center gap-2">
-                         <div className="flex gap-1">
-                           <div className="w-3 h-3 rounded-full bg-[#f8fafc]" />
-                           <div className="w-3 h-3 rounded-full bg-[#64748b]" />
-                         </div>
-                         Slate & Smoke
-                       </div>
-                       {accentPack === 'slate' && <Check className="ml-auto h-4 w-4" />}
-                     </DropdownMenuItem>
-                   </DropdownMenuContent>
-                 </DropdownMenu>
-               }
-             />
-
-            <Separator />
-
-            {/* Timezone */}
-            <SettingRow
-              icon={Clock}
-              label="Timezone"
-              description={timezone.replace('_', ' ')}
-              action={
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      Change
-                      <CaretRight className="h-3.5 w-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <ScrollArea className="h-[200px]">
-                      <DropdownMenuRadioGroup value={timezone} onValueChange={handleTimezoneChange}>
-                        {timezones.map((tz) => (
-                          <DropdownMenuRadioItem key={tz} value={tz}>
-                            {tz.replace('_', ' ')}
-                          </DropdownMenuRadioItem>
-                        ))}
-                      </DropdownMenuRadioGroup>
-                    </ScrollArea>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              }
-            />
-
-            <Separator />
-
-            {/* Time Format */}
-            <SettingRow
-              icon={Clock}
-              label="Time Format"
-              description={use24HourFormat ? "24-hour" : "12-hour"}
-              action={
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      Change
-                      <CaretRight className="h-3.5 w-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuRadioGroup value={use24HourFormat ? "24h" : "12h"} onValueChange={(v) => {
-                      setUse24HourFormat(v === "24h")
-                      toast.success("Time format updated", {
-                        description: `Time format changed to ${v === "24h" ? "24-hour" : "12-hour"}.`,
-                        duration: 2000
-                      })
-                    }}>
-                      <DropdownMenuRadioItem value="24h">24-hour (14:30)</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="12h">12-hour (2:30 PM)</DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              }
-            />
-
-            <Separator />
-
-            <SettingRow
-              icon={Target}
-              label="Break-even threshold"
-              description={`Breakeven band: ${formatBreakevenBand(profileData.breakEvenThreshold)}. Counted as win above +$${profileData.breakEvenThreshold}, loss below -$${profileData.breakEvenThreshold}.`}
-              action={
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={breakEvenDraft}
-                    onChange={(e) => setBreakEvenDraft(e.target.value)}
-                    className="h-8 w-24"
-                  />
-                  <Button
-                    size="sm"
-                    onClick={handleBreakEvenThresholdSave}
-                    disabled={isUpdatingBreakEven}
-                  >
-                    {isUpdatingBreakEven ? 'Saving...' : 'Save'}
-                  </Button>
-                </div>
-              }
-            />
-
-            <Separator />
-
-            <SettingRow
-              icon={Target}
-              label="P&L display"
-              description={profileData.pnlDisplayMode === 'gross'
-                ? 'Show gross P&L before commissions and swap on dashboard/report money surfaces.'
-                : 'Show net P&L after commissions and swap on dashboard/report money surfaces.'}
-              action={
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      {profileData.pnlDisplayMode === 'gross' ? 'Gross' : 'Net'}
-                      <CaretRight className="h-3.5 w-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuRadioGroup
-                      value={profileData.pnlDisplayMode}
-                      onValueChange={handlePnlDisplayModeChange}
-                    >
-                      <DropdownMenuRadioItem value="net">Net (after fees)</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="gross">Gross (before fees)</DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              }
-            />
-
-            <Separator />
-
-            {/* Widget Style */}
-            <SettingRow
-              icon={LayoutGrid}
-              label="Widget Style"
-              description={widgetStyle === 'glass' ? 'Glassmorphism with distinct borders' : 'Standard muted panel style'}
-              action={
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2 min-w-[120px]">
-                      {widgetStyle === 'glass' ? 'Glassmorphism' : 'Standard'}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleWidgetStyleChange('default')}>
-                      Standard
-                      {widgetStyle === 'default' && <Check className="ml-auto h-4 w-4" />}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleWidgetStyleChange('glass')}>
-                      Glassmorphism
-                      {widgetStyle === 'glass' && <Check className="ml-auto h-4 w-4" />}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              }
-            />
-
-            <Separator />
-
-            {/* Chart Edge Style */}
-            <SettingRow
-              icon={Zap}
-              label="Chart Edge Style"
-              description={chartStyle === 'sharp' ? 'Sharp angular lines following your color accent' : 'Smooth curved lines following your color accent'}
-              action={
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2 min-w-[120px]">
-                      {chartStyle === 'sharp' ? 'Sharp' : 'Smooth'}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleChartStyleChange('smooth')}>
-                      Smooth
-                      {chartStyle === 'smooth' && <Check className="ml-auto h-4 w-4" />}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleChartStyleChange('sharp')}>
-                      Sharp
-                      {chartStyle === 'sharp' && <Check className="ml-auto h-4 w-4" />}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              }
-            />
-
-            <Separator />
-
-            {/* Auto-adjust Account Date */}
-            <SettingRow
-              icon={Calendar}
-              label="Auto-adjust Account Date"
-              description="Automatically set account start date to your first trade"
-              action={
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant={profileData.autoAdjustAccountDate ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleAutoAdjustChange(!profileData.autoAdjustAccountDate)}
-                  >
-                    {profileData.autoAdjustAccountDate ? "Enabled" : "Disabled"}
-                  </Button>
-                </div>
-              }
-            />
-          </CardContent>
-        </Card>
-
-        {/* Linked Accounts */}
-        <LinkedAccounts />
-
-        {/* TradingView Webhook Integration */}
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                <Zap className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <CardTitle className="text-base">TradingView Webhook</CardTitle>
-                <CardDescription className="text-xs">Auto-import trades via TradingView alerts</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-xs text-muted-foreground">
-              Paste this URL into the TradingView alert webhook field. The secret token does not go in the URL; it goes inside the JSON message body shown below.
-            </p>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 min-w-0 rounded-lg border border-border/40 bg-muted/30 px-3 py-2 font-mono text-[11px] text-muted-foreground truncate">
-                {isLoadingWebhook ? (
-                  <Skeleton className="h-3.5 w-full" />
-                ) : webhookToken ? (
-                  `${typeof window !== 'undefined' ? window.location.origin : ''}/api/v1/import/webhook/tradingview`
-                ) : (
-                  'Loading...'
-                )}
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                className="shrink-0 h-9 w-9"
-                disabled={!webhookToken || isLoadingWebhook}
-                onClick={copyWebhookUrl}
-              >
-                {webhookCopied ? (
-                  <Check className="h-4 w-4 text-green-500" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-            <div className="flex items-center justify-between pt-1">
-              <p className="text-[10px] text-muted-foreground/60">
-                Regenerating creates a new URL and invalidates the old one.
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 text-xs shrink-0"
-                disabled={isRegeneratingWebhook}
-                onClick={regenerateWebhookToken}
-              >
-                <RefreshCw className={cn('h-3.5 w-3.5', isRegeneratingWebhook && 'animate-spin')} />
-                Regenerate
-              </Button>
-            </div>
-            <div className="space-y-2 rounded-xl border border-border/40 bg-muted/20 p-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[11px] font-semibold">TradingView alert message body</p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 gap-1 px-2 text-xs"
-                  disabled={!webhookToken || isLoadingWebhook}
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(buildTradingViewWebhookExample(webhookToken))
-                    toast.success('Webhook example copied')
-                  }}
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                  Copy JSON
-                </Button>
-              </div>
-              <pre className="overflow-x-auto rounded-lg border border-border/30 bg-background/60 p-3 text-[11px] leading-5 text-muted-foreground">
-                {buildTradingViewWebhookExample(webhookToken)}
-              </pre>
-              <p className="text-[10px] text-muted-foreground/70">
-                Required fields: `token`, `symbol`, `side`, `entry_price`, `close_price`. If `quantity`, `pnl`, `entry_time`, or `close_time` are missing, the webhook still imports but with weaker trade detail.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Account Management Section */}
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                <Shield className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <CardTitle className="text-base">Account</CardTitle>
-                <CardDescription className="text-xs">Manage your account and data</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/dashboard/data">
-                <Button variant="outline" className="gap-2">
-                  <Database className="h-4 w-4" />
-                  Data Management
-                </Button>
-              </Link>
-
-                <Button
-                variant="outline"
-                className="gap-2"
-                onClick={() => {
-                  localStorage.removeItem('tradelytix_user_data')
-                  signOut()
-                }}
-              >
-                <SignOut className="h-4 w-4" />
-                Sign Out
-              </Button>
-
-              <DestructiveButton
-                variant="outline"
-                className="gap-2"
-                onClick={() => setIsDeleteModalOpen(true)}
-              >
-                <Trash className="h-4 w-4" />
-                Delete Account
-              </DestructiveButton>
-            </div>
-          </CardContent>
-        </Card>
           </div>
         </div>
+      </div>
+    )
+  }
 
-      </motion.div>
+  const renderIntegrationsTab = () => {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-lg font-semibold text-heading-text">Integrations</h2>
+          <p className="text-xs text-muted-foreground/85">Automate trade importing using third-party alerts and webhooks</p>
+        </div>
+
+        <div className="rounded-xl border border-border/40 bg-card/45 p-6 space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+              <Webhook className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-heading-text">TradingView Webhook</h3>
+              <p className="text-xs text-muted-foreground">Auto-import trades via TradingView alerts</p>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground/85">
+            Paste this URL into the TradingView alert webhook field. The secret token does not go in the URL; it goes inside the JSON message body shown below.
+          </p>
+
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0 rounded-lg border border-border/40 bg-muted/20 px-3 py-2.5 font-mono text-[11px] text-muted-foreground truncate">
+              {isLoadingWebhook ? (
+                <Skeleton className="h-3.5 w-full" />
+              ) : webhookToken ? (
+                `${typeof window !== 'undefined' ? window.location.origin : ''}/api/v1/import/webhook/tradingview`
+              ) : (
+                'Loading...'
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0 h-9 w-9"
+              disabled={!webhookToken || isLoadingWebhook}
+              onClick={copyWebhookUrl}
+            >
+              {webhookCopied ? (
+                <Check className="h-4 w-4 text-green-500" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <p className="text-[10px] text-muted-foreground/60">
+              Regenerating creates a new URL and invalidates the old one.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 text-xs shrink-0 h-8"
+              disabled={isRegeneratingWebhook}
+              onClick={regenerateWebhookToken}
+            >
+              <RefreshCw className={cn('h-3 w-3', isRegeneratingWebhook && 'animate-spin')} />
+              Regenerate Token
+            </Button>
+          </div>
+
+          <div className="space-y-2 rounded-xl border border-border/40 bg-muted/10 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[11px] font-semibold text-heading-text">TradingView alert message body</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1 px-2 text-xs hover:bg-muted/50 font-medium"
+                disabled={!webhookToken || isLoadingWebhook}
+                onClick={async () => {
+                  await navigator.clipboard.writeText(buildTradingViewWebhookExample(webhookToken))
+                  toast.success('Webhook example copied')
+                }}
+              >
+                <Copy className="h-3.5 w-3.5" />
+                Copy JSON
+              </Button>
+            </div>
+            <pre className="overflow-x-auto rounded-lg border border-border/30 bg-background/45 p-3 text-[11px] leading-5 text-muted-foreground/90 font-mono">
+              {buildTradingViewWebhookExample(webhookToken)}
+            </pre>
+            <p className="text-[10px] text-muted-foreground/70 leading-4">
+              Required fields: <code className="text-xxs bg-muted px-1 py-0.5 rounded text-foreground font-mono">token</code>, <code className="text-xxs bg-muted px-1 py-0.5 rounded text-foreground font-mono">symbol</code>, <code className="text-xxs bg-muted px-1 py-0.5 rounded text-foreground font-mono">side</code>, <code className="text-xxs bg-muted px-1 py-0.5 rounded text-foreground font-mono">entry_price</code>, <code className="text-xxs bg-muted px-1 py-0.5 rounded text-foreground font-mono">close_price</code>. If quantity, pnl, or timestamps are missing, the import still succeeds but with reduced detail.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const renderConnectionsTab = () => {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-lg font-semibold text-heading-text">Linked Accounts</h2>
+          <p className="text-xs text-muted-foreground/85">Manage your authenticated social logins and platform connections</p>
+        </div>
+
+        <div className="rounded-xl border border-border/40 bg-card/45 p-6">
+          <LinkedAccounts plain={true} />
+        </div>
+      </div>
+    )
+  }
+
+  const renderSecurityTab = () => {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-lg font-semibold text-heading-text">Security & Data Management</h2>
+          <p className="text-xs text-muted-foreground/85">Manage your local storage cache, export data, sign out, or delete your account</p>
+        </div>
+
+        {/* Cache Management */}
+        <div className="rounded-xl border border-border/40 bg-card/45 p-6">
+          <CacheManagement plain={true} />
+        </div>
+
+        {/* Account and Data controls */}
+        <div className="rounded-xl border border-border/40 bg-card/45 p-6 space-y-6">
+          <h3 className="text-sm font-semibold text-heading-text flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Account Actions
+          </h3>
+
+          <div className="flex flex-wrap gap-3">
+            <Link href="/dashboard/data">
+              <Button variant="outline" className="gap-2 h-9 text-xs">
+                <Database className="h-4 w-4" />
+                Data Management
+              </Button>
+            </Link>
+
+            <Button
+              variant="outline"
+              className="gap-2 h-9 text-xs"
+              onClick={() => {
+                localStorage.removeItem('tradelytix_user_data')
+                signOut()
+              }}
+            >
+              <SignOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
+
+          <Separator className="border-border/30" />
+
+          {/* Danger Zone */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-semibold text-destructive uppercase tracking-wider">Danger Zone</h4>
+            <p className="text-xs text-muted-foreground/85 text-balance">
+              Permanently delete your account and all associated trading data, files, and settings. This action is irreversible.
+            </p>
+            <DestructiveButton
+              variant="outline"
+              className="gap-2 h-9 text-xs mt-1 border-destructive/30 hover:border-destructive hover:bg-destructive/10"
+              onClick={() => setIsDeleteModalOpen(true)}
+            >
+              <Trash className="h-4 w-4" />
+              Delete Account
+            </DestructiveButton>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-full max-w-7xl mx-auto py-8 px-4 sm:px-6 pb-20 md:pb-8">
+      {/* Header */}
+      <div className="mb-8">
+        <PageHeader title="Settings" className="gap-2" />
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-8 items-start">
+        {/* Sidebar Navigation */}
+        <div className="w-full md:w-64 shrink-0 flex md:flex-col overflow-x-auto md:overflow-x-visible pb-3 md:pb-0 gap-1 border-b md:border-b-0 md:border-r border-border/40 pr-0 md:pr-4 scrollbar-none">
+          {categories.map((cat) => {
+            const Icon = cat.icon
+            const isActive = activeTab === cat.id
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setActiveTab(cat.id)}
+                className={cn(
+                  "relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-nowrap md:w-full text-left shrink-0",
+                  isActive
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                )}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="activeTabIndicator"
+                    className="absolute inset-0 bg-muted/65 rounded-lg -z-10"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
+                <span className="truncate">{cat.label}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Tab Content Panel */}
+        <div className="flex-1 min-w-0 w-full">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="space-y-8"
+          >
+            {activeTab === 'profile' && renderProfileTab()}
+            {activeTab === 'preferences' && renderPreferencesTab()}
+            {activeTab === 'integrations' && renderIntegrationsTab()}
+            {activeTab === 'connections' && renderConnectionsTab()}
+            {activeTab === 'security' && renderSecurityTab()}
+          </motion.div>
+        </div>
+      </div>
 
       {/* Delete Account Modal */}
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>

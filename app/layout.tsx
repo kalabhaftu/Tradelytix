@@ -209,11 +209,13 @@ export default async function RootLayout({
 
                 // Restore accent pack
                 var accent = localStorage.getItem('accentPack') || 'classic';
-                root.classList.remove('accent-reports', 'accent-violet');
+                root.classList.remove('accent-reports', 'accent-violet', 'accent-slate');
                 if (accent === 'reports') {
                   root.classList.add('accent-reports');
                 } else if (accent === 'violet') {
                   root.classList.add('accent-violet');
+                } else if (accent === 'slate') {
+                  root.classList.add('accent-slate');
                 }
               } catch (e) {
                 document.documentElement.classList.add('dark');

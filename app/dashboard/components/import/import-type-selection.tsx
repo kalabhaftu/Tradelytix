@@ -77,8 +77,8 @@ export default function ImportTypeSelection({ selectedType, setSelectedType, set
       <div className="grid md:grid-cols-2 gap-6 h-full min-h-0 p-1">
         {/* Platform List */}
         <div className="h-full min-h-0">
-          <Command className="border border-border/30 bg-card/25 backdrop-blur-md rounded-2xl h-full shadow-lg overflow-hidden flex flex-col">
-            <div className="border-b border-border/30 bg-muted/10 shrink-0">
+          <Command className="border border-border bg-card rounded-2xl h-full shadow-sm overflow-hidden flex flex-col">
+            <div className="border-b border-border/60 bg-muted/20 shrink-0">
               <CommandInput
                 className="h-12 bg-transparent"
                 placeholder="Search platforms..."
@@ -131,11 +131,11 @@ export default function ImportTypeSelection({ selectedType, setSelectedType, set
         {/* Right Panel - Tutorial/Info */}
         <div className="h-full min-h-0">
           {selectedType !== '' && selectedPlatform && !selectedPlatform.customComponent ? (
-            <div className="h-full overflow-y-auto bg-card/10 border border-border/30 rounded-2xl p-6 backdrop-blur-md shadow-lg">
+            <div className="h-full overflow-y-auto bg-card border border-border rounded-2xl p-6 shadow-sm">
               <PlatformTutorial selectedPlatform={selectedPlatform} setIsOpen={setIsOpen} />
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-card/10 border border-border/30 rounded-2xl backdrop-blur-md shadow-lg">
+            <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-card border border-border rounded-2xl shadow-sm">
               <div className="relative mb-4">
                 <FileSpreadsheet className="h-12 w-12 text-muted-foreground/60 animate-pulse" />
                 <div className="absolute -inset-2 bg-primary/5 rounded-full blur-md" />

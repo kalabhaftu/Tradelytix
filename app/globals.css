@@ -203,6 +203,32 @@
     --chart-bullish: 255 92% 76%;
     --chart-bearish: 329 86% 70%;
   }
+
+  /* Accent Pack: Slate & Smoke */
+  .accent-slate {
+    --primary: 210 40% 98%;               /* White-ish */
+    --success: 210 40% 98%;               
+    --success-foreground: 222 33% 6%;
+    --destructive: 215 16% 47%;            /* Grey/Smoke */
+    --destructive-foreground: 0 0% 100%;
+    --chart-profit: 210 40% 98%;
+    --chart-loss: 215 16% 47%;
+    --chart-bullish: 210 40% 98%;
+    --chart-bearish: 215 16% 47%;
+  }
+
+  .dark.accent-slate,
+  .accent-slate.dark {
+    --primary: 210 40% 98%;
+    --success: 210 40% 98%;
+    --success-foreground: 222 33% 6%;
+    --destructive: 215 16% 47%;
+    --destructive-foreground: 0 0% 100%;
+    --chart-profit: 210 40% 98%;
+    --chart-loss: 215 16% 47%;
+    --chart-bullish: 210 40% 98%;
+    --chart-bearish: 215 16% 47%;
+  }
 }
 
 @layer base {
@@ -361,21 +387,6 @@ body[data-sidebar-drawer-open="true"] .mobile-bottom-nav {
 }
 
 @layer base {
-  /* Improved focus indicators for accessibility */
-  *:focus-visible {
-    @apply outline-2 outline-offset-2 outline-ring;
-  }
-
-  /* High contrast focus for interactive elements */
-  button:focus-visible,
-  [role="button"]:focus-visible,
-  a:focus-visible,
-  input:focus-visible,
-  select:focus-visible,
-  textarea:focus-visible {
-    @apply outline-2 outline-offset-2 outline-ring;
-  }
-
   body {
     @apply bg-background text-foreground;
     background-color: hsl(var(--background));

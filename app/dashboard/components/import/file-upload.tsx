@@ -157,16 +157,16 @@ export default function FileUpload({
         {...getRootProps()} 
         className={cn(
           "h-64 w-full border border-dashed rounded-2xl p-8 text-center transition-all duration-300 ease-in-out",
-          "hover:border-primary/30 group relative bg-gradient-to-br from-card/30 via-muted/5 to-transparent backdrop-blur-sm shadow-inner",
+          "hover:border-primary/30 group relative bg-card shadow-sm",
           isDragActive 
             ? "border-primary bg-primary/5 scale-[0.99] shadow-md shadow-primary/5" 
-            : "border-border/60 hover:bg-muted/10",
+            : "border-border hover:bg-muted/5",
           "cursor-pointer flex items-center justify-center"
         )}
       >
         <input {...getInputProps()} />
         <div className="flex flex-col items-center gap-3.5">
-          <div className="relative p-3 rounded-2xl bg-background/50 border border-border/40 group-hover:scale-105 group-hover:border-primary/25 transition-all duration-300 shadow-sm">
+          <div className="relative p-3 rounded-2xl bg-muted border border-border group-hover:scale-105 group-hover:border-primary/25 transition-all duration-300 shadow-sm">
             <ArrowUpCircle 
               className={cn(
                 "h-10 w-10 transition-all duration-300",
@@ -206,7 +206,7 @@ export default function FileUpload({
               <div 
                 key={index} 
                 className={cn(
-                  "flex items-center justify-between border border-border/30 bg-card/40 backdrop-blur-sm rounded-xl p-3 hover:border-primary/20",
+                  "flex items-center justify-between border border-border bg-card rounded-xl p-3 hover:border-primary/20",
                   "transition-all duration-200 ease-in-out",
                   "animate-in slide-in-from-bottom fade-in",
                   "group"
@@ -214,7 +214,7 @@ export default function FileUpload({
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <div className="flex items-center space-x-3 min-w-0">
-                  <div className="bg-background/80 p-2 rounded-lg border border-border/50 group-hover:scale-102 transition-transform">
+                  <div className="bg-muted p-2 rounded-lg border border-border group-hover:scale-102 transition-transform">
                     <File className="h-4 w-4 text-foreground/70" />
                   </div>
                   <div className="flex flex-col min-w-0">
@@ -246,7 +246,7 @@ export default function FileUpload({
       )}
 
       {uploadedFiles.length > 0 && (
-        <div className="flex items-start gap-3 bg-muted/20 border border-border/30 p-3.5 rounded-xl text-xs text-muted-foreground w-full animate-in slide-in-from-bottom-5">
+        <div className="flex items-start gap-3 bg-muted/40 border border-border p-3.5 rounded-xl text-xs text-muted-foreground w-full animate-in slide-in-from-bottom-5">
           <AlertCircle className="h-4 w-4 text-muted-foreground/80 shrink-0 mt-0.5" />
           <p className="leading-relaxed">
             Note: All uploaded files will be concatenated and processed using the selected import type configuration.

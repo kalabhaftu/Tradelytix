@@ -191,7 +191,7 @@ export default function AccountSelection({
 
       {accounts.length === 0 ? (
         <div className="flex-1 flex items-center justify-center p-4">
-          <Card className="p-8 text-center max-w-md bg-card/40 border-border/40 backdrop-blur-sm rounded-2xl shadow-lg">
+          <Card className="p-8 text-center max-w-md bg-card border border-border rounded-2xl shadow-sm">
             <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground mb-3 animate-pulse" />
             <h3 className="text-base font-semibold mb-1">
               {hasError ? "Failed to Fetch Accounts" : "No Accounts Found"}
@@ -231,7 +231,7 @@ export default function AccountSelection({
                     "p-5 cursor-pointer hover:border-primary/30 hover:bg-muted/10 hover:scale-[1.015] hover:shadow-md transition-all duration-200 relative group flex flex-col justify-between rounded-2xl border",
                     isSelected 
                       ? "border-primary bg-primary/5 shadow-md shadow-primary/5 ring-1 ring-primary/20 scale-[1.015]" 
-                      : "border-border/40 bg-card/40 backdrop-blur-sm"
+                      : "border-border bg-card"
                   )}
                   onClick={() => {
                     setAccountNumber(account.number)
@@ -268,7 +268,6 @@ export default function AccountSelection({
                         {isSelected ? (
                           <div className="relative">
                             <CheckCircle2 className="h-5 w-5 text-primary relative z-10" />
-                            <div className="absolute -inset-1 bg-primary/20 rounded-full blur-sm animate-pulse" />
                           </div>
                         ) : (
                           <div className="h-5 w-5 rounded-full border border-border/40 group-hover:border-primary/30 transition-colors" />

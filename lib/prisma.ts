@@ -24,7 +24,7 @@ function isSupabasePoolerUrl(url: URL) {
 }
 
 function getConnectionLimit() {
-  return process.env.PRISMA_CONNECTION_LIMIT || (process.env.NODE_ENV === 'production' ? '1' : '2')
+  return process.env.PRISMA_CONNECTION_LIMIT || (process.env.NODE_ENV === 'production' ? '5' : '2')
 }
 
 function buildDatabaseUrl(): string {

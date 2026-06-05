@@ -83,13 +83,13 @@ const DayCell = memo(function DayCell({
           : "min-h-[48px] md:min-h-[60px] lg:min-h-[68px] cursor-pointer",
 
         // No trades — uses theme tokens so it works in any color scheme
-        !hasTrades && isCurrentMonth && "bg-[#0c0e12]/40 border-border/20 hover:border-border/40",
+        !hasTrades && isCurrentMonth && "bg-muted/30 dark:bg-[#0c0e12]/40 border-border/20 hover:border-border/40",
 
         // Profit — green tint via CSS token
-        hasTrades && isProfit && "bg-long/15 border-long/35 hover:bg-long/25 hover:border-long/55 text-long",
+        hasTrades && isProfit && "bg-long/10 border-long/20 hover:bg-long/20 hover:border-long/30 dark:bg-long/20 dark:border-long/35 dark:hover:bg-long/30 dark:hover:border-long/50",
 
         // Loss — red tint via CSS token
-        hasTrades && isLoss && "bg-short/15 border-short/35 hover:bg-short/25 hover:border-short/55 text-short",
+        hasTrades && isLoss && "bg-short/10 border-short/20 hover:bg-short/20 hover:border-short/30 dark:bg-short/20 dark:border-short/35 dark:hover:bg-short/30 dark:hover:border-short/50",
 
         // Breakeven — neutral muted tint
         hasTrades && isBreakEven && "bg-muted/40 border border-muted/50 text-foreground hover:bg-muted/50",
@@ -107,9 +107,9 @@ const DayCell = memo(function DayCell({
           "absolute top-2 left-2 h-3.5 w-3.5",
           hasTrades
             ? isProfit 
-              ? "text-long/70" 
+              ? "text-long/70 dark:text-white/70" 
               : isLoss 
-                ? "text-short/70" 
+                ? "text-short/70 dark:text-white/70" 
                 : "text-muted-foreground/85"
             : "text-muted-foreground/60"
         )} />
@@ -129,7 +129,11 @@ const DayCell = memo(function DayCell({
             isTodayDate && isCurrentMonth
               ? "text-primary-foreground bg-primary rounded-full w-5 h-5 md:w-6 md:h-6 flex items-center justify-center text-[10px] md:text-xs"
               : hasTrades
-                ? "text-white/90"
+                ? isProfit 
+                  ? "text-long/80 dark:text-white/60" 
+                  : isLoss 
+                    ? "text-short/80 dark:text-white/60" 
+                    : "text-white/60"
                 : "text-foreground/80",
           )}
         >
@@ -141,7 +145,7 @@ const DayCell = memo(function DayCell({
           <span
             className={cn(
               "text-[9px] md:text-[10px] font-bold mt-0.5 leading-none",
-              isProfit ? "text-long" : isLoss ? "text-short" : "text-muted-foreground"
+              isProfit ? "text-long dark:text-long" : isLoss ? "text-short dark:text-short" : "text-muted-foreground"
             )}
           >
             {dayData && dayData.pnl !== undefined && formatValue(dayData.pnl, { kind: 'money', compact: true, rValue: dayData.dailyRMultiple ?? null, emptyLabel: '$0' })}
@@ -163,8 +167,8 @@ const DayCell = memo(function DayCell({
             isTodayDate
               ? "text-primary-foreground bg-primary rounded-full w-5 h-5 flex items-center justify-center text-[10px]"
               : hasTrades
-                ? "text-white/60 text-[11px]"
-                : "text-muted-foreground/60 text-[11px]",
+                ? "text-foreground/50 dark:text-white/50 text-[11px]"
+                : "text-muted-foreground/75 dark:text-muted-foreground/50 text-[11px]",
           )}
         >
           {format(date, 'd')}
@@ -190,9 +194,9 @@ const DayCell = memo(function DayCell({
               "font-semibold leading-none text-[10px] md:text-[11px] mt-0.5",
               hasTrades
                 ? isProfit 
-                  ? "text-long/80" 
+                  ? "text-long/60 dark:text-white/60" 
                   : isLoss 
-                    ? "text-short/80" 
+                    ? "text-short/60 dark:text-white/60" 
                     : "text-muted-foreground/85"
                 : "text-muted-foreground/80"
             )}>
@@ -208,9 +212,9 @@ const DayCell = memo(function DayCell({
                   "text-[9px] md:text-[10px] font-medium whitespace-nowrap",
                   hasTrades
                     ? isProfit 
-                      ? "text-long/85" 
+                      ? "text-long dark:text-long" 
                       : isLoss 
-                        ? "text-short/85" 
+                        ? "text-short dark:text-short" 
                         : "text-foreground"
                     : "text-foreground"
                 )}>
@@ -222,9 +226,9 @@ const DayCell = memo(function DayCell({
                   "text-[9px] md:text-[10px] font-medium whitespace-nowrap",
                   hasTrades
                     ? isProfit 
-                      ? "text-long/85" 
+                      ? "text-long dark:text-long" 
                       : isLoss 
-                        ? "text-short/85" 
+                        ? "text-short dark:text-short" 
                         : "text-foreground"
                     : "text-foreground"
                 )}>
@@ -279,7 +283,7 @@ function WeeklySummary({
     <div
       className={cn(
         "flex h-full min-h-[48px] md:min-h-[60px] flex-col items-start justify-center rounded-xl border p-2.5 cursor-pointer transition-all hover:bg-muted/20 group lg:min-h-[68px]",
-        "bg-[#0c0e12]/60 border-border/20 shadow-md"
+        "bg-card/40 dark:bg-[#0c0e12]/60 border-border/20 shadow-md"
       )}
       onClick={() => onReviewWeek?.(weekDays[0])}
     >
@@ -292,15 +296,15 @@ function WeeklySummary({
           stats.tradedDays === 0
             ? "text-muted-foreground/45"
             : isPositive
-              ? "text-emerald-400"
-              : "text-rose-400",
+              ? "text-long"
+              : "text-short",
         )}
       >
         {stats.tradedDays === 0 ? "$0.00" : formatValue(stats.pnl, { kind: 'money', compact: false, emptyLabel: '$0.00' })}
       </span>
       <div className={cn(
         "text-[9px] font-black mt-2 px-2 py-0.5 rounded-full",
-        "bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 shadow-sm"
+        "bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/25 shadow-sm"
       )}>
         {stats.tradedDays} {stats.tradedDays === 1 ? 'day' : 'days'}
       </div>

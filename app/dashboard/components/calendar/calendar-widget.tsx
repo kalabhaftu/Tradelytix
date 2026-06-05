@@ -23,6 +23,12 @@ import { useWidgetData } from "@/hooks/use-widget-data"
 import { CalendarData } from "@/app/dashboard/types/calendar"
 import { WidgetCard } from "../widget-card"
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
   type CalendarGradientPresetId,
   CALENDAR_GRADIENT_PRESETS,
   clipCalendarCardSurface,
@@ -267,13 +273,13 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         className={cn(
           "flex h-6 shrink-0 items-center rounded-full border px-2 text-[10px] font-bold shadow-sm",
           isPositive 
-            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400" 
-            : "border-rose-500/20 bg-rose-500/10 text-rose-400"
+            ? "bg-long/10 text-long border-long/20 dark:bg-long/20 dark:text-long dark:border-long/30" 
+            : "bg-short/10 text-short border-short/20 dark:bg-short/20 dark:text-short dark:border-short/30"
         )}
       >
         {formatFullCurrency(displayTotal)}
       </div>
-      <div className="flex h-6 shrink-0 items-center rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2 text-[10px] font-bold text-indigo-300 shadow-sm">
+      <div className="flex h-6 shrink-0 items-center rounded-full border bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-500/20 px-2 text-[10px] font-bold shadow-sm">
         {tradedDaysCount}d
       </div>
       {headerControls}
@@ -367,11 +373,13 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
                 </span>
                 <span className={cn(
                   "px-2.5 py-0.5 rounded-full font-extrabold text-xs shadow-inner",
-                  isPositive ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25" : "bg-rose-500/15 text-rose-400 border border-rose-500/25"
+                  isPositive 
+                    ? "bg-long/10 text-long border border-long/25 dark:bg-long/20 dark:text-long dark:border-long/30" 
+                    : "bg-short/10 text-short border border-short/25 dark:bg-short/20 dark:text-short dark:border-short/30"
                 )}>
                   {formatFullCurrency(displayTotal)}
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 font-extrabold text-xs shadow-inner">
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/25 font-extrabold text-xs shadow-inner">
                   {tradedDaysCount} {tradedDaysCount === 1 ? 'day' : 'days'}
                 </span>
                 
@@ -379,15 +387,18 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
                 
                 <div className="flex items-center gap-1.5">
                   <CalendarSettings />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 p-0 hover:bg-primary/5 hover:text-primary transition-all rounded-md"
-                    onClick={() => toast.info("Advanced calendar displays trades, R-Multiple, and Winrate.")}
-                    title="Calendar Information"
-                  >
-                    <Info className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-foreground" />
-                  </Button>
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-help h-6 w-6 flex items-center justify-center rounded-md hover:bg-primary/5 hover:text-primary transition-colors shrink-0">
+                          <Info className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-muted-foreground" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" sideOffset={5} className="max-w-[240px] text-xs py-1.5 px-2.5 bg-popover/95 backdrop-blur-sm border border-border/30 shadow-md">
+                        <p className="font-medium text-foreground">Displays daily and weekly trade performance statistics, net P&L, traded days, win rate, and R-Multiple.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
 

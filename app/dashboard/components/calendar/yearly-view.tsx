@@ -78,9 +78,9 @@ function MiniMonth({
             className={cn(
               "text-[10px] font-black px-2 py-0.5 rounded-full border shadow-sm",
               classifyOutcome(stats.pnl, breakEvenThreshold) === 'win'
-                ? "bg-emerald-500/15 border-emerald-500/25 text-emerald-400"
+                ? "bg-long/10 border-long/20 text-long dark:bg-long/20 dark:text-long dark:border-long/30"
                 : classifyOutcome(stats.pnl, breakEvenThreshold) === 'loss'
-                  ? "bg-rose-500/15 border-rose-500/25 text-rose-400"
+                  ? "bg-short/10 border-short/20 text-short dark:bg-short/20 dark:text-short dark:border-short/30"
                   : "bg-muted/35 border-border/30 text-muted-foreground",
             )}
           >
@@ -122,17 +122,17 @@ function MiniMonth({
                       // No trades
                       isCurrentMonth &&
                         !hasTrades &&
-                        "bg-[#0c0e12]/40 border-transparent text-muted-foreground/20",
+                        "bg-muted/30 dark:bg-[#0c0e12]/40 border-transparent text-muted-foreground/40 dark:text-muted-foreground/20",
 
                       // Profit — green
                       hasTrades &&
                         classifyOutcome(data.pnl, breakEvenThreshold) === 'win' &&
-                        "bg-long/15 border-long/35 text-long",
+                        "bg-long/10 border-long/20 dark:bg-long/20 dark:border-long/35 text-long dark:text-slate-200",
 
                       // Loss — red/orange
                       hasTrades &&
                         classifyOutcome(data.pnl, breakEvenThreshold) === 'loss' &&
-                        "bg-short/15 border-short/35 text-short",
+                        "bg-short/10 border-short/20 dark:bg-short/20 dark:border-short/35 text-short dark:text-slate-200",
 
                       // Breakeven
                       hasTrades &&
@@ -170,9 +170,9 @@ function MiniMonth({
                           !hasTrades
                             ? "text-muted-foreground/50"
                             : classifyOutcome(data.pnl, breakEvenThreshold) === 'win'
-                              ? "text-emerald-400"
+                              ? "text-long"
                               : classifyOutcome(data.pnl, breakEvenThreshold) === 'loss'
-                                ? "text-rose-400"
+                                ? "text-short"
                                 : "text-muted-foreground",
                         )}
                       >

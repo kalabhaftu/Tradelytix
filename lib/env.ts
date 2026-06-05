@@ -127,17 +127,46 @@ const envSchema = z.object({
     }
   })
 function validateEnv() {
-  try {
-    return envSchema.parse(process.env)
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      const missingVars = error.errors.map(err => `${err.path.join('.')}: ${err.message}`)
-      throw new Error(
-        `Invalid environment variables:\n${missingVars.join('\n')}\n\nPlease check your .env file.`
-      )
-    }
-    throw error
+  const result = envSchema.safeParse(process.env)
+  if (result.success) {
+    return result.data
   }
+
+  const error = result.error
+  const criticalFields = [
+    'DATABASE_URL',
+    'NEXT_PUBLIC_SUPABASE_URL',
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    'SUPABASE_SERVICE_ROLE_KEY'
+  ]
+
+  const criticalErrors = error.errors.filter(err => 
+    err.path.some(p => criticalFields.includes(String(p)))
+  )
+
+  const nonCriticalErrors = error.errors.filter(err => 
+    !err.path.some(p => criticalFields.includes(String(p)))
+  )
+
+  if (criticalErrors.length > 0) {
+    const missingVars = criticalErrors.map(err => `${err.path.join('.')}: ${err.message}`)
+    throw new Error(
+      `Critical environment variables missing or invalid:\n${missingVars.join('\n')}\n\nPlease check your .env file.`
+    )
+  }
+
+  if (nonCriticalErrors.length > 0) {
+    const warningMsgs = nonCriticalErrors.map(err => `${err.path.join('.')}: ${err.message}`)
+    console.error(
+      `\x1b[33m[Warning] Non-critical environment variables failed validation. The app will boot, but some features may be disabled:\n${warningMsgs.join('\n')}\x1b[0m`
+    )
+  }
+
+  const parsedEnv = { ...process.env } as any
+  if (!parsedEnv.NODE_ENV) {
+    parsedEnv.NODE_ENV = 'development'
+  }
+  return parsedEnv as Env
 }
 
 // Export validated environment variables

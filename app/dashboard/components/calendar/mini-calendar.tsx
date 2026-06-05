@@ -13,6 +13,7 @@ import html2canvas from 'html2canvas'
 import { toast } from "sonner"
 import { WidgetCard } from '../widget-card'
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { CalendarData } from "@/app/dashboard/types/calendar"
 import { useData } from "@/context/data-provider"
 import { useDashboardDisplay } from "@/hooks/use-dashboard-display"
@@ -208,13 +209,15 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
 
           {/* Right: stats + snapshot (hidden in screenshot) */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <div className={
-              "px-1.5 py-0.5 rounded border text-[10px] font-black " +
-              (isPositive ? "bg-long/10 border-long/20 text-long" : "bg-short/10 border-short/20 text-short")
-            }>
+            <div className={cn(
+              "px-1.5 py-0.5 rounded border text-[10px] font-black",
+              isPositive 
+                ? "bg-long/10 text-long border-long/20 dark:bg-long/20 dark:text-long dark:border-long/30" 
+                : "bg-short/10 text-short border-short/20 dark:bg-short/20 dark:text-short dark:border-short/30"
+            )}>
               {formatValue(displayTotal, { kind: 'money', compact: true, emptyLabel: '$0' })}
             </div>
-            <div className="px-1.5 py-0.5 rounded bg-chart-4/10 border border-chart-4/20 text-chart-4 text-[10px] font-black">
+            <div className="px-1.5 py-0.5 rounded text-[10px] font-black bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-500/20">
               {tradedDaysCount}d
             </div>
             {/* Screenshot dropdown — icon only, hidden in screenshot */}

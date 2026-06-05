@@ -5,6 +5,38 @@ import { cn } from '@/lib/utils'
 import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { inferMetricKind } from '@/lib/dashboard/display-mode'
 import { useTheme } from '@/context/theme-provider'
+import { Info } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+
+function getWidgetDescription(title: string): string | null {
+  const t = title.toUpperCase().trim()
+  if (t.includes('BALANCE')) return 'Historical cumulative account balance over time, showing overall capital growth.'
+  if (t.includes('RECENT TRADES')) return 'A list of your most recent trades including date, symbol, and net P&L.'
+  if (t.includes('TAG PERFORMANCE')) return 'Visualizes trading performance grouped by user tags to identify profitable behaviors.'
+  if (t.includes('TIME OF DAY') || t.includes('TIME-OF-DAY')) return 'Performance analysis grouped by hour of the day to identify peak trading windows.'
+  if (t.includes('DISCIPLINE')) return 'Tracks trading execution discipline based on playbook and rule compliance.'
+  if (t.includes('CUMULATIVE P') || t.includes('CUMULATIVE EQUITY') || t.includes('EQUITY CURVE')) {
+    return 'Cumulative net P&L plotted chronologically to visualize equity curve progress.'
+  }
+  if (t.includes('DAY OF WEEK') || t.includes('WEEKDAY')) return 'Weekday-specific trading performance breakdown.'
+  if (t.includes('DRAWDOWN')) return 'Visualizes equity drawdown percentages over time to monitor risk and capital preservation.'
+  if (t.includes('NET DAILY')) return 'Shows daily net profits and losses chronologically.'
+  if (t.includes('OUTCOME DISTRIBUTION')) return 'Histogram showing the distribution of winning vs losing trade sizes.'
+  if (t.includes('PERFORMANCE SCORE')) return 'A rating metric analyzing trading consistency, risk management, and profit factor.'
+  if (t.includes('PERFORMANCE')) return 'High-level dashboard overview of profit factor, win rates, and averages.'
+  if (t.includes('INSTRUMENT')) return 'Performance analysis grouped by instrument or ticker symbol.'
+  if (t.includes('STRATEGY')) return 'Net P&L performance broken down by individual strategies to evaluate strategy edge.'
+  if (t.includes('DURATION')) return 'Compares holding times (minutes/hours) to trade outcomes to optimize trade duration.'
+  if (t.includes('SESSION')) return 'Analyzes trade metrics grouped by market sessions (Asia, London, New York).'
+  if (t.includes('CALENDAR')) return 'Displays daily and weekly trade performance statistics, net P&L, traded days, win rate, and R-Multiple.'
+  
+  return null
+}
 
 interface WidgetCardProps {
   children: React.ReactNode
@@ -39,7 +71,7 @@ export function WidgetCard({
     return (
       <div
         className={cn(
-          'w-full h-full overflow-hidden widget-card',
+          'w-full h-full overflow-hidden widget-card group',
           isGlass
             ? 'bg-card/80 border border-border/30 rounded-2xl shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]'
             : 'bg-muted/10 border border-border/40 rounded-xl min-[1440px]:rounded-2xl',
@@ -52,10 +84,12 @@ export function WidgetCard({
     )
   }
 
+  const description = title ? getWidgetDescription(title) : null
+
   return (
     <div
       className={cn(
-        'w-full h-full overflow-hidden flex flex-col widget-card',
+        'w-full h-full overflow-hidden flex flex-col widget-card group',
         isGlass
           ? 'bg-card/80 border border-border/30 rounded-2xl shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]'
           : 'bg-muted/10 border border-border/40 rounded-xl sm:rounded-2xl',
@@ -65,10 +99,24 @@ export function WidgetCard({
     >
       {title && (
         <div className="flex items-center justify-between mb-3 sm:mb-4 flex-shrink-0">
-          <div className="flex items-center gap-1.5">
-            <h3 className="text-[9px] sm:text-[10px] uppercase font-black tracking-widest text-muted-foreground">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <h3 className="text-[9px] sm:text-[10px] uppercase font-black tracking-widest text-muted-foreground truncate">
               {title}
             </h3>
+            {description && (
+              <TooltipProvider delayDuration={100}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-help flex items-center justify-center shrink-0">
+                      <Info className="h-3 w-3 text-muted-foreground/60 hover:text-muted-foreground transition-colors" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" sideOffset={5} className="max-w-[240px] text-xs py-1.5 px-2.5 bg-popover/95 backdrop-blur-sm border border-border/30 shadow-md">
+                    <p className="font-medium text-foreground">{description}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
           {headerRight}
         </div>

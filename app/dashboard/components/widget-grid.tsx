@@ -63,6 +63,7 @@ function useGridContainerWidth() {
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { X, Plus, GripVertical } from 'lucide-react'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { WIDGET_REGISTRY } from '../config/widget-registry-lazy'
 import { useTemplateEditStore } from '@/store/template-edit-store'
 import { useTemplates } from '@/context/template-provider'
@@ -112,6 +113,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
     x?: number
     y?: number
   } | null>(null)
+  const isMobile = useIsMobile()
 
   // Ref to prevent layout save loops
   const isInternalUpdate = useRef(false)
@@ -369,19 +371,57 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
       {/* Main Grid — react-grid-layout */}
       {/* The ref div MUST always be in the DOM so ResizeObserver can measure width */}
       <div className="px-2" ref={gridContainerRef}>
-        <Responsive
-          width={containerWidth}
-          layouts={gridLayouts}
-          breakpoints={{ wide: 1440, narrow: 1024, tablet: 768, mobile: 0 }}
-          cols={{ wide: GRID_COLS, narrow: GRID_COLS, tablet: 6, mobile: 1 }}
-          rowHeight={ROW_HEIGHT}
-          margin={GRID_MARGIN}
-          containerPadding={[8, 8]}
-          dragConfig={{ enabled: isEditMode, handle: '.widget-drag-handle' }}
-          resizeConfig={{ enabled: isEditMode, handles: ['s', 'w', 'e', 'n', 'sw', 'nw', 'se', 'ne'] }}
-          compactor={verticalCompactor}
-          onLayoutChange={handleLayoutChange as any}
-        >
+        {isMobile ? (
+          <div className="flex flex-col gap-4 pb-4">
+            {gridWidgets.map(widget => {
+              const config = WIDGET_REGISTRY[widget.type as WidgetType]
+              if (!config) return null
+
+              const widgetHeight = widget.h * ROW_HEIGHT + (widget.h - 1) * GRID_MARGIN[1]
+
+              return (
+                <div 
+                  key={widget.i} 
+                  data-is-chart={config.category === 'charts'} 
+                  className={cn("group flex flex-col", isEditMode && "ring-1 ring-border/30 ring-inset rounded-2xl transition-all mb-4")}
+                  style={{ height: widgetHeight }}
+                >
+                  <div className="relative w-full flex-1 flex flex-col">
+                    {/* Edit mode overlay controls */}
+                    {isEditMode && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2 h-6 w-6 rounded-full p-0 shadow-md z-10"
+                        onClick={() => handleRemoveWidget(widget.i)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+
+                    {/* Widget content */}
+                    <div className="w-full flex-1 overflow-hidden flex flex-col">
+                      {config.getComponent({ size: widget.size as any })}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <Responsive
+            width={containerWidth}
+            layouts={gridLayouts}
+            breakpoints={{ wide: 1440, narrow: 1024, tablet: 768, mobile: 0 }}
+            cols={{ wide: GRID_COLS, narrow: GRID_COLS, tablet: 6, mobile: 1 }}
+            rowHeight={ROW_HEIGHT}
+            margin={GRID_MARGIN}
+            containerPadding={[8, 8]}
+            dragConfig={{ enabled: isEditMode, handle: '.widget-drag-handle' }}
+            resizeConfig={{ enabled: isEditMode, handles: ['s', 'w', 'e', 'n', 'sw', 'nw', 'se', 'ne'] }}
+            compactor={verticalCompactor}
+            onLayoutChange={handleLayoutChange as any}
+          >
           {gridWidgets.map(widget => {
             const config = WIDGET_REGISTRY[widget.type as WidgetType]
             if (!config) return null
@@ -423,7 +463,8 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
               </div>
             )
           })}
-        </Responsive>
+          </Responsive>
+        )}
       </div>
 
       {/* Add new widget button at bottom in edit mode */}

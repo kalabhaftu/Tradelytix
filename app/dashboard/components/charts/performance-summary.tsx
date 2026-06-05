@@ -155,13 +155,13 @@ export default function PerformanceSummaryWidget() {
             {topStrategies.length === 0 ? (
               <p className="px-3 py-8 text-center text-xs text-muted-foreground">No strategy data yet</p>
             ) : topStrategies.map((strategy: any) => (
-              <div key={strategy.strategy} className="grid grid-cols-[minmax(0,1fr)_86px_56px] items-center gap-3 px-3 py-2">
+              <div key={strategy.strategy} className="grid grid-cols-[minmax(0,1fr)_max-content_max-content] sm:grid-cols-[minmax(0,1fr)_86px_56px] items-center gap-2 sm:gap-3 px-3 py-2">
                 <div className="min-w-0">
                   <p className="truncate text-xs font-bold">{strategy.strategy}</p>
                   <p className="text-[10px] text-muted-foreground">{strategy.trades} trades / {Number(strategy.profitFactor || 0).toFixed(2)} PF</p>
                 </div>
-                <p className={cn('text-right font-mono text-xs font-black', strategy.pnl >= 0 ? 'text-long' : 'text-short')}>{formatValue(strategy.pnl || 0, { kind: 'money' })}</p>
-                <p className="text-right font-mono text-xs font-bold">{Number(strategy.winRate || 0).toFixed(0)}%</p>
+                <p className={cn('text-right font-mono text-[10px] sm:text-xs font-black', strategy.pnl >= 0 ? 'text-long' : 'text-short')}>{formatValue(strategy.pnl || 0, { kind: 'money' })}</p>
+                <p className="text-right font-mono text-[10px] sm:text-xs font-bold">{Number(strategy.winRate || 0).toFixed(0)}%</p>
               </div>
             ))}
           </div>

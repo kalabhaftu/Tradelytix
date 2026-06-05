@@ -116,7 +116,7 @@ export function TradeTableMobileCard({
             </p>
           </div>
         </div>
-        <div className="text-right">
+        <div className="text-right shrink-0">
           <div className={cn(
             "font-bold text-lg",
             isProfitable ? "text-long" : "text-short"

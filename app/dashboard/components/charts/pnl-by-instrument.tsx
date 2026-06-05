@@ -192,85 +192,87 @@ export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrument
   // ---------------------------------------------------------------------------
   return (
     <WidgetCard title="P/L by Instrument">
-                  <ResponsiveContainer width="100%" height="100%">
-            <AnyBarChart
-              data={normalizedChartData}
-              margin={{ top: 20, right: 20, left: 10, bottom: labelMetrics.bottomMargin }}
-              barGap={4}
+      <div className="w-full h-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AnyBarChart
+            data={normalizedChartData}
+            margin={{ top: 20, right: 20, left: 10, bottom: labelMetrics.bottomMargin }}
+            barGap={4}
+          >
+            {/* Subtle Grid - Horizontal Only */}
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke={COLORS.grid}
+              strokeOpacity={CHART_CONFIG.gridOpacity}
+              vertical={false}
+            />
+
+            {/* X Axis - Instruments */}
+            <XAxis
+              dataKey="instrument"
+              stroke={COLORS.axis}
+              fontSize={labelMetrics.tickFontSize}
+              tickLine={false}
+              axisLine={false}
+              tickMargin={labelMetrics.crowded ? 12 : 8}
+              minTickGap={0}
+              interval={0}
+              angle={labelMetrics.xAxisAngle}
+              textAnchor={labelMetrics.textAnchor}
+              height={labelMetrics.xAxisHeight}
+              tickFormatter={(value) => String(value ?? '').trim()}
+              allowDuplicatedCategory
+            />
+
+            {/* Y Axis - Currency */}
+            <YAxis
+              tickFormatter={formatAxisValue}
+              stroke={COLORS.axis}
+              fontSize={isCompact ? 10 : 11}
+              tickLine={false}
+              axisLine={false}
+              width={50}
+              domain={yDomain}
+              ticks={yTicks}
+            />
+
+            {/* Zero Reference Line */}
+            <ReferenceLine
+              y={0}
+              stroke={COLORS.axis}
+              strokeDasharray="3 3"
+              strokeOpacity={CHART_CONFIG.referenceLineOpacity}
+            />
+
+            {/* Tooltip */}
+            <RechartsTooltip
+              content={<SharedChartTooltip />}
+              cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
+            />
+
+            {/* Bars with Rounded Tops */}
+            <Bar
+              dataKey="pnl"
+              radius={CHART_CONFIG.barRadius}
+              maxBarSize={labelMetrics.maxBarSize}
+              barSize={labelMetrics.crowded ? 22 : 30}
             >
-              {/* Subtle Grid - Horizontal Only */}
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke={COLORS.grid}
-                strokeOpacity={CHART_CONFIG.gridOpacity}
-                vertical={false}
-              />
-
-              {/* X Axis - Instruments */}
-              <XAxis
-                dataKey="instrument"
-                stroke={COLORS.axis}
-                fontSize={labelMetrics.tickFontSize}
-                tickLine={false}
-                axisLine={false}
-                tickMargin={labelMetrics.crowded ? 12 : 8}
-                minTickGap={0}
-                interval={0}
-                angle={labelMetrics.xAxisAngle}
-                textAnchor={labelMetrics.textAnchor}
-                height={labelMetrics.xAxisHeight}
-                tickFormatter={(value) => String(value ?? '').trim()}
-                allowDuplicatedCategory
-              />
-
-              {/* Y Axis - Currency */}
-              <YAxis
-                tickFormatter={formatAxisValue}
-                stroke={COLORS.axis}
-                fontSize={isCompact ? 10 : 11}
-                tickLine={false}
-                axisLine={false}
-                width={50}
-                domain={yDomain}
-                ticks={yTicks}
-              />
-
-              {/* Zero Reference Line */}
-              <ReferenceLine
-                y={0}
-                stroke={COLORS.axis}
-                strokeDasharray="3 3"
-                strokeOpacity={CHART_CONFIG.referenceLineOpacity}
-              />
-
-              {/* Tooltip */}
-              <RechartsTooltip
-                content={<SharedChartTooltip />}
-                cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
-              />
-
-              {/* Bars with Rounded Tops */}
-              <Bar
-                dataKey="pnl"
-                radius={CHART_CONFIG.barRadius}
-                maxBarSize={labelMetrics.maxBarSize}
-                barSize={labelMetrics.crowded ? 22 : 30}
-              >
-                {normalizedChartData.map((entry: any, index: number) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={
-                      classifyOutcome(entry.pnl, breakEvenThreshold) === 'win'
-                        ? COLORS.profit
-                        : classifyOutcome(entry.pnl, breakEvenThreshold) === 'loss'
-                          ? COLORS.loss
-                          : 'hsl(var(--muted-foreground)/0.4)'
-                    }
-                  />
-                ))}
-              </Bar>
-            </AnyBarChart>
-          </ResponsiveContainer>
+              {normalizedChartData.map((entry: any, index: number) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={
+                    classifyOutcome(entry.pnl, breakEvenThreshold) === 'win'
+                      ? COLORS.profit
+                      : classifyOutcome(entry.pnl, breakEvenThreshold) === 'loss'
+                        ? COLORS.loss
+                        : 'hsl(var(--muted-foreground)/0.4)'
+                  }
+                />
+              ))}
+            </Bar>
+          </AnyBarChart>
+        </ResponsiveContainer>
+      </div>
     </WidgetCard>
   )
 }

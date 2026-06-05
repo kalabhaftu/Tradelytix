@@ -158,7 +158,8 @@ function AccountBalanceChart({ size = 'small-long' }: AccountBalanceChartProps) 
   // ---------------------------------------------------------------------------
   return (
     <WidgetCard title="Account Balance">
-                  <ResponsiveContainer width="100%" height="100%">
+      <div className="w-full h-full">
+        <ResponsiveContainer width="100%" height="100%">
             <AnyLineChart
               data={chartData}
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
@@ -221,7 +222,8 @@ function AccountBalanceChart({ size = 'small-long' }: AccountBalanceChartProps) 
                 }}
               />
             </AnyLineChart>
-          </ResponsiveContainer>
+        </ResponsiveContainer>
+      </div>
     </WidgetCard>
   )
 }

@@ -138,6 +138,7 @@ type TradeFormData = z.infer<typeof tradeFormSchema>
 interface ManualTradeFormProps {
   setIsOpen?: React.Dispatch<React.SetStateAction<boolean>>
   onClose?: () => void
+  onBack?: () => void
 }
 
 type Step = 1 | 2 | 3 | 4 | 5
@@ -152,7 +153,7 @@ const stepInfo = [
   { step: 5, title: 'Review', icon: ShieldCheck },
 ]
 
-export default function ManualTradeForm({ setIsOpen, onClose }: ManualTradeFormProps) {
+export default function ManualTradeForm({ setIsOpen, onClose, onBack }: ManualTradeFormProps) {
   const handleClose = () => {
     if (onClose) onClose();
     else if (setIsOpen) setIsOpen(false);
@@ -868,13 +869,25 @@ export default function ManualTradeForm({ setIsOpen, onClose }: ManualTradeFormP
       {/* Footer */}
       <div className="flex-none border-t p-4">
         <div className="flex justify-between items-center">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleClose}
-          >
-            Cancel
-          </Button>
+          {currentStep === 1 && onBack ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onBack}
+              className="gap-1.5"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back to Platforms
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+            >
+              Cancel
+            </Button>
+          )}
 
           <div className="flex items-center gap-3">
             {currentStep > 1 && (

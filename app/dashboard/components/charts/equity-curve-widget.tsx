@@ -46,8 +46,8 @@ export default function EquityCurveWidget() {
   }
 
   const isSharp = chartStyle === 'sharp'
-  const strokeVal = isSharp ? 'hsl(var(--primary))' : 'url(#equityStrokeGrad)'
-  const fillVal = isSharp ? 'url(#equityAccentGrad)' : 'url(#equityFillGrad)'
+  const strokeVal = 'url(#equityStrokeGrad)'
+  const fillVal = 'url(#equityFillGrad)'
   const curveType = isSharp ? 'linear' : 'monotone'
 
   return (
@@ -67,11 +67,6 @@ export default function EquityCurveWidget() {
             <linearGradient id="equityStrokeGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset={`${gradientOffset * 100}%`} stopColor={COLORS.bullish} />
               <stop offset={`${gradientOffset * 100}%`} stopColor={COLORS.bearish} />
-            </linearGradient>
-            {/* Dynamic accent gradient for sharp mode */}
-            <linearGradient id="equityAccentGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
-              <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.03} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border)/0.15)" vertical={false} />

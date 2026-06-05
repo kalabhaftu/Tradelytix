@@ -115,13 +115,11 @@ export default function ColumnMapping({ headers, csvData, mappings, setMappings,
     <div className="h-full flex flex-col gap-4">
       <div className="flex-none space-y-3">
         {getRemainingFieldsToMap().length > 0 && (
-          <div className="bg-warning/5 border border-warning/20 backdrop-blur-md p-4 rounded-xl relative overflow-hidden transition-all duration-300" role="alert">
-            <div className="absolute inset-0 bg-gradient-to-r from-warning/10 via-transparent to-transparent pointer-events-none" />
+          <div className="bg-warning/10 border border-warning/25 p-4 rounded-xl relative overflow-hidden transition-all duration-300" role="alert">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
               <div className="flex items-start gap-3">
                 <div className="relative mt-0.5">
-                  <Sparkles className="h-5 w-5 text-warning animate-pulse" />
-                  <div className="absolute -inset-1 bg-warning/30 rounded-full blur-sm opacity-50 animate-ping" />
+                  <Sparkles className="h-5 w-5 text-warning" />
                 </div>
                 <div>
                   <p className="font-semibold text-foreground text-sm">Unmapped Fields Remaining</p>
@@ -193,8 +191,8 @@ export default function ColumnMapping({ headers, csvData, mappings, setMappings,
           ))}
         </div>
       </div>
-
-      <div className="flex-1 min-h-0 overflow-auto border border-border/40 rounded-xl bg-card/50 backdrop-blur-sm">
+ 
+      <div className="flex-1 min-h-0 overflow-auto border border-border rounded-xl bg-card">
         <Table>
           <TableHeader className="bg-muted/40 sticky top-0 z-10">
             <TableRow className="hover:bg-transparent border-b border-border/40">
@@ -222,7 +220,7 @@ export default function ColumnMapping({ headers, csvData, mappings, setMappings,
                     onValueChange={(value) => handleMapping(header, value)}
                     value={mappings[header] || (isLoading ? Object.entries(object || {}).find(([_, value]) => value === header)?.[0] : "") || ""}
                   >
-                    <SelectTrigger className="w-[220px] bg-background/50 border-border/50 hover:bg-muted/50 transition-colors h-9">
+                    <SelectTrigger className="w-[220px] bg-background border-border hover:bg-muted/50 transition-colors h-9">
                       <SelectValue placeholder="Select field..." />
                     </SelectTrigger>
                     <SelectContent>

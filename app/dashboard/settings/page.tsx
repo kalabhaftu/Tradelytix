@@ -204,10 +204,10 @@ export default function SettingsPage() {
     })
   }
 
-  const handleAccentChange = (value: 'classic' | 'reports' | 'violet') => {
+  const handleAccentChange = (value: 'classic' | 'reports' | 'violet' | 'slate') => {
     setAccentPack(value)
     toast.success("Color accent updated", {
-      description: `Accent changed to ${value === 'reports' ? 'Sage & Amber' : value === 'violet' ? 'Violet & Pink' : 'Classic'}.`,
+      description: `Accent changed to ${value === 'reports' ? 'Sage & Amber' : value === 'violet' ? 'Violet & Pink' : value === 'slate' ? 'Slate & Smoke' : 'Classic'}.`,
       duration: 2000
     })
   }
@@ -889,12 +889,12 @@ export default function SettingsPage() {
              <SettingRow
                icon={Palette}
                label="Color Accent"
-               description={accentPack === 'reports' ? 'Sage & Amber' : accentPack === 'violet' ? 'Violet & Pink' : 'Classic (Red & Green)'}
+               description={accentPack === 'reports' ? 'Sage & Amber' : accentPack === 'violet' ? 'Violet & Pink' : accentPack === 'slate' ? 'Slate & Smoke' : 'Classic (Red & Green)'}
                action={
                  <DropdownMenu>
                    <DropdownMenuTrigger asChild>
                      <Button variant="outline" size="sm" className="gap-2 min-w-[120px]">
-                       {accentPack === 'reports' ? 'Sage & Amber' : accentPack === 'violet' ? 'Violet & Pink' : 'Classic'}
+                       {accentPack === 'reports' ? 'Sage & Amber' : accentPack === 'violet' ? 'Violet & Pink' : accentPack === 'slate' ? 'Slate & Smoke' : 'Classic'}
                      </Button>
                    </DropdownMenuTrigger>
                    <DropdownMenuContent align="end">
@@ -927,6 +927,16 @@ export default function SettingsPage() {
                          Violet & Pink
                        </div>
                        {accentPack === 'violet' && <Check className="ml-auto h-4 w-4" />}
+                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => handleAccentChange('slate')}>
+                       <div className="flex items-center gap-2">
+                         <div className="flex gap-1">
+                           <div className="w-3 h-3 rounded-full bg-[#f8fafc]" />
+                           <div className="w-3 h-3 rounded-full bg-[#64748b]" />
+                         </div>
+                         Slate & Smoke
+                       </div>
+                       {accentPack === 'slate' && <Check className="ml-auto h-4 w-4" />}
                      </DropdownMenuItem>
                    </DropdownMenuContent>
                  </DropdownMenu>

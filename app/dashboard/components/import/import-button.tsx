@@ -464,7 +464,7 @@ export default function ImportButton() {
     // Show saving state
     if (isSaving) {
       return (
-        <div className="flex flex-col items-center justify-center h-full gap-6 p-8 bg-background/30 backdrop-blur-sm">
+        <div className="flex flex-col items-center justify-center h-full gap-6 p-8 bg-background">
           <div className="relative">
             <motion.div
               animate={{ rotate: 360 }}
@@ -472,7 +472,6 @@ export default function ImportButton() {
             >
               <Spinner className="h-12 w-12 text-primary" />
             </motion.div>
-            <div className="absolute inset-0 bg-primary/10 rounded-full blur-md animate-pulse" />
           </div>
           <div className="text-center space-y-1">
             <h3 className="text-base font-semibold text-foreground/90">Saving Your Trades</h3>
@@ -656,7 +655,7 @@ export default function ImportButton() {
         }}
       >
         <DialogContent
-          className="flex flex-col w-full max-w-[95vw] sm:max-w-4xl h-[85vh] p-0 bg-background/95 backdrop-blur-md border border-border/40 shadow-2xl overflow-hidden gap-0 duration-200 sm:rounded-2xl rounded-none"
+          className="flex flex-col w-full max-w-[95vw] sm:max-w-4xl h-[85vh] p-0 bg-background border border-border shadow-xl overflow-hidden gap-0 duration-200 sm:rounded-2xl rounded-none"
           onOpenAutoFocus={(e) => {
             // Prevent auto-focus on mobile devices to avoid keyboard popup
             if (typeof window !== 'undefined' && window.innerWidth < 768) {

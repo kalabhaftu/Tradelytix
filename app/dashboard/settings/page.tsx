@@ -38,6 +38,7 @@ import { signOut } from "@/server/auth"
 import { useUserStore } from '@/store/user-store'
 import {
   ChevronRight as CaretRight,
+  ChevronDown,
   Check,
   Clock,
   Copy,
@@ -288,7 +289,7 @@ export default function SettingsPage() {
 
   const copyWebhookUrl = async () => {
     if (!webhookToken) return
-    const url = `${window.location.origin}/api/v1/import/webhook/tradingview`
+    const url = `${window.location.origin}/api/v1/import/webhook/tradingview?token=${webhookToken}`
     await navigator.clipboard.writeText(url)
     setWebhookCopied(true)
     setTimeout(() => setWebhookCopied(false), 2500)
@@ -839,8 +840,19 @@ export default function SettingsPage() {
             action={
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 min-w-[130px] h-8 text-xs">
-                    {accentPack === 'reports' ? 'Sage & Amber' : accentPack === 'violet' ? 'Violet & Pink' : accentPack === 'slate' ? 'Slate & Smoke' : 'Classic'}
+                  <Button variant="outline" size="sm" className="gap-2 min-w-[155px] h-8 text-xs justify-between">
+                    <span className="flex items-center gap-2">
+                      <span className="flex gap-1 shrink-0">
+                        <span className={cn("w-2 h-2 rounded-full",
+                          accentPack === 'reports' ? 'bg-[#83b885]' : accentPack === 'violet' ? 'bg-[#a78bfa]' : accentPack === 'slate' ? 'bg-[#f8fafc]' : 'bg-[#10b981]'
+                        )} />
+                        <span className={cn("w-2 h-2 rounded-full",
+                          accentPack === 'reports' ? 'bg-[#ce6730]' : accentPack === 'violet' ? 'bg-[#f472b6]' : accentPack === 'slate' ? 'bg-[#64748b]' : 'bg-[#ef4444]'
+                        )} />
+                      </span>
+                      {accentPack === 'reports' ? 'Sage & Amber' : accentPack === 'violet' ? 'Violet & Pink' : accentPack === 'slate' ? 'Slate & Smoke' : 'Classic'}
+                    </span>
+                    <ChevronDown className="h-3 w-3 opacity-50 shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -1154,7 +1166,7 @@ export default function SettingsPage() {
               {isLoadingWebhook ? (
                 <Skeleton className="h-3.5 w-full" />
               ) : webhookToken ? (
-                `${typeof window !== 'undefined' ? window.location.origin : ''}/api/v1/import/webhook/tradingview`
+                `${typeof window !== 'undefined' ? window.location.origin : ''}/api/v1/import/webhook/tradingview?token=${webhookToken}`
               ) : (
                 'Loading...'
               )}

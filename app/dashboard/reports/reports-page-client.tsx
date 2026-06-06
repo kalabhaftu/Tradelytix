@@ -431,10 +431,11 @@ export default function ReportsPageClient({
             })
 
             if (!res.ok) throw new Error('Failed to generate link')
-            const data = await res.json()
+            const responseData = await res.json()
+            const reportData = responseData.data || {}
             
             // Copy to clipboard
-            await navigator.clipboard.writeText(data.url || `${window.location.origin}/reports/shared/${data.slug}`)
+            await navigator.clipboard.writeText(reportData.url || `${window.location.origin}/reports/shared/${reportData.slug}`)
             toast.success('Shareable link copied to clipboard!')
         } catch (error) {
             // Error shown via toast

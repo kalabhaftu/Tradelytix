@@ -33,7 +33,7 @@ import { cn, groupTradesByExecution, type GroupedTrade } from '@/lib/utils'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { getTradeNetPnl } from '@/lib/metrics/pnl'
 import { getWeeklyReview, saveWeeklyReview } from "@/server/weekly-review"
-import { Calendar, BarChart3, CheckCircle2, Loader2, Clock, Image as ImageIcon, Percent, Activity, Target, Trash2, TrendingDown, TrendingUp, Upload, XCircle } from "lucide-react"
+import { Calendar, BarChart3, CheckCircle2, Loader2, Clock, Image as ImageIcon, Percent, Activity, Target, Trash2, TrendingDown, TrendingUp, Upload, XCircle, Coins, ScrollText, AreaChart as AreaChartIcon, FileText, Sun, Moon, Boxes, Compass } from "lucide-react"
 import { type Trade } from '@prisma/client'
 import imageCompression from 'browser-image-compression'
 import { endOfWeek, format, parseISO, startOfWeek } from "date-fns"
@@ -167,19 +167,19 @@ function MetricCard({
   const trendColor = trend === 'up' ? 'text-long' : trend === 'down' ? 'text-short' : 'text-muted-foreground'
 
   return (
-    <div className={cn("p-4 rounded-xl border bg-card", className)}>
+    <div className={cn("p-4.5 bg-card/35 flex flex-col justify-between min-h-[96px]", className)}>
       <div className="flex items-center gap-2 mb-2">
-        <div className="p-1.5 rounded-lg bg-primary/10">
-          <Icon className="h-4 w-4 text-primary" />
+        <Icon className="h-4 w-4 text-muted-foreground/75" />
+        <span className="text-xs font-semibold text-muted-foreground/80">{label}</span>
+      </div>
+      <div>
+        <div className={cn("text-lg sm:text-xl font-bold tracking-tight font-mono", trendColor)}>
+          {value}
         </div>
-        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        {subValue && (
+          <div className="text-[10px] text-muted-foreground/60 mt-0.5 font-medium">{subValue}</div>
+        )}
       </div>
-      <div className={cn("text-xl font-bold", trendColor)}>
-        {value}
-      </div>
-      {subValue && (
-        <div className="text-xs text-muted-foreground mt-0.5">{subValue}</div>
-      )}
     </div>
   )
 }
@@ -677,15 +677,15 @@ export function WeeklyModal({
               {/* Overview Tab */}
               <TabsContent value="overview" className="m-0 px-4 py-5 sm:px-6 lg:px-8 space-y-6">
                 {/* Key Metrics Grid */}
-                <div className="grid grid-cols-2 xl:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 xl:grid-cols-6 gap-px bg-border/25 border border-border/30 bg-card/45 rounded-xl overflow-hidden">
                   <MetricCard
-                    icon={BarChart3}
+                    icon={Coins}
                     label="Total P&L"
                     value={`$${weeklyData.pnl.toFixed(2)}`}
                     trend={weeklyData.pnl > 0 ? 'up' : weeklyData.pnl < 0 ? 'down' : 'neutral'}
                   />
                   <MetricCard
-                    icon={Target}
+                    icon={ScrollText}
                     label="Trades"
                     value={weeklyData.tradeNumber}
                     subValue={`${weeklyData.longNumber}L / ${weeklyData.shortNumber}S`}
@@ -718,121 +718,133 @@ export function WeeklyModal({
                 </div>
 
                 {/* Chart Section */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4 text-primary" />
-                      Cumulative P&L
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[200px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData} margin={{ left: 0, right: 0, top: 10, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} vertical={false} />
-                          <XAxis
-                            dataKey="label"
-                            tickLine={false}
-                            axisLine={false}
-                            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                          />
-                          <YAxis
-                            tickLine={false}
-                            axisLine={false}
-                            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                            tickFormatter={(value) => `$${value >= 1000 || value <= -1000 ? (value / 1000).toFixed(1) + 'k' : value.toFixed(0)}`}
-                            width={50}
-                          />
-                          <Tooltip
-                            content={({ active, payload }: any) => {
-                              if (active && payload && payload.length) {
-                                const data = payload[0].payload
-                                return (
-                                  <div className="rounded-lg border border-border/50 bg-card p-3 shadow-md">
-                                    <div className="text-xs text-muted-foreground mb-1">
-                                      {format(new Date(data.date + 'T00:00:00Z'), 'EEEE, MMM d', { locale: enUS })}
+                <div className="rounded-xl border border-border/30 bg-muted/5 p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <AreaChartIcon className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-medium">Cumulative P&L</h3>
+                  </div>
+                  <div className="h-[200px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData} margin={{ left: 0, right: 0, top: 10, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} vertical={false} />
+                        <XAxis
+                          dataKey="label"
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                          tickFormatter={(value) => `$${value >= 1000 || value <= -1000 ? (value / 1000).toFixed(1) + 'k' : value.toFixed(0)}`}
+                          width={50}
+                        />
+                        <Tooltip
+                          content={({ active, payload }: any) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload
+                              return (
+                                <div className="rounded-lg border border-border/50 bg-card p-3 shadow-md">
+                                  <div className="text-xs text-muted-foreground mb-1">
+                                    {format(new Date(data.date + 'T00:00:00Z'), 'EEEE, MMM d', { locale: enUS })}
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                    <div className="text-sm">
+                                      <span className="text-muted-foreground">Daily: </span>
+                                      <span className={cn("font-semibold", data.daily >= 0 ? 'text-long' : 'text-short')}>
+                                        ${data.daily?.toFixed(2)}
+                                      </span>
                                     </div>
-                                    <div className="flex flex-col gap-1">
-                                      <div className="text-sm">
-                                        <span className="text-muted-foreground">Daily: </span>
-                                        <span className={cn("font-semibold", data.daily >= 0 ? 'text-long' : 'text-short')}>
-                                          ${data.daily?.toFixed(2)}
-                                        </span>
-                                      </div>
-                                      <div className="text-sm">
-                                        <span className="text-muted-foreground">Cumulative: </span>
-                                        <span className={cn("font-semibold", data.balance >= 0 ? 'text-long' : 'text-short')}>
-                                          ${data.balance?.toFixed(2)}
-                                        </span>
-                                      </div>
+                                    <div className="text-sm">
+                                      <span className="text-muted-foreground">Cumulative: </span>
+                                      <span className={cn("font-semibold", data.balance >= 0 ? 'text-long' : 'text-short')}>
+                                        ${data.balance?.toFixed(2)}
+                                      </span>
                                     </div>
                                   </div>
-                                )
-                              }
-                              return null
-                            }}
-                          />
-                          <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" opacity={0.5} />
-                          <Area
-                            type={chartStyle === 'sharp' ? 'linear' : 'monotone'}
-                            dataKey="balance"
-                            stroke="hsl(var(--primary))"
-                            strokeWidth={2}
-                            fill="hsl(var(--primary))"
-                            fillOpacity={0.12}
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
+                                </div>
+                              )
+                            }
+                            return null
+                          }}
+                        />
+                        <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" opacity={0.5} />
+                        <Area
+                          type={chartStyle === 'sharp' ? 'linear' : 'monotone'}
+                          dataKey="balance"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth={2}
+                          fill="hsl(var(--primary))"
+                          fillOpacity={0.12}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
 
-                {/* Quick Stats */}
+                {/* Performance Highlights Grid */}
                 {stats && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card className="p-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-border/25 border border-border/30 bg-card/45 rounded-xl overflow-hidden">
+                    <div className="p-4.5 bg-card/35 flex flex-col justify-between min-h-[96px]">
                       <div className="flex items-center gap-2 mb-2">
-                        <TrendingUp className="h-4 w-4 text-long" />
-                        <span className="text-sm font-medium">Best Day</span>
+                        <Sun className="h-4 w-4 text-long" />
+                        <span className="text-xs font-semibold text-muted-foreground/80">Best Day</span>
                       </div>
-                      <div className="text-lg font-bold">{stats.bestDay ? stats.bestDay[0] : 'N/A'}</div>
-                      <div className="text-sm text-long">
-                        {stats.bestDay ? `+$${stats.bestDay[1].pnl.toFixed(2)}` : '$0.00'}
+                      <div>
+                        <div className="text-sm sm:text-base font-bold truncate">
+                          {stats.bestDay ? stats.bestDay[0] : 'N/A'}
+                        </div>
+                        <div className="text-xs text-long mt-0.5 font-semibold font-mono">
+                          {stats.bestDay ? `+$${stats.bestDay[1].pnl.toFixed(2)}` : '$0.00'}
+                        </div>
                       </div>
-                    </Card>
+                    </div>
 
-                    <Card className="p-4">
+                    <div className="p-4.5 bg-card/35 flex flex-col justify-between min-h-[96px]">
                       <div className="flex items-center gap-2 mb-2">
-                        <TrendingDown className="h-4 w-4 text-short" />
-                        <span className="text-sm font-medium">Worst Day</span>
+                        <Moon className="h-4 w-4 text-short" />
+                        <span className="text-xs font-semibold text-muted-foreground/80">Worst Day</span>
                       </div>
-                      <div className="text-lg font-bold">{stats.worstDay ? stats.worstDay[0] : 'N/A'}</div>
-                      <div className="text-sm text-short">
-                        {stats.worstDay ? `$${stats.worstDay[1].pnl.toFixed(2)}` : '$0.00'}
+                      <div>
+                        <div className="text-sm sm:text-base font-bold truncate">
+                          {stats.worstDay ? stats.worstDay[0] : 'N/A'}
+                        </div>
+                        <div className="text-xs text-short mt-0.5 font-semibold font-mono">
+                          {stats.worstDay ? `$${stats.worstDay[1].pnl.toFixed(2)}` : '$0.00'}
+                        </div>
                       </div>
-                    </Card>
+                    </div>
 
-                    <Card className="p-4">
+                    <div className="p-4.5 bg-card/35 flex flex-col justify-between min-h-[96px]">
                       <div className="flex items-center gap-2 mb-2">
-                        <Target className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-medium">Top Instrument</span>
+                        <Boxes className="h-4 w-4 text-primary" />
+                        <span className="text-xs font-semibold text-muted-foreground/80">Top Instrument</span>
                       </div>
-                      <div className="text-lg font-bold">{stats.bestPair ? stats.bestPair[0] : 'N/A'}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {stats.bestPair ? `$${stats.bestPair[1].pnl.toFixed(2)} (${stats.bestPair[1].trades} trades)` : '0 trades'}
+                      <div>
+                        <div className="text-sm sm:text-base font-bold truncate">
+                          {stats.bestPair ? stats.bestPair[0] : 'N/A'}
+                        </div>
+                        <div className="text-xs text-muted-foreground/60 mt-0.5 font-medium font-mono">
+                          {stats.bestPair ? `$${stats.bestPair[1].pnl.toFixed(2)} (${stats.bestPair[1].trades} trades)` : '0 trades'}
+                        </div>
                       </div>
-                    </Card>
+                    </div>
 
-                    <Card className="p-4">
+                    <div className="p-4.5 bg-card/35 flex flex-col justify-between min-h-[96px]">
                       <div className="flex items-center gap-2 mb-2">
                         <Clock className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-medium">Best Session</span>
+                        <span className="text-xs font-semibold text-muted-foreground/80">Best Session</span>
                       </div>
-                      <div className="text-lg font-bold">{stats.bestSession ? stats.bestSession[0] : 'N/A'}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {stats.bestSession ? `$${stats.bestSession[1].pnl.toFixed(2)} (${stats.bestSession[1].trades} trades)` : '0 trades'}
+                      <div>
+                        <div className="text-sm sm:text-base font-bold truncate">
+                          {stats.bestSession ? stats.bestSession[0] : 'N/A'}
+                        </div>
+                        <div className="text-xs text-muted-foreground/60 mt-0.5 font-medium font-mono">
+                          {stats.bestSession ? `$${stats.bestSession[1].pnl.toFixed(2)} (${stats.bestSession[1].trades} trades)` : '0 trades'}
+                        </div>
                       </div>
-                    </Card>
+                    </div>
                   </div>
                 )}
               </TabsContent>
@@ -841,63 +853,60 @@ export function WeeklyModal({
               <TabsContent value="analysis" className="m-0 px-4 py-5 sm:px-6 lg:px-8 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Weekly Expectation */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium flex items-center gap-2">
-                        <Activity className="h-4 w-4 text-primary" />
-                        Weekly Expectation
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <RadioGroup
-                        value={reviewData?.expectation || ''}
-                        onValueChange={(val) => {
-                          if (!selectedDate) return
+                  <div className="rounded-xl border border-border/30 bg-muted/5 p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Compass className="h-4 w-4 text-primary" />
+                      <h3 className="text-sm font-medium">Weekly Expectation</h3>
+                    </div>
+                    <RadioGroup
+                      value={reviewData?.expectation || ''}
+                      onValueChange={(val) => {
+                        if (!selectedDate) return
 
-                          // Create updated review data object with new expectation
-                          // This ensures we use the latest values, not stale closure values
-                          const updatedReviewData = {
-                            ...(reviewData || {}),
-                            expectation: val as WeeklyExpectation
-                          }
+                        // Create updated review data object with new expectation
+                        // This ensures we use the latest values, not stale closure values
+                        const updatedReviewData = {
+                          ...(reviewData || {}),
+                          expectation: val as WeeklyExpectation
+                        }
 
-                          // Update local state immediately for instant feedback
-                          setReviewData(updatedReviewData)
+                        // Update local state immediately for instant feedback
+                        setReviewData(updatedReviewData)
 
-                          // Auto-save expectation immediately for better UX
-                          // Use a request counter to prevent race conditions
-                          const currentRequest = ++saveRequestRef.current
-                          const savedExpectation = val as WeeklyExpectation
-                          const saveExpectation = async () => {
-                            try {
-                              // Read latest state from ref to avoid stale values from rapid changes
-                              // This ensures we always save the most current state, not the state at change time
-                              const latestReviewData = reviewDataRef.current
+                        // Auto-save expectation immediately for better UX
+                        // Use a request counter to prevent race conditions
+                        const currentRequest = ++saveRequestRef.current
+                        const savedExpectation = val as WeeklyExpectation
+                        const saveExpectation = async () => {
+                          try {
+                            // Read latest state from ref to avoid stale values from rapid changes
+                            // This ensures we always save the most current state, not the state at change time
+                            const latestReviewData = reviewDataRef.current
 
-                              const result = await saveWeeklyReview({
-                                startDate: startOfWeek(selectedDate),
-                                endDate: endOfWeek(selectedDate),
-                                expectation: savedExpectation, // Use the saved expectation value
-                                actualOutcome: latestReviewData?.actualOutcome,
-                                isCorrect: latestReviewData?.isCorrect,
-                                notes: latestReviewData?.notes,
-                                calendarImage: latestReviewData?.calendarImage
-                              })
+                            const result = await saveWeeklyReview({
+                              startDate: startOfWeek(selectedDate),
+                              endDate: endOfWeek(selectedDate),
+                              expectation: savedExpectation, // Use the saved expectation value
+                              actualOutcome: latestReviewData?.actualOutcome,
+                              isCorrect: latestReviewData?.isCorrect,
+                              notes: latestReviewData?.notes,
+                              calendarImage: latestReviewData?.calendarImage
+                            })
 
-                              // Only update state if this is still the latest request
-                              // This prevents older saves from overwriting newer selections
-                              if (result.success && result.data && currentRequest === saveRequestRef.current) {
-                                const savedData = result.data
+                            // Only update state if this is still the latest request
+                            // This prevents older saves from overwriting newer selections
+                            if (result.success && result.data && currentRequest === saveRequestRef.current) {
+                              const savedData = result.data
 
-                                // CRITICAL: Update baseline since we successfully auto-saved
-                                // This ensures checking for dirty state later works correctly
-                                if (lastSavedReviewData.current) {
-                                  lastSavedReviewData.current = JSON.parse(JSON.stringify(savedData))
-                                }
+                              // CRITICAL: Update baseline since we successfully auto-saved
+                              // This ensures checking for dirty state later works correctly
+                              if (lastSavedReviewData.current) {
+                                lastSavedReviewData.current = JSON.parse(JSON.stringify(savedData))
+                              }
 
-                                // Merge server response with current state to preserve concurrent local changes
-                                // Only update the field that was auto-saved (expectation), preserve other local changes
-                                setReviewData((prev: any) => {
+                              // Merge server response with current state to preserve concurrent local changes
+                              // Only update the field that was auto-saved (expectation), preserve other local changes
+                              setReviewData((prev: any) => {
                                   if (!prev) {
                                     // If no previous state, use server response
                                     return { ...savedData, expectation: savedExpectation }
@@ -918,7 +927,6 @@ export function WeeklyModal({
                               }
                             } catch (error) {
                               // Silent fail - will be saved when user clicks save button
-                              // Silent fail - will be saved when user clicks save button
                             }
                           }
                           saveExpectation()
@@ -926,9 +934,9 @@ export function WeeklyModal({
                         className="space-y-3"
                       >
                         <label className={cn(
-                          "relative flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                          "relative flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all",
                           reviewData?.expectation === 'BULLISH_EXPANSION'
-                            ? "border-long bg-long/10 shadow-md ring-2 ring-long/20"
+                            ? "border-long bg-long/10 shadow-sm ring-1 ring-long/20"
                             : "border-border hover:border-long/50 hover:bg-muted/30"
                         )}>
                           <RadioGroupItem value="BULLISH_EXPANSION" id="bullish" className="sr-only" />
@@ -950,9 +958,9 @@ export function WeeklyModal({
                         </label>
 
                         <label className={cn(
-                          "relative flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                          "relative flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all",
                           reviewData?.expectation === 'BEARISH_EXPANSION'
-                            ? "border-short bg-short/10 shadow-md ring-2 ring-short/20"
+                            ? "border-short bg-short/10 shadow-sm ring-1 ring-short/20"
                             : "border-border hover:border-short/50 hover:bg-muted/30"
                         )}>
                           <RadioGroupItem value="BEARISH_EXPANSION" id="bearish" className="sr-only" />
@@ -974,9 +982,9 @@ export function WeeklyModal({
                         </label>
 
                         <label className={cn(
-                          "relative flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                          "relative flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all",
                           reviewData?.expectation === 'CONSOLIDATION'
-                            ? "border-primary bg-primary/10 shadow-md ring-2 ring-primary/20"
+                            ? "border-primary bg-primary/10 shadow-sm ring-1 ring-primary/20"
                             : "border-border hover:border-primary/50 hover:bg-muted/30"
                         )}>
                           <RadioGroupItem value="CONSOLIDATION" id="consolidation" className="sr-only" />
@@ -997,18 +1005,15 @@ export function WeeklyModal({
                           )}
                         </label>
                       </RadioGroup>
-                    </CardContent>
-                  </Card>
+                    </div>
 
                   {/* Actual Outcome */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium flex items-center gap-2">
-                        <Target className="h-4 w-4 text-primary" />
-                        Actual Outcome
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                  <div className="rounded-xl border border-border/30 bg-muted/5 p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Target className="h-4 w-4 text-primary" />
+                      <h3 className="text-sm font-medium">Actual Outcome</h3>
+                    </div>
+                    <div className="space-y-4">
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">Was expectation correct?</Label>
                         <div className="flex gap-3">
@@ -1016,8 +1021,8 @@ export function WeeklyModal({
                             type="button"
                             variant={reviewData?.isCorrect === true ? "default" : "outline"}
                             className={cn(
-                              "flex-1 h-12",
-                              reviewData?.isCorrect === true && "bg-long hover:bg-long/90 border-long"
+                              "flex-1 h-12 rounded-xl border border-border/40",
+                              reviewData?.isCorrect === true && "bg-long hover:bg-long/90 border-long text-white"
                             )}
                             onClick={() => setReviewData({ ...reviewData, isCorrect: true })}
                           >
@@ -1027,7 +1032,10 @@ export function WeeklyModal({
                           <Button
                             type="button"
                             variant={reviewData?.isCorrect === false ? "destructive" : "outline"}
-                            className="flex-1 h-12"
+                            className={cn(
+                              "flex-1 h-12 rounded-xl border border-border/40",
+                              reviewData?.isCorrect === false && "bg-short hover:bg-short/90 border-short text-white"
+                            )}
                             onClick={() => setReviewData({ ...reviewData, isCorrect: false })}
                           >
                             <XCircle className="mr-2 h-4 w-4" />
@@ -1036,7 +1044,7 @@ export function WeeklyModal({
                         </div>
                       </div>
 
-                      <Separator />
+                      <Separator className="bg-border/30" />
 
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">Actual Market Behavior</Label>
@@ -1044,10 +1052,10 @@ export function WeeklyModal({
                           value={reviewData?.actualOutcome || ''}
                           onValueChange={(val) => setReviewData({ ...reviewData, actualOutcome: val })}
                         >
-                          <SelectTrigger className="h-12">
+                          <SelectTrigger className="h-12 rounded-xl border border-border/40 bg-card/45">
                             <SelectValue placeholder="Select actual outcome" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="rounded-xl border border-border/40">
                             <SelectItem value="BULLISH_EXPANSION">
                               <div className="flex items-center gap-2">
                                 <TrendingUp className="h-4 w-4 text-long" />
@@ -1069,157 +1077,152 @@ export function WeeklyModal({
                           </SelectContent>
                         </Select>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Instrument Breakdown */}
                 {stats && stats.pairStats.length > 0 && (
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium">Instrument Breakdown</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {stats.pairStats.map(([pair, data]) => (
-                          <div key={pair} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                            <div className="flex items-center gap-3">
-                              <div className="font-medium">{pair}</div>
-                              <Badge variant="secondary" className="text-xs">
-                                {data.trades} trades
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <span className="text-xs text-muted-foreground">
-                                {((data.wins / data.trades) * 100).toFixed(0)}% WR
-                              </span>
-                              <span className={cn(
-                                "font-semibold",
-                                data.pnl >= 0 ? 'text-long' : 'text-short'
-                              )}>
-                                {data.pnl >= 0 ? '+' : ''}${data.pnl.toFixed(2)}
-                              </span>
-                            </div>
+                  <div className="rounded-xl border border-border/30 bg-muted/5 p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <BarChart3 className="h-4 w-4 text-primary" />
+                      <h3 className="text-sm font-medium">Instrument Breakdown</h3>
+                    </div>
+                    <div className="space-y-2">
+                      {stats.pairStats.map(([pair, data]) => (
+                        <div key={pair} className="flex items-center justify-between p-3 rounded-xl border border-border/20 bg-card/35">
+                          <div className="flex items-center gap-3">
+                            <div className="font-medium text-sm">{pair}</div>
+                            <Badge variant="secondary" className="text-[10px] rounded-md px-1.5 py-0.5 bg-muted/50 border border-border/30">
+                              {data.trades} trades
+                            </Badge>
                           </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+                          <div className="flex items-center gap-4">
+                            <span className="text-xs text-muted-foreground/85">
+                              {((data.wins / data.trades) * 100).toFixed(0)}% WR
+                            </span>
+                            <span className={cn(
+                              "font-semibold font-mono text-sm",
+                              data.pnl >= 0 ? 'text-long' : 'text-short'
+                            )}>
+                              {data.pnl >= 0 ? '+' : ''}${data.pnl.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </TabsContent>
 
               {/* Calendar Image Tab */}
               <TabsContent value="calendar" className="m-0 px-4 py-5 sm:px-6 lg:px-8">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium flex items-center justify-between">
-                      <span className="flex items-center gap-2">
-                        <ImageIcon className="h-4 w-4 text-primary" />
-                        Economic Calendar Screenshot
-                      </span>
-                      <div className="flex items-center gap-2">
-                        {(reviewData?.calendarImage || imagePreview) && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={handleRemoveImage}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 px-3"
-                              onClick={handleReplaceImage}
-                            >
-                              <Upload className="h-4 w-4 mr-1" />
-                              Replace
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="bg-muted/30 relative min-h-[400px] flex items-center justify-center">
-                      {(imagePreview || reviewData?.calendarImage) && !imageLoadError ? (
-                        <div className="relative w-full h-full flex items-center justify-center p-4">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={imagePreview || reviewData?.calendarImage}
-                            alt="Economic Calendar"
-                            className="w-full h-full object-contain max-h-[500px] rounded-md"
-                            onError={(e) => {
-                              setImageLoadError(true)
-                              toast.error("Failed to load saved image. Please upload a new one.")
-                            }}
-                          />
-                          {imagePreview && (
-                            <div className="absolute top-6 left-6">
-                              <Badge className="bg-primary text-primary-foreground">
-                                New Upload (Click Save)
-                              </Badge>
-                            </div>
-                          )}
-                        </div>
-                      ) : imageLoadError ? (
-                        <div className="flex flex-col items-center justify-center text-muted-foreground py-12">
-                          <XCircle className="h-12 w-12 text-destructive mb-4" />
-                          <p className="text-sm font-medium mb-2">Failed to load saved image</p>
+                <div className="rounded-xl border border-border/30 bg-muted/5 p-5">
+                  <div className="flex items-center justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4 text-primary" />
+                      <h3 className="text-sm font-medium">Economic Calendar Screenshot</h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {(reviewData?.calendarImage || imagePreview) && (
+                        <>
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              setImageLoadError(false)
-                              setReviewData({ ...reviewData, calendarImage: null })
-                              document.getElementById('weekly-calendar-upload')?.click()
-                            }}
+                            className="h-8 w-8 p-0 rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={handleRemoveImage}
                           >
-                            <Upload className="h-4 w-4 mr-2" />
-                            Upload New Image
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        </div>
-                      ) : (
-                        <label
-                          htmlFor="weekly-calendar-upload"
-                          className="flex flex-col items-center justify-center text-muted-foreground py-16 cursor-pointer hover:bg-muted/50 transition-colors w-full h-full"
-                        >
-                          <div className="p-4 rounded-full bg-muted mb-4">
-                            <ImageIcon className="h-8 w-8 opacity-50" />
-                          </div>
-                          <span className="text-sm font-medium mb-1">Upload weekly calendar screenshot</span>
-                          <span className="text-xs opacity-70">Click to browse or drag and drop</span>
-                          <span className="text-xs opacity-50 mt-2">Supports: JPG, PNG, WebP (Max 1MB)</span>
-                        </label>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-3 rounded-lg border border-border/30 hover:bg-muted/35"
+                            onClick={handleReplaceImage}
+                          >
+                            <Upload className="h-4 w-4 mr-1.5" />
+                            Replace
+                          </Button>
+                        </>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+
+                  <div className="border border-border/30 rounded-xl overflow-hidden bg-card/20 relative min-h-[400px] flex items-center justify-center">
+                    {(imagePreview || reviewData?.calendarImage) && !imageLoadError ? (
+                      <div className="relative w-full h-full flex items-center justify-center p-4">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={imagePreview || reviewData?.calendarImage}
+                          alt="Economic Calendar"
+                          className="w-full h-full object-contain max-h-[500px] rounded-lg"
+                          onError={(e) => {
+                            setImageLoadError(true)
+                            toast.error("Failed to load saved image. Please upload a new one.")
+                          }}
+                        />
+                        {imagePreview && (
+                          <div className="absolute top-6 left-6">
+                            <Badge className="bg-primary text-primary-foreground border-none">
+                              New Upload (Click Save)
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                    ) : imageLoadError ? (
+                      <div className="flex flex-col items-center justify-center text-muted-foreground py-12">
+                        <XCircle className="h-12 w-12 text-destructive mb-4" />
+                        <p className="text-sm font-medium mb-2">Failed to load saved image</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-xl border border-border/40"
+                          onClick={() => {
+                            setImageLoadError(false)
+                            setReviewData({ ...reviewData, calendarImage: null })
+                            document.getElementById('weekly-calendar-upload')?.click()
+                          }}
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload New Image
+                        </Button>
+                      </div>
+                    ) : (
+                      <label
+                        htmlFor="weekly-calendar-upload"
+                        className="flex flex-col items-center justify-center text-muted-foreground py-16 cursor-pointer hover:bg-muted/30 transition-colors w-full h-full"
+                      >
+                        <div className="p-4 rounded-xl border border-border/40 bg-muted/20 mb-4">
+                          <ImageIcon className="h-8 w-8 opacity-50" />
+                        </div>
+                        <span className="text-sm font-medium mb-1">Upload weekly calendar screenshot</span>
+                        <span className="text-xs opacity-70">Click to browse or drag and drop</span>
+                        <span className="text-xs opacity-50 mt-2">Supports: JPG, PNG, WebP (Max 1MB)</span>
+                      </label>
+                    )}
+                  </div>
+                </div>
               </TabsContent>
 
               {/* Notes Tab */}
               <TabsContent value="notes" className="m-0 px-4 py-5 sm:px-6 lg:px-8">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <Target className="h-4 w-4 text-primary" />
-                      Weekly Review Notes
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                <div className="rounded-xl border border-border/30 bg-muted/5 p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-medium">Weekly Review Notes</h3>
+                  </div>
+                  <div className="space-y-3">
                     <LexicalEditor
                       placeholder="Answer each prompt directly under the question."
                       minHeight="420px"
                       value={reviewData?.notes || ''}
                       onChange={(val) => setReviewData({ ...reviewData, notes: val })}
                     />
-                    <p className="text-xs text-muted-foreground mt-2">
+                    <p className="text-xs text-muted-foreground/70">
                       Complete each section with your answers so your weekly review stays consistent and actionable.
                     </p>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </TabsContent>
             </div>
           </Tabs>

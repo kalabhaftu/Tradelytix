@@ -37,18 +37,27 @@ const MAX_QUANTITY = 1_000_000_000
 const MAX_PNL = 1_000_000_000
 
 const numericField = z.coerce.number().finite().min(0).max(MAX_PRICE)
-const optionalNumericField = z.coerce.number().finite().min(0).max(MAX_PRICE).optional().nullable()
+const optionalNumericField = z.preprocess(
+  (val) => (val === '' || val === null || val === undefined) ? null : val,
+  z.coerce.number().finite().min(0).max(MAX_PRICE).optional().nullable()
+)
 
 const tradingViewPayloadSchema = z.object({
-  token: z.string().trim().min(16).max(256),
+  token: z.string().trim().min(16).max(256).optional(),
   symbol: z.string().trim().min(1).max(32).regex(/^[A-Za-z0-9._:-]+$/),
   side: z.string().trim().transform((value) => value.toUpperCase()).pipe(z.enum(['BUY', 'SELL', 'LONG', 'SHORT'])),
   entry_price: numericField,
   close_price: numericField,
   quantity: z.coerce.number().finite().gt(0).max(MAX_QUANTITY).optional().default(1),
   pnl: z.coerce.number().finite().min(-MAX_PNL).max(MAX_PNL).optional().default(0),
-  entry_time: z.string().datetime({ offset: true }).optional(),
-  close_time: z.string().datetime({ offset: true }).optional(),
+  entry_time: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined) ? undefined : val,
+    z.string().optional()
+  ),
+  close_time: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined) ? undefined : val,
+    z.string().optional()
+  ),
   stop_loss: optionalNumericField,
   take_profit: optionalNumericField,
   comment: z.string().trim().max(500).optional(),
@@ -97,8 +106,16 @@ export async function POST(req: NextRequest) {
       return createErrorResponse('close_time must be after entry_time', 400, undefined, 'INVALID_TRADE_TIME_RANGE')
     }
 
+    const url = new URL(req.url)
+    const urlToken = url.searchParams.get('token')
+    const token = payload.token || urlToken
+
+    if (!token || typeof token !== 'string' || token.trim().length < 16 || token.trim().length > 256) {
+      return createErrorResponse('Valid webhook token is required in query parameter or request body', 400, undefined, 'TOKEN_REQUIRED')
+    }
+
     const userSettings = await prisma.userSettings.findFirst({
-      where: { webhookToken: payload.token },
+      where: { webhookToken: token.trim() },
       select: { userId: true },
     }).catch(() => null)
 

@@ -77,65 +77,67 @@ export default function ImportTypeSelection({ selectedType, setSelectedType, set
       <div className="grid md:grid-cols-2 gap-6 h-full min-h-0 p-1">
         {/* Platform List */}
         <div className="h-full min-h-0">
-          <Command className="border border-border bg-card rounded-2xl h-full shadow-sm overflow-hidden flex flex-col">
-            <div className="border-b border-border/60 bg-muted/20 shrink-0">
-              <CommandInput
-                className="h-12 bg-transparent"
-                placeholder="Search platforms..."
-                value={searchQuery}
-                onValueChange={setSearchQuery}
-              />
-            </div>
-            <ScrollArea className="flex-1">
-              <CommandList className="h-full py-2">
-                <CommandEmpty className="py-8 text-center text-xs text-muted-foreground">
-                  No platforms found
-                </CommandEmpty>
-                {categories.map(category => {
-                  const categoryPlatforms = filteredPlatforms.filter(platform => platform.category === category)
-                  if (categoryPlatforms.length === 0) return null
+          <div className="border border-border/40 bg-card/45 rounded-2xl h-full shadow-sm overflow-hidden flex flex-col">
+            <Command className="bg-transparent h-full flex flex-col">
+              <div className="border-b border-border/60 bg-muted/20 shrink-0">
+                <CommandInput
+                  className="h-12 bg-transparent"
+                  placeholder="Search platforms..."
+                  value={searchQuery}
+                  onValueChange={setSearchQuery}
+                />
+              </div>
+              <ScrollArea className="flex-1">
+                <CommandList className="h-full py-2">
+                  <CommandEmpty className="py-8 text-center text-xs text-muted-foreground">
+                    No platforms found
+                  </CommandEmpty>
+                  {categories.map(category => {
+                    const categoryPlatforms = filteredPlatforms.filter(platform => platform.category === category)
+                    if (categoryPlatforms.length === 0) return null
 
-                  return (
-                    <CommandGroup
-                      key={category}
-                      heading={
-                        <div className={cn(
-                          "flex items-center gap-2 text-muted-foreground/75 font-bold uppercase tracking-wider text-[10px] transition-all duration-200 px-1 py-1.5",
-                          hoveredCategory === category ? "text-foreground scale-[1.01] translate-x-0.5" : ""
-                        )}
-                        style={{ contentVisibility: 'auto' }}
-                      >
-                        {categoryIcons[category]}
-                        <span>{getTranslatedCategory(category)}</span>
-                      </div>
-                    }>
-                      {categoryPlatforms.map((platform) => (
-                        <PlatformItem
-                          key={platform.type}
-                          platform={platform}
-                          isSelected={selectedType === platform.type}
-                          onSelect={(type) => setSelectedType(type as ImportType)}
-                          onHover={(category) => setHoveredCategory(category as PlatformConfig['category'])}
-                          onLeave={() => setHoveredCategory(null)}
-                          isWeekend={isWeekend()}
-                        />
-                      ))}
-                    </CommandGroup>
-                  )
-                })}
-              </CommandList>
-            </ScrollArea>
-          </Command>
+                    return (
+                      <CommandGroup
+                        key={category}
+                        heading={
+                          <div className={cn(
+                            "flex items-center gap-2 text-muted-foreground/75 font-bold uppercase tracking-wider text-[10px] transition-all duration-200 px-1 py-1.5",
+                            hoveredCategory === category ? "text-foreground scale-[1.01] translate-x-0.5" : ""
+                          )}
+                          style={{ contentVisibility: 'auto' }}
+                        >
+                          {categoryIcons[category]}
+                          <span>{getTranslatedCategory(category)}</span>
+                        </div>
+                      }>
+                        {categoryPlatforms.map((platform) => (
+                          <PlatformItem
+                            key={platform.type}
+                            platform={platform}
+                            isSelected={selectedType === platform.type}
+                            onSelect={(type) => setSelectedType(type as ImportType)}
+                            onHover={(category) => setHoveredCategory(category as PlatformConfig['category'])}
+                            onLeave={() => setHoveredCategory(null)}
+                            isWeekend={isWeekend()}
+                          />
+                        ))}
+                      </CommandGroup>
+                    )
+                  })}
+                </CommandList>
+              </ScrollArea>
+            </Command>
+          </div>
         </div>
 
         {/* Right Panel - Tutorial/Info */}
         <div className="h-full min-h-0">
           {selectedType !== '' && selectedPlatform && !selectedPlatform.customComponent ? (
-            <div className="h-full overflow-y-auto bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <div className="h-full overflow-y-auto bg-card/45 border border-border/40 rounded-2xl p-6 shadow-sm">
               <PlatformTutorial selectedPlatform={selectedPlatform} setIsOpen={setIsOpen} />
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-card border border-border rounded-2xl shadow-sm">
+            <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-card/45 border border-border/40 rounded-2xl shadow-sm">
               <div className="relative mb-4">
                 <FileSpreadsheet className="h-12 w-12 text-muted-foreground/60 animate-pulse" />
                 <div className="absolute -inset-2 bg-primary/5 rounded-full blur-md" />

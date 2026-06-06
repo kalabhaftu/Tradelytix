@@ -500,7 +500,7 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
 
   return (
     <Card className="w-full border border-border bg-card rounded-2xl shadow-sm overflow-hidden">
-      <CardHeader className="border-b border-border/30 bg-muted/10 p-5">
+      <CardHeader className="border-b border-border/30 p-5">
         <CardTitle className="text-base font-bold text-foreground/90">Import Trades</CardTitle>
         <CardDescription className="text-xs text-muted-foreground mt-0.5">Select a synchronization method to pull in your trading history</CardDescription>
       </CardHeader>
@@ -509,7 +509,7 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
           {renderStep()}
         </div>
 
-        <div className="p-4 border-t border-border/30 bg-muted/10">
+        <div className="p-4 border-t border-border/30">
           <div className="flex justify-end items-center gap-2">
             {step !== 'select-import-type' && (
               <Button 

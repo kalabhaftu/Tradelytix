@@ -685,7 +685,7 @@ export default function ImportButton() {
 
           {/* Header - only show for non-manual entry or show simplified for manual */}
           {!isManualEntry && (
-            <div className="flex-none border-b border-border/40 p-5 bg-muted/10">
+            <div className="flex-none border-b border-border/40 p-5 bg-background">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-base font-bold text-foreground/90">
@@ -762,7 +762,7 @@ export default function ImportButton() {
 
           {/* Footer - only show for non-manual entry */}
           {!isManualEntry && (
-            <div className="flex-none p-4 border-t border-border/30 bg-muted/10">
+            <div className="flex-none p-4 border-t border-border/30 bg-background">
               <div className="flex justify-between items-center max-w-4xl mx-auto w-full">
                 <div className="text-xs text-muted-foreground/80 font-medium pl-1">
                   {processedTrades.length > 0 && (

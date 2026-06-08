@@ -162,16 +162,16 @@
     "typescript": "^5",
     "@types/node": "^20",
     "@types/react": "^19",
-    "@types/react-dom": "^19.1.8"
+    "@types/react-dom": "^19.1.8",
+    "@types/papaparse": "^5.5.2",
+    "@types/uuid": "^10.0.0"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^16.3.0-canary.6",
     "@types/csv-parse": "^1.2.5",
     "@types/d3": "^7.4.3",
-    "@types/papaparse": "^5.5.2",
     "@types/react-datepicker": "^6.2.0",
     "@types/react-window": "^1.8.8",
-    "@types/uuid": "^10.0.0",
     "@playwright/test": "^1.56.1",
     "@svgr/webpack": "^8.1.0",
     "@testing-library/jest-dom": "^6.9.1",

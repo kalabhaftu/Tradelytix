@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { createSubscriptionInvoice, validatePromoCode } from '@/lib/services/subscription'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   const rl = await applyRateLimit(request, apiLimiter)
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
       reusedExisting: Boolean(result.reusedExisting),
     })
   } catch (error) {
-    console.error('[Payment] Create invoice error:', error)
+    logger.error('Create invoice failed', error, 'Payment Create Invoice')
     return NextResponse.json(
       { success: false, error: 'Failed to create payment invoice' },
       { status: 500 }

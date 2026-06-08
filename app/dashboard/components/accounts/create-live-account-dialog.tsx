@@ -354,7 +354,7 @@ export function CreateLiveAccountDialog({ open, onOpenChange, onSuccess }: LiveA
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} data-tour="create-account-submit">
                 {isSubmitting ? (
                   <>
                     <Spinner className="h-4 w-4mr-2" />

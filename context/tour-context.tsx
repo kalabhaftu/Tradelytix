@@ -18,6 +18,7 @@ export interface TourStep {
   actionTarget?: string // Selector that user must interact with
   contrastMessage?: string // Optional contrast explanation ("Why you aren't here")
   desktopOnly?: boolean // Skip this step on mobile
+  icon?: string // Optional icon identifier
 }
 
 interface OnboardingStatus {

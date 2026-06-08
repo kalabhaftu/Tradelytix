@@ -645,6 +645,7 @@ export default function ImportButton() {
           variant="outline"
           className="justify-start text-left font-medium w-full transition-all duration-200 hover:bg-muted/50 border-border/50"
           id="import-data"
+          data-tour="import-nav-btn"
           onMouseEnter={() => { }}
           onMouseLeave={() => { }}
         >
@@ -787,6 +788,7 @@ export default function ImportButton() {
                   <Button
                     onClick={handleNextStep}
                     disabled={isNextDisabled || isSaving}
+                    data-tour="import-next-btn"
                     className={cn(
                       "gap-1.5 text-xs h-9 min-w-[100px] shadow-sm",
                       currentStepIndex === 0 && importType === 'rithmic-sync' && "invisible"

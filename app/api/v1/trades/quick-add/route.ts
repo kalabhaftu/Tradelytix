@@ -5,6 +5,20 @@ import { logActivity, getClientIp } from '@/lib/activity-logger'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData } from '@/lib/trade-core'
+import { z } from 'zod'
+import { logger } from '@/lib/logger'
+
+const QuickAddSchema = z.object({
+  instrument: z.string().min(1, 'Instrument is required'),
+  side: z.enum(['buy', 'sell', 'BUY', 'SELL']),
+  pnl: z.union([z.number(), z.string().transform((val) => {
+    const parsed = parseFloat(val)
+    if (isNaN(parsed)) throw new Error('Invalid number')
+    return parsed
+  })]),
+  entryDate: z.string().optional(),
+  accountNumber: z.string().optional()
+})
 
 export async function POST(req: NextRequest) {
   const rateLimitResponse = await applyRateLimit(req, apiLimiter)
@@ -18,14 +32,16 @@ export async function POST(req: NextRequest) {
 
     const internalUserId = identity.internalUserId
     const body = await req.json()
-    const { instrument, side, pnl, entryDate, accountNumber } = body
-
-    if (!instrument || !side || pnl === undefined) {
+    
+    const parseResult = QuickAddSchema.safeParse(body)
+    if (!parseResult.success) {
       return NextResponse.json(
-        { error: 'Missing required fields: instrument, side, pnl' },
+        { error: 'Validation failed', details: parseResult.error.flatten() },
         { status: 400 }
       )
     }
+
+    const { instrument, side, pnl, entryDate, accountNumber } = parseResult.data
 
     let targetAccount = accountNumber
     if (!targetAccount) {
@@ -87,7 +103,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, trade })
   } catch (error) {
-    console.error('Quick add trade error:', error)
+    logger.error('Quick add trade error:', error, 'api')
     return NextResponse.json(
       { error: 'Failed to add trade' },
       { status: 500 }

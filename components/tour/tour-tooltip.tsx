@@ -4,8 +4,46 @@ import React, { useEffect, useState, useRef } from 'react'
 import { useTour } from '@/context/tour-context'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { X, ArrowRight, ArrowLeft, Loader2, Sparkles } from 'lucide-react'
+import { 
+  X, 
+  ArrowRight, 
+  ArrowLeft, 
+  Loader2, 
+  Sparkles,
+  Settings,
+  Palette,
+  Compass,
+  Plus,
+  FileSpreadsheet,
+  Trophy,
+  Wallet,
+  Eye,
+  Pencil,
+  BookOpen,
+  LayoutGrid,
+  Calendar,
+  Info,
+  CheckCircle2
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+const IconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  welcome: Sparkles,
+  settings: Settings,
+  theme: Palette,
+  navigation: Compass,
+  add: Plus,
+  import: FileSpreadsheet,
+  complete: Trophy,
+  accounts: Wallet,
+  view: Eye,
+  edit: Pencil,
+  journal: BookOpen,
+  layout: LayoutGrid,
+  calendar: Calendar,
+  info: Info,
+  check: CheckCircle2
+}
 
 export const TourTooltip: React.FC = () => {
   const {
@@ -109,10 +147,11 @@ export const TourTooltip: React.FC = () => {
     setPosition({ top, left })
   }, [coords, currentStep, paused])
 
-  if (!activeTour || !currentStep || paused) return null
+  // SILENT TARGET LOADING: Return null if target is loading so tooltip remains invisible
+  if (!activeTour || !currentStep || paused || (isLoadingTarget && currentStep.targetSelector)) return null
 
   const steps = {
-    onboarding: 7,
+    onboarding: 22, // Updated step counts
     dashboard: 3,
     analytics: 1,
     settings: 1,
@@ -187,28 +226,26 @@ export const TourTooltip: React.FC = () => {
             />
           </div>
 
-          {/* Skeleton Wait Loader */}
-          {isLoadingTarget && currentStep.targetSelector ? (
-            <div className="flex flex-col items-center justify-center py-6 gap-3">
-              <Loader2 className="h-6 w-6 text-primary animate-spin" />
-              <p className="text-xs text-muted-foreground font-medium">Waiting for element to render...</p>
+          {/* Body Content */}
+          <>
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3">
+              <h4 className="text-sm font-bold text-heading-text flex items-center gap-1.5">
+                {currentStep.icon && IconMap[currentStep.icon] ? (
+                  React.createElement(IconMap[currentStep.icon], { className: "h-4 w-4 text-primary shrink-0" })
+                ) : (
+                  stepIndex === 0 && <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+                )}
+                {currentStep.title}
+              </h4>
+              <button
+                onClick={skipTour}
+                className="text-muted-foreground hover:text-foreground hover:bg-muted/40 p-1 rounded-lg transition-colors shrink-0"
+                aria-label="Skip Tour"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
             </div>
-          ) : (
-            <>
-              {/* Header */}
-              <div className="flex items-start justify-between gap-3">
-                <h4 className="text-sm font-bold text-heading-text flex items-center gap-1.5">
-                  {stepIndex === 0 && <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />}
-                  {currentStep.title}
-                </h4>
-                <button
-                  onClick={skipTour}
-                  className="text-muted-foreground hover:text-foreground hover:bg-muted/40 p-1 rounded-lg transition-colors shrink-0"
-                  aria-label="Skip Tour"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
 
               {/* Body */}
               <div className="mt-2.5 space-y-2">
@@ -268,7 +305,6 @@ export const TourTooltip: React.FC = () => {
                 </div>
               </div>
             </>
-          )}
         </motion.div>
       </div>
     </AnimatePresence>

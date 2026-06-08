@@ -14,22 +14,14 @@ import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-c
 import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData, buildTradeIdentityKey } from '@/lib/trade-core'
 import { getRuntimeAutoAdjustAccountDate, getRuntimeBreakEvenThreshold } from '@/server/user-settings'
 import { deletePublicStorageUrls } from '@/server/storage-admin'
+import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
 
 /**
  * Helper function to determine if a phase number represents the funded stage
  * based on the evaluation type.
  */
 function isFundedPhase(evaluationType: string, phaseNumber: number): boolean {
-  switch (evaluationType) {
-    case 'Two Step':
-      return phaseNumber >= 3
-    case 'One Step':
-      return phaseNumber >= 2
-    case 'Instant':
-      return phaseNumber >= 1
-    default:
-      return phaseNumber >= 3 // Default to Two Step behavior
-  }
+  return isFundedPhaseForEvaluation(evaluationType, phaseNumber)
 }
 
 /**

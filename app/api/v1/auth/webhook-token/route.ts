@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { randomUUID } from 'crypto'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
       token,
     })
   } catch (err) {
-    console.error('[webhook-token GET]', err)
+    logger.error('Failed to get webhook token', err, 'Webhook Token GET')
     return NextResponse.json({ error: 'Failed to fetch webhook token' }, { status: 500 })
   }
 }
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ token })
   } catch (err) {
-    console.error('[webhook-token POST]', err)
+    logger.error('Failed to regenerate webhook token', err, 'Webhook Token POST')
     return NextResponse.json({ error: 'Failed to regenerate webhook token' }, { status: 500 })
   }
 }

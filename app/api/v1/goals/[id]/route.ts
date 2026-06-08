@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,7 +34,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     })
     return NextResponse.json({ goal: updated })
   } catch (err) {
-    console.error('[Goals PATCH]', err)
+    logger.error('Failed to update goal', err, 'Goals PATCH')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -52,7 +53,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     await prisma.userGoal.delete({ where: { id } })
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[Goals DELETE]', err)
+    logger.error('Failed to delete goal', err, 'Goals DELETE')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

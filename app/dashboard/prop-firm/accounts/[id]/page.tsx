@@ -42,16 +42,11 @@ import { getTradeNetPnl } from '@/lib/metrics/pnl'
 import { DetailPageSkeleton } from "./components/detail-skeleton"
 import { MetricCard } from "./components/metric-card"
 import { TradeRow } from "./components/trade-row"
+import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
 
 // Helpers
 function isFundedPhase(evaluationType: string | undefined, phaseNumber: number | undefined): boolean {
-  if (!phaseNumber) return false
-  switch (evaluationType) {
-    case 'Two Step': return phaseNumber >= 3
-    case 'One Step': return phaseNumber >= 2
-    case 'Instant': return phaseNumber >= 1
-    default: return phaseNumber >= 3
-  }
+  return isFundedPhaseForEvaluation(evaluationType || '', phaseNumber || 0)
 }
 
 function getPhaseDisplayName(evaluationType: string | undefined, phaseNumber: number | undefined): string {

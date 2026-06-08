@@ -1,6 +1,7 @@
 'use client'
 
 import { Spinner } from '@/components/ui/spinner'
+import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
@@ -78,17 +79,7 @@ type GroupedAccount = {
 }
 
 function isFundedPhase(evaluationType: string | undefined, phaseNumber: number | undefined): boolean {
-  if (!phaseNumber) return false
-  switch (evaluationType) {
-    case 'Two Step':
-      return phaseNumber >= 3
-    case 'One Step':
-      return phaseNumber >= 2
-    case 'Instant':
-      return phaseNumber >= 1
-    default:
-      return phaseNumber >= 3
-  }
+  return isFundedPhaseForEvaluation(evaluationType || '', phaseNumber || 0)
 }
 
 function getPhaseDisplayLabel(evaluationType: string | undefined, phaseNumber: number | undefined): string {

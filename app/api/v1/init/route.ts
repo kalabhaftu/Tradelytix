@@ -13,6 +13,7 @@ import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { getInitBootstrapData } from '@/server/init-bootstrap'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
+import { logger } from '@/lib/logger'
 import { getCountryLabel, normalizeCityName, normalizeCountryCode } from '@/lib/geo'
 
 export async function GET(request: NextRequest) {
@@ -48,9 +49,9 @@ export async function GET(request: NextRequest) {
                 city: city || null,
                 ipAddress: headerList.get('x-forwarded-for') || 'hidden'
               }
-            }).catch(console.error)
+            }).catch((err: unknown) => logger.error('Geo logging failed', err, 'Init'))
           }
-        }).catch(console.error)
+        }).catch((err: unknown) => logger.error('Geo logging failed on ip', err, 'Init'))
       }
     }
 
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    console.error('[API] /api/v1/init error:', error)
+    logger.error('/api/v1/init failed', error, 'Init API')
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

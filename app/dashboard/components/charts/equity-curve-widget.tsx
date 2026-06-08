@@ -12,7 +12,7 @@ const COLORS = {
 } as const
 
 export default function EquityCurveWidget() {
-  const { data: chartData, isLoading } = useWidgetData('equityCurve')
+  const { data: chartData, isLoading, error } = useWidgetData('equityCurve')
   const { chartStyle } = useTheme()
 
   // Split gradient offset — green above zero, red below zero
@@ -24,6 +24,17 @@ export default function EquityCurveWidget() {
     if (dataMin >= 0) return 1
     return dataMax / (dataMax - dataMin)
   }, [chartData])
+
+  if (error) {
+    return (
+      <WidgetCard title="Cumulative Equity Curve">
+        <div className="flex flex-col items-center justify-center h-full text-destructive text-sm gap-1 px-4 text-center">
+          <span className="font-semibold">Failed to load chart</span>
+          <span className="text-xs text-muted-foreground">{error}</span>
+        </div>
+      </WidgetCard>
+    )
+  }
 
   if (isLoading) {
     return (

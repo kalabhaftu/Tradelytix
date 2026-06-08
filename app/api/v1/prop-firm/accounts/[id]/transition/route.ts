@@ -10,6 +10,7 @@ import { logger } from '@/lib/logger'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { revalidateTag } from 'next/cache'
+import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
 // NOTE: Do NOT import triggerDataRefresh here - it's a client-only module ('use client')
 // Use revalidateTag for cache invalidation instead
 
@@ -27,16 +28,7 @@ const PhaseTransitionSchema = z.object({
  * based on the evaluation type.
  */
 function isFundedPhase(evaluationType: string, phaseNumber: number): boolean {
-  switch (evaluationType) {
-    case 'Two Step':
-      return phaseNumber >= 3
-    case 'One Step':
-      return phaseNumber >= 2
-    case 'Instant':
-      return phaseNumber >= 1
-    default:
-      return phaseNumber >= 3 // Default to Two Step behavior
-  }
+  return isFundedPhaseForEvaluation(evaluationType, phaseNumber)
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {

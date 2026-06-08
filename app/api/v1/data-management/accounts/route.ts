@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
   const rateLimitResponse = await applyRateLimit(request, apiLimiter)
@@ -105,7 +106,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('[Data Management API] Error:', error)
+    logger.error('Data management accounts API failed', error, 'Data Management Accounts')
     return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 })
   }
 }

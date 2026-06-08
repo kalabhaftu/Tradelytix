@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { getTradeNetPnl } from '@/lib/metrics/pnl'
+import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -19,16 +20,7 @@ interface RouteParams {
  * based on the evaluation type.
  */
 function isFundedPhase(evaluationType: string, phaseNumber: number): boolean {
-  switch (evaluationType) {
-    case 'Two Step':
-      return phaseNumber >= 3
-    case 'One Step':
-      return phaseNumber >= 2
-    case 'Instant':
-      return phaseNumber >= 1
-    default:
-      return phaseNumber >= 3 // Default to Two Step behavior
-  }
+  return isFundedPhaseForEvaluation(evaluationType, phaseNumber)
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {

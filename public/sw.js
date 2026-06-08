@@ -329,8 +329,8 @@ async function syncProfileUpdates() {
     
     for (const update of pendingUpdates) {
       try {
-        const response = await fetch('/api/user/profile', {
-          method: 'PUT',
+        const response = await fetch('/api/auth/profile', {
+          method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -353,9 +353,7 @@ async function syncAnalyticsRequests() {
     // Refresh cached analytics data
     const cache = await caches.open(API_CACHE)
     const analyticsUrls = [
-      '/api/analytics/basic',
-      '/api/analytics/advanced',
-      '/api/analytics/performance'
+      '/api/v1/trades'
     ]
     
     for (const url of analyticsUrls) {

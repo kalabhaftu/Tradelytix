@@ -652,7 +652,7 @@ export async function expireAbandonedPayments(userId?: string) {
       const updated = await reconcilePaymentRecord(record.id, record.userId)
       if (updated?.providerStatus === 'expired') expiredCount++
     } catch (error) {
-      console.error(`[Subscription] Failed to expire payment ${record.id}:`, error)
+      logger.error(`Failed to expire payment record ${record.id}`, error, 'Subscription Expiry')
     }
   }
 
@@ -671,49 +671,68 @@ export async function runSubscriptionChecks() {
     results.errors.push(`Abandoned Cleanup: ${err instanceof Error ? err.message : 'unknown error'}`)
   }
 
-  // Find active subscriptions with upcoming due dates
-  const subscriptions = await prisma.subscription.findMany({
-    where: {
-      status: { in: ['active', 'past_due'] },
-      nextPaymentDue: { not: null },
-    },
-    include: { User: { select: { id: true, email: true } } },
-  })
+  // Find active subscriptions with upcoming due dates (processed in batches of 100)
+  const BATCH_SIZE = 100
+  let cursorId: string | undefined = undefined
+  let hasMore = true
 
-  for (const sub of subscriptions) {
-    try {
-      if (!sub.nextPaymentDue) continue
-      const daysUntilDue = Math.ceil((sub.nextPaymentDue.getTime() - now.getTime()) / 86400000)
+  while (hasMore) {
+    const subscriptions: any[] = await prisma.subscription.findMany({
+      where: {
+        status: { in: ['active', 'past_due'] },
+        nextPaymentDue: { not: null },
+      },
+      take: BATCH_SIZE,
+      ...(cursorId ? { skip: 1, cursor: { id: cursorId } } : {}),
+      include: { User: { select: { id: true, email: true } } },
+      orderBy: { id: 'asc' },
+    })
 
-      if (daysUntilDue === 3) {
-        await createPaymentNotification(sub.userId, 'PAYMENT_DUE_SOON', 'Payment Due Soon',
-          'Your subscription payment is due in 3 days.')
-        results.notified++
-      } else if (daysUntilDue === 1) {
-        await createPaymentNotification(sub.userId, 'PAYMENT_DUE_SOON', 'Payment Due Tomorrow',
-          'Your subscription payment is due tomorrow.')
-        results.notified++
-      } else if (daysUntilDue === 0) {
-        await createPaymentNotification(sub.userId, 'PAYMENT_DUE_TODAY', 'Payment Due Today',
-          'Your subscription payment is due today. Please renew to keep your access.')
-        results.notified++
-      } else if (daysUntilDue < 0 && daysUntilDue >= -GRACE_DAYS) {
-        // Within grace period
-        if (sub.status !== 'past_due') {
-          await prisma.subscription.update({ where: { id: sub.id }, data: { status: 'past_due' } })
+    if (subscriptions.length === 0) {
+      hasMore = false
+      break
+    }
+
+    cursorId = subscriptions[subscriptions.length - 1].id
+    if (subscriptions.length < BATCH_SIZE) {
+      hasMore = false
+    }
+
+    for (const sub of subscriptions) {
+      try {
+        if (!sub.nextPaymentDue) continue
+        const daysUntilDue = Math.ceil((sub.nextPaymentDue.getTime() - now.getTime()) / 86400000)
+
+        if (daysUntilDue === 3) {
+          await createPaymentNotification(sub.userId, 'PAYMENT_DUE_SOON', 'Payment Due Soon',
+            'Your subscription payment is due in 3 days.')
+          results.notified++
+        } else if (daysUntilDue === 1) {
+          await createPaymentNotification(sub.userId, 'PAYMENT_DUE_SOON', 'Payment Due Tomorrow',
+            'Your subscription payment is due tomorrow.')
+          results.notified++
+        } else if (daysUntilDue === 0) {
+          await createPaymentNotification(sub.userId, 'PAYMENT_DUE_TODAY', 'Payment Due Today',
+            'Your subscription payment is due today. Please renew to keep your access.')
+          results.notified++
+        } else if (daysUntilDue < 0 && daysUntilDue >= -GRACE_DAYS) {
+          // Within grace period
+          if (sub.status !== 'past_due') {
+            await prisma.subscription.update({ where: { id: sub.id }, data: { status: 'past_due' } })
+          }
+          await createPaymentNotification(sub.userId, 'PAYMENT_OVERDUE', 'Payment Overdue',
+            `Your payment is overdue. You have ${GRACE_DAYS + daysUntilDue} day(s) left before access is suspended.`)
+          results.notified++
+        } else if (daysUntilDue < -GRACE_DAYS) {
+          // Past grace period — expire
+          await prisma.subscription.update({ where: { id: sub.id }, data: { status: 'expired' } })
+          await createPaymentNotification(sub.userId, 'SUBSCRIPTION_EXPIRED', 'Subscription Expired',
+            'Your subscription has expired. Please renew to regain access.')
+          results.expired++
         }
-        await createPaymentNotification(sub.userId, 'PAYMENT_OVERDUE', 'Payment Overdue',
-          `Your payment is overdue. You have ${GRACE_DAYS + daysUntilDue} day(s) left before access is suspended.`)
-        results.notified++
-      } else if (daysUntilDue < -GRACE_DAYS) {
-        // Past grace period — expire
-        await prisma.subscription.update({ where: { id: sub.id }, data: { status: 'expired' } })
-        await createPaymentNotification(sub.userId, 'SUBSCRIPTION_EXPIRED', 'Subscription Expired',
-          'Your subscription has expired. Please renew to regain access.')
-        results.expired++
+      } catch (err) {
+        results.errors.push(`Sub ${sub.id}: ${err instanceof Error ? err.message : 'unknown error'}`)
       }
-    } catch (err) {
-      results.errors.push(`Sub ${sub.id}: ${err instanceof Error ? err.message : 'unknown error'}`)
     }
   }
 
@@ -758,6 +777,6 @@ async function createPaymentNotification(
       invalidationKey: options?.invalidationKey,
     })
   } catch (error) {
-    console.error('[Subscription] Failed to create notification:', error)
+    logger.error('Failed to create subscription notification', error, 'Subscription Notification')
   }
 }

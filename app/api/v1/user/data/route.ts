@@ -81,7 +81,7 @@ export async function DELETE(request: NextRequest) {
         const { deletePublicStorageUrls } = await import('@/server/storage-admin')
         await deletePublicStorageUrls(imageUrls)
       } catch (err) {
-        console.error('Failed to cleanup storage during user data wipe:', err)
+        logger.error('Storage cleanup failed during user data wipe', err, 'User Data Wipe')
       }
     }
 
@@ -214,7 +214,7 @@ export async function DELETE(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Delete all data error:', error)
+    logger.error('Delete all user data failed', error, 'User Data Delete')
     return NextResponse.json(
       { success: false, error: 'Failed to delete data. Please try again.' },
       { status: 500 }

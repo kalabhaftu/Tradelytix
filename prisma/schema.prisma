@@ -10,7 +10,7 @@ datasource db {
 }
 
 model Account {
-  id                     String                   @id
+  id                     String                   @id @default(cuid())
   number                 String
   name                   String?
   broker                 String?
@@ -100,12 +100,12 @@ model DailyAnchor {
 }
 
 model DailyNote {
-  id        String          @id
+  id        String          @id @default(cuid())
   userId    String
   date      DateTime        @db.Date
   note      String
   createdAt DateTime        @default(now())
-  updatedAt DateTime
+  updatedAt DateTime        @updatedAt
   accountId String?
   emotion   JournalEmotion?
   Account   Account?        @relation(fields: [accountId], references: [id], onDelete: Cascade)
@@ -219,7 +219,7 @@ model LiveAccountTransaction {
 }
 
 model MasterAccount {
-  id             String              @id
+  id             String              @id @default(cuid())
   userId         String
   accountName    String
   propFirmName   String
@@ -227,6 +227,7 @@ model MasterAccount {
   evaluationType String
   currentPhase   Int
   createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @default(now()) @updatedAt
   status         MasterAccountStatus @default(active)
   isArchived     Boolean             @default(false)
   User           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -260,7 +261,7 @@ model Payout {
 }
 
 model PhaseAccount {
-  id                     String             @id
+  id                     String             @id @default(cuid())
   masterAccountId        String
   phaseNumber            Int
   phaseId                String?
@@ -278,6 +279,7 @@ model PhaseAccount {
   minProfitForPayout     Float? // Min profit (in $) required to request payout (funded phases only)
   startDate              DateTime           @default(now())
   endDate                DateTime?
+  updatedAt              DateTime           @default(now()) @updatedAt
   BreachRecord           BreachRecord[]
   DailyAnchor            DailyAnchor[]
   Payout                 Payout[]
@@ -294,7 +296,7 @@ model PhaseAccount {
 }
 
 model Trade {
-  id                   String           @id
+  id                   String           @id @default(cuid())
   accountNumber        String
   quantity             Float            @default(0)
   entryId              String?
@@ -312,6 +314,7 @@ model Trade {
   side                 String?
   commission           Float            @default(0)
   createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @default(now()) @updatedAt
   comment              String?
   groupId              String?
   cardPreviewImage     String?

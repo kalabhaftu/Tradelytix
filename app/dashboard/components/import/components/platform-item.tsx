@@ -31,6 +31,7 @@ export function PlatformItem({
         onSelect={() => !platform.isDisabled && onSelect(platform.type)}
         onMouseEnter={() => onHover(platform.category)}
         onMouseLeave={onLeave}
+        data-tour={`platform-item-${platform.type}`}
         className={cn(
           "flex items-center gap-4 p-3.5 my-1.5 ml-4 mr-2 rounded-xl transition-all duration-200 border",
           platform.isDisabled && "opacity-40 select-none pointer-events-none",

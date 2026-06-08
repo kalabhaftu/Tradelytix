@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, models: formattedModels })
   } catch (error) {
-    console.error('Error fetching trading models:', error)
+    logger.error('Failed to fetch trading models', error, 'Trading Models')
     return NextResponse.json(
       { error: 'Failed to fetch models' },
       { status: 500 }

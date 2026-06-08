@@ -15,6 +15,7 @@ import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { getTradeNetPnl } from '@/lib/metrics/pnl'
 import { getRuntimeBreakEvenThreshold } from '@/server/user-settings'
+import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -25,16 +26,7 @@ interface RouteParams {
  * based on the evaluation type.
  */
 function isFundedPhase(evaluationType: string, phaseNumber: number): boolean {
-  switch (evaluationType) {
-    case 'Two Step':
-      return phaseNumber >= 3
-    case 'One Step':
-      return phaseNumber >= 2
-    case 'Instant':
-      return phaseNumber >= 1
-    default:
-      return phaseNumber >= 3 // Default to Two Step behavior
-  }
+  return isFundedPhaseForEvaluation(evaluationType, phaseNumber)
 }
 
 // Update validation schema (simplified for now)
@@ -82,10 +74,24 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
       }),
 
-      // 2. Get phases with minimal data (no trades)
+      // 2. Get phases with 10 most recent trades using nested include
       prisma.phaseAccount.findMany({
         where: {
           masterAccountId
+        },
+        include: {
+          Trade: {
+            select: {
+              id: true,
+              instrument: true,
+              symbol: true,
+              pnl: true,
+              exitTime: true,
+              entryTime: true,
+            },
+            orderBy: { exitTime: 'desc' },
+            take: 10
+          }
         },
         orderBy: { phaseNumber: 'asc' }
       }),
@@ -257,43 +263,26 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       evaluationType: masterAccount.evaluationType,
       currentPhase: currentPhase || null,
       status: masterAccount.status,
-      phases: await Promise.all(
-        phases.map(async (phase: typeof phases[number]) => {
-          // Fetch trades for each phase for the accordion view
-          const phaseTrades = await prisma.trade.findMany({
-            where: { phaseAccountId: phase.id },
-            select: {
-              id: true,
-              instrument: true,
-              symbol: true,
-              pnl: true,
-              exitTime: true,
-              entryTime: true,
-            },
-            orderBy: { exitTime: 'desc' },
-            take: 10, // Limit to 10 most recent trades per phase
-          })
-
-          return {
-            id: phase.id,
-            phaseNumber: phase.phaseNumber,
-            phaseId: phase.phaseId,
-            status: phase.status,
-            profitTargetPercent: phase.profitTargetPercent,
-            dailyDrawdownPercent: phase.dailyDrawdownPercent,
-            maxDrawdownPercent: phase.maxDrawdownPercent,
-            maxDrawdownType: phase.maxDrawdownType,
-            minTradingDays: phase.minTradingDays,
-            timeLimitDays: phase.timeLimitDays,
-            consistencyRulePercent: phase.consistencyRulePercent,
-            profitSplitPercent: phase.profitSplitPercent,
-            payoutCycleDays: phase.payoutCycleDays,
-            startDate: phase.startDate.toISOString(),
-            endDate: phase.endDate?.toISOString() || null,
-            trades: phaseTrades,
-          }
-        })
-      ),
+      phases: phases.map((phase: any) => {
+        return {
+          id: phase.id,
+          phaseNumber: phase.phaseNumber,
+          phaseId: phase.phaseId,
+          status: phase.status,
+          profitTargetPercent: phase.profitTargetPercent,
+          dailyDrawdownPercent: phase.dailyDrawdownPercent,
+          maxDrawdownPercent: phase.maxDrawdownPercent,
+          maxDrawdownType: phase.maxDrawdownType,
+          minTradingDays: phase.minTradingDays,
+          timeLimitDays: phase.timeLimitDays,
+          consistencyRulePercent: phase.consistencyRulePercent,
+          profitSplitPercent: phase.profitSplitPercent,
+          payoutCycleDays: phase.payoutCycleDays,
+          startDate: phase.startDate.toISOString(),
+          endDate: phase.endDate?.toISOString() || null,
+          trades: phase.Trade || [],
+        }
+      }),
       currentPnL: currentPhaseNetPnL,
       currentGrossPnL: currentPhaseGrossPnL,
       currentNetPnL: currentPhaseNetPnL,

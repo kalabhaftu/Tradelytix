@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
 
 export interface TradeRowProps {
     trade: any
@@ -13,13 +14,7 @@ function getPhaseDisplayName(evaluationType: string | undefined, phaseNumber: nu
 }
 
 function isFundedPhase(evaluationType: string | undefined, phaseNumber: number | undefined): boolean {
-    if (!phaseNumber) return false
-    switch (evaluationType) {
-        case 'Two Step': return phaseNumber >= 3
-        case 'One Step': return phaseNumber >= 2
-        case 'Instant': return phaseNumber >= 1
-        default: return phaseNumber >= 3
-    }
+    return isFundedPhaseForEvaluation(evaluationType || '', phaseNumber || 0)
 }
 
 function formatCurrency(amount: number | undefined | null) {

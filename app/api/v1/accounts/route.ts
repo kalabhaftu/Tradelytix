@@ -4,6 +4,8 @@ import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { calculateAccountBalance } from '@/lib/utils/balance-calculator'
 import { buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
+import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
   const rateLimitResponse = await applyRateLimit(request, apiLimiter)
@@ -37,12 +39,7 @@ export async function GET(request: NextRequest) {
     })
 
     const isFundedPhase = (evaluationType: string, phaseNumber: number): boolean => {
-      switch (evaluationType) {
-        case 'Two Step': return phaseNumber >= 3
-        case 'One Step': return phaseNumber >= 2
-        case 'Instant': return phaseNumber >= 1
-        default: return phaseNumber >= 3
-      }
+      return isFundedPhaseForEvaluation(evaluationType, phaseNumber)
     }
 
     // 3. Normalize to UnifiedAccount schema
@@ -213,7 +210,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('[API] /api/v1/accounts error:', error)
+    logger.error('/api/v1/accounts failed', error, 'Accounts API')
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -10,6 +10,7 @@ import { toast } from "sonner"
 import { useAccounts } from "@/hooks/use-accounts"
 import { useRealtimeAccounts } from "@/hooks/use-realtime-accounts"
 import { OptimizedAccountSelectionLoading } from "@/components/ui/optimized-loading"
+import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
 
 // Temporary translation function
 const useTranslations = () => {
@@ -45,17 +46,7 @@ interface UnifiedAccount {
  * based on the evaluation type.
  */
 function isFundedPhase(evaluationType: string | undefined, phaseNumber: number | undefined): boolean {
-  if (!phaseNumber) return false
-  switch (evaluationType) {
-    case 'Two Step':
-      return phaseNumber >= 3
-    case 'One Step':
-      return phaseNumber >= 2
-    case 'Instant':
-      return phaseNumber >= 1
-    default:
-      return phaseNumber >= 3 // Default to Two Step behavior
-  }
+  return isFundedPhaseForEvaluation(evaluationType || '', phaseNumber || 0)
 }
 
 /**
@@ -227,6 +218,7 @@ export default function AccountSelection({
               return (
                 <Card
                   key={account.id}
+                  data-tour="import-account-card"
                   className={cn(
                     "p-5 cursor-pointer hover:border-primary/30 hover:bg-muted/10 hover:scale-[1.015] hover:shadow-md transition-all duration-200 relative group flex flex-col justify-between rounded-2xl border",
                     isSelected 

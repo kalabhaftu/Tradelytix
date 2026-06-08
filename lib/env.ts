@@ -127,7 +127,10 @@ const envSchema = z.object({
     }
   })
 function validateEnv() {
-  const result = envSchema.safeParse(process.env)
+  const envData = Object.fromEntries(
+    Object.entries(process.env).map(([k, v]) => [k, v === '' ? undefined : v])
+  )
+  const result = envSchema.safeParse(envData)
   if (result.success) {
     return result.data
   }
@@ -162,11 +165,16 @@ function validateEnv() {
     )
   }
 
-  const parsedEnv = { ...process.env } as any
-  if (!parsedEnv.NODE_ENV) {
-    parsedEnv.NODE_ENV = 'development'
+  const envCopy = { ...envData } as Record<string, unknown>
+  for (const err of nonCriticalErrors) {
+    for (const path of err.path) {
+      envCopy[String(path)] = undefined
+    }
   }
-  return parsedEnv as Env
+  if (!envCopy.NODE_ENV) {
+    envCopy.NODE_ENV = 'development'
+  }
+  return envCopy as unknown as Env
 }
 
 // Export validated environment variables

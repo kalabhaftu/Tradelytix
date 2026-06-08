@@ -379,10 +379,10 @@ const useTradeTableColumns = ({
 
         return (
           <div className="flex items-center justify-center space-x-1.5">
-            <Button variant='secondary' size='sm' className="h-7 px-2 text-[11px]" onClick={() => onViewDetails(trade)}>
+            <Button variant='secondary' size='sm' className="h-7 px-2 text-[11px]" data-tour="view-trade-btn" onClick={() => onViewDetails(trade)}>
               View
             </Button>
-            <Button variant='ghost' size='sm' className="h-7 px-2 text-[11px]" onClick={() => onEditTrade(tradeToEdit)}>
+            <Button variant='ghost' size='sm' className="h-7 px-2 text-[11px]" data-tour="edit-trade-btn" onClick={() => onEditTrade(tradeToEdit)}>
               Edit
             </Button>
           </div>
@@ -762,10 +762,11 @@ export function TradeTableReview() {
               </TableHeader>
               <TableBody>
                 {table.getRowModel().rows.length ? (
-                  table.getRowModel().rows.map((row) => (
+                  table.getRowModel().rows.map((row, idx) => (
                     <React.Fragment key={row.id}>
                       <TableRow
                         data-state={row.getIsSelected() && 'selected'}
+                        data-tour={idx === 0 ? "trade-row-first" : undefined}
                         className="transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
                       >
                         {row.getVisibleCells().map((cell) => (

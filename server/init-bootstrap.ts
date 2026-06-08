@@ -45,6 +45,7 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
         isFirstConnection: true,
         firstName: true,
         lastName: true,
+        onboardingStatus: true,
         role: true,
         settings: {
           select: USER_SETTINGS_SELECT

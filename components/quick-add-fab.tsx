@@ -85,6 +85,7 @@ export function QuickAddFAB({ className }: QuickAddFABProps) {
                 type="button"
                 size="icon"
                 onClick={openQuickAdd}
+                data-tour="quick-add-btn"
                 className={cn(
                     "fixed bottom-28 right-6 h-14 w-14 rounded-full shadow-md z-[60]",
                     "bg-primary hover:bg-primary/90 text-primary-foreground",

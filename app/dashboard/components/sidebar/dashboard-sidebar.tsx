@@ -146,7 +146,7 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
                           !isOverlay && !isCollapsed && 'px-3'
                         )}
                       >
-                        <Link href={item.href} onClick={handleMobileClose}>
+                        <Link href={item.href} onClick={handleMobileClose} data-tour={`sidebar-${item.id}`}>
                           <item.icon />
                           <span>{item.label}</span>
                         </Link>
@@ -221,7 +221,7 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
                           !isOverlay && !isCollapsed && 'px-3'
                         )}
                       >
-                        <Link href={item.href} onClick={handleMobileClose}>
+                        <Link href={item.href} onClick={handleMobileClose} data-tour={`sidebar-${item.id}`}>
                           <item.icon />
                           <span>{item.label}</span>
                         </Link>

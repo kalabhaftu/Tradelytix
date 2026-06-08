@@ -370,7 +370,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
 
       {/* Main Grid — react-grid-layout */}
       {/* The ref div MUST always be in the DOM so ResizeObserver can measure width */}
-      <div className="px-2" ref={gridContainerRef}>
+      <div className="px-2" ref={gridContainerRef} data-tour="widget-canvas">
         {isMobile ? (
           <div className="flex flex-col gap-4 pb-4">
             {gridWidgets.map(widget => {

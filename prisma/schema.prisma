@@ -467,6 +467,7 @@ model User {
   chartStyle             String                   @default("smooth")
   role                   UserRole                 @default(user)
   autoAdjustAccountDate  Boolean                  @default(false)
+  onboardingStatus       Json?                    @map("onboarding_status")
   Account                Account[]
   BacktestTrade          BacktestTrade[]
   DailyNote              DailyNote[]

@@ -18,6 +18,10 @@ import { checkSubscriptionAccess } from "@/lib/services/subscription-guard";
 import { redirect } from "next/navigation";
 import { getSiteUiSettings } from "@/server/site-ui-settings";
 
+import { TourProvider } from "@/context/tour-context";
+import { TourTooltip } from "@/components/tour/tour-tooltip";
+import { ResumeWidget } from "@/components/tour/resume-widget";
+
 export default async function RootLayout({ children }: { children: ReactElement }) {
   const initialBootstrapData = await getInitBootstrapData()
   const siteUiSettings = await getSiteUiSettings()
@@ -35,26 +39,30 @@ export default async function RootLayout({ children }: { children: ReactElement 
   return (
     <TooltipProvider>
       <DataProvider initialBootstrapData={initialBootstrapData}>
-        <TagsProvider>
-          <TemplateProvider initialActiveTemplate={initialBootstrapData.activeTemplateShell}>
-              <div className="min-h-screen flex flex-col">
-                <Suspense fallback={<div className="flex flex-1" />}>
-                  <SidebarLayout siteUiSettings={siteUiSettings}>
-                    {children}
-                  </SidebarLayout>
-                </Suspense>
-                <Modals />
-                <MobileBottomNav />
-                <QuickAddFAB />
-                <CommandPalette />
-                <KeyboardShortcutsModal />
-                <Suspense fallback={null}>
-                  <GlobalTradeController />
-                </Suspense>
-                <WeeklyReviewTrigger />
-              </div>
-          </TemplateProvider>
-        </TagsProvider>
+        <TourProvider>
+          <TagsProvider>
+            <TemplateProvider initialActiveTemplate={initialBootstrapData.activeTemplateShell}>
+                <div className="min-h-screen flex flex-col">
+                  <Suspense fallback={<div className="flex flex-1" />}>
+                    <SidebarLayout siteUiSettings={siteUiSettings}>
+                      {children}
+                    </SidebarLayout>
+                  </Suspense>
+                  <Modals />
+                  <MobileBottomNav />
+                  <QuickAddFAB />
+                  <CommandPalette />
+                  <KeyboardShortcutsModal />
+                  <Suspense fallback={null}>
+                    <GlobalTradeController />
+                  </Suspense>
+                  <WeeklyReviewTrigger />
+                  <TourTooltip />
+                  <ResumeWidget />
+                </div>
+            </TemplateProvider>
+          </TagsProvider>
+        </TourProvider>
       </DataProvider>
     </TooltipProvider>
   );

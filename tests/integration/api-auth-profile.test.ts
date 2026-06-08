@@ -47,6 +47,7 @@ type MockUser = {
   autoAdjustAccountDate: boolean
   breakEvenThreshold: number
   aiSettings: Record<string, unknown> | null
+  onboardingStatus: Record<string, unknown> | null
 }
 
 function pickSelected<T extends Record<string, unknown>>(row: T, select?: Record<string, boolean>) {
@@ -83,6 +84,7 @@ describe('GET/PATCH /api/auth/profile', () => {
         autoGenerateInsights: false,
         includeAiInsightsInNotifications: false,
       },
+      onboardingStatus: null,
     }
 
     mocks.getResolvedUserIdentitySafe.mockResolvedValue({
@@ -95,6 +97,9 @@ describe('GET/PATCH /api/auth/profile', () => {
         return null
       }
       const base = pickSelected(userRow as Record<string, unknown>, args?.select)
+      if (args?.select?.onboardingStatus) {
+        base.onboardingStatus = userRow.onboardingStatus
+      }
       if (args?.select?.settings) {
         base.settings = {
           timezone: 'America/New_York',
@@ -248,5 +253,32 @@ describe('GET/PATCH /api/auth/profile', () => {
       autoGenerateInsights: true,
       includeAiInsightsInNotifications: true,
     })
+  })
+
+  it('persists onboardingStatus and reads it back with GET', async () => {
+    const { PATCH, GET } = await import('@/app/api/auth/profile/route')
+
+    const statusObj = {
+      core_onboarding_completed: true,
+      version_2_1_feature_tour_completed: false,
+    }
+
+    const patchResponse = await PATCH(
+      new Request('http://localhost/api/auth/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ onboardingStatus: statusObj }),
+      }) as any
+    )
+
+    const patchBody = await patchResponse.json()
+    expect(patchResponse.status).toBe(200)
+    expect(patchBody.data.onboardingStatus.core_onboarding_completed).toBe(true)
+
+    const getResponse = await GET()
+    const getBody = await getResponse.json()
+    expect(getResponse.status).toBe(200)
+    expect(getBody.data.onboardingStatus.core_onboarding_completed).toBe(true)
+    expect(getBody.data.onboardingStatus.last_updated).toBeDefined()
   })
 })

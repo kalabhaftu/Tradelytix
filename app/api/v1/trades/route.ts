@@ -378,26 +378,35 @@ export async function GET(request: NextRequest) {
       relevantTransactions = []
     }
 
+    const safeWidget = <T>(fn: () => T, fallback: T): T => {
+      try { return fn() } catch { return fallback }
+    }
+    const zeroBalanceResult = {
+      startingBalance: 0, currentBalance: 0, currentGrossBalance: 0,
+      totalPnL: 0, grossPnL: 0, totalFees: 0, totalCommissions: 0,
+      netPnL: 0, displayPnL: 0, displayBalance: 0, pnlDisplayMode: 'net' as const,
+      changeAmount: 0, changePercent: 0,
+    }
     const widgets = includeWidgets ? {
-      equityCurve: calculateEquityCurve(trades),
-      netDailyPnl: calculateNetDailyPnl(trades, breakEvenThreshold),
-      dailyCumulativePnl: calculateDailyCumulativePnl(trades, breakEvenThreshold),
-      outcomeDistribution: calculateOutcomeDistribution(trades, breakEvenThreshold),
-      dayOfWeekPerformance: calculateDayOfWeekPerformance(trades, breakEvenThreshold),
-      accountBalanceChart: calculateAccountBalanceChart(trades, filteredAccounts, breakEvenThreshold),
-      pnlByStrategy: calculatePnlByStrategy(trades, breakEvenThreshold),
-      pnlByInstrument: calculatePnlByInstrument(trades, breakEvenThreshold),
-      winRateByStrategy: calculateWinRateByStrategy(trades, breakEvenThreshold),
-      tradeDurationPerformance: calculateTradeDurationPerformance(trades, breakEvenThreshold),
-      weekdayPnl: calculateWeekdayPnl(trades, breakEvenThreshold),
-      performanceScore: calculatePerformanceScoreResult(trades, breakEvenThreshold),
-      sessionAnalysis: calculateSessionAnalysis(trades, breakEvenThreshold),
-      accountProgression: calculateAccountProgression(trades, filteredAccounts, breakEvenThreshold),
-      tagPerformance: calculateTagPerformance(trades, breakEvenThreshold),
-      timeOfDayPerformance: calculateTimeOfDayPerformance(trades, breakEvenThreshold),
-      disciplineAnalytics: calculateDisciplineAnalytics(trades, breakEvenThreshold),
+      equityCurve: safeWidget(() => calculateEquityCurve(trades), []),
+      netDailyPnl: safeWidget(() => calculateNetDailyPnl(trades, breakEvenThreshold), []),
+      dailyCumulativePnl: safeWidget(() => calculateDailyCumulativePnl(trades, breakEvenThreshold), []),
+      outcomeDistribution: safeWidget(() => calculateOutcomeDistribution(trades, breakEvenThreshold), { data: [], totalTrades: 0 } as any),
+      dayOfWeekPerformance: safeWidget(() => calculateDayOfWeekPerformance(trades, breakEvenThreshold), []),
+      accountBalanceChart: safeWidget(() => calculateAccountBalanceChart(trades, filteredAccounts, breakEvenThreshold), []),
+      pnlByStrategy: safeWidget(() => calculatePnlByStrategy(trades, breakEvenThreshold), []),
+      pnlByInstrument: safeWidget(() => calculatePnlByInstrument(trades, breakEvenThreshold), []),
+      winRateByStrategy: safeWidget(() => calculateWinRateByStrategy(trades, breakEvenThreshold), []),
+      tradeDurationPerformance: safeWidget(() => calculateTradeDurationPerformance(trades, breakEvenThreshold), []),
+      weekdayPnl: safeWidget(() => calculateWeekdayPnl(trades, breakEvenThreshold), []),
+      performanceScore: safeWidget(() => calculatePerformanceScoreResult(trades, breakEvenThreshold), { hasData: false } as any),
+      sessionAnalysis: safeWidget(() => calculateSessionAnalysis(trades, breakEvenThreshold), {} as any),
+      accountProgression: safeWidget(() => calculateAccountProgression(trades, filteredAccounts, breakEvenThreshold), { cumulative: [], balance: [], summary: {} } as any),
+      tagPerformance: safeWidget(() => calculateTagPerformance(trades, breakEvenThreshold), {} as any),
+      timeOfDayPerformance: safeWidget(() => calculateTimeOfDayPerformance(trades, breakEvenThreshold), []),
+      disciplineAnalytics: safeWidget(() => calculateDisciplineAnalytics(trades, breakEvenThreshold), { totalTrades: 0, brokenRules: 0, ruleBrokenRate: 0, ruleCoverage: 0, avgRulesPerTaggedTrade: 0, playbooks: [] } as any),
       calendarData: widgetCalendarData,
-      accountBalancePnl: calculateBalanceInfo(filteredAccounts, trades, relevantTransactions, { pnlDisplayMode }),
+      accountBalancePnl: safeWidget(() => calculateBalanceInfo(filteredAccounts, trades, relevantTransactions, { pnlDisplayMode }), zeroBalanceResult),
     } : null
 
     const total = useDirectPagination ? (totalForDirectPagination ?? rawTrades.length) : responseTrades.length

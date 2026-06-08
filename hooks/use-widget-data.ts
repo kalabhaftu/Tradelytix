@@ -12,10 +12,11 @@ import { useData } from '@/context/data-provider'
  * that each re-ran the entire trades query.
  */
 export function useWidgetData(type: string) {
-  const { widgetData } = useData()
+  const { widgetData, error } = useData()
 
   return {
     data: widgetData?.[type] ?? [],
-    isLoading: widgetData === null,
+    isLoading: widgetData === null && !error,
+    error: error ?? null
   }
 }

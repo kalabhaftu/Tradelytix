@@ -225,77 +225,7 @@ export default async function RootLayout({
           `}
         </Script>
 
-        {/* DOM patches for third-party widget compatibility */}
-        <Script id="dom-patches" strategy="beforeInteractive">
-          {`
-            (function() {
-              if (typeof Node === 'function' && Node.prototype) {
-                var originalRemoveChild = Node.prototype.removeChild;
-                Node.prototype.removeChild = function(child) {
-                  try {
-                    if (child.parentNode !== this) {
-                      return child;
-                    }
-                    return originalRemoveChild.call(this, child);
-                  } catch (error) {
-                    return child;
-                  }
-                };
-              }
-            })();
-          `}
-        </Script>
 
-        {/* Prevent Google Translate DOM manipulation */}
-        <Script id="prevent-google-translate" strategy="afterInteractive">
-          {`
-            // Function to prevent Google Translate from modifying the DOM
-            function preventGoogleTranslate() {
-              if (!document.body) return;
-
-              // Prevent Google Translate from modifying the DOM
-              const observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                  if (mutation.type === 'childList' &&
-                      mutation.target.classList &&
-                      mutation.target.classList.contains('goog-te-menu-frame')) {
-                    // Prevent Google Translate from modifying our React components
-                    const elements = document.querySelectorAll('[class*="goog-te-"]');
-                    elements.forEach((el) => {
-                      if (el.tagName === 'SPAN' && el.parentElement) {
-                        // Preserve the original text content
-                        const originalText = el.getAttribute('data-original-text') || el.textContent;
-                        el.textContent = originalText;
-                      }
-                    });
-                  }
-                });
-              });
-
-              // Start observing the document with the configured parameters
-              observer.observe(document.body, {
-                childList: true,
-                subtree: true,
-                attributes: true,
-                attributeFilter: ['class']
-              });
-
-              // Prevent Google Translate from initializing
-              if (window.google && window.google.translate) {
-                window.google.translate.TranslateElement = function() {
-                  return {
-                    translate: function() {
-                      return false;
-                    }
-                  };
-                };
-              }
-            }
-
-            // Run the prevention function
-            preventGoogleTranslate();
-          `}
-        </Script>
 
         <ErrorBoundaryWrapper showDetails={process.env.NODE_ENV === 'development'}>
           <ThemeProvider>

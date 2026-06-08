@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { nanoid } from 'nanoid'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
     })
     return NextResponse.json({ goals })
   } catch (err) {
-    console.error('[Goals GET]', err)
+    logger.error('Failed to fetch goals', err, 'Goals GET')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ goal })
   } catch (err) {
-    console.error('[Goals POST]', err)
+    logger.error('Failed to create goal', err, 'Goals POST')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -388,6 +388,7 @@ export function JournalClient() {
           variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
           size="sm"
           className="h-8 gap-2 rounded-lg"
+          data-tour="journal-view-cards-btn"
           onClick={() => setViewMode('grid')}
         >
           <LayoutGrid className="h-4 w-4" />
@@ -397,6 +398,7 @@ export function JournalClient() {
           variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
           size="sm"
           className="h-8 gap-2 rounded-lg"
+          data-tour="journal-view-calendar-btn"
           onClick={() => setViewMode('calendar')}
         >
           <CalendarIcon className="h-4 w-4" />

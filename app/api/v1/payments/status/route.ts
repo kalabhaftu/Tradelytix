@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { prisma } from '@/lib/prisma'
 import { refreshPaymentRecordStatus } from '@/lib/services/subscription'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
   try {
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: payload })
   } catch (error) {
-    console.error('[Payment] Status check error:', error)
+    logger.error('Payment status check failed', error, 'Payment Status')
     return NextResponse.json({ success: false, error: 'Failed to check status' }, { status: 500 })
   }
 }

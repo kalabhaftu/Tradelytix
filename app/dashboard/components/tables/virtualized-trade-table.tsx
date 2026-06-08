@@ -1,14 +1,14 @@
 'use client'
 
-import { memo, useMemo } from 'react'
+import React, { memo, useMemo } from 'react'
 import { Trade } from '@prisma/client'
-import { TableCell } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { cn, formatQuantity, classifyTrade } from "@/lib/utils"
 import { formatTradePrice } from '@/lib/trading/precision'
 import { ArrowUpRight, ArrowDownRight } from "lucide-react"
 import { formatTimeInZone } from '@/lib/time-utils'
 import { useUserStore } from '@/store/user-store'
+import { List } from 'react-window'
 
 interface VirtualizedTradeTableProps {
   trades: Trade[]
@@ -34,10 +34,20 @@ const TradeRow = memo(({ trade, isSelected, onTradeClick, onTradeSelect }: {
 
   const Icon = outcome === 'win' ? ArrowUpRight : ArrowDownRight
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onTradeClick?.(trade)
+    }
+  }
+
   return (
     <div
+      role="row"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
       className={cn(
-        "flex items-center gap-4 px-4 py-3 border-b cursor-pointer hover:bg-muted/50 transition-colors",
+        "flex items-center gap-4 px-4 py-3 border-b cursor-pointer hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         isSelected && "bg-accent"
       )}
       onClick={() => onTradeClick?.(trade)}
@@ -45,18 +55,15 @@ const TradeRow = memo(({ trade, isSelected, onTradeClick, onTradeSelect }: {
     >
       {/* Checkbox */}
       {onTradeSelect && (
-        <div
-          className="flex-shrink-0"
-          onClick={(e) => {
-            e.stopPropagation()
-            onTradeSelect(trade.id)
-          }}
-        >
+        <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox"
             checked={isSelected}
-            onChange={() => { }}
-            className="h-4 w-4 cursor-pointer"
+            onChange={(e) => {
+              onTradeSelect(trade.id)
+            }}
+            className="h-4 w-4 cursor-pointer focus:ring-primary"
+            aria-label={`Select trade in ${trade.instrument || trade.symbol || 'unknown instrument'}`}
           />
         </div>
       )}
@@ -123,6 +130,39 @@ const TradeRow = memo(({ trade, isSelected, onTradeClick, onTradeSelect }: {
 
 TradeRow.displayName = 'TradeRow'
 
+// Row component wrapper for react-window List
+const VirtualizedRow = memo(({
+  index,
+  style,
+  trades,
+  selectedTrades,
+  onTradeClick,
+  onTradeSelect
+}: {
+  index: number
+  style: React.CSSProperties
+  trades: Trade[]
+  selectedTrades: Set<string>
+  onTradeClick?: (trade: Trade) => void
+  onTradeSelect?: (tradeId: string) => void
+}): React.ReactElement | null => {
+  const trade = trades[index]
+  if (!trade) return null
+
+  return (
+    <div style={style}>
+      <TradeRow
+        trade={trade}
+        isSelected={selectedTrades.has(trade.id)}
+        onTradeClick={onTradeClick}
+        onTradeSelect={onTradeSelect}
+      />
+    </div>
+  )
+})
+
+VirtualizedRow.displayName = 'VirtualizedRow'
+
 export const VirtualizedTradeTable = memo(function VirtualizedTradeTable({
   trades,
   onTradeClick,
@@ -132,23 +172,6 @@ export const VirtualizedTradeTable = memo(function VirtualizedTradeTable({
 
   // Calculate container height (max 800px or viewport height - 200px)
   const containerHeight = Math.min(800, typeof window !== 'undefined' ? window.innerHeight - 200 : 800)
-
-  // Row renderer for react-window
-  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
-    const trade = trades[index]
-    if (!trade) return null
-
-    return (
-      <div style={style}>
-        <TradeRow
-          trade={trade}
-          isSelected={selectedTrades.has(trade.id)}
-          onTradeClick={onTradeClick}
-          onTradeSelect={onTradeSelect}
-        />
-      </div>
-    )
-  }
 
   if (trades.length === 0) {
     return (
@@ -179,17 +202,22 @@ export const VirtualizedTradeTable = memo(function VirtualizedTradeTable({
         <span>{trades.length} total</span>
       </div>
 
-      {/* Trades List */}
-      <div style={{ maxHeight: containerHeight, overflowY: 'auto' }} className="overflow-x-auto">
-        {trades.map((trade, index) => (
-          <TradeRow
-            key={trade.id}
-            trade={trade}
-            isSelected={selectedTrades.has(trade.id)}
-            onTradeClick={onTradeClick}
-            onTradeSelect={onTradeSelect}
+      {/* Virtualized Trades List */}
+      <div className="overflow-x-auto">
+        <div style={{ minWidth: 980, height: containerHeight }}>
+          <List
+            rowCount={trades.length}
+            rowHeight={ROW_HEIGHT}
+            rowComponent={VirtualizedRow as any}
+            rowProps={{
+              trades,
+              selectedTrades,
+              onTradeClick,
+              onTradeSelect
+            }}
+            style={{ height: containerHeight, width: '100%' }}
           />
-        ))}
+        </div>
       </div>
 
       {/* Footer with count */}

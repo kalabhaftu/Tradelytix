@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { getUserAccessStatus } from '@/lib/services/subscription'
 import { prisma } from '@/lib/prisma'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('[Subscription] Status check error:', error)
+    logger.error('Subscription status check failed', error, 'Subscription Status')
     return NextResponse.json({ success: false, error: 'Failed to check status' }, { status: 500 })
   }
 }

@@ -43,6 +43,7 @@ import {
   X
 } from "lucide-react"
 import { CreateLiveAccountDialog } from "../components/accounts/create-live-account-dialog"
+import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
 import { CreatePropFirmDialog } from "../components/prop-firm/create-prop-firm-dialog"
 import { EditLiveAccountDialog } from "@/components/edit-live-account-dialog"
 import { EditPropFirmAccountDialog } from "@/components/edit-prop-firm-account-dialog"
@@ -106,13 +107,7 @@ interface Account {
 
 // Helper functions
 function isFundedPhase(evaluationType: string | undefined, phaseNumber: number | undefined): boolean {
-  if (!phaseNumber) return false
-  switch (evaluationType) {
-    case 'Two Step': return phaseNumber >= 3
-    case 'One Step': return phaseNumber >= 2
-    case 'Instant': return phaseNumber >= 1
-    default: return phaseNumber >= 3
-  }
+  return isFundedPhaseForEvaluation(evaluationType || '', phaseNumber || 0)
 }
 
 function isAccountFunded(account: Account): boolean {
@@ -482,13 +477,13 @@ export default function AccountsPage() {
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button className="h-9 gap-2">
+                      <Button className="h-9 gap-2" data-tour="add-account-btn">
                         <Plus className="h-4 w-4" />
                         <span className="hidden sm:inline">New Account</span>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-52">
-                      <DropdownMenuItem onClick={() => setCreateLiveDialogOpen(true)} className="gap-3 py-2.5">
+                      <DropdownMenuItem onClick={() => setCreateLiveDialogOpen(true)} className="gap-3 py-2.5" data-tour="create-live-item">
                         <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
                           <User  className="h-4 w-4 text-muted-foreground" />
                         </div>
@@ -497,7 +492,7 @@ export default function AccountsPage() {
                           <div className="text-xs text-muted-foreground">Personal trading</div>
                         </div>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setCreatePropFirmDialogOpen(true)} className="gap-3 py-2.5">
+                      <DropdownMenuItem onClick={() => setCreatePropFirmDialogOpen(true)} className="gap-3 py-2.5" data-tour="create-prop-item">
                         <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
                           <Buildings className="h-4 w-4 text-muted-foreground"  />
                         </div>

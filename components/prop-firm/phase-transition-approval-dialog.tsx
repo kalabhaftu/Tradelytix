@@ -25,6 +25,7 @@ import { toast } from "sonner"
 import { Notification } from '@prisma/client'
 import { clearAccountsCache } from '@/hooks/use-accounts'
 import { useData } from '@/context/data-provider'
+import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
 
 interface PhaseTransitionApprovalDialogProps {
   open: boolean
@@ -47,16 +48,7 @@ interface NotificationData {
  * Helper function to determine if a phase number represents the funded stage
  */
 function isFundedPhase(evaluationType: string | undefined, phaseNumber: number): boolean {
-  switch (evaluationType) {
-    case 'Two Step':
-      return phaseNumber >= 3
-    case 'One Step':
-      return phaseNumber >= 2
-    case 'Instant':
-      return phaseNumber >= 1
-    default:
-      return phaseNumber >= 3
-  }
+  return isFundedPhaseForEvaluation(evaluationType || '', phaseNumber)
 }
 
 export function PhaseTransitionApprovalDialog({

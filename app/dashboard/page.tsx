@@ -2,7 +2,7 @@
 
 import NextDynamic from 'next/dynamic'
 import { useEffect, useRef, useState, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { useUserStore } from "@/store/user-store"
 import { cn } from "@/lib/utils"
 
@@ -29,6 +29,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 function DashboardContent() {
   const mainRef = useRef<HTMLElement>(null)
   const searchParams = useSearchParams()
+  const router = useRouter()
 
   // Simple user check
   const user = useUserStore(state => state.user)
@@ -44,10 +45,10 @@ function DashboardContent() {
         'backtesting': '/dashboard/backtesting'
       }
       if (routes[tab]) {
-        window.location.href = routes[tab]
+        router.push(routes[tab])
       }
     }
-  }, [searchParams])
+  }, [searchParams, router])
 
   useEffect(() => {
     const updateNavbarHeight = () => {

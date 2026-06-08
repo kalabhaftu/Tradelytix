@@ -17,7 +17,8 @@ import { ThemeSwitcher } from '@/components/theme-switcher'
 import { TemplateSelector } from './template-selector'
 import { DashboardDisplayModeSelector } from './navbar-display-mode'
 import { signOut } from '@/server/auth'
-import { Settings, LogOut, Wallet } from 'lucide-react'
+import { Settings, LogOut, Wallet, Plus } from 'lucide-react'
+import { useQuickAddStore } from '@/store/quick-add-store'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -86,7 +87,7 @@ export default function Navbar() {
           {/* Account Selector — hidden on mobile, shown in profile dropdown */}
           <Popover open={!isMobile && accountPopoverOpen} onOpenChange={setAccountPopoverOpen}>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="hidden h-8 w-8 text-muted-foreground hover:bg-muted/40 hover:text-foreground sm:flex">
+              <Button variant="ghost" size="icon" data-tour="navbar-accounts-btn" className="hidden h-8 w-8 text-muted-foreground hover:bg-muted/40 hover:text-foreground sm:flex">
                 <Wallet className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
@@ -118,6 +119,18 @@ export default function Navbar() {
           <div className="hidden md:block">
             <TemplateSelector />
           </div>
+
+          {/* Quick Add Trade — always visible on desktop */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => useQuickAddStore.getState().openQuickAdd()}
+            data-tour="quick-add-btn"
+            className="hidden h-8 w-8 text-muted-foreground hover:bg-muted/40 hover:text-foreground sm:flex items-center justify-center rounded-lg"
+            title="Quick Add Trade"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
 
           {/* Import — always visible, icon only on mobile */}
           <ImportButton />

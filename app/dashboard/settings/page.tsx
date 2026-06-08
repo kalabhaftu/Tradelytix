@@ -69,6 +69,7 @@ import {
   Activity,
   Webhook,
   Link2 as LinkIcon,
+  BookMarked,
 } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from 'next/link'
@@ -77,6 +78,7 @@ import { toast } from "sonner"
 import { CacheManagement } from "./components/cache-management"
 import { PageHeader } from "@/components/ui/page-header"
 import { getUserAvatarUrl } from "@/lib/user-avatar"
+import { useTour } from '@/context/tour-context'
 
 const timezones = [
   'UTC',
@@ -601,7 +603,7 @@ export default function SettingsPage() {
 
   const themeInfo = getThemeDisplay()
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'integrations' | 'connections' | 'security'>('profile')
+  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'integrations' | 'connections' | 'security' | 'help'>('profile')
 
   const categories = [
     { id: 'profile' as const, label: 'Profile & Plan', icon: User },
@@ -609,7 +611,103 @@ export default function SettingsPage() {
     { id: 'integrations' as const, label: 'Integrations', icon: Webhook },
     { id: 'connections' as const, label: 'Linked Accounts', icon: LinkIcon },
     { id: 'security' as const, label: 'Security & Data', icon: Shield },
+    { id: 'help' as const, label: 'Help & Tutorials', icon: BookMarked },
   ]
+
+  const { startTour } = useTour()
+
+  const renderHelpTab = () => {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-lg font-semibold text-heading-text">Help & Tutorials</h2>
+          <p className="text-xs text-muted-foreground/85">Restart interactive system tours to learn more about the platform</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-xl border border-border/40 bg-card/45 p-5 space-y-3 flex flex-col justify-between">
+            <div className="space-y-1.5">
+              <h3 className="text-sm font-semibold text-heading-text flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Core Onboarding Tour
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Take a quick walkthrough of the core platform layout, configure your timezone/theme in settings, and log a mock trade.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs"
+              onClick={() => startTour('onboarding')}
+            >
+              Start Onboarding Tour
+            </Button>
+          </div>
+
+          <div className="rounded-xl border border-border/40 bg-card/45 p-5 space-y-3 flex flex-col justify-between">
+            <div className="space-y-1.5">
+              <h3 className="text-sm font-semibold text-heading-text flex items-center gap-2">
+                <LayoutGrid className="h-4 w-4 text-primary" />
+                Trading Dashboard Tour
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Learn how to filter your data by specific trading accounts, customize and resize widgets on the dashboard canvas.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs"
+              onClick={() => startTour('dashboard')}
+            >
+              Start Dashboard Tour
+            </Button>
+          </div>
+
+          <div className="rounded-xl border border-border/40 bg-card/45 p-5 space-y-3 flex flex-col justify-between">
+            <div className="space-y-1.5">
+              <h3 className="text-sm font-semibold text-heading-text flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                Performance Analytics Tour
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Explore the reports view, analyze win-rates, profit factor metrics, trade duration stats, and weekly journal calendars.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs"
+              onClick={() => startTour('analytics')}
+            >
+              Start Analytics Tour
+            </Button>
+          </div>
+
+          <div className="rounded-xl border border-border/40 bg-card/45 p-5 space-y-3 flex flex-col justify-between">
+            <div className="space-y-1.5">
+              <h3 className="text-sm font-semibold text-heading-text flex items-center gap-2">
+                <SettingsIcon className="h-4 w-4 text-primary" />
+                Settings & Customization Tour
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Understand how to modify preferences, toggle light/dark modes, add API credentials, and sync broker accounts.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs"
+              onClick={() => startTour('settings')}
+            >
+              Start Settings Tour
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const renderProfileTab = () => {
     return (
@@ -620,7 +718,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Profile Card */}
-        <div className="rounded-xl border border-border/40 bg-card/45 p-6 space-y-6">
+        <div className="rounded-xl border border-border/40 bg-card/45 p-6 space-y-6" data-tour="settings-card-profile">
           <div className="flex items-start justify-between gap-4">
             <h3 className="text-sm font-semibold text-heading-text flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -804,7 +902,7 @@ export default function SettingsPage() {
             action={
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 min-w-[110px] h-8 text-xs">
+                  <Button variant="outline" size="sm" className="gap-2 min-w-[110px] h-8 text-xs" data-tour="theme-switcher-container">
                     <themeInfo.icon className="h-3.5 w-3.5" />
                     {themeInfo.label}
                   </Button>
@@ -1326,6 +1424,7 @@ export default function SettingsPage() {
               <button
                 key={cat.id}
                 onClick={() => setActiveTab(cat.id)}
+                data-tour={`settings-tab-${cat.id}`}
                 className={cn(
                   "relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-nowrap md:w-full text-left shrink-0",
                   isActive
@@ -1356,11 +1455,12 @@ export default function SettingsPage() {
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="space-y-8"
           >
-            {activeTab === 'profile' && renderProfileTab()}
+             {activeTab === 'profile' && renderProfileTab()}
             {activeTab === 'preferences' && renderPreferencesTab()}
             {activeTab === 'integrations' && renderIntegrationsTab()}
             {activeTab === 'connections' && renderConnectionsTab()}
             {activeTab === 'security' && renderSecurityTab()}
+            {activeTab === 'help' && renderHelpTab()}
           </motion.div>
         </div>
       </div>

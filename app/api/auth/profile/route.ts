@@ -33,6 +33,7 @@ export async function GET() {
         email: true,
         firstName: true,
         lastName: true,
+        onboardingStatus: true,
         settings: {
           select: USER_SETTINGS_SELECT
         }
@@ -85,7 +86,8 @@ export async function PATCH(request: NextRequest) {
       autoAdjustAccountDate,
       breakEvenThreshold,
       pnlDisplayMode,
-      aiSettings
+      aiSettings,
+      onboardingStatus
     } = body
 
     // Validate input — only check fields that are actually provided
@@ -131,6 +133,7 @@ export async function PATCH(request: NextRequest) {
         email: true,
         firstName: true,
         lastName: true,
+        onboardingStatus: true,
         settings: {
           select: USER_SETTINGS_SELECT
         }
@@ -147,6 +150,17 @@ export async function PATCH(request: NextRequest) {
     const userUpdateData: Record<string, any> = {}
     if (firstName !== undefined) userUpdateData.firstName = firstName?.trim() || null
     if (lastName !== undefined) userUpdateData.lastName = lastName?.trim() || null
+
+    if (onboardingStatus !== undefined) {
+      const currentOnboardingStatus = currentUser.onboardingStatus && typeof currentUser.onboardingStatus === 'object'
+        ? currentUser.onboardingStatus
+        : {}
+      userUpdateData.onboardingStatus = {
+        ...currentOnboardingStatus,
+        ...(typeof onboardingStatus === 'object' && onboardingStatus ? onboardingStatus : {}),
+        last_updated: new Date().toISOString()
+      }
+    }
 
     const settingsPatch = pickSettingsPatch({
       accentPack,
@@ -172,6 +186,7 @@ export async function PATCH(request: NextRequest) {
           email: true,
           firstName: true,
           lastName: true,
+          onboardingStatus: true,
         }
       })
 

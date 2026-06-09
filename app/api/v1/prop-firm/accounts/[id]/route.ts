@@ -530,16 +530,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
           (phase: (typeof existingAccount.PhaseAccount)[number]) => phase.phaseId
         ).filter(Boolean) as string[]
 
-      // Delete all trades associated with this master account
-      // This covers both phaseAccountId and accountNumber links
+      // Delete all trades associated with this master account strictly by phaseAccountId UUIDs
+      // to prevent deleting trades of other accounts that share the same phaseId or accountName
       await tx.trade.deleteMany({
         where: {
-          OR: [
-            { phaseAccountId: { in: phaseIds } },
-            { accountNumber: { in: phaseAccountNumbers } },
-            // Also delete any trades that might be linked by master account name
-            { accountNumber: existingAccount.accountName }
-          ]
+          phaseAccountId: { in: phaseIds }
         }
       })
 

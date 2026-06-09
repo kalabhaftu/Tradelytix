@@ -1083,11 +1083,11 @@ export async function linkTradesToCurrentPhase(accountId: string, trades: any[])
     } else {
       // Regular account - batch update
       const regularAccount = await prisma.account.findFirst({
-        where: { number: trades[0]?.accountNumber }
+        where: { id: accountId, userId }
       })
 
       if (!regularAccount) {
-        throw new Error(`No account found with account number "${trades[0]?.accountNumber}". Please create the account first.`)
+        throw new Error(`Account not found (ID: ${accountId}). Please create the account first.`)
       }
 
       // Create trades with account linking

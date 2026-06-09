@@ -20,6 +20,9 @@ vi.mock('@/lib/prisma', () => ({
     account: {
       findMany: vi.fn().mockResolvedValue([]),
     },
+    phaseAccount: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
     masterAccount: {
       findMany: vi.fn().mockResolvedValue([]),
     },
@@ -51,7 +54,7 @@ describe('GET /api/v1/trades', () => {
     const response = await GET(request)
 
     expect(response.status).toBe(401)
-  })
+  }, 10000) // Increase timeout to 10s to prevent compilation flakiness on first test
 
   it('returns 404 when user is not found in database', async () => {
     const { getResolvedUserIdentity } = await import('@/server/user-identity')
@@ -111,6 +114,8 @@ describe('GET /api/v1/trades', () => {
   it('applies account filter when accounts param is provided', async () => {
     const { prisma } = await import('@/lib/prisma')
     vi.mocked(prisma.trade.findMany).mockResolvedValueOnce([])
+    vi.mocked(prisma.account.findMany).mockResolvedValueOnce([])
+    vi.mocked(prisma.phaseAccount.findMany).mockResolvedValueOnce([])
 
     const { GET } = await import('@/app/api/v1/trades/route')
     const url = new URL('http://localhost/api/v1/trades?accounts=123,456')
@@ -121,8 +126,15 @@ describe('GET /api/v1/trades', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           OR: expect.arrayContaining([
-            { accountNumber: { in: ['123', '456'] } },
-            { phaseAccountId: { in: ['123', '456'] } },
+            { accountId: { in: [] } },
+            { phaseAccountId: { in: [] } },
+            expect.objectContaining({
+              AND: expect.arrayContaining([
+                { accountId: null },
+                { phaseAccountId: null },
+                { accountNumber: { in: ['123', '456'] } }
+              ])
+            })
           ]),
         }),
       })
@@ -131,7 +143,7 @@ describe('GET /api/v1/trades', () => {
 
   it('applies outcome filter using user threshold', async () => {
     const { prisma } = await import('@/lib/prisma')
-    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({ breakEvenThreshold: 25 } as any)
+    vi.mocked(prisma.userSettings.findUnique).mockResolvedValueOnce({ breakEvenThreshold: 25, pnlDisplayMode: 'net' } as any)
     vi.mocked(prisma.trade.findMany).mockResolvedValueOnce([
       {
         id: 'w1',

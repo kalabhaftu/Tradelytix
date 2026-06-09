@@ -175,7 +175,12 @@ export async function GET(request: NextRequest) {
     const finalAccounts = paginated.map(acc => {
       let calcTrades = []
       if (acc.accountType === 'prop-firm') {
-         calcTrades = relevantTrades.filter(t => t.phaseAccountId === acc.id || t.accountNumber === acc.number)
+         calcTrades = relevantTrades.filter(t => {
+           if (t.phaseAccountId) {
+             return t.phaseAccountId === acc.id
+           }
+           return t.accountNumber === acc.number
+         })
       } else {
          calcTrades = relevantTrades.filter(t => t.accountNumber === acc.number)
       }

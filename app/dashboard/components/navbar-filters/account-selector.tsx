@@ -44,14 +44,14 @@ export function AccountSelector({ onSave }: AccountSelectorProps) {
       if (!accounts || accounts.length === 0) return
 
       const matchingAccountIds = accounts
-        .filter(acc => currentNumbers.includes(acc.number))
+        .filter(acc => currentNumbers.includes(acc.id) || currentNumbers.includes(acc.number))
         .map(acc => acc.id)
 
       if (matchingAccountIds.length > 0) {
         setSelectedAccounts(new Set(matchingAccountIds))
 
         // Auto-expand parent groups for selected accounts
-        const matchingAccounts = accounts.filter(acc => currentNumbers.includes(acc.number))
+        const matchingAccounts = accounts.filter(acc => currentNumbers.includes(acc.id) || currentNumbers.includes(acc.number))
         const accountNames = new Set(matchingAccounts.map(acc => acc.name || acc.number))
         setExpandedAccounts(prev => new Set([...prev, ...accountNames]))
       } else if (currentNumbers.length > 0) {
@@ -256,11 +256,6 @@ export function AccountSelector({ onSave }: AccountSelectorProps) {
 
     try {
       const accountNumbersToSave = Array.from(selectedAccounts)
-        .map(accountId => {
-          const account = accounts?.find(acc => acc.id === accountId)
-          return account?.number || accountId
-        })
-        .filter(Boolean)
 
       await updateSettings({
         selectedAccounts: Array.from(selectedAccounts),

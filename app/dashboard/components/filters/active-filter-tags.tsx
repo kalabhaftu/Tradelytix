@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from 'framer-motion'
 
 export function ActiveFilterTags({ showAccountNumbers }: { showAccountNumbers: boolean }) {
-  const { accountNumbers, instruments, setAccountNumbers, setInstruments } = useData()
+  const { accountNumbers, instruments, setAccountNumbers, setInstruments, accounts } = useData()
   const params = useParams()
   const locale = params.locale as string
   const dateLocale = undefined
@@ -65,13 +65,17 @@ export function ActiveFilterTags({ showAccountNumbers }: { showAccountNumbers: b
     }
   }
 
-  const anonymizeAccount = (account: string) => {
+  const anonymizeAccount = (accountVal: string) => {
+    const matched = accounts?.find((a: any) => a.id === accountVal || a.number === accountVal) as any
+    const displayVal = matched ? (matched.displayName || matched.number) : accountVal
+    
     if (!showAccountNumbers) {
-      const prefix = account.slice(0, 3)
-      const stars = '*'.repeat(3) // Fixed number of stars
-      return `${prefix}${stars}`
+      const numberToAnonymize = matched ? matched.number : accountVal
+      const prefix = numberToAnonymize.slice(0, 3)
+      const stars = '*'.repeat(3)
+      return matched?.displayName ? `${matched.displayName} (${prefix}${stars})` : `${prefix}${stars}`
     }
-    return account
+    return displayVal
   }
 
   const handleRemoveFilter = (type: 'account' | 'instrument', value: string) => {

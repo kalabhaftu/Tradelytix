@@ -424,9 +424,14 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (newAcc && !createdAccountId) {
         setCreatedAccountId(newAcc.id)
         setCreatedAccountType(newAcc.accountType || 'live')
+        
+        // Auto-advance if we are on the submit-account step
+        if (currentStep?.id === 'submit-account') {
+          nextStep()
+        }
       }
     }
-  }, [accounts, activeTour, createdAccountId])
+  }, [accounts, activeTour, createdAccountId, currentStep])
 
   // Trigger mock CSV download automatically on step 13 (index 12)
   useEffect(() => {
@@ -528,7 +533,10 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { actionType, actionTarget } = currentStep
     if (!actionType || !actionTarget) return
 
+    let actionFired = false
     const handleAction = () => {
+      if (actionFired) return
+      actionFired = true
       setTimeout(() => {
         nextStep()
       }, 300)
@@ -539,7 +547,10 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (elements.length === 0) return false
 
       if (actionType === 'click') {
-        elements.forEach((el) => el.addEventListener('click', handleAction))
+        elements.forEach((el) => {
+          el.addEventListener('click', handleAction)
+          el.addEventListener('mousedown', handleAction)
+        })
       } else if (actionType === 'input') {
         elements.forEach((el) => el.addEventListener('input', handleAction, { once: true }))
       }
@@ -565,6 +576,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const elements = document.querySelectorAll(actionTarget)
       elements.forEach((el) => {
         el.removeEventListener('click', handleAction)
+        el.removeEventListener('mousedown', handleAction)
         el.removeEventListener('input', handleAction)
       })
     }

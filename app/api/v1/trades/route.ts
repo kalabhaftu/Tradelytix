@@ -166,9 +166,52 @@ export async function GET(request: NextRequest) {
     const whereClause: any = { userId: internalUserId }
     
     if (accountNumbers.length > 0) {
+      // Find the user's regular accounts matching these accountNumbers (either by ID or number)
+      const userAccounts = await prisma.account.findMany({
+        where: {
+          userId: internalUserId,
+          OR: [
+            { id: { in: accountNumbers } },
+            { number: { in: accountNumbers } }
+          ]
+        },
+        select: { id: true, number: true }
+      })
+
+      // Find the user's phase accounts matching these accountNumbers (either by ID or phaseId)
+      const userPhaseAccounts = await prisma.phaseAccount.findMany({
+        where: {
+          MasterAccount: { userId: internalUserId },
+          OR: [
+            { id: { in: accountNumbers } },
+            { phaseId: { in: accountNumbers } }
+          ]
+        },
+        select: { id: true, phaseId: true }
+      })
+
+      const resolvedAccountIds = userAccounts.map(a => a.id)
+      const resolvedAccountNumbers = userAccounts.map(a => a.number)
+      
+      const resolvedPhaseAccountIds = userPhaseAccounts.map(pa => pa.id)
+      const resolvedPhaseIds = userPhaseAccounts.map(pa => pa.phaseId).filter(Boolean) as string[]
+
+      // For any value in accountNumbers that was NOT a UUID (i.e. did not match any ID),
+      // we treat it as a raw number/phaseId directly (for backward compatibility).
+      const rawNumbers = accountNumbers.filter(
+        num => !resolvedAccountIds.includes(num) && !resolvedPhaseAccountIds.includes(num)
+      )
+
       whereClause.OR = [
-        { accountNumber: { in: accountNumbers } },
-        { phaseAccountId: { in: accountNumbers } }
+        { accountId: { in: resolvedAccountIds } },
+        { phaseAccountId: { in: resolvedPhaseAccountIds } },
+        {
+          AND: [
+            { accountId: null },
+            { phaseAccountId: null },
+            { accountNumber: { in: [...resolvedAccountNumbers, ...resolvedPhaseIds, ...rawNumbers] } }
+          ]
+        }
       ]
     }
     

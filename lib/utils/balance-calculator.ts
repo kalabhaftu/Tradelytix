@@ -92,10 +92,12 @@ export function calculateAccountBalance(
 
   if (account.accountType === 'prop-firm') {
     // Prop firm accounts use phase ID (UUID) for linking trades
-    relevantTrades = trades.filter(trade =>
-      trade.phaseAccountId === account.id ||
-      trade.accountNumber === account.number
-    )
+    relevantTrades = trades.filter(trade => {
+      if (trade.phaseAccountId) {
+        return trade.phaseAccountId === account.id
+      }
+      return trade.accountNumber === account.number
+    })
   } else {
     // Regular accounts use account number
     relevantTrades = trades.filter(trade => trade.accountNumber === account.number)

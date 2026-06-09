@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { useRouter, usePathname } from 'next/navigation'
 import { useUserStore } from '@/store/user-store'
 import { toast } from 'sonner'
+import { useData } from '@/context/data-provider'
+import { clearAccountsCache } from '@/hooks/use-accounts'
 
 export type TourId = 'onboarding' | 'dashboard' | 'analytics' | 'settings'
 
@@ -18,7 +20,7 @@ export interface TourStep {
   actionTarget?: string // Selector that user must interact with
   contrastMessage?: string // Optional contrast explanation ("Why you aren't here")
   desktopOnly?: boolean // Skip this step on mobile
-  icon?: string // Optional icon identifier
+  icon?: string // Optional Lucide icon mapping identifier
 }
 
 interface OnboardingStatus {
@@ -61,6 +63,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const storeUser = useUserStore((state) => state.user)
   const setDbUser = useUserStore((state) => state.setUser)
   const isMobile = useUserStore((state) => state.isMobile)
+  const { accounts } = useData()
 
   const [activeTour, setActiveTour] = useState<TourId | null>(null)
   const [stepIndex, setStepIndex] = useState<number>(0)
@@ -72,116 +75,280 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const targetCheckInterval = useRef<NodeJS.Timeout | null>(null)
   const targetTimeout = useRef<NodeJS.Timeout | null>(null)
 
-  // Define Steps for each Tour
+  // Track the created demo account during the onboarding tour
+  const initialAccountIds = useRef<string[]>([])
+  const [createdAccountId, setCreatedAccountId] = useState<string | null>(null)
+  const [createdAccountType, setCreatedAccountType] = useState<'live' | 'prop-firm' | null>(null)
+
+  // Define Steps for each Tour (with absolutely zero emojis)
   const tours: Record<TourId, TourStep[]> = {
     onboarding: [
       {
         id: 'welcome',
-        title: 'Welcome to Tradelytix! 🚀',
-        content: 'Your advanced trading analytics platform. Let\'s take a quick 2-minute tour to help you set up and get familiar with the core layout.',
+        title: 'Welcome to Tradelytix',
+        content: 'Your advanced trading analytics platform. Let\'s take a quick walkthrough to set up your account, import mock trades, and explore the layout. (Note: For the full CSV import experience, using a desktop browser is recommended.)',
         placement: 'center',
         route: '/dashboard',
         actionType: 'none',
+        icon: 'welcome',
       },
       {
-        id: 'settings-contrast',
-        title: 'Settings (Why You Aren\'t Here) ⚙️',
-        content: 'Let\'s go to Settings first to see where configurations live. Notice that timezone settings, themes, and Webhook tokens are configured here, completely separated from your main trading view.',
-        targetSelector: '[data-tour="settings-card-profile"]',
+        id: 'navbar-accounts',
+        title: 'Account Selector',
+        content: 'Use this selector in the header to filter all dashboard widgets by one or multiple trading portfolios simultaneously.',
+        targetSelector: '[data-tour="navbar-accounts-btn"]',
         placement: 'bottom',
-        route: '/dashboard/settings',
-        actionType: 'none',
-        contrastMessage: 'Why you aren\'t here: Configurations belong in Settings. We keep execution data and performance tracking separate on the dashboard to ensure a clean, distraction-free environment.',
+        route: '/dashboard',
+        desktopOnly: true,
+        icon: 'accounts',
       },
       {
-        id: 'theme-interaction',
-        title: 'Interact: Try theme toggling 🎨',
-        content: 'Click the Theme selector options below to see how responsive the platform styling is. Once clicked, the next step will unlock.',
-        targetSelector: '[data-tour="theme-switcher-container"]',
-        placement: 'bottom',
-        route: '/dashboard/settings',
-        actionType: 'click',
-        actionTarget: '[data-tour="theme-switcher-container"]',
+        id: 'widget-canvas',
+        title: 'Dynamic Widget Canvas',
+        content: 'This is your main dashboard workspace. Widgets are fully responsive, updating in real-time as you log or import trades.',
+        targetSelector: '[data-tour="widget-canvas"]',
+        placement: 'top',
+        route: '/dashboard',
+        icon: 'layout',
       },
       {
-        id: 'back-to-dashboard',
-        title: 'Navigating Back 🧭',
-        content: 'Great job! Now let\'s navigate back to the Main Overview page. Click the "Got it" button below, and we will take you right back.',
-        targetSelector: '[data-tour="sidebar-widgets"]',
+        id: 'sidebar-accounts',
+        title: 'Manage Portfolios',
+        content: 'Let\'s set up a trading account first. Click \'Portfolios\' in the sidebar (or the bottom navigation bar on mobile) to go to the Accounts manager.',
+        targetSelector: '[data-tour="sidebar-accounts"]',
         placement: 'right',
-        route: '/dashboard/settings',
-        actionType: 'none',
-      },
-      {
-        id: 'dashboard-quick-add',
-        title: 'Lightweight Logging ➕',
-        content: 'Look at the "+" button in the navigation header (or the floating button on mobile). This is your primary way to manually record new journal logs. Click it to open the Quick Add panel.',
-        targetSelector: '[data-tour="quick-add-btn"]',
-        placement: 'bottom',
         route: '/dashboard',
-        actionType: 'click',
-        actionTarget: '[data-tour="quick-add-btn"]',
+        icon: 'navigation',
       },
       {
-        id: 'manual-ticker',
-        title: 'Enter Mock Ticker ✍️',
-        content: 'Excellent! The dialog is open. Type "EURUSD" or any ticker symbol in the Instrument field to see the live form validation in action. The tour will proceed once you enter text.',
-        targetSelector: '#instrument',
-        placement: 'bottom',
-        route: '/dashboard',
-        actionType: 'input',
-        actionTarget: '#instrument',
-      },
-      {
-        id: 'onboarding-completed',
-        title: 'Tour Complete! 🎉',
-        content: 'You\'ve mastered the core navigation and interactions! You can close the modal now. Click "Got it" to finish your onboarding.',
+        id: 'accounts-welcome',
+        title: 'Accounts and Portfolios',
+        content: 'Welcome to the Accounts page! Here you can manage your Live portfolios and Prop Firm challenges.',
         placement: 'center',
-        route: '/dashboard',
-        actionType: 'none',
+        route: '/dashboard/accounts',
+        icon: 'welcome',
+      },
+      {
+        id: 'new-account-trigger',
+        title: 'Create New Portfolio',
+        content: 'Click the \'New Account\' button to open the options dropdown.',
+        targetSelector: '[data-tour="add-account-btn"]',
+        placement: 'bottom',
+        route: '/dashboard/accounts',
+        actionType: 'click',
+        actionTarget: '[data-tour="add-account-btn"]',
+        icon: 'add',
+      },
+      {
+        id: 'explain-live-item',
+        title: 'Live Portfolios',
+        content: 'Select this option if you are trading personal capital. You can track deposits, withdrawals, and account growth.',
+        targetSelector: '[data-tour="create-live-item"]',
+        placement: 'left',
+        route: '/dashboard/accounts',
+        icon: 'info',
+      },
+      {
+        id: 'explain-prop-item',
+        title: 'Prop Firm Challenges',
+        content: 'Select this option to track evaluation challenges (FTMO, FundedNext, etc.). The system automatically validates drawdown rules and profit targets.',
+        targetSelector: '[data-tour="create-prop-item"]',
+        placement: 'left',
+        route: '/dashboard/accounts',
+        icon: 'info',
+      },
+      {
+        id: 'open-live-dialog',
+        title: 'Open Live Account Form',
+        content: 'Let\'s create a demo account. Click \'Live Account\' to open the creation dialog.',
+        targetSelector: '[data-tour="create-live-item"]',
+        placement: 'left',
+        route: '/dashboard/accounts',
+        actionType: 'click',
+        actionTarget: '[data-tour="create-live-item"]',
+        icon: 'add',
+      },
+      {
+        id: 'enter-account-name',
+        title: 'Choose Account Name',
+        content: 'Enter a name for your portfolio, such as \'Demo Tour Account\'.',
+        targetSelector: 'input[id="name"], input[id="accountName"]',
+        placement: 'bottom',
+        route: '/dashboard/accounts',
+        actionType: 'input',
+        actionTarget: 'input[id="name"], input[id="accountName"]',
+        icon: 'edit',
+      },
+      {
+        id: 'enter-account-number',
+        title: 'Enter Account Number',
+        content: 'Type in any mock account number (minimum 6 digits) to identify this portfolio.',
+        targetSelector: 'input[id="number"], input[id="phase1AccountId"]',
+        placement: 'bottom',
+        route: '/dashboard/accounts',
+        actionType: 'input',
+        actionTarget: 'input[id="number"], input[id="phase1AccountId"]',
+        icon: 'edit',
+      },
+      {
+        id: 'submit-account',
+        title: 'Save Portfolio',
+        content: 'Click \'Create Account\' to save this portfolio. This will register the new account in the database.',
+        targetSelector: '[data-tour="create-account-submit"]',
+        placement: 'top',
+        route: '/dashboard/accounts',
+        actionType: 'click',
+        actionTarget: '[data-tour="create-account-submit"]',
+        icon: 'check',
+      },
+      {
+        id: 'csv-download',
+        title: 'Generate Mock Trades',
+        content: 'To demonstrate the import system, we have generated and downloaded a \'mock_trades.csv\' file to your computer. Click Next to import it!',
+        placement: 'center',
+        route: '/dashboard/accounts',
+        icon: 'import',
+      },
+      {
+        id: 'click-import-btn',
+        title: 'Import Dialog',
+        content: 'Let\'s load the mock trades. Click the \'Import Trades\' button in the navigation header to open the parser dialog.',
+        targetSelector: '[data-tour="import-nav-btn"]',
+        placement: 'bottom',
+        route: '/dashboard/accounts',
+        actionType: 'click',
+        actionTarget: '[data-tour="import-nav-btn"]',
+        icon: 'import',
+      },
+      {
+        id: 'select-universal-platform',
+        title: 'Universal CSV Importer',
+        content: 'Click \'Universal Import\' to use our smart column-matching CSV processor.',
+        targetSelector: '[data-tour="platform-item-universal"]',
+        placement: 'right',
+        route: '/dashboard/accounts',
+        actionType: 'click',
+        actionTarget: '[data-tour="platform-item-universal"]',
+        icon: 'info',
+      },
+      {
+        id: 'upload-csv-file',
+        title: 'Dropzone Upload',
+        content: 'Drag and drop the \'mock_trades.csv\' file we downloaded earlier into this dropzone, or click to select it from your files. (Mobile users: you can click Next to simulate).',
+        targetSelector: '[data-tour="file-upload-dropzone"]',
+        placement: 'bottom',
+        route: '/dashboard/accounts',
+        icon: 'import',
+      },
+      {
+        id: 'select-import-account',
+        title: 'Link to Portfolio',
+        content: 'Click to select your newly created demo account to associate these trades with it.',
+        targetSelector: '[data-tour="import-account-card"]',
+        placement: 'bottom',
+        route: '/dashboard/accounts',
+        actionType: 'click',
+        actionTarget: '[data-tour="import-account-card"]',
+        icon: 'accounts',
+      },
+      {
+        id: 'confirm-import',
+        title: 'Execute Data Sync',
+        content: 'Click \'Complete Import\' to parse the CSV and import all trade records into your dashboard.',
+        targetSelector: '[data-tour="import-next-btn"]',
+        placement: 'top',
+        route: '/dashboard/accounts',
+        actionType: 'click',
+        actionTarget: '[data-tour="import-next-btn"]',
+        icon: 'check',
+      },
+      {
+        id: 'navigate-trade-log',
+        title: 'Explore Trade Log',
+        content: 'Great! Let\'s view the imported trades. Click \'Trade Log\' in the sidebar to inspect the detailed list.',
+        targetSelector: '[data-tour="sidebar-table"]',
+        placement: 'right',
+        route: '/dashboard/accounts',
+        actionType: 'click',
+        actionTarget: '[data-tour="sidebar-table"]',
+        icon: 'navigation',
+      },
+      {
+        id: 'table-row-explain',
+        title: 'Trades Table',
+        content: 'Here is your detailed ledger of imported trades. You can inspect profit/loss, win status, holding times, and use the View/Edit buttons to manage individual trades.',
+        targetSelector: '[data-tour="trade-row-first"]',
+        placement: 'bottom',
+        route: '/dashboard/table',
+        icon: 'info',
+      },
+      {
+        id: 'navigate-journal',
+        title: 'Daily Journal',
+        content: 'Finally, let\'s look at the Daily Journal. Click \'Daily Journal\' in the sidebar to see how trades are grouped by date.',
+        targetSelector: '[data-tour="sidebar-journal"]',
+        placement: 'right',
+        route: '/dashboard/table',
+        actionType: 'click',
+        actionTarget: '[data-tour="sidebar-journal"]',
+        icon: 'navigation',
+      },
+      {
+        id: 'tour-cleanup',
+        title: 'Journal Overview and Cleanup',
+        content: 'The Daily Journal groups trades by day and lets you attach notes or review daily PnL. The demo account and imported trades will be deleted automatically next to clean up.',
+        targetSelector: '[data-tour="journal-view-cards-btn"]',
+        placement: 'bottom',
+        route: '/dashboard/journal',
+        icon: 'check',
       },
     ],
     dashboard: [
       {
         id: 'db-welcome',
-        title: 'Trading Dashboard 📊',
+        title: 'Trading Dashboard',
         content: 'This is your central command. You can track performance metrics, inspect charts, and view recent activity at a glance.',
         placement: 'center',
         route: '/dashboard',
+        icon: 'welcome',
       },
       {
         id: 'db-accounts',
-        title: 'Multi-Portfolio Accounts 💼',
-        content: 'Click here to filter the dashboard by specific portfolios. You can select one or multiple accounts (live or prop-firm evaluation phases) simultaneously.',
+        title: 'Multi-Portfolio Accounts',
+        content: 'Click here to filter the dashboard by specific portfolios. You can select one or multiple accounts simultaneously.',
         targetSelector: '[data-tour="navbar-accounts-btn"]',
         placement: 'bottom',
         route: '/dashboard',
+        icon: 'accounts',
       },
       {
         id: 'db-canvas',
-        title: 'Dynamic Widget Canvas 🧩',
+        title: 'Dynamic Widget Canvas',
         content: 'Your dashboard widgets are fully customizable. Click "Got it" to wrap up the dashboard tour.',
         targetSelector: '[data-tour="widget-canvas"]',
         placement: 'top',
         route: '/dashboard',
+        icon: 'complete',
       },
     ],
     analytics: [
       {
         id: 'analytics-welcome',
-        title: 'Performance Reports 📈',
+        title: 'Performance Reports',
         content: 'Dive deep into win rate distribution, average holding times, cumulative PnL, and advanced metrics.',
         placement: 'center',
         route: '/dashboard/reports',
+        icon: 'welcome',
       },
     ],
     settings: [
       {
         id: 'settings-welcome',
-        title: 'Account Settings ⚙️',
-        content: 'Configure personal details, timezone adjustments, dashboard layout resets, and premium subscription details.',
+        title: 'Account Settings',
+        content: 'Configure personal details, timezone adjustments, dashboard layout resets, and webhook integrations.',
         placement: 'center',
         route: '/dashboard/settings',
+        icon: 'settings',
       },
     ],
   }
@@ -216,7 +383,6 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       pathname === '/dashboard' &&
       !paused
     ) {
-      // Small timeout to let initial page fully render
       const timer = setTimeout(() => {
         startTour('onboarding')
       }, 1500)
@@ -251,6 +417,50 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
+  // Detect newly created account in onboarding
+  useEffect(() => {
+    if (activeTour === 'onboarding' && accounts && accounts.length > 0) {
+      const newAcc = accounts.find((a: any) => !initialAccountIds.current.includes(a.id))
+      if (newAcc && !createdAccountId) {
+        setCreatedAccountId(newAcc.id)
+        setCreatedAccountType(newAcc.accountType || 'live')
+      }
+    }
+  }, [accounts, activeTour, createdAccountId])
+
+  // Trigger mock CSV download automatically on step 13 (index 12)
+  useEffect(() => {
+    if (activeTour === 'onboarding' && stepIndex === 12) {
+      const timer = setTimeout(() => {
+        downloadMockCSV()
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [activeTour, stepIndex])
+
+  const downloadMockCSV = () => {
+    try {
+      const headers = ["Symbol", "Side", "Quantity", "Entry Price", "Close Price", "Entry Date", "Close Date", "PnL"]
+      const rows = [
+        ["EURUSD", "Buy", "1.0", "1.0850", "1.0900", "2026-06-08 09:00:00", "2026-06-08 10:00:00", "500.00"],
+        ["GBPUSD", "Sell", "1.5", "1.2650", "1.2600", "2026-06-08 10:30:00", "2026-06-08 12:00:00", "750.00"],
+        ["USDJPY", "Buy", "2.0", "155.20", "154.80", "2026-06-08 13:00:00", "2026-06-08 14:15:00", "-800.00"]
+      ]
+      const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n")
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.setAttribute("href", url)
+      link.setAttribute("download", "mock_trades.csv")
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      toast.success("Mock CSV file downloaded successfully!")
+    } catch (e) {
+      console.error("Failed to generate mock CSV:", e)
+    }
+  }
+
   // Handle route and target visibility checks for the active step
   useEffect(() => {
     if (!activeTour || !currentStep || paused) {
@@ -268,7 +478,6 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check if the step is desktop-only and we are on mobile
     if (currentStep.desktopOnly && isMobile) {
-      // Skip this step automatically
       nextStep()
       return
     }
@@ -299,7 +508,6 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearInterval(targetCheckInterval.current!)
         targetCheckInterval.current = null
       } else if (attempts >= 15) {
-        // Pauses gracefully if target element doesn't appear after 7.5 seconds (network delay or user clicked away)
         clearInterval(targetCheckInterval.current!)
         targetCheckInterval.current = null
         setIsLoadingTarget(false)
@@ -321,7 +529,6 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!actionType || !actionTarget) return
 
     const handleAction = () => {
-      // Interaction performed, unlock and go to next step
       setTimeout(() => {
         nextStep()
       }, 300)
@@ -339,10 +546,8 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return true
     }
 
-    // Try immediately
     let bound = setupListeners()
 
-    // If elements not fully loaded or dynamic, poll brief time to attach
     let attachTimer: NodeJS.Timeout | null = null
     if (!bound) {
       let attempts = 0
@@ -370,15 +575,15 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveTour(tourId)
     setStepIndex(0)
     setPaused(false)
+    if (tourId === 'onboarding') {
+      setCreatedAccountId(null)
+      setCreatedAccountType(null)
+      initialAccountIds.current = accounts ? accounts.map((a: any) => a.id) : []
+    }
   }
 
   const nextStep = () => {
     if (!activeTour) return
-
-    // If current step is back-to-dashboard and we are in onboarding, navigate back
-    if (activeTour === 'onboarding' && stepIndex === 3) {
-      router.push('/dashboard')
-    }
 
     if (stepIndex < currentSteps.length - 1) {
       setStepIndex((prev) => prev + 1)
@@ -393,7 +598,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  const skipTour = () => {
+  const skipTour = async () => {
     if (!activeTour) return
 
     const keyMap: Record<TourId, keyof OnboardingStatus> = {
@@ -401,6 +606,20 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       dashboard: 'dashboard_tour_completed',
       analytics: 'analytics_tour_completed',
       settings: 'settings_tour_completed',
+    }
+
+    // Clean up created demo account on skip
+    if (activeTour === 'onboarding' && createdAccountId) {
+      try {
+        const endpoint = createdAccountType === 'prop-firm'
+          ? `/api/v1/prop-firm/accounts/${createdAccountId}`
+          : `/api/v1/accounts/${createdAccountId}`
+
+        await fetch(endpoint, { method: 'DELETE' })
+        clearAccountsCache()
+      } catch (error) {
+        console.error('Failed to delete onboarding demo account on skip:', error)
+      }
     }
 
     saveOnboardingStatus({ [keyMap[activeTour]]: true })
@@ -409,7 +628,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success('Tour skipped. You can restart it anytime from settings.')
   }
 
-  const completeTour = () => {
+  const completeTour = async () => {
     if (!activeTour) return
 
     const keyMap: Record<TourId, keyof OnboardingStatus> = {
@@ -419,10 +638,36 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       settings: 'settings_tour_completed',
     }
 
+    // Clean up created demo account on complete
+    if (activeTour === 'onboarding' && createdAccountId) {
+      const toastId = toast.loading('Completing onboarding and cleaning up demo portfolio...')
+      try {
+        const endpoint = createdAccountType === 'prop-firm'
+          ? `/api/v1/prop-firm/accounts/${createdAccountId}`
+          : `/api/v1/accounts/${createdAccountId}`
+
+        const response = await fetch(endpoint, { method: 'DELETE' })
+        if (response.ok) {
+          clearAccountsCache()
+          toast.success('Demo account deleted to keep workspace clean!', { id: toastId })
+        } else {
+          toast.error('Failed to clean up demo account.', { id: toastId })
+        }
+      } catch (error) {
+        console.error('Failed to delete onboarding demo account:', error)
+        toast.error('Error cleaning up demo account.', { id: toastId })
+      }
+    }
+
     saveOnboardingStatus({ [keyMap[activeTour]]: true })
     setActiveTour(null)
     setPaused(false)
-    toast.success('Congratulations! Tour completed. 🎉')
+
+    if (activeTour === 'onboarding') {
+      router.push('/dashboard')
+    } else {
+      toast.success('Tour completed.')
+    }
   }
 
   const pauseTour = () => {
@@ -431,7 +676,6 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const resumeTour = () => {
     setPaused(false)
-    // If the step we paused on has a specific route, force route check
     if (currentStep?.route && pathname !== currentStep.route) {
       router.push(currentStep.route)
     }

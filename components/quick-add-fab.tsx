@@ -22,6 +22,7 @@ import { Plus, TrendingUp as TrendUp, TrendingDown as TrendDown } from "lucide-r
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useQuickAddStore } from '@/store/quick-add-store'
+import { useUserStore } from '@/store/user-store'
 
 interface QuickAddFABProps {
     className?: string
@@ -32,6 +33,8 @@ export function QuickAddFAB({ className }: QuickAddFABProps) {
     const openQuickAdd = useQuickAddStore((state) => state.openQuickAdd)
     const closeQuickAdd = useQuickAddStore((state) => state.closeQuickAdd)
     const setQuickAddOpen = useQuickAddStore((state) => state.setQuickAddOpen)
+    const user = useUserStore((state) => state.user)
+    const isDemo = user?.id === 'demo-user'
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [formData, setFormData] = useState({
         instrument: '',
@@ -50,6 +53,14 @@ export function QuickAddFAB({ className }: QuickAddFABProps) {
         setIsSubmitting(true)
 
         try {
+            if (isDemo) {
+                toast.success('Trade added (Demo mode: changes are temporary)')
+                setFormData({ instrument: '', side: 'long', pnl: '' })
+                closeQuickAdd()
+                setIsSubmitting(false)
+                return
+            }
+
             const response = await fetch('/api/v1/trades/quick-add', {
               method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

@@ -1,6 +1,5 @@
-'use client'
-
 import { useQuery } from '@tanstack/react-query'
+import { useUserStore } from '@/store/user-store'
 
 export interface TradingModel {
   id: string
@@ -25,9 +24,21 @@ function buildTradingModelQuery(filters?: TradingModelFilters) {
 }
 
 export function useTradingModels(filters?: TradingModelFilters) {
+  const user = useUserStore(state => state.user)
+  const isDemo = user?.id === 'demo-user'
+
   const { data, isLoading, error } = useQuery<TradingModel[] | null>({
-    queryKey: ['trading-models', filters ?? {}],
+    queryKey: ['trading-models', filters ?? {}, isDemo],
     queryFn: async () => {
+      if (isDemo) {
+        return [
+          { id: 'tm-1', name: 'EMA Cross', description: 'Exponential Moving Average crossover strategy' },
+          { id: 'tm-2', name: 'ICT Silver Bullet', description: 'ICT Silver Bullet strategy' },
+          { id: 'tm-3', name: 'SMT Divergence', description: 'Smart Money Tool divergence strategy' },
+          { id: 'tm-4', name: 'Liquidity Sweep', description: 'Liquidity sweep and market structure shift' },
+          { id: 'tm-5', name: 'Order Block', description: 'Trading off supply/demand order blocks' }
+        ]
+      }
       const response = await fetch(`/api/v1/user/trading-models${buildTradingModelQuery(filters)}`)
       if (!response.ok) throw new Error('Failed to fetch trading models')
       const data = await response.json()

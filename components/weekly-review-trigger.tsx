@@ -23,7 +23,7 @@ export function WeeklyReviewTrigger() {
   const internalUser = useUserStore(state => state.user)
 
   useEffect(() => {
-    if (!supabaseUser?.id || !internalUser?.id) return
+    if (!supabaseUser?.id || !internalUser?.id || internalUser?.id === 'demo-user') return
     if (checkedRef.current) return
     checkedRef.current = true
 

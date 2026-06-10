@@ -89,6 +89,10 @@ export function NotificationCenter() {
   }, [isOpen])
 
   const fetchNotifications = useCallback(async () => {
+    if (!user?.id || user.id === 'demo-user') {
+      setIsLoading(false)
+      return
+    }
     try {
       setIsLoading(true)
       const response = await fetch(`/api/v1/notifications?t=${Date.now()}`, {
@@ -105,9 +109,10 @@ export function NotificationCenter() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [user?.id])
 
   const refreshUnreadCount = useCallback(async () => {
+    if (!user?.id || user.id === 'demo-user') return
     try {
       const response = await fetch(`/api/v1/notifications?unreadOnly=true&limit=1&t=${Date.now()}`, {
         cache: 'no-store'
@@ -119,7 +124,7 @@ export function NotificationCenter() {
     } catch (error) {
       // Silent fail
     }
-  }, [])
+  }, [user?.id])
 
   useEffect(() => {
     if (!user?.id || user.id === 'demo-user') return

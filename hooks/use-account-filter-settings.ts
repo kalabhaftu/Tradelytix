@@ -1,7 +1,6 @@
-'use client'
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AccountFilterSettings, DEFAULT_FILTER_SETTINGS } from '@/types/account-filter-settings'
+import { useUserStore } from '@/store/user-store'
 
 const QUERY_KEY = ['account-filter-settings'] as const
 
@@ -40,14 +39,28 @@ export interface UseAccountFilterSettingsResult {
 
 export function useAccountFilterSettings(): UseAccountFilterSettingsResult {
   const queryClient = useQueryClient()
+  const user = useUserStore(state => state.user)
+  const isDemo = user?.id === 'demo-user'
 
   const { data: settings = DEFAULT_FILTER_SETTINGS, isLoading, error, refetch } = useQuery({
-    queryKey: QUERY_KEY,
-    queryFn: fetchAccountFilterSettings,
+    queryKey: [...QUERY_KEY, isDemo],
+    queryFn: async () => {
+      if (isDemo) {
+        try {
+          const cached = localStorage.getItem('settings-cache-demo')
+          if (cached) {
+            const parsed = JSON.parse(cached)
+            return parsed || DEFAULT_FILTER_SETTINGS
+          }
+        } catch {}
+        return DEFAULT_FILTER_SETTINGS
+      }
+      return fetchAccountFilterSettings()
+    },
     staleTime: 1000 * 60 * 5, // 5 minutes
     placeholderData: () => {
       try {
-        const cached = localStorage.getItem('settings-cache')
+        const cached = localStorage.getItem(isDemo ? 'settings-cache-demo' : 'settings-cache')
         if (cached) {
           const parsed = JSON.parse(cached)
           return parsed || DEFAULT_FILTER_SETTINGS
@@ -61,21 +74,34 @@ export function useAccountFilterSettings(): UseAccountFilterSettingsResult {
 
   const mutation = useMutation({
     mutationFn: async (newSettings: Partial<AccountFilterSettings>) => {
-      let current = queryClient.getQueryData<AccountFilterSettings>(QUERY_KEY)
+      let current = queryClient.getQueryData<AccountFilterSettings>([...QUERY_KEY, isDemo])
       if (!current) {
         try {
-          current = await fetchAccountFilterSettings()
+          if (isDemo) {
+            const cached = localStorage.getItem('settings-cache-demo')
+            current = cached ? JSON.parse(cached) : DEFAULT_FILTER_SETTINGS
+          } else {
+            current = await fetchAccountFilterSettings()
+          }
         } catch {
           current = DEFAULT_FILTER_SETTINGS
         }
       }
-      const merged = { ...current, ...newSettings, updatedAt: new Date().toISOString() }
+      const baseSettings = current || DEFAULT_FILTER_SETTINGS
+      const merged: AccountFilterSettings = {
+        ...baseSettings,
+        ...newSettings,
+        updatedAt: new Date().toISOString()
+      }
+      if (isDemo) {
+        return merged
+      }
       return saveAccountFilterSettings(merged)
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(QUERY_KEY, data)
+      queryClient.setQueryData([...QUERY_KEY, isDemo], data)
       try {
-        localStorage.setItem('settings-cache', JSON.stringify(data))
+        localStorage.setItem(isDemo ? 'settings-cache-demo' : 'settings-cache', JSON.stringify(data))
       } catch {
         // ignore
       }

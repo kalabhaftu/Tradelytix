@@ -10,6 +10,27 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import {
+  calculateDayOfWeekPerformance,
+  calculateOutcomeDistribution,
+  calculateEquityCurve,
+  calculateNetDailyPnl,
+  calculateDailyCumulativePnl,
+  calculateAccountBalanceChart,
+  calculatePnlByStrategy,
+  calculatePnlByInstrument,
+  calculateWinRateByStrategy,
+  calculateTradeDurationPerformance,
+  calculateWeekdayPnl,
+  calculatePerformanceScoreResult,
+  calculateSessionAnalysis,
+  calculateAccountProgression,
+  calculateTagPerformance,
+  calculateTimeOfDayPerformance,
+  calculateDisciplineAnalytics,
+} from '@/lib/dashboard-math'
+import { calculateBalanceInfo } from '@/lib/utils/balance-calculator'
+import { formatCalendarData, calculateStatistics } from '@/lib/utils'
 
 export interface TradeFilters {
   accounts?: string[]
@@ -81,64 +102,154 @@ export function useFilteredTrades(filters: TradeFilters, enabled = true, isDemoM
   })
 }
 
-function getMockDemoData(): FilteredTradesResponse {
+export function getMockTradesList() {
   const now = new Date()
-  const trades = Array.from({ length: 50 }).map((_, i) => {
-    const isWin = Math.random() > 0.4
-    const pnl = isWin ? 150 + Math.random() * 350 : -100 - Math.random() * 200
-    const durationMin = 10 + Math.random() * 50
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+
+  const prevMonth = month === 0 ? 11 : month - 1
+  const prevYear = month === 0 ? year - 1 : year
+  const prevDaysInMonth = new Date(prevYear, prevMonth + 1, 0).getDate()
+
+  const instruments = ['EURUSD', 'NQ100', 'XAUUSD', 'GBPUSD', 'SPX500']
+  const strategies = ['EMA Cross', 'ICT Silver Bullet', 'SMT Divergence', 'Liquidity Sweep', 'Order Block']
+  const rules = ['Stop Loss Set', 'Risk Managed', 'Plan Followed', 'No FOMO', 'New York Session Only']
+  const tags = ['Trend', 'Reversal', 'Breakout', 'Range', 'Session Start']
+  const sides = ['LONG', 'SHORT']
+
+  const instrumentPrices: Record<string, number> = {
+    EURUSD: 1.0850,
+    NQ100: 18500.0,
+    XAUUSD: 2350.0,
+    GBPUSD: 1.2720,
+    SPX500: 5300.0
+  }
+
+  // Generate 80 trades distributed across current and previous month
+  const trades = Array.from({ length: 80 }).map((_, i) => {
+    let entryTime: Date
+    if (i < 65) {
+      // 65 trades distributed across current month (days 1 to min(daysInMonth, 28))
+      const maxDay = Math.min(daysInMonth, 28)
+      const day = 1 + Math.floor((i / 65) * maxDay)
+      entryTime = new Date(year, month, day)
+    } else {
+      // 15 trades in the previous month (last 15 days)
+      const idx = i - 65
+      const day = Math.max(1, prevDaysInMonth - 15 + idx)
+      entryTime = new Date(prevYear, prevMonth, day)
+    }
+
+    // Win rate around 55%
+    const isWin = Math.random() > 0.45
+    // Win: $150 to $950, Loss: -$100 to -$450
+    const pnl = isWin 
+      ? Math.floor(150 + Math.random() * 800) 
+      : -Math.floor(100 + Math.random() * 350)
+      
+    const quantity = Math.floor((1 + Math.random() * 4) * 10) / 10
+    const commission = -Math.floor((1.5 + Math.random() * 2) * quantity * 100) / 100
+    const netPnl = pnl + commission
+    const durationMin = Math.floor(10 + Math.random() * 240)
+
+    // Randomize entry hour (between 8:00 and 17:00 NY time roughly)
+    entryTime.setHours(8 + Math.floor(Math.random() * 9), Math.floor(Math.random() * 60), 0, 0)
+    
+    const exitTime = new Date(entryTime.getTime() + durationMin * 60 * 1000)
+
+    const basePrice = instrumentPrices[instruments[i % instruments.length]]
+    const diffPercent = (pnl / 100000)
+    const entryPriceNum = basePrice * (1 + (Math.random() - 0.5) * 0.01)
+    const closePriceNum = entryPriceNum * (1 + (sides[Math.floor(Math.random() * 2)] === 'LONG' ? 1 : -1) * diffPercent)
+    
+    const tradeSide = sides[Math.floor(Math.random() * 2)]
+    const tradeInstrument = instruments[i % instruments.length]
+    
+    const currentSetup = strategies[i % strategies.length]
+    const isRuleBroken = Math.random() > 0.9
+
     return {
       id: `demo-trade-${i}`,
       accountNumber: 'DEMO-123',
-      instrument: ['EURUSD', 'NQ100', 'XAUUSD'][Math.floor(Math.random() * 3)],
-      side: Math.random() > 0.5 ? 'Buy' : 'Sell',
+      accountId: 'mock-acc-1',
+      phaseAccountId: 'mock-acc-1',
+      instrument: tradeInstrument,
+      side: tradeSide,
+      quantity,
+      entryPrice: entryPriceNum.toFixed(tradeInstrument === 'XAUUSD' || tradeInstrument === 'NQ100' || tradeInstrument === 'SPX500' ? 2 : 5),
+      closePrice: closePriceNum.toFixed(tradeInstrument === 'XAUUSD' || tradeInstrument === 'NQ100' || tradeInstrument === 'SPX500' ? 2 : 5),
+      entryPriceValue: entryPriceNum,
+      closePriceValue: closePriceNum,
       pnl,
-      volume: 1,
-      entryDate: new Date(now.getTime() - i * 86400000).toISOString(),
-      closeDate: new Date(now.getTime() - i * 86400000 + durationMin * 60000).toISOString(),
+      commission,
+      netPnl,
+      timeInPosition: durationMin * 60,
+      entryDate: entryTime.toISOString(),
+      closeDate: exitTime.toISOString(),
+      entryTime,
+      exitTime,
       status: 'Closed',
-      duration: durationMin * 60,
-      fees: 2.5,
-      commissions: 1.5,
-      netPnl: pnl - 4,
-      drawdown: isWin ? 0 : Math.abs(pnl) / 100000 * 100,
-      tags: []
+      ruleBroken: isRuleBroken,
+      selectedRules: [rules[i % rules.length], rules[(i + 1) % rules.length]],
+      tags: [tags[i % tags.length]],
+      setup: currentSetup,
+      tradingModel: currentSetup,
+      TradingModel: { id: `tm-${i % strategies.length}`, name: currentSetup }
     }
   })
 
-  const wins = trades.filter(t => t.pnl > 0)
-  const losses = trades.filter(t => t.pnl <= 0)
-  const totalPnl = trades.reduce((sum, t) => sum + t.pnl, 0)
-  
-  const stats = {
-    nbTrades: trades.length,
-    nbWin: wins.length,
-    nbLoss: losses.length,
-    nbBe: 0,
-    winRate: wins.length / trades.length * 100,
-    cumulativePnl: totalPnl,
-    grossWin: wins.reduce((sum, t) => sum + t.pnl, 0),
-    grossLosses: losses.reduce((sum, t) => sum + Math.abs(t.pnl), 0),
-    biggestWin: Math.max(...wins.map(t => t.pnl)),
-    biggestLoss: Math.max(...losses.map(t => Math.abs(t.pnl))),
-    averageWin: wins.reduce((sum, t) => sum + t.pnl, 0) / wins.length,
-    averageLoss: losses.reduce((sum, t) => sum + Math.abs(t.pnl), 0) / losses.length,
-    profitFactor: wins.reduce((sum, t) => sum + t.pnl, 0) / (losses.reduce((sum, t) => sum + Math.abs(t.pnl), 0) || 1),
-    averagePositionTime: "45m",
-    totalPositionTime: 45 * 60 * trades.length,
-    winningStreak: 3,
-    cumulativeFees: trades.length * 4,
-    breakEvenThreshold: 0,
-    totalPayouts: 0,
-    nbPayouts: 0,
-    totalPnL: totalPnl
+  // Sort trades chronologically (ascending entryDate) for proper progression/stats
+  trades.sort((a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime())
+  return trades
+}
+
+function getMockDemoData(): FilteredTradesResponse {
+  const mockAccounts = [{
+    id: 'mock-acc-1',
+    number: 'DEMO-123',
+    name: 'Demo Account',
+    accountType: 'live' as const,
+    startingBalance: 100000,
+    balanceToDate: 105432,
+    isArchived: false,
+    status: 'active'
+  }]
+
+  const trades = getMockTradesList()
+
+  // Format calendarData and calculate statistics
+  const calendarData = formatCalendarData(trades as any, mockAccounts as any, 'UTC')
+  const stats = calculateStatistics(trades as any, mockAccounts as any, undefined, 10)
+
+  // Calculate widgets
+  const widgets = {
+    equityCurve: calculateEquityCurve(trades as any),
+    netDailyPnl: calculateNetDailyPnl(trades as any, 10),
+    dailyCumulativePnl: calculateDailyCumulativePnl(trades as any, 10),
+    outcomeDistribution: calculateOutcomeDistribution(trades as any, 10),
+    dayOfWeekPerformance: calculateDayOfWeekPerformance(trades as any, 10),
+    accountBalanceChart: calculateAccountBalanceChart(trades as any, mockAccounts as any, 10),
+    pnlByStrategy: calculatePnlByStrategy(trades as any, 10),
+    pnlByInstrument: calculatePnlByInstrument(trades as any, 10),
+    winRateByStrategy: calculateWinRateByStrategy(trades as any, 10),
+    tradeDurationPerformance: calculateTradeDurationPerformance(trades as any, 10),
+    weekdayPnl: calculateWeekdayPnl(trades as any, 10),
+    performanceScore: calculatePerformanceScoreResult(trades as any, 10),
+    sessionAnalysis: calculateSessionAnalysis(trades as any, 10),
+    accountProgression: calculateAccountProgression(trades as any, mockAccounts as any, 10),
+    tagPerformance: calculateTagPerformance(trades as any, 10),
+    timeOfDayPerformance: calculateTimeOfDayPerformance(trades as any, 10),
+    disciplineAnalytics: calculateDisciplineAnalytics(trades as any, 10),
+    calendarData: calendarData,
+    accountBalancePnl: calculateBalanceInfo(mockAccounts as any, trades as any, [], { pnlDisplayMode: 'net' }),
   }
 
   return {
     trades,
     total: trades.length,
     statistics: stats,
-    calendarData: {},
-    widgets: {}
+    calendarData,
+    widgets
   }
 }

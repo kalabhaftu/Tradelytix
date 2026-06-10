@@ -1,6 +1,5 @@
-"use client"
-
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useUserStore } from '@/store/user-store'
 
 const ACCOUNT_STORAGE_KEY = 'dashboard.propFirmWidgets.selectedMasterAccountId'
 const RESET_TIMEZONE_STORAGE_KEY = 'dashboard.propFirmWidgets.resetTimezone'
@@ -69,6 +68,9 @@ function getPreferredAccount(accounts: DashboardPropFirmAccountOption[]) {
 }
 
 export function useDashboardPropFirmAccount() {
+  const user = useUserStore(state => state.user)
+  const isDemo = user?.id === 'demo-user'
+
   const [accounts, setAccounts] = useState<DashboardPropFirmAccountOption[]>([])
   const [selectedMasterAccountId, setSelectedMasterAccountIdState] = useState<string | null>(null)
   const [resetTimezone, setResetTimezoneState] = useState(DEFAULT_RESET_TIMEZONE)
@@ -82,6 +84,31 @@ export function useDashboardPropFirmAccount() {
       setIsLoading(true)
       setError(null)
       try {
+        if (isDemo) {
+          const nextAccounts = [{
+            id: 'mock-prop-firm-1',
+            accountName: 'Demo Challenge',
+            propFirmName: 'FTMO',
+            accountSize: 100000,
+            evaluationType: '2-Phase Challenge',
+            status: 'active',
+            currentPhase: 1,
+            PhaseAccount: [
+              { id: 'mock-acc-1', phaseNumber: 1, phaseId: 'mock-acc-1', status: 'active' }
+            ]
+          }]
+          
+          if (cancelled) return
+          setAccounts(nextAccounts)
+          setResetTimezoneState(getStoredResetTimezone())
+          const stored = getStoredSelection()
+          const storedExists = stored && nextAccounts.some((account: DashboardPropFirmAccountOption) => account.id === stored)
+          const preferred = storedExists ? stored : getPreferredAccount(nextAccounts)?.id ?? null
+          setSelectedMasterAccountIdState(preferred)
+          if (preferred && preferred !== stored) setStoredSelection(preferred)
+          return
+        }
+
         const response = await fetch('/api/v1/prop-firm/accounts')
         const payload = await response.json()
         if (!response.ok || !payload.success) {
@@ -128,7 +155,7 @@ export function useDashboardPropFirmAccount() {
       window.removeEventListener('prop-firm-widget-account-change', handleCustom)
       window.removeEventListener('prop-firm-widget-timezone-change', handleTimezoneCustom)
     }
-  }, [])
+  }, [isDemo])
 
   const setSelectedMasterAccountId = useCallback((value: string) => {
     setSelectedMasterAccountIdState(value)

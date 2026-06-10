@@ -9,6 +9,7 @@ import {
   Briefcase
 } from "lucide-react"
 import { usePathname, useRouter } from 'next/navigation'
+import { useData } from '@/context/data-provider'
 
 interface MobileNavItem {
   id: string
@@ -53,14 +54,25 @@ const mobileNavItems: MobileNavItem[] = [
 export function MobileBottomNav() {
   const pathname = usePathname()
   const router = useRouter()
+  const data = useData()
+  const isDemoMode = data?.isDemoMode
+
+  const getDemoAdjustedHref = (href: string) => {
+    if (isDemoMode) {
+      return href.replace('/dashboard', '/demo')
+    }
+    return href
+  }
 
   const getActiveTab = () => {
-    if (pathname === '/dashboard') return 'widgets'
-    if (pathname?.startsWith('/dashboard/reports')) return 'reports'
-    if (pathname?.startsWith('/dashboard/table')) return 'table'
-    if (pathname?.startsWith('/dashboard/journal')) return 'journal'
-    if (pathname?.startsWith('/dashboard/playbook')) return 'playbook'
-    if (pathname?.startsWith('/dashboard/accounts')) return 'accounts'
+    const p = pathname || ''
+    const base = isDemoMode ? '/demo' : '/dashboard'
+    if (p === base) return 'widgets'
+    if (p.startsWith(`${base}/reports`)) return 'reports'
+    if (p.startsWith(`${base}/table`)) return 'table'
+    if (p.startsWith(`${base}/journal`)) return 'journal'
+    if (p.startsWith(`${base}/playbook`)) return 'playbook'
+    if (p.startsWith(`${base}/accounts`)) return 'accounts'
     return null
   }
 
@@ -76,7 +88,7 @@ export function MobileBottomNav() {
           return (
             <button
               key={item.id}
-              onClick={() => router.push(item.href)}
+              onClick={() => router.push(getDemoAdjustedHref(item.href))}
               className={cn(
                 "flex flex-col items-center justify-center min-w-[56px] h-full py-1 transition-all duration-200 touch-manipulation",
                 isActive

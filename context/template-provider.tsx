@@ -14,6 +14,7 @@ import {
 import { ensureDefaultTemplate } from '@/server/seed-default-template'
 import { cloneDefaultTemplateLayout } from '@/lib/dashboard/default-template-layout'
 import { toast } from 'sonner'
+import { useData } from '@/context/data-provider'
 
 interface TemplateContextType {
   templates: DashboardTemplate[]
@@ -53,6 +54,9 @@ const buildFallbackTemplate = (): DashboardTemplate => ({
 })
 
 export function TemplateProvider({ children, initialActiveTemplate = null }: TemplateProviderProps) {
+  const data = useData()
+  const isDemoMode = !!data?.isDemoMode
+
   const [templates, setTemplates] = useState<DashboardTemplate[]>(
     initialActiveTemplate ? [initialActiveTemplate] : []
   )
@@ -65,6 +69,14 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
 
   // Load templates
   const loadTemplates = useCallback(async () => {
+    if (isDemoMode) {
+      const fallback = buildFallbackTemplate()
+      setTemplates([fallback])
+      setActiveTemplate(fallback)
+      setIsLoading(false)
+      return
+    }
+
     // Prevent duplicate loads
     if (hasLoadedRef.current || isLoadingRef.current) {
       return
@@ -95,7 +107,7 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
         const allTemplates = await getUserTemplates()
         const active = await getActiveTemplate()
 
-      // If we got templates, use them immediately
+        // If we got templates, use them immediately
         if (allTemplates.length > 0 && active) {
           return {
             templates: allTemplates,
@@ -103,10 +115,10 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
           }
         }
 
-      // No templates yet - create default for new users
+        // No templates yet - create default for new users
         await ensureDefaultTemplate()
 
-      // Reload after creating default
+        // Reload after creating default
         const newTemplates = await getUserTemplates()
         const newActive = await getActiveTemplate()
 
@@ -146,7 +158,7 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
       isLoadingRef.current = false
       templateBootstrapInFlight = null
     }
-  }, [])
+  }, [isDemoMode])
 
   // Load on mount - only once
   useEffect(() => {
@@ -163,10 +175,25 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
       mounted = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [loadTemplates])
 
   // Create new template
   const handleCreateTemplate = useCallback(async (name: string) => {
+    if (isDemoMode) {
+      const newTemplate: DashboardTemplate = {
+        id: `demo-template-${Date.now()}`,
+        userId: 'demo-user',
+        name,
+        isDefault: false,
+        isActive: false,
+        layout: cloneDefaultTemplateLayout() as WidgetLayout[],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+      setTemplates(prev => [...prev, newTemplate])
+      setTimeout(() => toast.success(`Template "${name}" created successfully`), 0)
+      return newTemplate
+    }
     try {
       const newTemplate = await createTemplateAction(name)
       setTemplates(prev => [...prev, newTemplate])
@@ -178,10 +205,18 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
       setTimeout(() => toast.error(message), 0)
       throw error
     }
-  }, [])
+  }, [isDemoMode])
 
   // Delete template
   const handleDeleteTemplate = useCallback(async (templateId: string) => {
+    if (isDemoMode) {
+      setTemplates(prev => prev.filter(t => t.id !== templateId))
+      if (activeTemplate?.id === templateId) {
+        setActiveTemplate(buildFallbackTemplate())
+      }
+      setTimeout(() => toast.success('Template deleted successfully'), 0)
+      return
+    }
     try {
       await deleteTemplateAction(templateId)
       setTemplates(prev => prev.filter(t => t.id !== templateId))
@@ -199,10 +234,20 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
       setTimeout(() => toast.error(message), 0)
       throw error
     }
-  }, [activeTemplate, loadTemplates])
+  }, [isDemoMode, activeTemplate, loadTemplates])
 
   // Switch template
   const handleSwitchTemplate = useCallback(async (templateId: string) => {
+    if (isDemoMode) {
+      const target = templates.find(t => t.id === templateId) || buildFallbackTemplate()
+      const updated = { ...target, isActive: true }
+      setActiveTemplate(updated)
+      setTemplates(prev => prev.map(t => ({
+        ...t,
+        isActive: t.id === templateId,
+      })))
+      return updated
+    }
     try {
       const updated = await switchTemplateAction(templateId)
       setActiveTemplate(updated)
@@ -219,10 +264,21 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
       setTimeout(() => toast.error(message), 0)
       throw error
     }
-  }, [])
+  }, [isDemoMode, templates])
 
   // Update template layout
   const handleUpdateLayout = useCallback(async (templateId: string, layout: WidgetLayout[]) => {
+    if (isDemoMode) {
+      const updated = {
+        ...(templates.find(t => t.id === templateId) || buildFallbackTemplate()),
+        layout
+      }
+      setTemplates(prev => prev.map(t => t.id === templateId ? updated : t))
+      if (activeTemplate?.id === templateId) {
+        setActiveTemplate(updated)
+      }
+      return updated
+    }
     try {
       const updated = await updateTemplateLayoutAction(templateId, layout)
       setTemplates(prev => prev.map(t => t.id === templateId ? updated : t))
@@ -236,7 +292,7 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
       setTimeout(() => toast.error(message), 0)
       throw error
     }
-  }, [activeTemplate])
+  }, [isDemoMode, templates, activeTemplate])
 
   const value: TemplateContextType = {
     templates,

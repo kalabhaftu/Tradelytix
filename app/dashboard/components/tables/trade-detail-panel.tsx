@@ -187,7 +187,7 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
         <div className="px-4 sm:px-6 py-3 border-b border-border/40 shrink-0">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
-              <Button variant="ghost" size="sm" onClick={onClose} className="h-8 px-2 text-xs hover:bg-accent/50 shrink-0">
+              <Button variant="ghost" size="sm" onClick={onClose} data-tour="close-trade-detail" className="h-8 px-2 text-xs hover:bg-accent/50 shrink-0">
                 <ArrowLeft className="mr-1 h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Back</span>
               </Button>

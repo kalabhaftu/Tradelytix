@@ -267,25 +267,6 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
     </div>
   )
 
-  const mobileInlineControls = (
-    <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
-      <div
-        className={cn(
-          "flex h-6 shrink-0 items-center rounded-full border px-2 text-[10px] font-bold shadow-sm",
-          isPositive 
-            ? "bg-long/10 text-long border-long/20 dark:bg-long/20 dark:text-long dark:border-long/30" 
-            : "bg-short/10 text-short border-short/20 dark:bg-short/20 dark:text-short dark:border-short/30"
-        )}
-      >
-        {formatFullCurrency(displayTotal)}
-      </div>
-      <div className="flex h-6 shrink-0 items-center rounded-full border bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-500/20 px-2 text-[10px] font-bold shadow-sm">
-        {tradedDaysCount}d
-      </div>
-      {headerControls}
-    </div>
-  )
-
   return (
     <div id="advanced-calendar-capture" ref={calendarRef} data-screenshot-wrap className={cn("h-full w-full", className)}>
       <WidgetCard
@@ -294,10 +275,10 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         className="overflow-hidden flex flex-col h-full"
       >
         {/* Unified Header: Navigation + Stats + Controls */}
-        <div className="border-b border-border/40 dark:border-border/20 bg-muted/5 px-3 py-2.5 flex-shrink-0">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 max-[420px]:gap-0.5">
-            {/* Left side: Navigation Group */}
-            <div className="flex min-w-0 flex-1 items-center gap-2">
+        <div className="border-b border-border/40 dark:border-border/20 bg-muted/5 px-3 py-2 flex-shrink-0">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            {/* Row 1 / Left: Navigation Group */}
+            <div className="flex items-center justify-between md:justify-start gap-2 w-full md:w-auto">
               <div className="flex items-center bg-muted/30 dark:bg-muted/10 border border-border/50 dark:border-border/30 rounded-lg overflow-hidden p-0.5 shrink-0">
                 <Button 
                   variant="ghost" 
@@ -334,14 +315,10 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
               </span>
             </div>
 
-            <div className="lg:hidden">
-              {mobileInlineControls}
-            </div>
-
-            {/* Right side: Stats + View switcher + Controls */}
-            <div className="hidden shrink-0 items-center gap-3 lg:flex">
-              {/* View Switcher — hide on small screens */}
-              <div className="hidden md:flex items-center p-0.5 bg-muted/30 dark:bg-muted/10 border border-border/50 dark:border-border/30 rounded-lg shrink-0">
+            {/* Row 2 / Right: Stats + View Switcher + Controls */}
+            <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto border-t border-border/10 pt-2 md:border-t-0 md:pt-0">
+              {/* View Switcher — visible on tablet/desktop */}
+              <div className="hidden sm:flex items-center p-0.5 bg-muted/30 dark:bg-muted/10 border border-border/50 dark:border-border/30 rounded-lg shrink-0">
                 <button
                   onClick={() => setViewMode('daily')}
                   className={cn(
@@ -366,85 +343,30 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
                 </button>
               </div>
 
-              {/* Monthly stats container */}
-              <div className="flex items-center gap-2 bg-muted/40 dark:bg-[#0c0e12]/60 border border-border/40 dark:border-border/20 rounded-xl px-3 py-1 text-[11px] font-bold shadow-sm">
-                <span className="text-muted-foreground/75 font-semibold">
+              {/* Stats badges */}
+              <div className="flex items-center gap-1.5 bg-muted/20 dark:bg-[#0c0e12]/40 border border-border/30 dark:border-border/10 rounded-lg p-0.5 sm:px-2 sm:py-0.5 sm:border sm:rounded-xl">
+                <span className="hidden lg:inline text-muted-foreground/75 font-semibold text-[11px] mr-1">
                   {viewMode === 'daily' ? 'Monthly stats:' : 'Yearly stats:'}
                 </span>
-                <span className={cn(
-                  "px-2.5 py-0.5 rounded-full font-extrabold text-xs shadow-inner",
-                  isPositive 
-                    ? "bg-long/10 text-long border border-long/25 dark:bg-long/20 dark:text-long dark:border-long/30" 
-                    : "bg-short/10 text-short border border-short/25 dark:bg-short/20 dark:text-short dark:border-short/30"
-                )}>
+                <div
+                  className={cn(
+                    "flex h-6 items-center rounded-full border px-2.5 text-[10px] font-black shadow-sm",
+                    isPositive 
+                      ? "bg-long/10 text-long border-long/20 dark:bg-long/20 dark:text-long dark:border-long/30" 
+                      : "bg-short/10 text-short border-short/20 dark:bg-short/20 dark:text-short dark:border-short/30"
+                  )}
+                >
                   {formatFullCurrency(displayTotal)}
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/25 font-extrabold text-xs shadow-inner">
-                  {tradedDaysCount} {tradedDaysCount === 1 ? 'day' : 'days'}
-                </span>
-                
-                <div className="w-px h-3.5 bg-border/30 mx-1" />
-                
-                <div className="flex items-center gap-1.5">
-                  <CalendarSettings />
-                  <TooltipProvider delayDuration={100}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="cursor-help h-6 w-6 flex items-center justify-center rounded-md hover:bg-primary/5 hover:text-primary transition-colors shrink-0">
-                          <Info className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-muted-foreground" />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" sideOffset={5} className="max-w-[240px] text-xs py-1.5 px-2.5 bg-popover/95 backdrop-blur-sm border border-border/30 shadow-md">
-                        <p className="font-medium text-foreground">Displays daily and weekly trade performance statistics, net P&L, traded days, win rate, and R-Multiple.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                </div>
+                <div className="flex h-6 items-center rounded-full border bg-indigo-500/10 text-indigo-600 border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-500/20 px-2.5 text-[10px] font-black shadow-sm">
+                  {tradedDaysCount}d
                 </div>
               </div>
 
-              {/* Camera icon button */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="screenshot-btn h-7 w-7 hover:bg-primary/5 hover:text-primary transition-all bg-muted/30 dark:bg-muted/20 border border-border/50 dark:border-border/30 rounded-lg"
-                    title="Capture Screenshot"
-                  >
-                    <Camera className="h-3.5 w-3.5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem onClick={() => handleScreenshot('basic')} className="gap-2 text-xs font-medium">
-                    <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                    Basic (No Gradient)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleScreenshot('random')} className="gap-2 text-xs font-medium">
-                    <Sparkles className="h-3.5 w-3.5 text-yellow-500" />
-                    Random Gradient
-                  </DropdownMenuItem>
-                  <div className="h-px bg-border/40 my-1" />
-                  <div className="px-2 py-1 text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-                    Premium Gradients
-                  </div>
-                  {CALENDAR_GRADIENT_PRESETS.map((preset) => (
-                    <DropdownMenuItem
-                      key={preset.id}
-                      onClick={() => handleScreenshot(preset.id)}
-                      className="gap-2 text-xs font-medium"
-                    >
-                      <div className={cn(
-                        "h-2.5 w-2.5 rounded-full shrink-0",
-                        preset.id === 'midnight-prism' && "bg-gradient-to-tr from-purple-600 to-indigo-600",
-                        preset.id === 'aurora-glass' && "bg-gradient-to-tr from-emerald-600 to-teal-600",
-                        preset.id === 'ocean-glow' && "bg-gradient-to-tr from-blue-600 to-cyan-500",
-                        preset.id === 'sunset-bloom' && "bg-gradient-to-tr from-purple-700 to-orange-500"
-                      )} />
-                      {preset.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Action Buttons */}
+              <div className="flex items-center gap-1">
+                {headerControls}
+              </div>
             </div>
           </div>
         </div>

@@ -293,6 +293,7 @@ temp.txt
 
 .agent/
 .kilo/
+.claude/
 
 # Local diagnostics and debug artifacts
 diagnostics/

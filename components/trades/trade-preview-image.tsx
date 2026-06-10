@@ -46,7 +46,7 @@ export function TradePreviewImage({
         loading={loading}
         unoptimized={unoptimized}
         draggable={false}
-        className={cn('select-none object-cover will-change-transform', imageClassName)}
+        className={cn('select-none object-cover', imageClassName)}
         style={imageStyle}
         onLoad={onLoad}
         onError={onError}

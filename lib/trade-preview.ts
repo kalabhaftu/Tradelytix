@@ -55,7 +55,7 @@ export function getTradePreviewTransformStyles(value: unknown) {
   return {
     transform,
     imageStyle: {
-      transform: `translate3d(${transform.x}%, ${transform.y}%, 0) scale(${transform.zoom})`,
+      transform: `translate(${transform.x}%, ${transform.y}%) scale(${transform.zoom})`,
       transformOrigin: 'center center',
     },
   }

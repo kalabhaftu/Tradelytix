@@ -305,9 +305,9 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
   }
 
   return (
-    <div className={cn('space-y-3', className)}>
+    <div className={cn('space-y-3 isolate relative z-0', className)}>
       {/* KPI Row — mobile 1-up, tablet 2+2+1, narrow desktop 3+2, wide desktop 5-up */}
-      <div className="px-3 sm:px-4 pt-3 sm:pt-4">
+      <div className="px-3 sm:px-4 pt-3 sm:pt-4 isolate relative z-10">
         <div
           className={cn(
             'relative',
@@ -370,7 +370,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
 
       {/* Main Grid — react-grid-layout */}
       {/* The ref div MUST always be in the DOM so ResizeObserver can measure width */}
-      <div className="px-2" ref={gridContainerRef} data-tour="widget-canvas">
+      <div className="px-2 isolate relative z-0" ref={gridContainerRef} data-tour="widget-canvas">
         {isMobile ? (
           <div className="flex flex-col gap-4 pb-4">
             {gridWidgets.map(widget => {
@@ -378,13 +378,14 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
               if (!config) return null
 
               const widgetHeight = widget.h * ROW_HEIGHT + (widget.h - 1) * GRID_MARGIN[1]
+              const isChart = config.category === 'charts' || widget.type.startsWith('calendar')
 
               return (
                 <div 
                   key={widget.i} 
-                  data-is-chart={config.category === 'charts'} 
-                  className={cn("group flex flex-col", isEditMode && "ring-1 ring-border/30 ring-inset rounded-2xl transition-all mb-4")}
-                  style={{ height: widgetHeight }}
+                  data-is-chart={isChart} 
+                  className={cn("group flex flex-col isolate relative z-0", isEditMode && "ring-1 ring-border/30 ring-inset rounded-2xl transition-all mb-4")}
+                  style={{ height: isChart ? widgetHeight : 'auto' }}
                 >
                   <div className="relative w-full flex-1 flex flex-col">
                     {/* Edit mode overlay controls */}

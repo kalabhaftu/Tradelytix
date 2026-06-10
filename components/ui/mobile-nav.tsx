@@ -67,7 +67,7 @@ export function MobileBottomNav() {
   const activeTab = getActiveTab()
 
   return (
-    <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background/95 backdrop-blur-md border-t border-border/30 safe-area-inset-bottom">
+    <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background/95 backdrop-blur-md border-t border-border/30 safe-area-inset-bottom isolate">
       <div className="flex items-center justify-evenly h-14 max-w-md mx-auto">
         {mobileNavItems.map((item) => {
           const Icon = item.icon

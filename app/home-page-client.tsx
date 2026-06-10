@@ -86,7 +86,7 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between p-8 sm:p-12 rounded-3xl bg-secondary/20 border border-border/30">
             <div className="mb-8 md:mb-0 text-center md:text-left">
-              <h2 className="text-3xl font-bold tracking-tight mb-2">Tradelytix Pro</h2>
+              <h2 className="text-3xl font-bold tracking-tight mb-2">Tradelytix</h2>
               <p className="text-muted-foreground">Unlimited access to all features and analytics.</p>
             </div>
             <div className="flex flex-col items-center md:items-end gap-4">

@@ -64,6 +64,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { X, Plus, GripVertical } from 'lucide-react'
 import { useIsMobile } from '@/hooks/use-mobile'
+import MobileDashboard from './mobile-dashboard'
 import { WIDGET_REGISTRY } from '../config/widget-registry-lazy'
 import { useTemplateEditStore } from '@/store/template-edit-store'
 import { useTemplates } from '@/context/template-provider'
@@ -302,6 +303,10 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
         />
       </div>
     )
+  }
+
+  if (isMobile) {
+    return <MobileDashboard />
   }
 
   return (

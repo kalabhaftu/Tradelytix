@@ -15,10 +15,10 @@ interface StatItemProps {
 
 function StatItem({ label, value, negative }: StatItemProps) {
   return (
-    <div className="flex items-center justify-between py-1.5 border-b border-border/30 last:border-b-0">
-      <span className="text-xs text-muted-foreground">{label}</span>
+    <div className="flex items-center justify-between py-1 border-b border-border/30 last:border-b-0">
+      <span className="text-[10px] sm:text-xs text-muted-foreground/90 select-none truncate pr-1">{label}</span>
       <span className={cn(
-        "text-sm font-semibold tabular-nums",
+        "text-xs sm:text-sm font-bold font-mono tabular-nums leading-none",
         negative === true && "text-[hsl(var(--chart-loss))]",
         negative === false && "text-[hsl(var(--chart-profit))]"
       )}>
@@ -113,11 +113,11 @@ export default function PerformanceSummaryWidget() {
     <WidgetCard title="Performance">
       <div className="grid h-full gap-4 xl:grid-cols-[1fr_1.15fr]">
         {stats ? (
-          <div className="grid content-start gap-px overflow-hidden rounded-lg border border-border/25 bg-border/20 sm:grid-cols-2">
-            <div className="bg-card/80 px-3 py-3"><StatItem label="Total trades" value={String(stats.totalTrades)} /></div>
-            <div className="bg-card/80 px-3 py-3"><StatItem label="Win rate" value={`${stats.winRate.toFixed(1)}%`} /></div>
-            <div className="bg-card/80 px-3 py-3"><StatItem label="Profit factor" value={stats.profitFactor.toFixed(2)} negative={stats.profitFactor < 1} /></div>
-            <div className="bg-card/80 px-3 py-3">
+          <div className="grid content-start gap-px overflow-hidden rounded-lg border border-border/25 bg-border/20 grid-cols-2">
+            <div className="bg-card/80 px-2 py-2.5 sm:px-3 sm:py-3"><StatItem label="Total trades" value={String(stats.totalTrades)} /></div>
+            <div className="bg-card/80 px-2 py-2.5 sm:px-3 sm:py-3"><StatItem label="Win rate" value={`${stats.winRate.toFixed(1)}%`} /></div>
+            <div className="bg-card/80 px-2 py-2.5 sm:px-3 sm:py-3"><StatItem label="Profit factor" value={stats.profitFactor.toFixed(2)} negative={stats.profitFactor < 1} /></div>
+            <div className="bg-card/80 px-2 py-2.5 sm:px-3 sm:py-3">
               <StatItem
                 label="Expectancy"
                 value={formatValue(stats.expectancy, {
@@ -127,12 +127,12 @@ export default function PerformanceSummaryWidget() {
                 negative={stats.expectancy < 0 ? true : stats.expectancy > 0 ? false : undefined}
               />
             </div>
-            <div className="bg-card/80 px-3 py-3"><StatItem label="Max drawdown" value={formatValue(stats.maxDrawdown * -1, { kind: 'money' })} negative={stats.maxDrawdown > 0 ? true : undefined} /></div>
-            <div className="bg-card/80 px-3 py-3"><StatItem label="Avg drawdown" value={formatValue(stats.avgDrawdown * -1, { kind: 'money' })} negative={stats.avgDrawdown > 0 ? true : undefined} /></div>
-            <div className="bg-card/80 px-3 py-3"><StatItem label="Avg win" value={formatValue(stats.avgWin, { kind: 'money' })} negative={false} /></div>
-            <div className="bg-card/80 px-3 py-3"><StatItem label="Avg loss" value={formatValue(stats.avgLoss * -1, { kind: 'money' })} negative /></div>
-            <div className="bg-card/80 px-3 py-3"><StatItem label="Fees" value={formatValue(Math.abs(stats.fees) * -1, { kind: 'money' })} negative={stats.fees !== 0 ? true : undefined} /></div>
-            <div className="bg-card/80 px-3 py-3">
+            <div className="bg-card/80 px-2 py-2.5 sm:px-3 sm:py-3"><StatItem label="Max drawdown" value={formatValue(stats.maxDrawdown * -1, { kind: 'money' })} negative={stats.maxDrawdown > 0 ? true : undefined} /></div>
+            <div className="bg-card/80 px-2 py-2.5 sm:px-3 sm:py-3"><StatItem label="Avg drawdown" value={formatValue(stats.avgDrawdown * -1, { kind: 'money' })} negative={stats.avgDrawdown > 0 ? true : undefined} /></div>
+            <div className="bg-card/80 px-2 py-2.5 sm:px-3 sm:py-3"><StatItem label="Avg win" value={formatValue(stats.avgWin, { kind: 'money' })} negative={false} /></div>
+            <div className="bg-card/80 px-2 py-2.5 sm:px-3 sm:py-3"><StatItem label="Avg loss" value={formatValue(stats.avgLoss * -1, { kind: 'money' })} negative /></div>
+            <div className="bg-card/80 px-2 py-2.5 sm:px-3 sm:py-3"><StatItem label="Fees" value={formatValue(Math.abs(stats.fees) * -1, { kind: 'money' })} negative={stats.fees !== 0 ? true : undefined} /></div>
+            <div className="bg-card/80 px-2 py-2.5 sm:px-3 sm:py-3">
               <StatItem
                 label={mode === 'rMultiple' ? 'Total R' : 'Net'}
                 value={mode === 'rMultiple'

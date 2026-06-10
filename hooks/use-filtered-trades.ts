@@ -60,13 +60,17 @@ function buildQueryString(filters: TradeFilters): string {
   return params.toString()
 }
 
-export function useFilteredTrades(filters: TradeFilters, enabled = true) {
+export function useFilteredTrades(filters: TradeFilters, enabled = true, isDemoMode = false) {
   const queryString = buildQueryString(filters)
   
   return useQuery<FilteredTradesResponse>({
     // IMPORTANT: use stable key (string), not object reference
-    queryKey: ['v1', 'trades', queryString],
+    queryKey: ['v1', 'trades', queryString, isDemoMode],
     queryFn: async () => {
+      if (isDemoMode) {
+        // Return dummy response
+        return getMockDemoData();
+      }
       const res = await fetch(`/api/v1/trades?${queryString}`)
       if (!res.ok) throw new Error('Failed to fetch trades')
       return res.json()
@@ -75,4 +79,66 @@ export function useFilteredTrades(filters: TradeFilters, enabled = true) {
     staleTime: 2 * 60 * 1000, // 2 min — realtime subscriptions handle live updates
     gcTime: 5 * 60 * 1000,
   })
+}
+
+function getMockDemoData(): FilteredTradesResponse {
+  const now = new Date()
+  const trades = Array.from({ length: 50 }).map((_, i) => {
+    const isWin = Math.random() > 0.4
+    const pnl = isWin ? 150 + Math.random() * 350 : -100 - Math.random() * 200
+    const durationMin = 10 + Math.random() * 50
+    return {
+      id: `demo-trade-${i}`,
+      accountNumber: 'DEMO-123',
+      instrument: ['EURUSD', 'NQ100', 'XAUUSD'][Math.floor(Math.random() * 3)],
+      side: Math.random() > 0.5 ? 'Buy' : 'Sell',
+      pnl,
+      volume: 1,
+      openTime: new Date(now.getTime() - i * 86400000).toISOString(),
+      closeTime: new Date(now.getTime() - i * 86400000 + durationMin * 60000).toISOString(),
+      status: 'Closed',
+      duration: durationMin * 60,
+      fees: 2.5,
+      commissions: 1.5,
+      netPnl: pnl - 4,
+      drawdown: isWin ? 0 : Math.abs(pnl) / 100000 * 100,
+      tags: []
+    }
+  })
+
+  const wins = trades.filter(t => t.pnl > 0)
+  const losses = trades.filter(t => t.pnl <= 0)
+  const totalPnl = trades.reduce((sum, t) => sum + t.pnl, 0)
+  
+  const stats = {
+    nbTrades: trades.length,
+    nbWin: wins.length,
+    nbLoss: losses.length,
+    nbBe: 0,
+    winRate: wins.length / trades.length * 100,
+    cumulativePnl: totalPnl,
+    grossWin: wins.reduce((sum, t) => sum + t.pnl, 0),
+    grossLosses: losses.reduce((sum, t) => sum + Math.abs(t.pnl), 0),
+    biggestWin: Math.max(...wins.map(t => t.pnl)),
+    biggestLoss: Math.max(...losses.map(t => Math.abs(t.pnl))),
+    averageWin: wins.reduce((sum, t) => sum + t.pnl, 0) / wins.length,
+    averageLoss: losses.reduce((sum, t) => sum + Math.abs(t.pnl), 0) / losses.length,
+    profitFactor: wins.reduce((sum, t) => sum + t.pnl, 0) / (losses.reduce((sum, t) => sum + Math.abs(t.pnl), 0) || 1),
+    averagePositionTime: "45m",
+    totalPositionTime: 45 * 60 * trades.length,
+    winningStreak: 3,
+    cumulativeFees: trades.length * 4,
+    breakEvenThreshold: 0,
+    totalPayouts: 0,
+    nbPayouts: 0,
+    totalPnL: totalPnl
+  }
+
+  return {
+    trades,
+    total: trades.length,
+    statistics: stats,
+    calendarData: {},
+    widgets: {}
+  }
 }

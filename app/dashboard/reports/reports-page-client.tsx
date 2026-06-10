@@ -559,24 +559,24 @@ export default function ReportsPageClient({
                     </div>
                 ) : (
                     <Tabs defaultValue="overview" className="w-full" onValueChange={setSelectedTab}>
-                        <TabsList className="mb-8 h-auto w-full justify-start overflow-x-auto rounded-xl border border-border/20 bg-background/40 p-0 no-export sm:justify-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                            <TabsTrigger value="overview" data-tour="reports-tab-overview" className="rounded-none border-r border-border/15 px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all first:rounded-l-xl flex items-center gap-1.5 whitespace-nowrap data-[state=active]:bg-muted/45">
+                        <TabsList className="flex flex-nowrap mb-8 h-auto w-full justify-start overflow-x-auto rounded-xl border border-border/20 bg-background/40 p-0 no-export sm:justify-center [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                            <TabsTrigger value="overview" data-tour="reports-tab-overview" className="rounded-none border-r border-border/15 px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all first:rounded-l-xl flex items-center gap-1.5 whitespace-nowrap data-[state=active]:bg-muted/45 shrink-0">
                                 <TrendingUp className="h-3.5 w-3.5 shrink-0" />
                                 Overview
                             </TabsTrigger>
-                            <TabsTrigger value="sessions" data-tour="reports-tab-sessions" className="rounded-none border-r border-border/15 px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap data-[state=active]:bg-muted/45">
+                            <TabsTrigger value="sessions" data-tour="reports-tab-sessions" className="rounded-none border-r border-border/15 px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap data-[state=active]:bg-muted/45 shrink-0">
                                 <Clock className="h-3.5 w-3.5 shrink-0" />
                                 Sessions
                             </TabsTrigger>
-                            <TabsTrigger value="spreadsheet" data-tour="reports-tab-spreadsheet" className="rounded-none border-r border-border/15 px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap data-[state=active]:bg-muted/45">
+                            <TabsTrigger value="spreadsheet" data-tour="reports-tab-spreadsheet" className="rounded-none border-r border-border/15 px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap data-[state=active]:bg-muted/45 shrink-0">
                                 <List className="h-3.5 w-3.5 shrink-0" />
                                 Spreadsheet
                             </TabsTrigger>
-                            <TabsTrigger value="statement" data-tour="reports-tab-statement" className="rounded-none border-r border-border/15 px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap data-[state=active]:bg-muted/45">
+                            <TabsTrigger value="statement" data-tour="reports-tab-statement" className="rounded-none border-r border-border/15 px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap data-[state=active]:bg-muted/45 shrink-0">
                                 <FileText className="h-3.5 w-3.5 shrink-0" />
                                 Statement
                             </TabsTrigger>
-                            <TabsTrigger value="propfirm" data-tour="reports-tab-propfirm" className="rounded-none px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all last:rounded-r-xl flex items-center gap-1.5 whitespace-nowrap data-[state=active]:bg-muted/45">
+                            <TabsTrigger value="propfirm" data-tour="reports-tab-propfirm" className="rounded-none px-3 py-3 text-[10px] font-black uppercase tracking-widest transition-all last:rounded-r-xl flex items-center gap-1.5 whitespace-nowrap data-[state=active]:bg-muted/45 shrink-0">
                                 <Building2 className="h-3.5 w-3.5 shrink-0" />
                                 Funded
                             </TabsTrigger>

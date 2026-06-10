@@ -24,68 +24,68 @@
      LIGHT THEME (Base / :root)
      ------------------------------------------------------- */
   :root {
-    /* 1. LAYER 1: NEUTRALS & CONTRAST */
-    --background: 228 22% 96%;           /* #F4F5F8 */
-    --foreground: 215 28% 17%;           /* #1E293B - body text */
-    --heading-text: 222 33% 6%;          /* #0A0D14 - page titles, KPI values */
+    /* 1. LAYER 1: NEUTRALS & CONTRAST (Premium Light Slate Layout) */
+    --background: 220 14% 96%;           /* #F1F3F6 - soft cool slate-grey */
+    --foreground: 222 47% 11%;           /* #0F172A - dark slate body text */
+    --heading-text: 222 47% 6%;          /* #090D16 - deep slate headings, active KPI values */
 
-    --card: 0 0% 100%;                   /* #FFFFFF */
-    --card-foreground: 215 28% 17%;      /* #1E293B */
-    --popover: 0 0% 100%;               /* #FFFFFF */
-    --popover-foreground: 215 28% 17%;
+    --card: 0 0% 100%;                   /* #FFFFFF - pure white card surface */
+    --card-foreground: 222 47% 11%;      /* #0F172A */
+    --popover: 0 0% 100%;                /* #FFFFFF */
+    --popover-foreground: 222 47% 11%;
 
-    --border: 214 32% 91%;              /* #E2E8F0 */
-    --input: 214 32% 91%;               /* #E2E8F0 */
+    --border: 220 13% 90%;               /* #E2E8F0 - crisp, thin border tone */
+    --input: 220 13% 90%;                /* #E2E8F0 */
 
-    --muted: 210 40% 96%;               /* #F1F5F9 - slate-100 */
-    --muted-foreground: 215 16% 47%;    /* #64748B */
+    --muted: 220 14% 94%;                /* #EAECEF - soft muted background */
+    --muted-foreground: 220 10% 46%;     /* #64748B - secondary/muted text */
 
     /* 2. LAYER 2: ACCENTS & INTERACTIVE STATES */
-    --primary: 222 33% 6%;              /* #0A0D14 */
-    --primary-foreground: 0 0% 100%;    /* #FFFFFF */
-    --primary-hover: 215 28% 17%;       /* #1E293B */
-    --primary-press: 0 0% 0%;           /* #000000 */
-    --primary-disabled: 215 20% 65%;    /* #94A3B8 */
+    --primary: 222 47% 11%;              /* #0F172A - deep indigo/slate main brand color */
+    --primary-foreground: 210 40% 98%;    /* #F8FAFC - crisp off-white primary text */
+    --primary-hover: 222 47% 18%;        /* #1E293B - hover state */
+    --primary-press: 222 47% 5%;         /* #090D16 - press state */
+    --primary-disabled: 220 10% 80%;     /* #CBD5E1 - disabled state */
 
-    --secondary: 210 40% 96%;           /* #F1F5F9 - match muted */
-    --secondary-foreground: 215 28% 17%;
+    --secondary: 220 14% 94%;            /* #EAECEF - matches muted */
+    --secondary-foreground: 222 47% 11%; /* #0F172A */
 
-    --accent: 210 40% 96%;              /* #F1F5F9 */
-    --accent-foreground: 215 28% 17%;
+    --accent: 220 14% 94%;               /* #EAECEF */
+    --accent-foreground: 222 47% 11%;    /* #0F172A */
 
-    --destructive: 0 72% 51%;           /* #DC2626 */
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 354 84% 54%;          /* #EF4444 - vibrant clean red */
+    --destructive-foreground: 0 0% 100%; /* #FFFFFF */
 
-    --success: 160 84% 31%;             /* #059669 */
-    --success-foreground: 0 0% 100%;
+    --success: 162 76% 36%;              /* #10B981 - vibrant emerald green */
+    --success-foreground: 0 0% 100%;     /* #FFFFFF */
 
     --warning: 38 92% 50%;               /* #F59E0B - amber-500 */
-    --warning-foreground: 0 0% 100%;
+    --warning-foreground: 0 0% 100%;     /* #FFFFFF */
 
-    --ring: 222 33% 6%;                 /* Match primary */
+    --ring: 222 47% 11%;                 /* Match primary */
     --radius: 0.75rem;
 
     /* 3. LAYER 3: SEMANTICS & CHARTS */
-    --chart-profit: 160 84% 31%;        /* #059669 */
-    --chart-loss: 0 72% 51%;            /* #DC2626 */
-    --chart-bullish: 123 27% 62%;       /* #83b885 */
-    --chart-bearish: 25 70% 45%;         /* Deep amber/copper */
+    --chart-profit: 162 76% 36%;         /* #10B981 */
+    --chart-loss: 354 84% 54%;           /* #EF4444 */
+    --chart-bullish: 162 76% 45%;        /* Modern green candle */
+    --chart-bearish: 354 84% 58%;        /* Modern red candle */
 
-    --chart-1: 217 91% 53%;             /* #2563EB - Blue */
-    --chart-2: 263 70% 58%;             /* #7C3AED - Purple */
-    --chart-3: 333 71% 51%;             /* #DB2777 - Pink */
-    --chart-4: 21 90% 48%;              /* #EA580C - Orange */
-    --chart-5: 45 97% 40%;              /* #CA8A04 - Yellow */
+    --chart-1: 221 83% 53%;              /* #2563EB - Blue */
+    --chart-2: 262 83% 58%;              /* #7C3AED - Purple */
+    --chart-3: 329 86% 56%;              /* #DB2777 - Pink */
+    --chart-4: 24 95% 53%;               /* #EA580C - Orange */
+    --chart-5: 45 93% 47%;               /* #CA8A04 - Yellow */
 
-    /* Sidebar */
-    --sidebar-background: 228 22% 96%;  /* #F4F5F8 */
-    --sidebar-foreground: 215 28% 17%;
-    --sidebar-primary: 222 33% 6%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 214 32% 91%;      /* #E2E8F0 */
-    --sidebar-accent-foreground: 215 28% 17%;
-    --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 222 33% 6%;
+    /* Sidebar (Framed Dashboard layout) */
+    --sidebar-background: 0 0% 100%;     /* #FFFFFF - pure white sidebar */
+    --sidebar-foreground: 220 30% 15%;   /* #1E293B */
+    --sidebar-primary: 222 47% 11%;      /* #0F172A */
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 220 14% 94%;       /* #EAECEF */
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 220 13% 90%;       /* #E2E8F0 */
+    --sidebar-ring: 222 47% 11%;
 
     --discord: 235 86% 65%;
     --google: 217 89% 61%;
@@ -228,6 +228,16 @@
     --chart-loss: 215 16% 47%;
     --chart-bullish: 210 40% 98%;
     --chart-bearish: 215 16% 47%;
+  }
+
+  /* Accent Pack Light-Mode Overrides (dynamic contrast adjustments) */
+  .accent-slate:not(.dark) {
+    --primary-foreground: 222 47% 11%;
+    --success-foreground: 222 47% 11%;
+  }
+
+  .accent-reports:not(.dark) {
+    --success-foreground: 222 47% 11%;
   }
 }
 

@@ -140,27 +140,9 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
         icon: 'add',
       },
       {
-        id: 'explain-live-item',
-        title: 'Live Portfolios',
-        content: 'Select this option if you are trading personal capital. You can track deposits, withdrawals, and account growth.',
-        targetSelector: '[data-tour="create-live-item"]',
-        placement: 'left',
-        route: '/dashboard/accounts',
-        icon: 'info',
-      },
-      {
-        id: 'explain-prop-item',
-        title: 'Prop Firm Challenges',
-        content: 'Select this option to track evaluation challenges (FTMO, FundedNext, etc.). The system automatically validates drawdown rules and profit targets.',
-        targetSelector: '[data-tour="create-prop-item"]',
-        placement: 'left',
-        route: '/dashboard/accounts',
-        icon: 'info',
-      },
-      {
         id: 'open-live-dialog',
         title: 'Open Live Account Form',
-        content: 'Let\'s create a demo account. Click \'Live Account\' to open the creation dialog.',
+        content: 'Choose \'Live Account\' to trade personal capital (or choose \'Prop Firm\' for challenge rules). Click \'Live Account\' to open the creation dialog.',
         targetSelector: '[data-tour="create-live-item"]',
         placement: 'left',
         route: '/dashboard/accounts',
@@ -455,15 +437,15 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [accounts, activeTour, createdAccountId, currentStep])
 
-  // Trigger mock CSV download automatically on step 13 (index 12)
+  // Trigger mock CSV download automatically on the csv-download step
   useEffect(() => {
-    if (activeTour === 'onboarding' && stepIndex === 12) {
+    if (activeTour === 'onboarding' && currentStep?.id === 'csv-download') {
       const timer = setTimeout(() => {
         downloadMockCSV()
       }, 500)
       return () => clearTimeout(timer)
     }
-  }, [activeTour, stepIndex])
+  }, [activeTour, currentStep])
 
   const downloadMockCSV = () => {
     try {
@@ -538,8 +520,13 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearInterval(targetCheckInterval.current!)
         targetCheckInterval.current = null
         setIsLoadingTarget(false)
-        pauseTour()
-        toast.info('Tour paused. Click the resume widget to continue when ready.', { duration: 4000 })
+        if (stepIndex > 0) {
+          prevStep()
+          toast.info('Dropdown closed or target not found. Rewinding one step. Please click the trigger again to continue the tour.', { duration: 4000 })
+        } else {
+          pauseTour()
+          toast.info('Tour paused. Click the resume widget to continue when ready.', { duration: 4000 })
+        }
       }
     }, 500)
 

@@ -279,7 +279,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
       >
         {formatFullCurrency(displayTotal)}
       </div>
-      <div className="flex h-6 shrink-0 items-center rounded-full border bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-500/20 px-2 text-[10px] font-bold shadow-sm">
+      <div className="flex h-6 shrink-0 items-center rounded-full border bg-primary/10 text-primary border-primary/20 px-2 text-[10px] font-bold shadow-sm">
         {tradedDaysCount}d
       </div>
       {headerControls}
@@ -367,7 +367,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
               </div>
 
               {/* Monthly stats container */}
-              <div className="flex items-center gap-2 bg-[#0c0e12]/60 border border-border/20 rounded-xl px-3 py-1 text-[11px] font-bold shadow-md">
+              <div className="flex items-center gap-2 bg-muted/40 dark:bg-[#0c0e12]/60 border border-border/20 rounded-xl px-3 py-1 text-[11px] font-bold shadow-md">
                 <span className="text-muted-foreground/75 font-semibold">
                   {viewMode === 'daily' ? 'Monthly stats:' : 'Yearly stats:'}
                 </span>
@@ -379,7 +379,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
                 )}>
                   {formatFullCurrency(displayTotal)}
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/25 font-extrabold text-xs shadow-inner">
+                <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-extrabold text-xs shadow-inner">
                   {tradedDaysCount} {tradedDaysCount === 1 ? 'day' : 'days'}
                 </span>
                 

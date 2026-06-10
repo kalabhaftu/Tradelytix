@@ -156,8 +156,13 @@ function EmptyGoals() {
   )
 }
 
+import { useUserStore } from "@/store/user-store"
+
 export function GoalsPageClient() {
   const qc = useQueryClient()
+  const user = useUserStore(state => state.user)
+  const isDemo = user?.id === 'demo-user'
+
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [form, setForm] = useState({
     title: '',
@@ -170,14 +175,95 @@ export function GoalsPageClient() {
   })
 
   const { data, isLoading } = useQuery({
-    queryKey: ['goals'],
-    queryFn: fetchGoals,
+    queryKey: ['goals', isDemo],
+    queryFn: async () => {
+      if (isDemo) {
+        return {
+          goals: [
+            {
+              id: 'mock-goal-1',
+              title: 'Achieve 60% win rate this month',
+              description: 'Maintain strict risk management and execution guidelines',
+              metric: 'winRate' as const,
+              targetValue: 60,
+              currentValue: 55,
+              period: 'monthly' as const,
+              startDate: new Date().toISOString(),
+              isCompleted: false,
+              createdAt: new Date().toISOString()
+            },
+            {
+              id: 'mock-goal-2',
+              title: 'Net P&L target of $5,000',
+              description: 'Focus on scaling high probability setups',
+              metric: 'pnl' as const,
+              targetValue: 5000,
+              currentValue: 5432,
+              period: 'monthly' as const,
+              startDate: new Date().toISOString(),
+              isCompleted: true,
+              completedAt: new Date().toISOString(),
+              createdAt: new Date().toISOString()
+            },
+            {
+              id: 'mock-goal-3',
+              title: 'Log at least 40 trades',
+              description: 'Build robust sample size for the new order block model',
+              metric: 'trades' as const,
+              targetValue: 40,
+              currentValue: 80,
+              period: 'monthly' as const,
+              startDate: new Date().toISOString(),
+              isCompleted: true,
+              completedAt: new Date().toISOString(),
+              createdAt: new Date().toISOString()
+            },
+            {
+              id: 'mock-goal-4',
+              title: 'Maintain 5-win streak',
+              description: 'Executing clean confluences',
+              metric: 'streak' as const,
+              targetValue: 5,
+              currentValue: 4,
+              period: 'weekly' as const,
+              startDate: new Date().toISOString(),
+              isCompleted: false,
+              createdAt: new Date().toISOString()
+            }
+          ]
+        }
+      }
+      return fetchGoals()
+    },
   })
 
   const createMutation = useMutation({
-    mutationFn: createGoal,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['goals'] })
+    mutationFn: async (goalData: Partial<Goal>) => {
+      if (isDemo) {
+        const newGoal: Goal = {
+          id: `mock-goal-${Date.now()}`,
+          title: goalData.title || '',
+          description: goalData.description || '',
+          metric: goalData.metric || 'pnl',
+          targetValue: goalData.targetValue || 0,
+          currentValue: 0,
+          period: goalData.period || 'monthly',
+          startDate: goalData.startDate || new Date().toISOString(),
+          isCompleted: false,
+          createdAt: new Date().toISOString()
+        }
+        return { goal: newGoal }
+      }
+      return createGoal(goalData)
+    },
+    onSuccess: (resData) => {
+      if (isDemo) {
+        qc.setQueryData<{ goals: Goal[] }>(['goals', isDemo], (old) => ({
+          goals: [...(old?.goals || []), resData.goal]
+        }))
+      } else {
+        qc.invalidateQueries({ queryKey: ['goals', isDemo] })
+      }
       setIsCreateOpen(false)
       setForm({
         title: '',
@@ -194,9 +280,18 @@ export function GoalsPageClient() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: deleteGoal,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['goals'] })
+    mutationFn: async (id: string) => {
+      if (isDemo) return
+      return deleteGoal(id)
+    },
+    onSuccess: (_, deletedId) => {
+      if (isDemo) {
+        qc.setQueryData<{ goals: Goal[] }>(['goals', isDemo], (old) => ({
+          goals: (old?.goals || []).filter(g => g.id !== deletedId)
+        }))
+      } else {
+        qc.invalidateQueries({ queryKey: ['goals', isDemo] })
+      }
       toast.success('Goal deleted')
     },
     onError: () => toast.error('Failed to delete goal'),

@@ -154,6 +154,7 @@ type FilterStatus = 'all' | 'failed' | 'archived'
 
 export default function AccountsPage() {
   const router = useRouter()
+  const { refreshAllData } = useData()
   const { user } = useAuth()
   const searchInputRef = useRef<HTMLInputElement>(null)
   const userStore = useUserStore(state => state.user)
@@ -275,20 +276,22 @@ export default function AccountsPage() {
     clearAccountsCache()
     // Use refetchAccounts to reload all data - Zustand will automatically trigger re-render
     refetchAccounts()
+    refreshAllData()
     setCreateLiveDialogOpen(false)
     setCreatePropFirmDialogOpen(false)
     toast.success("Account created successfully")
-  }, [refetchAccounts])
+  }, [refetchAccounts, refreshAllData])
 
   const handleAccountUpdated = useCallback(() => {
     clearAccountsCache()
     // Use refetchAccounts to reload all data - Zustand will automatically trigger re-render
     refetchAccounts()
+    refreshAllData()
     setEditLiveDialogOpen(false)
     setEditPropFirmDialogOpen(false)
     setEditingAccount(null)
     toast.success("Account updated successfully")
-  }, [refetchAccounts])
+  }, [refetchAccounts, refreshAllData])
 
   const handleViewAccount = useCallback((account: Account) => {
     if (account.accountType === 'prop-firm') {
@@ -338,12 +341,13 @@ export default function AccountsPage() {
       toast.success(`${accountName} deleted permanently`)
       clearAccountsCache()
       await refetchAccounts()
+      await refreshAllData()
       setDeletingAccount(null)
       setDeleteConfirmText('')
     } catch (error) {
       toast.error("Failed to delete account")
     }
-  }, [deletingAccount, refetchAccounts, deleteConfirmText])
+  }, [deletingAccount, refetchAccounts, refreshAllData, deleteConfirmText])
 
   const handleArchiveAccount = useCallback(async (account: Account) => {
     const accountName = account.displayName || account.name || account.number

@@ -135,6 +135,15 @@ export function CreateLiveAccountDialog({ open, onOpenChange, onSuccess }: LiveA
         description: `Your ${finalBroker} account has been added.`,
       })
 
+      // Dispatch custom event to notify onboarding system instantly
+      if (typeof window !== 'undefined' && result.data?.id) {
+        document.dispatchEvent(
+          new CustomEvent('tradelytix-account-created', {
+            detail: { id: result.data.id, type: 'live' }
+          })
+        )
+      }
+
       clearAccountsCache()
       reset()
       onSuccess?.()

@@ -122,7 +122,7 @@ export function NotificationCenter() {
   }, [])
 
   useEffect(() => {
-    if (!user?.id) return
+    if (!user?.id || user.id === 'demo-user') return
     fetchNotifications()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])

@@ -756,3 +756,18 @@ code > [data-line]::before {
   }
 }
 
+/* Custom dashboard mobile layout overrides */
+@media (max-width: 768px) {
+  /* On mobile, let widgets stack naturally and grow to fit their content */
+  [data-tour="widget-canvas"] .group {
+    height: auto !important;
+  }
+
+  /* Make sure chart containers have a fixed height so Recharts doesn't collapse */
+  [data-tour="widget-canvas"] .recharts-responsive-container {
+    height: 240px !important;
+    min-height: 240px !important;
+  }
+}
+
+

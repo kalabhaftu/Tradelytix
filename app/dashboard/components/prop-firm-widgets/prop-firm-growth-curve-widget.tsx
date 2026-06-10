@@ -24,7 +24,7 @@ function getReferenceValues(account: any, data: any) {
 }
 
 function buildChartData(account: any, data: any, refs: ReturnType<typeof getReferenceValues>) {
-  return [
+  const points = [
     {
       label: 'Start',
       timestamp: 0,
@@ -44,6 +44,17 @@ function buildChartData(account: any, data: any, refs: ReturnType<typeof getRefe
       maxLossFloor: refs.maxLossFloor,
     })),
   ]
+
+  // If there's only one point (only the 'Start' point), duplicate it to draw a flat line
+  if (points.length === 1) {
+    points.push({
+      ...points[0],
+      label: 'Current',
+      timestamp: 1,
+    })
+  }
+
+  return points
 }
 
 function getYAxisDomain(chartData: any[], refs: ReturnType<typeof getReferenceValues>) {
@@ -115,7 +126,7 @@ export function PropFirmGrowthCurveWidget() {
             </div>
             <div className="min-h-0 flex-1">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 18, right: 28, bottom: 8, left: 20 }}>
+                <AreaChart data={chartData} margin={{ top: 18, right: 56, bottom: 8, left: 10 }}>
                   <defs>
                     <linearGradient id="propFirmGrowth" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor={gradientColor} stopOpacity={0.32} />
@@ -125,7 +136,7 @@ export function PropFirmGrowthCurveWidget() {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.35} />
                   <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} minTickGap={14} />
                   <YAxis
-                    width={78}
+                    width={48}
                     domain={yDomain}
                     tickLine={false}
                     axisLine={false}

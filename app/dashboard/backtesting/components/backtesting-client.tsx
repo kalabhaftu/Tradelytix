@@ -29,6 +29,7 @@ interface BacktestingClientProps {
 }
 
 export function BacktestingClient({ initialBacktests }: BacktestingClientProps) {
+  const { isDemoMode } = useData()
   const [backtests, setBacktests] = useState<BacktestTrade[]>(initialBacktests)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterBy, setFilterBy] = useState<'all' | 'wins' | 'losses' | 'longs' | 'shorts'>('all')
@@ -39,6 +40,7 @@ export function BacktestingClient({ initialBacktests }: BacktestingClientProps) 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
 
   const refreshBacktests = async () => {
+    if (isDemoMode) return
     try {
       // Add timeout to prevent hanging requests
       const controller = new AbortController()
@@ -155,6 +157,12 @@ export function BacktestingClient({ initialBacktests }: BacktestingClientProps) 
 
   const handleDelete = async (id: string) => {
     try {
+      if (isDemoMode) {
+        setBacktests(prev => prev.filter(b => b.id !== id))
+        toast.success('Backtest deleted successfully')
+        return
+      }
+
       const response = await fetch(`/api/v1/backtesting?id=${id}`, {
         method: 'DELETE',
       })
@@ -348,6 +356,36 @@ export function BacktestingClient({ initialBacktests }: BacktestingClientProps) 
         onClose={() => setIsAddDialogOpen(false)}
         onAdd={async (backtestData) => {
           try {
+            if (isDemoMode) {
+              const newBt: BacktestTrade = {
+                id: `mock-bt-${Date.now()}`,
+                pair: backtestData.pair || 'EURUSD',
+                direction: backtestData.direction || 'BUY',
+                outcome: backtestData.outcome || 'WIN',
+                session: backtestData.session || 'New York',
+                model: backtestData.model || 'EMA Cross',
+                customModel: backtestData.customModel,
+                riskRewardRatio: backtestData.riskRewardRatio || 2.0,
+                riskPoints: backtestData.riskPoints || 10,
+                rewardPoints: backtestData.rewardPoints || 20,
+                entryPrice: backtestData.entryPrice || 1.0850,
+                stopLoss: backtestData.stopLoss || 1.0840,
+                takeProfit: backtestData.takeProfit || 1.0870,
+                exitPrice: backtestData.exitPrice || 1.0870,
+                pnl: backtestData.pnl || 200,
+                images: [],
+                notes: backtestData.notes,
+                tags: backtestData.tags,
+                dateExecuted: new Date(),
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              }
+              setBacktests(prev => [newBt, ...prev])
+              setIsAddDialogOpen(false)
+              toast.success('Backtest added successfully')
+              return
+            }
+
             const response = await fetch('/api/v1/backtesting', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -381,7 +419,22 @@ export function BacktestingClient({ initialBacktests }: BacktestingClientProps) 
             setIsEditDialogOpen(false)
             setEditingBacktest(null)
           }}
-          onSave={async () => {
+          onSave={async (updateData) => {
+            if (isDemoMode) {
+              setBacktests(prev => prev.map(b => b.id === editingBacktest.id ? { ...b, ...updateData } : b))
+              setIsEditDialogOpen(false)
+              setEditingBacktest(null)
+              toast.success('Backtest updated successfully')
+              return
+            }
+
+            const response = await fetch('/api/v1/backtesting', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: editingBacktest.id, ...updateData }),
+            })
+
+            if (!response.ok) throw new Error('Failed to update backtest')
             await refreshBacktests()
             setIsEditDialogOpen(false)
             setEditingBacktest(null)

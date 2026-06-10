@@ -89,7 +89,43 @@ export function NotificationCenter() {
   }, [isOpen])
 
   const fetchNotifications = useCallback(async () => {
-    if (!user?.id || user.id === 'demo-user') {
+    if (!user?.id) {
+      setIsLoading(false)
+      return
+    }
+    if (user.id === 'demo-user') {
+      setIsLoading(true)
+      const mockNotifications: any[] = [
+        {
+          id: 'mock-notif-1',
+          userId: 'demo-user',
+          type: 'PHASE_TRANSITION_PENDING',
+          title: 'Phase 1 Passed!',
+          message: 'Congratulations! You have passed Phase 1 of your challenge. Ready to transition to Phase 2.',
+          isRead: false,
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 'mock-notif-2',
+          userId: 'demo-user',
+          type: 'WEEKLY_PERFORMANCE',
+          title: 'Weekly Review Ready',
+          message: 'Your AI trading journal analysis for the last week is ready for review.',
+          isRead: false,
+          createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          id: 'mock-notif-3',
+          userId: 'demo-user',
+          type: 'RISK_DAILY_LOSS_80',
+          title: 'Risk Warning (80%)',
+          message: 'You have reached 80% of your maximum daily loss limit on DEMO-123. Trade carefully.',
+          isRead: true,
+          createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+        }
+      ]
+      setNotifications(mockNotifications)
+      setUnreadCount(2)
       setIsLoading(false)
       return
     }
@@ -203,6 +239,14 @@ export function NotificationCenter() {
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
+      if (user?.id === 'demo-user') {
+        setNotifications(prev =>
+          prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
+        )
+        setUnreadCount(prev => Math.max(0, prev - 1))
+        return
+      }
+
       await fetch(`/api/v1/notifications/${notificationId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -220,6 +264,13 @@ export function NotificationCenter() {
 
   const handleMarkAllAsRead = async () => {
     try {
+      if (user?.id === 'demo-user') {
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+        setUnreadCount(0)
+        toast.success('All notifications marked as read')
+        return
+      }
+
       await fetch('/api/v1/notifications', {
         method: 'PATCH'
       })
@@ -234,6 +285,16 @@ export function NotificationCenter() {
 
   const handleDelete = async (notificationId: string) => {
     try {
+      if (user?.id === 'demo-user') {
+        setNotifications(prev => prev.filter(n => n.id !== notificationId))
+        const deleted = notifications.find(n => n.id === notificationId)
+        if (deleted && !deleted.isRead) {
+          setUnreadCount(prev => Math.max(0, prev - 1))
+        }
+        toast.success('Notification deleted')
+        return
+      }
+
       await fetch(`/api/v1/notifications/${notificationId}`, {
         method: 'DELETE'
       })
@@ -251,6 +312,13 @@ export function NotificationCenter() {
 
   const handleClearAll = async () => {
     try {
+      if (user?.id === 'demo-user') {
+        setNotifications([])
+        setUnreadCount(0)
+        toast.success('All notifications cleared')
+        return
+      }
+
       await fetch('/api/v1/notifications', { method: 'DELETE' })
 
       setNotifications([])

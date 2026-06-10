@@ -56,7 +56,7 @@ export async function getUserTemplates(): Promise<DashboardTemplate[]> {
 
   return (templates || []).map(t => JSON.parse(JSON.stringify({
     ...t,
-    layout: t.layout as unknown as WidgetLayout[],
+    layout: t.isDefault ? getCanonicalDefaultLayout() : (t.layout as unknown as WidgetLayout[]),
   })))
 }
 

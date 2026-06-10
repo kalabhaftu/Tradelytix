@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useUserStore } from '@/store/user-store'
 
 interface Transaction {
   id: string
@@ -10,6 +11,9 @@ interface Transaction {
 }
 
 export function useLiveAccountTransactions() {
+  const user = useUserStore(state => state.user)
+  const isDemo = user?.id === 'demo-user'
+
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -20,6 +24,20 @@ export function useLiveAccountTransactions() {
         setIsLoading(true)
         setError(null)
         
+        if (isDemo) {
+          setTransactions([
+            {
+              id: 'mock-tx-1',
+              accountId: 'mock-acc-1',
+              type: 'DEPOSIT',
+              amount: 100000,
+              description: 'Initial Deposit',
+              createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+            }
+          ])
+          return
+        }
+
         // Fetch all transactions for all user's accounts
         const response = await fetch('/api/v1/live-accounts/transactions')
         const result = await response.json()
@@ -37,7 +55,7 @@ export function useLiveAccountTransactions() {
     }
 
     fetchTransactions()
-  }, [])
+  }, [isDemo])
 
   return { transactions, isLoading, error }
 }

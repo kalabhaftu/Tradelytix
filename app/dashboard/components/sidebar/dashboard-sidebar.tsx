@@ -55,9 +55,17 @@ const toolItems = [
 
 export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSettingsPayload }) {
   const pathname = usePathname()
-  const { refreshTrades } = useData()
+  const { refreshTrades, isDemoMode } = useData()
   const { state, toggleSidebar, isOverlay, setOpenMobile } = useSidebar()
   const isCollapsed = state === 'collapsed' && !isOverlay
+
+  const getDemoAdjustedHref = (href: string) => {
+    if (isDemoMode) {
+      return href.replace('/dashboard', '/demo')
+    }
+    return href
+  }
+
   const utilityItems = [
     ...(siteUiSettings.showFeedbackButton
       ? [{ id: 'feedback', label: 'Feedback', icon: MessageSquare, href: '/feedback' }]
@@ -71,17 +79,21 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
   ]
 
   const getActiveId = () => {
-    if (pathname === '/dashboard') return 'widgets'
-    if (pathname?.startsWith('/dashboard/table')) return 'table'
-    if (pathname?.startsWith('/dashboard/accounts')) return 'accounts'
-    if (pathname?.startsWith('/dashboard/journal')) return 'journal'
-    if (pathname?.startsWith('/dashboard/backtesting')) return 'backtesting'
-    if (pathname?.startsWith('/dashboard/playbook')) return 'playbook'
-    if (pathname?.startsWith('/dashboard/goals')) return 'goals'
-    if (pathname?.startsWith('/dashboard/reports')) return 'reports'
-    if (pathname?.startsWith('/dashboard/settings')) return 'settings'
-    if (pathname?.startsWith('/dashboard/data')) return 'data'
-    if (pathname?.startsWith('/docs')) return 'docs'
+    const p = pathname || ''
+    const isDemo = p.startsWith('/demo')
+    const base = isDemo ? '/demo' : '/dashboard'
+
+    if (p === base) return 'widgets'
+    if (p.startsWith(`${base}/table`)) return 'table'
+    if (p.startsWith(`${base}/accounts`)) return 'accounts'
+    if (p.startsWith(`${base}/journal`)) return 'journal'
+    if (p.startsWith(`${base}/backtesting`)) return 'backtesting'
+    if (p.startsWith(`${base}/playbook`)) return 'playbook'
+    if (p.startsWith(`${base}/goals`)) return 'goals'
+    if (p.startsWith(`${base}/reports`)) return 'reports'
+    if (p.startsWith(`${base}/settings`)) return 'settings'
+    if (p.startsWith(`${base}/data`)) return 'data'
+    if (p.startsWith('/docs')) return 'docs'
     return 'widgets'
   }
 
@@ -113,7 +125,7 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
                 tooltip="Dashboard Home"
               >
                 <Link
-                  href="/dashboard"
+                  href={isDemoMode ? "/demo" : "/dashboard"}
                   onClick={handleMobileClose}
                   className={cn('flex w-full items-center', isCollapsed ? 'justify-center' : 'gap-3')}
                 >
@@ -146,7 +158,7 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
                           !isOverlay && !isCollapsed && 'px-3'
                         )}
                       >
-                        <Link href={item.href} onClick={handleMobileClose} data-tour={`sidebar-${item.id}`}>
+                        <Link href={getDemoAdjustedHref(item.href)} onClick={handleMobileClose} data-tour={`sidebar-${item.id}`}>
                           <item.icon />
                           <span>{item.label}</span>
                         </Link>
@@ -174,7 +186,7 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
                           !isOverlay && !isCollapsed && 'px-3'
                         )}
                       >
-                        <Link href={item.href} onClick={handleMobileClose}>
+                        <Link href={getDemoAdjustedHref(item.href)} onClick={handleMobileClose}>
                           <item.icon />
                           <span>{item.label}</span>
                         </Link>
@@ -221,7 +233,7 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
                           !isOverlay && !isCollapsed && 'px-3'
                         )}
                       >
-                        <Link href={item.href} onClick={handleMobileClose} data-tour={`sidebar-${item.id}`}>
+                        <Link href={getDemoAdjustedHref(item.href)} onClick={handleMobileClose} data-tour={`sidebar-${item.id}`}>
                           <item.icon />
                           <span>{item.label}</span>
                         </Link>

@@ -114,6 +114,7 @@ export interface Account extends Omit<PrismaAccount, 'payouts'> {
 
 
 interface DataContextType {
+  isDemoMode?: boolean
   refreshTrades: () => Promise<void>
   refreshAllData: () => Promise<void>
   isPlusUser: () => boolean
@@ -865,6 +866,7 @@ export const DataProvider: React.FC<{
   }, [user?.id, setDashboardLayout])
 
   const contextValue: DataContextType = {
+    isDemoMode,
     isPlusUser,
     isLoading,
     isLoadingAccountFilterSettings,

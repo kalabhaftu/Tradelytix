@@ -225,7 +225,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="screenshot-btn h-6 w-6 max-[420px]:h-5 max-[420px]:w-5 sm:h-7 sm:w-7 hover:bg-primary/5 hover:text-primary transition-all bg-muted/20 border border-border/30 rounded-lg"
+            className="screenshot-btn h-6 w-6 max-[420px]:h-5 max-[420px]:w-5 sm:h-7 sm:w-7 hover:bg-primary/5 hover:text-primary transition-all bg-muted/30 dark:bg-muted/20 border border-border/50 dark:border-border/30 rounded-lg"
           >
             <Camera className="h-3.5 w-3.5" />
           </Button>
@@ -294,11 +294,11 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         className="overflow-hidden flex flex-col h-full"
       >
         {/* Unified Header: Navigation + Stats + Controls */}
-        <div className="border-b border-border/20 bg-muted/5 px-3 py-2.5 flex-shrink-0">
+        <div className="border-b border-border/40 dark:border-border/20 bg-muted/5 px-3 py-2.5 flex-shrink-0">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 max-[420px]:gap-0.5">
             {/* Left side: Navigation Group */}
             <div className="flex min-w-0 flex-1 items-center gap-2">
-              <div className="flex items-center bg-muted/20 border border-border/30 rounded-lg overflow-hidden p-0.5 shrink-0">
+              <div className="flex items-center bg-muted/30 dark:bg-muted/10 border border-border/50 dark:border-border/30 rounded-lg overflow-hidden p-0.5 shrink-0">
                 <Button 
                   variant="ghost" 
                   size="icon" 
@@ -341,13 +341,13 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
             {/* Right side: Stats + View switcher + Controls */}
             <div className="hidden shrink-0 items-center gap-3 lg:flex">
               {/* View Switcher — hide on small screens */}
-              <div className="hidden md:flex items-center p-0.5 bg-muted/20 border border-border/30 rounded-lg shrink-0">
+              <div className="hidden md:flex items-center p-0.5 bg-muted/30 dark:bg-muted/10 border border-border/50 dark:border-border/30 rounded-lg shrink-0">
                 <button
                   onClick={() => setViewMode('daily')}
                   className={cn(
                     "px-2 py-1 text-[10px] font-black rounded-md transition-all",
                     viewMode === 'daily'
-                      ? "bg-background shadow-sm text-foreground border border-border/40"
+                      ? "bg-background shadow-sm text-foreground border border-border/60 dark:border-border/40"
                       : "text-muted-foreground/50 hover:text-foreground"
                   )}
                 >
@@ -358,7 +358,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
                   className={cn(
                     "px-2 py-1 text-[10px] font-black rounded-md transition-all",
                     viewMode === 'weekly'
-                      ? "bg-background shadow-sm text-foreground border border-border/40"
+                      ? "bg-background shadow-sm text-foreground border border-border/60 dark:border-border/40"
                       : "text-muted-foreground/50 hover:text-foreground"
                   )}
                 >
@@ -367,7 +367,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
               </div>
 
               {/* Monthly stats container */}
-              <div className="flex items-center gap-2 bg-[#0c0e12]/60 border border-border/20 rounded-xl px-3 py-1 text-[11px] font-bold shadow-md">
+              <div className="flex items-center gap-2 bg-muted/40 dark:bg-[#0c0e12]/60 border border-border/40 dark:border-border/20 rounded-xl px-3 py-1 text-[11px] font-bold shadow-sm">
                 <span className="text-muted-foreground/75 font-semibold">
                   {viewMode === 'daily' ? 'Monthly stats:' : 'Yearly stats:'}
                 </span>
@@ -408,7 +408,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="screenshot-btn h-7 w-7 hover:bg-primary/5 hover:text-primary transition-all bg-muted/20 border border-border/30 rounded-lg"
+                    className="screenshot-btn h-7 w-7 hover:bg-primary/5 hover:text-primary transition-all bg-muted/30 dark:bg-muted/20 border border-border/50 dark:border-border/30 rounded-lg"
                     title="Capture Screenshot"
                   >
                     <Camera className="h-3.5 w-3.5" />

@@ -417,7 +417,29 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  // Detect newly created account in onboarding
+  // Listen for the custom account-created event (instant detection)
+  useEffect(() => {
+    const handleAccountCreated = (e: Event) => {
+      const customEvent = e as CustomEvent
+      const { id, type } = customEvent.detail || {}
+      if (id && type && !createdAccountId) {
+        setCreatedAccountId(id)
+        setCreatedAccountType(type)
+        
+        // Auto-advance if we are on the submit-account step
+        if (currentStep?.id === 'submit-account') {
+          nextStep()
+        }
+      }
+    }
+
+    document.addEventListener('tradelytix-account-created', handleAccountCreated)
+    return () => {
+      document.removeEventListener('tradelytix-account-created', handleAccountCreated)
+    }
+  }, [createdAccountId, currentStep])
+
+  // Fallback: Detect newly created account in onboarding via list diffing
   useEffect(() => {
     if (activeTour === 'onboarding' && accounts && accounts.length > 0) {
       const newAcc = accounts.find((a: any) => !initialAccountIds.current.includes(a.id))
@@ -526,7 +548,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [activeTour, stepIndex, pathname, paused, isMobile])
 
-  // Setup interactive listeners if step requires real user interaction
+  // Setup interactive listeners if step requires real user interaction (using Capture Phase listeners to bypass Radix event prevention)
   useEffect(() => {
     if (!activeTour || !currentStep || paused || !isTargetVisible) return
 
@@ -539,48 +561,39 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       actionFired = true
       setTimeout(() => {
         nextStep()
-      }, 300)
+      }, 305)
     }
 
-    const setupListeners = () => {
-      const elements = document.querySelectorAll(actionTarget)
-      if (elements.length === 0) return false
-
-      if (actionType === 'click') {
-        elements.forEach((el) => {
-          el.addEventListener('click', handleAction)
-          el.addEventListener('mousedown', handleAction)
-        })
-      } else if (actionType === 'input') {
-        elements.forEach((el) => el.addEventListener('input', handleAction, { once: true }))
-      }
-      return true
-    }
-
-    let bound = setupListeners()
-
-    let attachTimer: NodeJS.Timeout | null = null
-    if (!bound) {
-      let attempts = 0
-      attachTimer = setInterval(() => {
-        bound = setupListeners()
-        attempts++
-        if (bound || attempts > 10) {
-          clearInterval(attachTimer!)
+    const handleCaptureAction = (e: Event) => {
+      if (actionFired) return
+      const target = e.target as Element | null
+      if (target) {
+        // Match target itself or closest ancestor matching the selector
+        const matched = target.closest(actionTarget)
+        if (matched) {
+          handleAction()
         }
-      }, 300)
+      }
+    }
+
+    if (actionType === 'click') {
+      document.addEventListener('click', handleCaptureAction, { capture: true })
+      document.addEventListener('mousedown', handleCaptureAction, { capture: true })
+      document.addEventListener('pointerdown', handleCaptureAction, { capture: true })
+    } else if (actionType === 'input') {
+      document.addEventListener('input', handleCaptureAction, { capture: true })
     }
 
     return () => {
-      if (attachTimer) clearInterval(attachTimer)
-      const elements = document.querySelectorAll(actionTarget)
-      elements.forEach((el) => {
-        el.removeEventListener('click', handleAction)
-        el.removeEventListener('mousedown', handleAction)
-        el.removeEventListener('input', handleAction)
-      })
+      if (actionType === 'click') {
+        document.removeEventListener('click', handleCaptureAction, { capture: true })
+        document.removeEventListener('mousedown', handleCaptureAction, { capture: true })
+        document.removeEventListener('pointerdown', handleCaptureAction, { capture: true })
+      } else if (actionType === 'input') {
+        document.removeEventListener('input', handleCaptureAction, { capture: true })
+      }
     }
-  }, [activeTour, stepIndex, isTargetVisible, paused])
+  }, [activeTour, stepIndex, isTargetVisible, paused, currentStep])
 
   // Action methods
   const startTour = (tourId: TourId) => {

@@ -3,7 +3,7 @@
 import { useCallback, useMemo } from 'react'
 import { useUserStore } from '@/store/user-store'
 import { useRouter } from 'next/navigation'
-import useSWR from 'swr'
+import useSWR, { mutate } from 'swr'
 
 interface UnifiedAccount {
   id: string
@@ -60,7 +60,9 @@ export function subscribeToAccountsUpdates(callback: () => void) {
 
 export function invalidateAccountsCache(_reason?: string) { }
 
-export function clearAccountsCache() { }
+export function clearAccountsCache() {
+  mutate(key => typeof key === 'string' && key.startsWith('/api/v1/accounts'))
+}
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 

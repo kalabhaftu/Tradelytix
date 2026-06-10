@@ -204,6 +204,19 @@ export function CreatePropFirmDialog({ open, onOpenChange, onSuccess }: PropFirm
         description: `Your ${data.propFirmName} account has been added.`,
       })
 
+      // Dispatch custom event to notify onboarding system instantly
+      if (typeof window !== 'undefined' && result.data) {
+        const activePhase = result.data.phases?.find((p: any) => p.status === 'active')
+        const activeId = activePhase?.id || result.data.masterAccount?.id
+        if (activeId) {
+          document.dispatchEvent(
+            new CustomEvent('tradelytix-account-created', {
+              detail: { id: activeId, type: 'prop-firm' }
+            })
+          )
+        }
+      }
+
       clearAccountsCache()
       reset()
       onSuccess?.()

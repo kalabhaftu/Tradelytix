@@ -130,11 +130,11 @@ const DayCell = memo(function DayCell({
               ? "text-primary-foreground bg-primary rounded-full w-5 h-5 md:w-6 md:h-6 flex items-center justify-center text-[10px] md:text-xs"
               : hasTrades
                 ? isProfit 
-                  ? "text-long dark:text-white/80" 
+                  ? "text-long/80 dark:text-white/60" 
                   : isLoss 
-                    ? "text-short dark:text-white/80" 
-                    : "text-foreground dark:text-white/80"
-                : "text-foreground/80 dark:text-foreground/80",
+                    ? "text-short/80 dark:text-white/60" 
+                    : "text-white/60"
+                : "text-foreground/80",
           )}
         >
           {format(date, 'd')}
@@ -167,8 +167,8 @@ const DayCell = memo(function DayCell({
             isTodayDate
               ? "text-primary-foreground bg-primary rounded-full w-5 h-5 flex items-center justify-center text-[10px]"
               : hasTrades
-                ? "text-foreground/85 dark:text-white/80 text-[11px]"
-                : "text-muted-foreground dark:text-muted-foreground/60 text-[11px]",
+                ? "text-foreground/50 dark:text-white/50 text-[11px]"
+                : "text-muted-foreground/75 dark:text-muted-foreground/50 text-[11px]",
           )}
         >
           {format(date, 'd')}
@@ -282,19 +282,19 @@ function WeeklySummary({
   return (
     <div
       className={cn(
-        "flex h-full min-h-[48px] md:min-h-[60px] flex-col items-start justify-center rounded-xl border p-2.5 cursor-pointer transition-all hover:bg-muted/10 group lg:min-h-[68px]",
-        "bg-card dark:bg-[#0c0e12]/60 border-border/50 shadow-sm hover:border-border/80"
+        "flex h-full min-h-[48px] md:min-h-[60px] flex-col items-start justify-center rounded-xl border p-2.5 cursor-pointer transition-all hover:bg-muted/20 group lg:min-h-[68px]",
+        "bg-card/40 dark:bg-[#0c0e12]/60 border-border/20 shadow-md"
       )}
       onClick={() => onReviewWeek?.(weekDays[0])}
     >
-      <span className="text-[10px] font-semibold text-muted-foreground/80 uppercase tracking-wider mb-0.5">
+      <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider mb-0.5">
         Week {weekIndex + 1}
       </span>
       <span
         className={cn(
           "text-sm md:text-base font-extrabold tracking-tight",
           stats.tradedDays === 0
-            ? "text-muted-foreground/70"
+            ? "text-muted-foreground/45"
             : isPositive
               ? "text-long"
               : "text-short",
@@ -304,7 +304,7 @@ function WeeklySummary({
       </span>
       <div className={cn(
         "text-[9px] font-black mt-2 px-2 py-0.5 rounded-full",
-        "bg-primary/10 text-primary border border-primary/20 shadow-sm"
+        "bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/25 shadow-sm"
       )}>
         {stats.tradedDays} {stats.tradedDays === 1 ? 'day' : 'days'}
       </div>

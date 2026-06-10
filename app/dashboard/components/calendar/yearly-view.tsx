@@ -67,7 +67,7 @@ function MiniMonth({
   }, [monthDate])
 
   return (
-    <div className="flex flex-col gap-1.5 p-2.5 md:p-3 rounded-xl border border-border/30 bg-card/30 hover:bg-card/50 transition-all group">
+    <div className="flex flex-col gap-1.5 p-2.5 md:p-3 rounded-xl border border-border/50 dark:border-border/30 bg-muted/10 dark:bg-card/30 hover:bg-muted/20 dark:hover:bg-card/50 transition-all group">
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-sm font-black tracking-tight text-muted-foreground/70 group-hover:text-foreground transition-colors italic">
@@ -122,7 +122,7 @@ function MiniMonth({
                       // No trades
                       isCurrentMonth &&
                         !hasTrades &&
-                        "bg-muted/30 dark:bg-[#0c0e12]/40 border-transparent text-muted-foreground/40 dark:text-muted-foreground/20",
+                        "bg-muted/30 dark:bg-[#0c0e12]/40 border-border/20 dark:border-transparent text-muted-foreground/40 dark:text-muted-foreground/20",
 
                       // Profit — green
                       hasTrades &&

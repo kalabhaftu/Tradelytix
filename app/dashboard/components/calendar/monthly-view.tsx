@@ -83,7 +83,7 @@ const DayCell = memo(function DayCell({
           : "min-h-[48px] md:min-h-[60px] lg:min-h-[68px] cursor-pointer",
 
         // No trades — uses theme tokens so it works in any color scheme
-        !hasTrades && isCurrentMonth && "bg-muted/30 dark:bg-[#0c0e12]/40 border-border/20 hover:border-border/40",
+        !hasTrades && isCurrentMonth && "bg-muted/30 dark:bg-[#0c0e12]/40 border-border/40 dark:border-border/20 hover:border-border/60 dark:hover:border-border/40",
 
         // Profit — green tint via CSS token
         hasTrades && isProfit && "bg-long/10 border-long/20 hover:bg-long/20 hover:border-long/30 dark:bg-long/20 dark:border-long/35 dark:hover:bg-long/30 dark:hover:border-long/50",
@@ -282,8 +282,8 @@ function WeeklySummary({
   return (
     <div
       className={cn(
-        "flex h-full min-h-[48px] md:min-h-[60px] flex-col items-start justify-center rounded-xl border p-2.5 cursor-pointer transition-all hover:bg-muted/20 group lg:min-h-[68px]",
-        "bg-card/40 dark:bg-[#0c0e12]/60 border-border/20 shadow-md"
+        "flex h-full min-h-[48px] md:min-h-[60px] flex-col items-start justify-center rounded-[4px] md:rounded-[6px] border p-2.5 cursor-pointer transition-all hover:bg-muted/30 dark:hover:bg-muted/10 group lg:min-h-[68px]",
+        "bg-muted/25 dark:bg-[#0c0e12]/35 border-border/40 dark:border-border/20 shadow-none hover:border-border/60 dark:hover:border-border/40"
       )}
       onClick={() => onReviewWeek?.(weekDays[0])}
     >
@@ -303,8 +303,10 @@ function WeeklySummary({
         {stats.tradedDays === 0 ? "$0.00" : formatValue(stats.pnl, { kind: 'money', compact: false, emptyLabel: '$0.00' })}
       </span>
       <div className={cn(
-        "text-[9px] font-black mt-2 px-2 py-0.5 rounded-full",
-        "bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/25 shadow-sm"
+        "text-[9px] font-black mt-2 px-2 py-0.5 rounded-full border shadow-sm",
+        stats.tradedDays === 0
+          ? "bg-muted/50 text-muted-foreground/60 border-border/30 dark:bg-muted/10 dark:text-muted-foreground/40"
+          : "bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/25"
       )}>
         {stats.tradedDays} {stats.tradedDays === 1 ? 'day' : 'days'}
       </div>
@@ -421,7 +423,7 @@ export default function MonthlyView({
 
       {!isMiniCalendar && (
         <div className={cn(
-          "shrink-0 flex flex-col border-border/10",
+          "shrink-0 flex flex-col border-border/40 dark:border-border/20",
           isMobile 
             ? "w-full border-t p-3 bg-muted/5 gap-2" 
             : "h-full min-h-0 w-[90px] border-l min-[420px]:w-[100px] sm:w-[110px] lg:w-[125px] xl:w-[140px] 2xl:w-[150px] pr-2 md:pr-3 pb-2 md:pb-3"

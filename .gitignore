@@ -294,6 +294,7 @@ temp.txt
 .agent/
 .kilo/
 .claude/
+.claude/worktrees
 
 # Local diagnostics and debug artifacts
 diagnostics/

@@ -778,15 +778,6 @@ function AccountCard({
       )}
       onClick={onView}
     >
-      {/* Status indicator stripe */}
-      <div className={cn(
-        "absolute top-0 left-0 right-0 h-1",
-        isFailed ? "bg-destructive" :
-          isFunded ? "bg-primary" :
-            isPropFirm ? "bg-primary/70" :
-              "bg-muted-foreground/50"
-      )} />
-
       <CardContent className="p-4 pt-5">
         {/* Header */}
         <div className="mb-4 flex items-start justify-between gap-3">

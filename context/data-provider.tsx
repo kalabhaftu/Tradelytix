@@ -348,6 +348,7 @@ export const DataProvider: React.FC<{
   const hasLoadedDataRef = React.useRef(false)
 
   // HYDRATE FROM SERVER BOOTSTRAP (targeted SSR path)
+  useEffect(() => {
     // Prevent hydration if in demo mode
     if (isDemoMode) return
     

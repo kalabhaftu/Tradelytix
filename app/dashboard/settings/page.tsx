@@ -893,7 +893,7 @@ export default function SettingsPage() {
           <p className="text-xs text-muted-foreground/85">Customize your platform experience and AI settings</p>
         </div>
 
-        <div className="rounded-xl border border-border/40 bg-card/45 p-6 space-y-1">
+        <div className="rounded-xl border border-border/40 bg-card/45 p-6 space-y-1" data-tour="settings-card-preferences">
           {/* Theme selection */}
           <SettingRow
             icon={SunMoon}
@@ -1244,7 +1244,7 @@ export default function SettingsPage() {
           <p className="text-xs text-muted-foreground/85">Automate trade importing using third-party alerts and webhooks</p>
         </div>
 
-        <div className="rounded-xl border border-border/40 bg-card/45 p-6 space-y-6">
+        <div className="rounded-xl border border-border/40 bg-card/45 p-6 space-y-6" data-tour="settings-card-integrations">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
               <Webhook className="h-5 w-5 text-muted-foreground" />
@@ -1337,7 +1337,7 @@ export default function SettingsPage() {
           <p className="text-xs text-muted-foreground/85">Manage your authenticated social logins and platform connections</p>
         </div>
 
-        <div className="rounded-xl border border-border/40 bg-card/45 p-6">
+        <div className="rounded-xl border border-border/40 bg-card/45 p-6" data-tour="settings-card-connections">
           <LinkedAccounts plain={true} />
         </div>
       </div>
@@ -1353,7 +1353,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Cache Management */}
-        <div className="rounded-xl border border-border/40 bg-card/45 p-6">
+        <div className="rounded-xl border border-border/40 bg-card/45 p-6" data-tour="settings-card-security">
           <CacheManagement plain={true} />
         </div>
 

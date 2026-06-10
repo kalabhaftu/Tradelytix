@@ -13,6 +13,7 @@ export function ThemeSwitcher() {
       size="icon"
       onClick={toggleTheme}
       aria-label={effectiveTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+      data-tour="theme-switcher-btn"
     >
       {effectiveTheme === 'dark' ? (
         <Moon className="h-4 w-4 text-muted-foreground" />

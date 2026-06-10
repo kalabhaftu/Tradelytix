@@ -101,7 +101,7 @@ export function AccountCurveWidget({ initialMode = 'cumulative' }: { initialMode
         <div className="flex h-full min-h-0 flex-col gap-3 xl:flex-row">
           <div className="w-full h-full flex-1">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 8, right: 4, bottom: 0, left: -18 }}>
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, bottom: 0, left: -25 }}>
                 <defs>
                   <linearGradient id="accountCurveFill" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={gradientColor} stopOpacity={0.35} />
@@ -110,7 +110,7 @@ export function AccountCurveWidget({ initialMode = 'cumulative' }: { initialMode
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border)/0.2)" />
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={54} />
+                <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={40} />
                 <Tooltip content={<ChartTooltip />} />
                 <Area type={curveType} dataKey="value" name={mode === 'balance' ? 'Balance' : 'Cumulative P&L'} stroke={strokeColor} strokeWidth={2} fill="url(#accountCurveFill)" dot={false} />
               </AreaChart>

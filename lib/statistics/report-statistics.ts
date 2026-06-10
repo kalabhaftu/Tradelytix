@@ -384,6 +384,8 @@ function computeAllMetrics(
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   const dayTradeCount: Record<string, number> = {}
   const dayPnL: Record<string, number> = {}
+  const dayWinPnL: Record<string, number> = {}
+  const dayLossPnL: Record<string, number> = {}
   const pairPnL: Record<string, number> = {}
 
   // Single pass through all trades
@@ -451,6 +453,12 @@ function computeAllMetrics(
       const dayName = dayNames[d.getDay()]
       dayTradeCount[dayName] = (dayTradeCount[dayName] || 0) + 1
       dayPnL[dayName] = (dayPnL[dayName] || 0) + netPnL
+      
+      if (outcome === 'win') {
+        dayWinPnL[dayName] = (dayWinPnL[dayName] || 0) + netPnL
+      } else if (outcome === 'loss') {
+        dayLossPnL[dayName] = (dayLossPnL[dayName] || 0) + Math.abs(netPnL)
+      }
     }
 
     // Pair P&L tracking
@@ -619,11 +627,14 @@ function computeAllMetrics(
     chartData: {
       equityCurve,
       outcomeDistribution: outcomeDistribution.filter(d => d.value > 0),
-      dayOfWeekPerformance: dayNames.map(day => ({
-        name: day.substring(0, 3),
-        Win: Number((dayPnL[day] > 0 ? dayPnL[day] : 0).toFixed(2)),
-        Loss: Number((dayPnL[day] < 0 ? Math.abs(dayPnL[day]) : 0).toFixed(2))
-      })).filter(d => d.Win > 0 || d.Loss > 0)
+      dayOfWeekPerformance: [1, 2, 3, 4, 5, 0, 6].map(dayIdx => {
+        const day = dayNames[dayIdx]
+        return {
+          name: day.substring(0, 3),
+          Win: Number((dayWinPnL[day] || 0).toFixed(2)),
+          Loss: Number((dayLossPnL[day] || 0).toFixed(2))
+        }
+      }).filter(d => d.Win > 0 || d.Loss > 0)
     }
   }
 }

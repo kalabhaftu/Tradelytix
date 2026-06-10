@@ -275,16 +275,16 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         className="overflow-hidden flex flex-col h-full"
       >
         {/* Unified Header: Navigation + Stats + Controls */}
-        <div className="border-b border-border/40 dark:border-border/20 bg-muted/5 px-3 py-2 flex-shrink-0">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            {/* Row 1 / Left: Navigation Group */}
-            <div className="flex items-center justify-between md:justify-start gap-2 w-full md:w-auto">
+        <div className="border-b border-border/40 dark:border-border/20 bg-muted/5 px-3 py-2 flex-shrink-0 overflow-x-auto scrollbar-none">
+          <div className="flex items-center justify-between gap-4 min-w-max">
+            {/* Left: Navigation Group */}
+            <div className="flex items-center gap-2">
               <div className="flex items-center bg-muted/30 dark:bg-muted/10 border border-border/50 dark:border-border/30 rounded-lg overflow-hidden p-0.5 shrink-0">
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   onClick={handlePrev} 
-                  className="h-6 w-6 hover:bg-background border-none" 
+                  className="h-6 w-6 hover:bg-background border-none shrink-0" 
                   aria-label="Previous"
                 >
                   <ChevronLeft className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -292,7 +292,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
                 <Button 
                   variant="ghost" 
                   onClick={() => setCurrentDate(new Date())}
-                  className="h-6 px-2.5 text-[10px] font-black tracking-wider uppercase border-none hover:bg-background"
+                  className="h-6 px-2.5 text-[10px] font-black tracking-wider uppercase border-none hover:bg-background shrink-0"
                 >
                   TODAY
                 </Button>
@@ -300,14 +300,14 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
                   variant="ghost" 
                   size="icon" 
                   onClick={handleNext} 
-                  className="h-6 w-6 hover:bg-background border-none" 
+                  className="h-6 w-6 hover:bg-background border-none shrink-0" 
                   aria-label="Next"
                 >
                   <ChevronRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 </Button>
               </div>
               
-              <span className="text-sm font-semibold text-foreground/90 ml-1.5 whitespace-nowrap">
+              <span className="text-sm font-semibold text-foreground/90 ml-1.5 whitespace-nowrap shrink-0">
                 {viewMode === 'daily'
                   ? format(currentDate, 'MMMM yyyy')
                   : format(currentDate, 'yyyy')
@@ -315,10 +315,10 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
               </span>
             </div>
 
-            {/* Row 2 / Right: Stats + View Switcher + Controls */}
-            <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto border-t border-border/10 pt-2 md:border-t-0 md:pt-0">
-              {/* View Switcher — visible on tablet/desktop */}
-              <div className="hidden sm:flex items-center p-0.5 bg-muted/30 dark:bg-muted/10 border border-border/50 dark:border-border/30 rounded-lg shrink-0">
+            {/* Right: Stats + View Switcher + Controls */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* View Switcher */}
+              <div className="flex items-center p-0.5 bg-muted/30 dark:bg-muted/10 border border-border/50 dark:border-border/30 rounded-lg shrink-0">
                 <button
                   onClick={() => setViewMode('daily')}
                   className={cn(
@@ -344,13 +344,13 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
               </div>
 
               {/* Stats badges */}
-              <div className="flex items-center gap-1.5 bg-muted/20 dark:bg-[#0c0e12]/40 border border-border/30 dark:border-border/10 rounded-lg p-0.5 sm:px-2 sm:py-0.5 sm:border sm:rounded-xl">
+              <div className="flex items-center gap-1.5 bg-muted/20 dark:bg-[#0c0e12]/40 border border-border/30 dark:border-border/10 rounded-lg p-0.5 sm:px-2 sm:py-0.5 sm:border sm:rounded-xl shrink-0">
                 <span className="hidden lg:inline text-muted-foreground/75 font-semibold text-[11px] mr-1">
                   {viewMode === 'daily' ? 'Monthly stats:' : 'Yearly stats:'}
                 </span>
                 <div
                   className={cn(
-                    "flex h-6 items-center rounded-full border px-2.5 text-[10px] font-black shadow-sm",
+                    "flex h-6 items-center rounded-full border px-2.5 text-[10px] font-black shadow-sm whitespace-nowrap",
                     isPositive 
                       ? "bg-long/10 text-long border-long/20 dark:bg-long/20 dark:text-long dark:border-long/30" 
                       : "bg-short/10 text-short border-short/20 dark:bg-short/20 dark:text-short dark:border-short/30"
@@ -358,13 +358,13 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
                 >
                   {formatFullCurrency(displayTotal)}
                 </div>
-                <div className="flex h-6 items-center rounded-full border bg-indigo-500/10 text-indigo-600 border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-500/20 px-2.5 text-[10px] font-black shadow-sm">
+                <div className="flex h-6 items-center rounded-full border bg-indigo-500/10 text-indigo-600 border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-500/20 px-2.5 text-[10px] font-black shadow-sm shrink-0 whitespace-nowrap">
                   {tradedDaysCount}d
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0">
                 {headerControls}
               </div>
             </div>

@@ -217,12 +217,13 @@ const selectionsMatch = (a: string[], b: string[]) => {
 
 export const DataProvider: React.FC<{
   children: React.ReactNode;
+  isDemoMode?: boolean;
   initialBootstrapData?: {
     isAuthenticated: boolean
     user: any | null
     accounts: any[]
   }
-}> = ({ children, initialBootstrapData }) => {
+}> = ({ children, initialBootstrapData, isDemoMode = false }) => {
   const isMobile = useIsMobileDetection();
 
   // Get store values
@@ -347,7 +348,9 @@ export const DataProvider: React.FC<{
   const hasLoadedDataRef = React.useRef(false)
 
   // HYDRATE FROM SERVER BOOTSTRAP (targeted SSR path)
-  useEffect(() => {
+    // Prevent hydration if in demo mode
+    if (isDemoMode) return
+    
     if (!initialBootstrapData?.isAuthenticated) return
     if (hasLoadedDataRef.current) return
 
@@ -380,7 +383,7 @@ export const DataProvider: React.FC<{
     }
 
     setIsLoading(false)
-  }, [initialBootstrapData, setAccounts, setIsLoading, setTrades, setUser])
+  }, [initialBootstrapData, setAccounts, setIsLoading, setTrades, setUser, isDemoMode])
 
   // Load initial data (user + accounts) from /api/v1/init
   const loadData = useCallback(async () => {
@@ -390,6 +393,23 @@ export const DataProvider: React.FC<{
     activeLoadPromiseRef.current = (async () => {
       try {
         setIsLoading(true);
+
+        if (isDemoMode) {
+          setUser({ id: 'demo-user', firstName: 'Demo', lastName: 'User', settings: {} } as any)
+          setAccounts([{
+            id: 'mock-acc-1',
+            number: 'DEMO-123',
+            name: 'Demo Account',
+            accountType: 'live',
+            startingBalance: 100000,
+            balanceToDate: 105432,
+            isArchived: false,
+            status: 'active'
+          }] as any)
+          setIsLoading(false)
+          hasLoadedDataRef.current = true
+          return
+        }
 
         // Step 1: Get supabase user for session
         const { data: { user } } = await supabase.auth.getUser();
@@ -509,6 +529,14 @@ export const DataProvider: React.FC<{
 
   // Load data on mount only - ONCE
   useEffect(() => {
+    if (isDemoMode) {
+      if (hasLoadedDataRef.current) return;
+      setIsLoading(true);
+      hasLoadedDataRef.current = true;
+      loadData();
+      return;
+    }
+
     // CRITICAL FIX: Only run on initial mount when supabaseUser is first set
     if (!supabaseUser) {
       return
@@ -564,7 +592,7 @@ export const DataProvider: React.FC<{
     return () => {
       mounted = false;
     };
-  }, [supabaseUser, loadData, setIsLoading]); // ONLY depend on supabaseUser, run once when it's set
+  }, [supabaseUser, loadData, setIsLoading, isDemoMode]); // ONLY depend on supabaseUser, run once when it's set
 
   // ============================================
   // REACT QUERY: Server-filtered trades + stats + calendar
@@ -573,7 +601,7 @@ export const DataProvider: React.FC<{
   
   // PERF FIX: Enable trades fetch as soon as supabaseUser is available (not after init completes)
   // This breaks the sequential waterfall: init and trades now fetch IN PARALLEL
-  const { data: serverTradeData } = useFilteredTrades(tradeFilters, !!supabaseUser?.id)
+  const { data: serverTradeData } = useFilteredTrades(tradeFilters, isDemoMode ? true : !!supabaseUser?.id, isDemoMode)
 
   useDataProviderRealtime({
     userId: user?.id,

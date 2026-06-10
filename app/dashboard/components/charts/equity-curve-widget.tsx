@@ -65,7 +65,7 @@ export default function EquityCurveWidget() {
     <WidgetCard title="Cumulative Equity Curve">
       <div className="w-full h-full">
         <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
           <defs>
             {/* Split gradient for fill */}
             <linearGradient id="equityFillGrad" x1="0" y1="0" x2="0" y2="1">
@@ -94,7 +94,7 @@ export default function EquityCurveWidget() {
             tickLine={false}
             tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
             tickFormatter={(v) => `$${v >= 1000 ? `${(v/1000).toFixed(1)}k` : v}`}
-            width={50}
+            width={40}
           />
           <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.4} />
           <Tooltip content={<ChartTooltip />} />

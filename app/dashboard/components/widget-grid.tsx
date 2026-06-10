@@ -64,7 +64,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { X, Plus, GripVertical } from 'lucide-react'
 import { useIsMobile } from '@/hooks/use-mobile'
-import MobileDashboard from './mobile-dashboard'
 import { WIDGET_REGISTRY } from '../config/widget-registry-lazy'
 import { useTemplateEditStore } from '@/store/template-edit-store'
 import { useTemplates } from '@/context/template-provider'
@@ -305,13 +304,9 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
     )
   }
 
-  if (isMobile) {
-    return <MobileDashboard />
-  }
-
   return (
     <div className={cn('space-y-3', className)}>
-      {/* KPI Row — mobile 1-up, tablet 2+2+1, narrow desktop 3+2, wide desktop 5-up */}
+      {/* KPI Row — mobile 2-up, tablet 2+2+1, narrow desktop 3+2, wide desktop 5-up */}
       <div className="px-3 sm:px-4 pt-3 sm:pt-4">
         <div
           className={cn(
@@ -319,14 +314,14 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
             isEditMode && 'border-2 border-dashed border-border/50 rounded-xl p-2'
           )}
         >
-          <div className="grid grid-cols-1 min-[768px]:grid-cols-2 min-[1024px]:grid-cols-6 min-[1440px]:grid-cols-5 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 min-[768px]:grid-cols-2 min-[1024px]:grid-cols-6 min-[1440px]:grid-cols-5">
             {kpiLayout.map((widget, index) => {
               return (
               <div
                 key={`kpi-slot-${index}`}
                 className={cn(
-                  "relative",
-                  index === 4 && "min-[768px]:max-[1023px]:col-span-2",
+                  "relative isolate z-10",
+                  index === 4 && "col-span-2 min-[768px]:col-span-1 min-[768px]:max-[1023px]:col-span-2",
                   index <= 2 && "min-[1024px]:max-[1439px]:col-span-2",
                   index >= 3 && "min-[1024px]:max-[1439px]:col-span-3"
                 )}
@@ -388,8 +383,8 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
                 <div 
                   key={widget.i} 
                   data-is-chart={config.category === 'charts'} 
-                  className={cn("group flex flex-col", isEditMode && "ring-1 ring-border/30 ring-inset rounded-2xl transition-all mb-4")}
-                  style={{ height: widgetHeight }}
+                  className={cn("relative isolate z-10 group flex flex-col h-auto", isEditMode && "ring-1 ring-border/30 ring-inset rounded-2xl transition-all mb-4")}
+                  style={{ minHeight: widgetHeight }}
                 >
                   <div className="relative w-full flex-1 flex flex-col">
                     {/* Edit mode overlay controls */}

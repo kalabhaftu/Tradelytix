@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Moon, Sun, ChevronRight } from 'lucide-react'
+import { Moon, Sun, ChevronRight, LineChart, CalendarDays, BookOpen, Fingerprint } from 'lucide-react'
 
 import { Logo } from '@/components/logo'
 import { Button } from '@/components/ui/button'
@@ -80,6 +80,56 @@ export default function HomePage() {
           </motion.div>
         </div>
       </main>
+
+      {/* Features */}
+      <section className="py-24 px-6 bg-secondary/10 border-t border-border/20">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold tracking-tight mb-4">Everything you need to scale</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Tradelytix provides professional-grade tools to journal, analyze, and optimize your trading strategy.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="flex flex-col p-6 rounded-2xl bg-background border border-border/50">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4 text-primary">
+                <LineChart className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold mb-2">Deep Analytics</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Visualize equity curves, drawdowns, and precise metrics to uncover hidden edges in your trading performance.
+              </p>
+            </div>
+            <div className="flex flex-col p-6 rounded-2xl bg-background border border-border/50">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4 text-primary">
+                <CalendarDays className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold mb-2">Smart Calendar</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Review your daily PnL, win rates, and daily trade records with an interactive, rich calendar view.
+              </p>
+            </div>
+            <div className="flex flex-col p-6 rounded-2xl bg-background border border-border/50">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4 text-primary">
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold mb-2">Detailed Journaling</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Log setups, strategies, and psychological states. Attach chart screenshots to learn from every setup.
+              </p>
+            </div>
+            <div className="flex flex-col p-6 rounded-2xl bg-background border border-border/50">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4 text-primary">
+                <Fingerprint className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold mb-2">Prop Firm Ready</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Built-in tracking for phase transitions, drawdown limits, and rules tailored for prop firm traders.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Pricing */}
       <section className="py-24 px-6 border-t border-border/20">

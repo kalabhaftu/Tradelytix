@@ -5,6 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useWidgetData } from '@/hooks/use-widget-data'
 import { WidgetCard, ChartTooltip } from '../widget-card'
 import { useTheme } from '@/context/theme-provider'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 
 const COLORS = {
   bullish: 'hsl(var(--chart-profit))',
@@ -14,6 +15,7 @@ const COLORS = {
 export default function EquityCurveWidget() {
   const { data: chartData, isLoading, error } = useWidgetData('equityCurve')
   const { chartStyle } = useTheme()
+  const { formatValue, isPrivacyMode } = useDashboardDisplay()
 
   // Split gradient offset — green above zero, red below zero
   const gradientOffset = React.useMemo(() => {
@@ -92,9 +94,9 @@ export default function EquityCurveWidget() {
           <YAxis
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-            tickFormatter={(v) => `$${v >= 1000 ? `${(v/1000).toFixed(1)}k` : v}`}
-            width={40}
+            tick={isPrivacyMode ? false : { fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+            tickFormatter={(v) => isPrivacyMode ? "" : formatValue(v, { kind: 'money', compact: true, sensitive: true })}
+            width={isPrivacyMode ? 10 : 40}
           />
           <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.4} />
           <Tooltip content={<ChartTooltip />} />
@@ -108,7 +110,7 @@ export default function EquityCurveWidget() {
             name="Equity"
           />
         </AreaChart>
-      </ResponsiveContainer>
+        </ResponsiveContainer>
       </div>
     </WidgetCard>
   )

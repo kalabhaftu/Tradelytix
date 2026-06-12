@@ -67,7 +67,8 @@ const CHART_CONFIG = {
 } as const
 
 
-
+// ============================================================================
+// CUSTOM DOT COMPONENT
 // ============================================================================
 // CUSTOM DOT COMPONENT
 // ============================================================================
@@ -109,7 +110,7 @@ function formatAxisValue(value: number): string {
 
 function AccountBalanceChart({ size = 'small-long' }: AccountBalanceChartProps) {
   const { data: rawChartData, isLoading } = useWidgetData('accountBalanceChart')
-  const { formatValue, transformValue } = useDashboardDisplay()
+  const { formatValue, transformValue, isPrivacyMode } = useDashboardDisplay()
   const { chartStyle } = useTheme()
   const chartData = React.useMemo(
     () =>
@@ -191,16 +192,17 @@ function AccountBalanceChart({ size = 'small-long' }: AccountBalanceChartProps) 
                 minTickGap={40}
               />
 
-              {/* Y Axis - Currency */}
-              <YAxis
-                tickFormatter={(value) => formatValue(value, { kind: 'balance', compact: true })}
-                stroke={COLORS.axis}
-                fontSize={isCompact ? 10 : 11}
-                tickLine={false}
-                axisLine={false}
-                width={55}
-                domain={['auto', 'auto']}
-              />
+{/* Y Axis - Currency */}
+               <YAxis
+                 tick={isPrivacyMode ? false : { fontSize: isCompact ? 10 : 11 }}
+                 tickFormatter={(value) => isPrivacyMode ? "" : formatValue(value, { kind: 'balance', compact: true, sensitive: true })}
+                 stroke={COLORS.axis}
+                 fontSize={isCompact ? 10 : 11}
+                 tickLine={false}
+                 axisLine={false}
+                 width={isPrivacyMode ? 10 : 55}
+                 domain={['auto', 'auto']}
+               />
 
               {/* Tooltip */}
               <RechartsTooltip

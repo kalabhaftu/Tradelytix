@@ -2,8 +2,8 @@
 
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { PropFirmWidgetShell } from './prop-firm-widget-shell'
-import { formatMoney } from './prop-firm-widget-utils'
-import { formatPropFirmAxisMoney } from '@/lib/prop-firm/widget-metrics'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
+import { useTheme } from '@/context/theme-provider'
 
 function getReferenceValues(account: any, data: any) {
   const accountSize = Number(account.accountSize || 0)
@@ -45,7 +45,6 @@ function buildChartData(account: any, data: any, refs: ReturnType<typeof getRefe
     })),
   ]
 
-  // If there's only one point (only the 'Start' point), duplicate it to draw a flat line
   if (points.length === 1) {
     points.push({
       ...points[0],
@@ -72,9 +71,10 @@ function getYAxisDomain(chartData: any[], refs: ReturnType<typeof getReferenceVa
   return [Math.floor(min - padding), Math.ceil(max + padding)] as [number, number]
 }
 
-import { useTheme } from '@/context/theme-provider'
-
 function GrowthTooltip({ active, payload }: any) {
+  const { formatValue, isPrivacyMode } = useDashboardDisplay()
+  const forcedMode = isPrivacyMode ? 'privacy' : 'dollars'
+  
   if (!active || !payload?.length) return null
   const point = payload[0]?.payload
   if (!point) return null
@@ -88,13 +88,13 @@ function GrowthTooltip({ active, payload }: any) {
     <div className="rounded-xl border border-border/40 bg-popover/95 p-3 text-xs shadow-xl backdrop-blur">
       <p className="mb-2 font-bold text-foreground">{isStart ? 'Start balance' : `Trade ${point.label}`}</p>
       <div className="space-y-1.5 text-muted-foreground">
-        <div className="flex min-w-[11rem] justify-between gap-4"><span>Equity</span><span className="font-mono text-foreground">{formatMoney(point.balance)}</span></div>
-        <div className="flex justify-between gap-4"><span>Net P&L</span><span className={point.pnl >= 0 ? 'font-mono text-long' : 'font-mono text-short'}>{formatMoney(point.pnl)}</span></div>
-        {!isStart ? <div className="flex justify-between gap-4"><span>Trade P&L</span><span className={point.tradePnl >= 0 ? 'font-mono text-long' : 'font-mono text-short'}>{formatMoney(point.tradePnl)}</span></div> : null}
+        <div className="flex min-w-[11rem] justify-between gap-4"><span>Equity</span><span className="font-mono text-foreground">{formatValue(point.balance, { kind: 'money', sensitive: true, forceMode: forcedMode })}</span></div>
+        <div className="flex justify-between gap-4"><span>Net P&L</span><span className={point.pnl >= 0 ? 'font-mono text-long' : 'font-mono text-short'}>{formatValue(point.pnl, { kind: 'money', sensitive: true, forceMode: forcedMode })}</span></div>
+        {!isStart ? <div className="flex justify-between gap-4"><span>Trade P&L</span><span className={point.tradePnl >= 0 ? 'font-mono text-long' : 'font-mono text-short'}>{formatValue(point.tradePnl, { kind: 'money', sensitive: true, forceMode: forcedMode })}</span></div> : null}
         <div className="h-px bg-border/50 my-2" />
-        <div className="flex justify-between gap-4"><span>To target</span><span className="font-mono text-primary">{formatMoney(targetDistance)}</span></div>
-        <div className="flex justify-between gap-4"><span>Above daily DD</span><span className="font-mono text-amber-500">{formatMoney(dailyDistance)}</span></div>
-        <div className="flex justify-between gap-4"><span>Above max DD</span><span className="font-mono text-short">{formatMoney(maxDistance)}</span></div>
+        <div className="flex justify-between gap-4"><span>To target</span><span className="font-mono text-primary">{formatValue(targetDistance, { kind: 'money', sensitive: true, forceMode: forcedMode })}</span></div>
+        <div className="flex justify-between gap-4"><span>Above daily DD</span><span className="font-mono text-amber-500">{formatValue(dailyDistance, { kind: 'money', sensitive: true, forceMode: forcedMode })}</span></div>
+        <div className="flex justify-between gap-4"><span>Above max DD</span><span className="font-mono text-short">{formatValue(maxDistance, { kind: 'money', sensitive: true, forceMode: forcedMode })}</span></div>
       </div>
     </div>
   )
@@ -102,6 +102,8 @@ function GrowthTooltip({ active, payload }: any) {
 
 export function PropFirmGrowthCurveWidget() {
   const { chartStyle } = useTheme()
+  const { formatValue, isPrivacyMode } = useDashboardDisplay()
+  const forcedMode = isPrivacyMode ? 'privacy' : 'dollars'
 
   return (
     <PropFirmWidgetShell title="Prop Firm Growth Curve">
@@ -119,10 +121,10 @@ export function PropFirmGrowthCurveWidget() {
         return (
           <div className="flex h-full min-h-0 flex-col gap-4">
             <div className="grid gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground sm:grid-cols-4">
-              <span>Start <b className="font-mono text-foreground">{formatMoney(refs.accountSize)}</b></span>
-              <span>Target <b className="font-mono text-long">{formatMoney(refs.targetBalance)}</b></span>
-              <span>Daily DD <b className="font-mono text-amber-500">{formatMoney(refs.dailyLossFloor)}</b></span>
-              <span>Max DD <b className="font-mono text-short">{formatMoney(refs.maxLossFloor)}</b></span>
+              <span>Start <b className="font-mono text-foreground">{formatValue(refs.accountSize, { kind: 'money', sensitive: true, forceMode: forcedMode })}</b></span>
+              <span>Target <b className="font-mono text-long">{formatValue(refs.targetBalance, { kind: 'money', sensitive: true, forceMode: forcedMode })}</b></span>
+              <span>Daily DD <b className="font-mono text-amber-500">{formatValue(refs.dailyLossFloor, { kind: 'money', sensitive: true, forceMode: forcedMode })}</b></span>
+              <span>Max DD <b className="font-mono text-short">{formatValue(refs.maxLossFloor, { kind: 'money', sensitive: true, forceMode: forcedMode })}</b></span>
             </div>
             <div className="min-h-0 flex-1">
               <ResponsiveContainer width="100%" height="100%">
@@ -140,8 +142,8 @@ export function PropFirmGrowthCurveWidget() {
                     domain={yDomain}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fontSize: 10 }}
-                    tickFormatter={(value) => formatPropFirmAxisMoney(Number(value))}
+                    tick={isPrivacyMode ? false : { fontSize: 10 }}
+                    tickFormatter={(value) => isPrivacyMode ? '' : formatValue(Number(value), { kind: 'money', compact: true, sensitive: true, forceMode: forcedMode })}
                   />
                   <Tooltip content={<GrowthTooltip />} cursor={{ stroke: strokeColor, strokeDasharray: '4 4', strokeWidth: 1.5 }} />
                   <ReferenceLine y={refs.accountSize} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" label={{ value: 'Start', position: 'right', fontSize: 10 }} />

@@ -3,6 +3,7 @@
 import React from 'react'
 import { WidgetCard } from '../widget-card'
 import { useTradeStatistics } from '@/hooks/use-trade-statistics'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { Info } from "lucide-react"
 import {
   Tooltip,
@@ -17,20 +18,11 @@ interface AvgWinLossProps {
 
 const AvgWinLoss = React.memo(function AvgWinLoss({ size }: AvgWinLossProps) {
   const { avgWin, avgLoss, riskRewardRatio } = useTradeStatistics()
+  const { formatValue, isPrivacyMode } = useDashboardDisplay()
 
   // Calculate the percentage for the progress bar
   const total = avgWin + avgLoss
-  const winPercentage = total > 0 ? (avgWin / total) * 100 : 50
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      notation: Math.abs(amount) >= 100000 ? 'compact' : 'standard',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount)
-  }
+  const winPercentage = isPrivacyMode ? 50 : (total > 0 ? (avgWin / total) * 100 : 50)
 
   return (
     <WidgetCard isKpi>
@@ -58,7 +50,7 @@ const AvgWinLoss = React.memo(function AvgWinLoss({ size }: AvgWinLossProps) {
         <div className="flex flex-col gap-2">
           {/* Large ratio value */}
           <span className="text-[1.65rem] min-[768px]:text-[1.85rem] min-[1440px]:text-3xl font-bold tracking-tight text-foreground">
-            {riskRewardRatio.toFixed(2)}
+            {isPrivacyMode ? '****' : riskRewardRatio.toFixed(2)}
           </span>
 
           {/* Horizontal bar with win/loss values */}
@@ -76,10 +68,10 @@ const AvgWinLoss = React.memo(function AvgWinLoss({ size }: AvgWinLossProps) {
 
             <div className="flex items-center justify-between gap-3 text-[11px] min-[1440px]:text-xs">
               <span className="font-semibold text-profit">
-                {formatCurrency(avgWin)}
+                {formatValue(avgWin, { kind: 'money', sensitive: true })}
               </span>
               <span className="font-semibold text-loss">
-                -{formatCurrency(avgLoss)}
+                {formatValue(avgLoss, { kind: 'money', sensitive: true })}
               </span>
             </div>
           </div>

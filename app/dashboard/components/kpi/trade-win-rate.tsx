@@ -4,6 +4,7 @@ import React from 'react'
 import { WidgetCard } from '../widget-card'
 import { CircularProgress } from '@/components/ui/circular-progress'
 import { useTradeStatistics } from '@/hooks/use-trade-statistics'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { Info } from 'lucide-react'
 import { formatBreakevenBand, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import {
@@ -25,6 +26,7 @@ const TradeWinRate = React.memo(function TradeWinRate({ size }: TradeWinRateProp
     nbBe: nbBreakeven,
     breakEvenThreshold
   } = useTradeStatistics()
+  const { isPrivacyMode } = useDashboardDisplay()
   const threshold = getBreakEvenThreshold(breakEvenThreshold)
 
   return (
@@ -54,17 +56,17 @@ const TradeWinRate = React.memo(function TradeWinRate({ size }: TradeWinRateProp
         {/* Main content: large value + segmented gauge */}
         <div className="flex items-center justify-between gap-3">
           <span className="text-[1.65rem] min-[768px]:text-[1.85rem] min-[1440px]:text-3xl font-bold tracking-tight text-foreground">
-            {winRate.toFixed(2)}%
+            {isPrivacyMode ? '****%' : `${winRate.toFixed(2)}%`}
           </span>
 
           {/* Segmented gauge showing wins/breakeven/losses */}
           <CircularProgress
-            value={winRate}
+            value={isPrivacyMode ? 0 : winRate}
             size={80}
             strokeWidth={7}
             className="origin-right scale-[0.82] min-[768px]:scale-[0.9] min-[1440px]:scale-100"
             type="segmented-gauge"
-            segments={{ wins: nbWin, breakeven: nbBreakeven, losses: nbLoss }}
+            segments={isPrivacyMode ? { wins: 0, breakeven: 0, losses: 0 } : { wins: nbWin, breakeven: nbBreakeven, losses: nbLoss }}
             showPercentage={false}
           />
         </div>

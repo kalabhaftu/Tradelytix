@@ -3,9 +3,11 @@
 import { Target, ShieldAlert, CalendarClock, Trophy, TrendingDown, Activity } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PropFirmWidgetShell } from './prop-firm-widget-shell'
-import { clampPercent, formatInteger, formatMoney, formatPercent, getObjectiveTone } from './prop-firm-widget-utils'
+import { clampPercent, formatInteger, formatPercent, getObjectiveTone } from './prop-firm-widget-utils'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 
 function ObjectiveCard({ title, icon: Icon, rows, progress, danger }: any) {
+  const { formatValue } = useDashboardDisplay()
   const remainingRow = rows.find((row: any) => row.tone === 'remaining')
   const remaining = Number(remainingRow?.rawValue ?? 0)
   const tone = danger || getObjectiveTone(remaining) === 'short' ? 'short' : 'long'
@@ -50,6 +52,9 @@ function StatTile({ label, value, icon: Icon, tone = 'neutral' }: any) {
 }
 
 export function PropFirmObjectivesTodayWidget() {
+  const { formatValue, isPrivacyMode } = useDashboardDisplay()
+  const forcedMode = isPrivacyMode ? 'privacy' : 'dollars'
+  
   return (
     <PropFirmWidgetShell title="Trading Objectives + Today">
       {({ data }) => {
@@ -74,9 +79,9 @@ export function PropFirmObjectivesTodayWidget() {
                 icon={Target}
                 progress={targetAmount > 0 ? (grossPnl / targetAmount) * 100 : 0}
                 rows={[
-                  { label: 'Current result', value: formatMoney(grossPnl), tone: grossPnl >= 0 ? 'positive' : 'negative' },
-                  { label: 'Total profits target', value: formatMoney(targetAmount) },
-                  { label: 'Remaining', value: formatMoney(Math.max(0, targetAmount - grossPnl)), rawValue: Math.max(0, targetAmount - grossPnl), tone: 'remaining' },
+                  { label: 'Current result', value: formatValue(grossPnl, { kind: 'money', sensitive: true, forceMode: forcedMode }), tone: grossPnl >= 0 ? 'positive' : 'negative' },
+                  { label: 'Total profits target', value: formatValue(targetAmount, { kind: 'money', sensitive: false, forceMode: forcedMode }) },
+                  { label: 'Remaining', value: formatValue(Math.max(0, targetAmount - grossPnl), { kind: 'money', sensitive: true, forceMode: forcedMode }), rawValue: Math.max(0, targetAmount - grossPnl), tone: 'remaining' },
                 ]}
               />
               <ObjectiveCard
@@ -85,9 +90,9 @@ export function PropFirmObjectivesTodayWidget() {
                 progress={maxLossLimit > 0 ? (maxUsed / maxLossLimit) * 100 : 0}
                 danger={maxRemaining <= maxLossLimit * 0.25}
                 rows={[
-                  { label: 'Current drawdown used', value: formatMoney(maxUsed), tone: maxUsed > 0 ? 'negative' : undefined },
-                  { label: 'Drawdown limit', value: formatMoney(maxLossLimit) },
-                  { label: 'Remaining', value: formatMoney(maxRemaining), rawValue: maxRemaining, tone: 'remaining' },
+                  { label: 'Current drawdown used', value: formatValue(maxUsed, { kind: 'money', sensitive: true, forceMode: forcedMode }), tone: maxUsed > 0 ? 'negative' : undefined },
+                  { label: 'Drawdown limit', value: formatValue(maxLossLimit, { kind: 'money', sensitive: false, forceMode: forcedMode }) },
+                  { label: 'Remaining', value: formatValue(maxRemaining, { kind: 'money', sensitive: true, forceMode: forcedMode }), rawValue: maxRemaining, tone: 'remaining' },
                 ]}
               />
               <ObjectiveCard
@@ -96,19 +101,19 @@ export function PropFirmObjectivesTodayWidget() {
                 progress={dailyLossLimit > 0 ? (dailyUsed / dailyLossLimit) * 100 : 0}
                 danger={dailyRemaining <= dailyLossLimit * 0.25}
                 rows={[
-                  { label: `Drawdown used (${resetLabel})`, value: formatMoney(dailyUsed), tone: dailyUsed > 0 ? 'negative' : undefined },
-                  { label: 'Daily drawdown limit', value: formatMoney(dailyLossLimit) },
-                  { label: `Remaining this ${resetLabel} day`, value: formatMoney(dailyRemaining), rawValue: dailyRemaining, tone: 'remaining' },
+                  { label: `Drawdown used (${resetLabel})`, value: formatValue(dailyUsed, { kind: 'money', sensitive: true, forceMode: forcedMode }), tone: dailyUsed > 0 ? 'negative' : undefined },
+                  { label: 'Daily drawdown limit', value: formatValue(dailyLossLimit, { kind: 'money', sensitive: false, forceMode: forcedMode }) },
+                  { label: `Remaining this ${resetLabel} day`, value: formatValue(dailyRemaining, { kind: 'money', sensitive: true, forceMode: forcedMode }), rawValue: dailyRemaining, tone: 'remaining' },
                 ]}
               />
             </div>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-              <StatTile label={`Today P&L (${resetLabel})`} icon={Activity} value={formatMoney(data.todayStats.pnl)} tone={data.todayStats.pnl >= 0 ? 'positive' : 'negative'} />
-              <StatTile label={`Today trades (${resetLabel})`} icon={CalendarClock} value={formatInteger(data.todayStats.trades)} />
-              <StatTile label="Today win rate" icon={Trophy} value={formatPercent(data.todayStats.winRate)} tone="positive" />
+              <StatTile label={`Today P&L (${resetLabel})`} icon={Activity} value={formatValue(data.todayStats.pnl, { kind: 'money', sensitive: true, forceMode: forcedMode })} tone={data.todayStats.pnl >= 0 ? 'positive' : 'negative'} />
+              <StatTile label={`Today trades (${resetLabel})`} icon={CalendarClock} value={formatValue(data.todayStats.trades, { kind: 'count', sensitive: false, forceMode: forcedMode })} />
+              <StatTile label="Today win rate" icon={Trophy} value={formatValue(data.todayStats.winRate, { kind: 'percent', forceMode: forcedMode })} tone="positive" />
               <StatTile label="Today W / L" icon={TrendingDown} value={`${data.todayStats.wins} / ${data.todayStats.losses}`} />
-              <StatTile label="Best phase trade" icon={Trophy} value={formatMoney(data.accountExtremes.bestTrade)} tone="positive" />
-              <StatTile label="Worst phase trade" icon={TrendingDown} value={formatMoney(data.accountExtremes.worstTrade)} tone="negative" />
+              <StatTile label="Best phase trade" icon={Trophy} value={formatValue(data.accountExtremes.bestTrade, { kind: 'money', sensitive: true, forceMode: forcedMode })} tone="positive" />
+              <StatTile label="Worst phase trade" icon={TrendingDown} value={formatValue(data.accountExtremes.worstTrade, { kind: 'money', sensitive: true, forceMode: forcedMode })} tone="negative" />
             </div>
           </div>
         )

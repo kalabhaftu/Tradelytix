@@ -16,12 +16,14 @@ import { getSiteUiSettings } from "@/server/site-ui-settings";
 import { TourProvider } from "@/context/tour-context";
 import { TourTooltip } from "@/components/tour/tour-tooltip";
 import { ResumeWidget } from "@/components/tour/resume-widget";
+import { DemoNetworkInterceptor } from "./components/demo-network-interceptor";
 
 export default async function DemoLayout({ children }: { children: ReactElement }) {
   const siteUiSettings = await getSiteUiSettings()
 
   return (
     <TooltipProvider>
+      <DemoNetworkInterceptor />
       <DataProvider isDemoMode={true}>
         <TourProvider>
           <TagsProvider>

@@ -20,10 +20,10 @@ import {
 } from "@/components/ui/tooltip"
 import { WidgetCard, ChartTooltip as SharedChartTooltip } from '../widget-card'
 import { useWidgetData } from "@/hooks/use-widget-data"
-import { formatNumber } from "@/lib/utils"
 import { WidgetSize } from '@/app/dashboard/types/dashboard'
 import { useData } from "@/context/data-provider"
 import { classifyOutcome, getBreakEvenThreshold } from "@/lib/metrics/outcome"
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 
 // ============================================================================
 // TYPES
@@ -64,22 +64,6 @@ const CHART_CONFIG = {
 } as const
 
 
-
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-function formatAxisValue(value: number): string {
-  const absValue = Math.abs(value)
-  if (absValue >= 1000000) {
-    return `${value < 0 ? '-' : ''}$${formatNumber(absValue / 1000000, 1)}M`
-  }
-  if (absValue >= 1000) {
-    return `${value < 0 ? '-' : ''}$${formatNumber(absValue / 1000, 1)}k`
-  }
-  return `${value < 0 ? '-' : ''}$${formatNumber(absValue, 0)}`
-}
-
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -87,6 +71,7 @@ function formatAxisValue(value: number): string {
 export default function PnLByStrategy({ size = 'small-long' }: PnLByStrategyProps) {
   const { statistics } = useData()
   const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
+  const { formatValue } = useDashboardDisplay()
   // ---------------------------------------------------------------------------
   // DATA HOOKS (PRESERVED - DO NOT MODIFY)
   // ---------------------------------------------------------------------------
@@ -138,15 +123,15 @@ export default function PnLByStrategy({ size = 'small-long' }: PnLByStrategyProp
                 horizontal={false}
               />
 
-              {/* X Axis - Currency Values */}
-              <XAxis
-                type="number"
-                tickFormatter={formatAxisValue}
-                stroke={COLORS.axis}
-                fontSize={isCompact ? 10 : 11}
-                tickLine={false}
-                axisLine={false}
-              />
+{/* X Axis - Currency Values */}
+               <XAxis
+                 type="number"
+                 tickFormatter={(value) => formatValue(value, { kind: 'money', compact: true, sensitive: true })}
+                 stroke={COLORS.axis}
+                 fontSize={isCompact ? 10 : 11}
+                 tickLine={false}
+                 axisLine={false}
+               />
 
               {/* Y Axis - Strategy Names */}
               <YAxis

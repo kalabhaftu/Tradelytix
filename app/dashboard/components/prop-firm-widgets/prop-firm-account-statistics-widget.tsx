@@ -3,7 +3,7 @@
 import { Activity, BadgeCheck, BarChart3, Building2, Scale, ShieldAlert, Target, TrendingDown, TrendingUp, Trophy, Wallet } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PropFirmWidgetShell } from './prop-firm-widget-shell'
-import { formatInteger, formatMoney, formatPercent } from './prop-firm-widget-utils'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 
 function IconStat({ label, value, sublabel, icon: Icon, tone = 'neutral' }: any) {
   return (
@@ -23,6 +23,9 @@ function IconStat({ label, value, sublabel, icon: Icon, tone = 'neutral' }: any)
 }
 
 export function PropFirmAccountStatisticsWidget() {
+  const { formatValue, isPrivacyMode } = useDashboardDisplay()
+  const forcedMode = isPrivacyMode ? 'privacy' : 'dollars'
+  
   return (
     <PropFirmWidgetShell title="Prop Firm Account Statistics">
       {({ data }) => {
@@ -35,19 +38,19 @@ export function PropFirmAccountStatisticsWidget() {
         const grossPnl = Number(account.currentGrossPnL || 0)
 
         const items = [
-          { label: 'Current balance', value: formatMoney(account.currentBalance ?? account.currentEquity), icon: Wallet, tone: 'neutral' },
-          { label: 'Current equity', value: formatMoney(account.currentEquity), icon: Scale, tone: 'neutral' },
-          { label: 'Net P&L', value: formatMoney(netPnl), icon: netPnl >= 0 ? TrendingUp : TrendingDown, tone: netPnl >= 0 ? 'positive' : 'negative' },
-          { label: 'Gross P&L', value: formatMoney(grossPnl), icon: BarChart3, tone: grossPnl >= 0 ? 'positive' : 'negative' },
-          { label: 'Trades', value: formatInteger(currentPhaseTrades), sublabel: 'Current phase · partials counted once', icon: Activity },
-          { label: 'Win rate', value: formatPercent(winRate), icon: Trophy, tone: winRate >= 50 ? 'positive' : 'negative' },
-          { label: 'Winners', value: formatInteger(stats.wins ?? stats.winningTrades ?? 0), icon: TrendingUp, tone: 'positive' },
-          { label: 'Losers', value: formatInteger(stats.losses ?? stats.losingTrades ?? 0), icon: TrendingDown, tone: 'negative' },
-          { label: 'Profit target', value: formatPercent(account.profitTargetProgress), icon: Target, tone: 'positive' },
-          { label: 'Daily DD left', value: formatMoney(data.drawdown?.dailyDrawdownRemaining ?? account.dailyDrawdownRemaining), icon: ShieldAlert, tone: 'neutral' },
-          { label: 'Max DD left', value: formatMoney(data.drawdown?.maxDrawdownRemaining ?? account.maxDrawdownRemaining), icon: ShieldAlert, tone: 'neutral' },
-          { label: 'Peak equity', value: formatMoney(data.peakEquity), icon: BadgeCheck, tone: 'positive' },
-          { label: 'Account size', value: formatMoney(account.accountSize), icon: Building2 },
+          { label: 'Current balance', value: formatValue(account.currentBalance ?? account.currentEquity, { kind: 'money', sensitive: true, forceMode: forcedMode }), icon: Wallet, tone: 'neutral' },
+          { label: 'Current equity', value: formatValue(account.currentEquity, { kind: 'money', sensitive: true, forceMode: forcedMode }), icon: Scale, tone: 'neutral' },
+          { label: 'Net P&L', value: formatValue(netPnl, { kind: 'money', sensitive: true, forceMode: forcedMode }), icon: netPnl >= 0 ? TrendingUp : TrendingDown, tone: netPnl >= 0 ? 'positive' : 'negative' },
+          { label: 'Gross P&L', value: formatValue(grossPnl, { kind: 'money', sensitive: true, forceMode: forcedMode }), icon: BarChart3, tone: grossPnl >= 0 ? 'positive' : 'negative' },
+          { label: 'Trades', value: formatValue(currentPhaseTrades, { kind: 'count', sensitive: false, forceMode: forcedMode }), sublabel: 'Current phase · partials counted once', icon: Activity },
+          { label: 'Win rate', value: formatValue(winRate, { kind: 'percent', sensitive: false, forceMode: forcedMode }), icon: Trophy, tone: winRate >= 50 ? 'positive' : 'negative' },
+          { label: 'Winners', value: formatValue(stats.wins ?? stats.winningTrades ?? 0, { kind: 'count', sensitive: false, forceMode: forcedMode }), icon: TrendingUp, tone: 'positive' },
+          { label: 'Losers', value: formatValue(stats.losses ?? stats.losingTrades ?? 0, { kind: 'count', sensitive: false, forceMode: forcedMode }), icon: TrendingDown, tone: 'negative' },
+          { label: 'Profit target', value: formatValue(account.profitTargetProgress, { kind: 'percent', sensitive: false, forceMode: forcedMode }), icon: Target, tone: 'positive' },
+          { label: 'Daily DD left', value: formatValue(data.drawdown?.dailyDrawdownRemaining ?? account.dailyDrawdownRemaining, { kind: 'money', sensitive: true, forceMode: forcedMode }), icon: ShieldAlert, tone: 'neutral' },
+          { label: 'Max DD left', value: formatValue(data.drawdown?.maxDrawdownRemaining ?? account.maxDrawdownRemaining, { kind: 'money', sensitive: true, forceMode: forcedMode }), icon: ShieldAlert, tone: 'neutral' },
+          { label: 'Peak equity', value: formatValue(data.peakEquity, { kind: 'money', sensitive: true, forceMode: forcedMode }), icon: BadgeCheck, tone: 'positive' },
+          { label: 'Account size', value: formatValue(account.accountSize, { kind: 'money', sensitive: true, forceMode: forcedMode }), icon: Building2 },
           { label: 'Phase', value: `Phase ${phase.phaseNumber ?? account.currentPhaseNumber ?? '-'}`, sublabel: phase.status || account.status, icon: BadgeCheck },
         ]
 

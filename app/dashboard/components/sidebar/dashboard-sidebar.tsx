@@ -19,6 +19,7 @@ import {
   MessageSquare,
   Heart,
   Trophy,
+  LogOut,
 } from 'lucide-react'
 
 import {
@@ -253,6 +254,28 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
           )}
         >
           <SidebarMenu>
+            {isDemoMode && (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  size={isOverlay ? 'lg' : 'default'}
+                  variant="default"
+                  onClick={() => {
+                    localStorage.removeItem('settings-cache');
+                    localStorage.removeItem('active-accounts');
+                    window.location.href = '/';
+                  }}
+                  tooltip="Exit Demo"
+                  className={cn(
+                    'w-full text-red-500 hover:text-red-400 hover:bg-red-500/10 transition-colors font-semibold',
+                    isOverlay && 'h-11 rounded-2xl px-4 text-[15px] [&>svg]:size-[17px]',
+                    !isOverlay && !isCollapsed && 'justify-start px-3'
+                  )}
+                >
+                  <LogOut className="h-4 w-4 shrink-0" />
+                  {(!isCollapsed || isOverlay) && <span>Exit Demo</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
             <SidebarMenuItem>
               <SidebarMenuButton
                 size={isOverlay ? 'lg' : 'default'}

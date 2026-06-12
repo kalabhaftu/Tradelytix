@@ -60,29 +60,13 @@ const CHART_CONFIG = {
 } as const
 
 
-
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-function formatAxisValue(value: number): string {
-  const absValue = Math.abs(value)
-  if (absValue >= 1000000) {
-    return `${value < 0 ? '-' : ''}$${formatNumber(absValue / 1000000, 1)}M`
-  }
-  if (absValue >= 1000) {
-    return `${value < 0 ? '-' : ''}$${formatNumber(absValue / 1000, 1)}k`
-  }
-  return `${value < 0 ? '-' : ''}$${formatNumber(absValue, 0)}`
-}
-
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
 export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulativePnLProps) {
   const { data: rawChartData, isLoading } = useWidgetData('dailyCumulativePnl')
-  const { mode, formatValue, transformValue } = useDashboardDisplay()
+  const { mode, formatValue, transformValue, isPrivacyMode } = useDashboardDisplay()
   const { chartStyle } = useTheme()
   const displayMode = mode === 'rMultiple' ? 'dollars' : mode
   const chartData = React.useMemo(
@@ -187,15 +171,16 @@ export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulat
                 minTickGap={40}
               />
 
-              {/* Y Axis - Currency */}
-              <YAxis
-                tickFormatter={(value) => formatValue(value, { kind: 'money', forceMode: displayMode, compact: true })}
-                stroke={COLORS.axis}
-                fontSize={isCompact ? 10 : 11}
-                tickLine={false}
-                axisLine={false}
-                width={55}
-              />
+{/* Y Axis - Currency */}
+               <YAxis
+                 tick={isPrivacyMode ? false : { fontSize: isCompact ? 10 : 11 }}
+                 tickFormatter={(value) => isPrivacyMode ? "" : formatValue(value, { kind: 'money', forceMode: displayMode, compact: true, sensitive: true })}
+                 stroke={COLORS.axis}
+                 fontSize={isCompact ? 10 : 11}
+                 tickLine={false}
+                 axisLine={false}
+                 width={isPrivacyMode ? 10 : 55}
+               />
 
               {/* Zero Reference Line */}
               <ReferenceLine

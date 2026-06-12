@@ -14,7 +14,7 @@ import {
 } from "recharts"
 import { WidgetCard, ChartTooltip as SharedChartTooltip } from '../widget-card'
 import { useWidgetData } from "@/hooks/use-widget-data"
-import { formatNumber } from "@/lib/utils"
+import { useDashboardDisplay } from "@/hooks/use-dashboard-display"
 import { WidgetSize } from '@/app/dashboard/types/dashboard'
 import { useData } from "@/context/data-provider"
 import { classifyOutcome, getBreakEvenThreshold } from "@/lib/metrics/outcome"
@@ -57,22 +57,6 @@ const CHART_CONFIG = {
 } as const
 
 
-
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-function formatAxisValue(value: number): string {
-  const absValue = Math.abs(value)
-  if (absValue >= 1000000) {
-    return `${value < 0 ? '-' : ''}$${formatNumber(absValue / 1000000, 1)}M`
-  }
-  if (absValue >= 1000) {
-    return `${value < 0 ? '-' : ''}$${formatNumber(absValue / 1000, 1)}k`
-  }
-  return `${value < 0 ? '-' : ''}$${formatNumber(absValue, 0)}`
-}
-
 function getNiceStep(value: number): number {
   if (!isFinite(value) || value <= 0) return 25
   const exponent = Math.floor(Math.log10(value))
@@ -86,6 +70,7 @@ function getNiceStep(value: number): number {
   return 10 * base
 }
 
+
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -93,6 +78,7 @@ function getNiceStep(value: number): number {
 export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrumentProps) {
   const { statistics } = useData()
   const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
+  const { formatValue } = useDashboardDisplay()
   // ---------------------------------------------------------------------------
   // DATA HOOKS (PRESERVED - DO NOT MODIFY)
   // ---------------------------------------------------------------------------
@@ -226,7 +212,7 @@ export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrument
 
             {/* Y Axis - Currency */}
             <YAxis
-              tickFormatter={formatAxisValue}
+              tickFormatter={(value) => formatValue(value, { kind: 'money', compact: true })}
               stroke={COLORS.axis}
               fontSize={isCompact ? 10 : 11}
               tickLine={false}

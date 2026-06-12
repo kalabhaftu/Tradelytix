@@ -154,7 +154,7 @@ type FilterStatus = 'all' | 'failed' | 'archived'
 
 export default function AccountsPage() {
   const router = useRouter()
-  const { refreshAllData } = useData()
+  const { refreshAllData, isDemoMode } = useData()
   const { user } = useAuth()
   const searchInputRef = useRef<HTMLInputElement>(null)
   const userStore = useUserStore(state => state.user)
@@ -294,13 +294,14 @@ export default function AccountsPage() {
   }, [refetchAccounts, refreshAllData])
 
   const handleViewAccount = useCallback((account: Account) => {
+    const baseRoute = isDemoMode ? '/demo' : '/dashboard'
     if (account.accountType === 'prop-firm') {
       const masterAccountId = account.currentPhaseDetails?.masterAccountId || account.id
-      router.push(`/dashboard/prop-firm/accounts/${masterAccountId}`)
+      router.push(`${baseRoute}/prop-firm/accounts/${masterAccountId}`)
     } else {
-      router.push(`/dashboard/accounts/${account.id}`)
+      router.push(`${baseRoute}/accounts/${account.id}`)
     }
-  }, [router])
+  }, [router, isDemoMode])
 
   const handleEditAccount = useCallback((account: Account) => {
     setEditingAccount(account)

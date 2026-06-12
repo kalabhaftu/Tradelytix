@@ -20,16 +20,12 @@ import {
 } from "@/components/ui/tooltip"
 import { WidgetCard, ChartTooltip as SharedChartTooltip } from '../widget-card'
 import { useWidgetData } from "@/hooks/use-widget-data"
-import { formatNumber } from "@/lib/utils"
 import { WidgetSize } from '@/app/dashboard/types/dashboard'
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { useData } from "@/context/data-provider"
 import { classifyOutcome, getBreakEvenThreshold } from "@/lib/metrics/outcome"
-
-// ============================================================================
-// TYPES
-// ============================================================================
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 
 interface TradeDurationPerformanceProps {
   size?: WidgetSize
@@ -46,10 +42,6 @@ interface DurationData {
 }
 
 const AnyBarChart = (RechartsPrimitive as any).BarChart as React.ComponentType<any>
-
-// ============================================================================
-// CONSTANTS - Tradezella Premium Styling
-// ============================================================================
 
 const COLORS = {
   profit: 'hsl(var(--chart-profit))',
@@ -75,50 +67,10 @@ const BUCKET_ORDER = [
   "4hr+"
 ] as const
 
-
-
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-function formatAxisValue(value: number): string {
-  const absValue = Math.abs(value)
-  if (absValue >= 1000000) {
-    return `${value < 0 ? '-' : ''}$${formatNumber(absValue / 1000000, 1)}M`
-  }
-  if (absValue >= 1000) {
-    return `${value < 0 ? '-' : ''}$${formatNumber(absValue / 1000, 1)}k`
-  }
-  return `${value < 0 ? '-' : ''}$${formatNumber(absValue, 0)}`
-}
-
-function calculateDurationMinutes(entryTime: string, exitTime: string): number {
-  const entry = new Date(entryTime).getTime()
-  const exit = new Date(exitTime).getTime()
-  return (exit - entry) / (1000 * 60)
-}
-
-function getDurationBucket(minutes: number): string {
-  if (minutes < 1) return "< 1min"
-  if (minutes < 5) return "1-5min"
-  if (minutes < 15) return "5-15min"
-  if (minutes < 30) return "15-30min"
-  if (minutes < 60) return "30min-1hr"
-  if (minutes < 120) return "1-2hr"
-  if (minutes < 240) return "2-4hr"
-  return "4hr+"
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
 export default function TradeDurationPerformance({ size = 'small-long' }: TradeDurationPerformanceProps) {
   const { statistics } = useData()
   const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
-  // ---------------------------------------------------------------------------
-  // DATA HOOKS (PRESERVED - DO NOT MODIFY)
-  // ---------------------------------------------------------------------------
+  const { formatValue } = useDashboardDisplay()
   const { data: baseData = [], isLoading } = useWidgetData('tradeDurationPerformance')
   const [showAverage, setShowAverage] = React.useState(false)
 
@@ -150,14 +102,8 @@ export default function TradeDurationPerformance({ size = 'small-long' }: TradeD
     )
   }
 
-  // ---------------------------------------------------------------------------
-  // SIZE-RESPONSIVE VALUES
-  // ---------------------------------------------------------------------------
   const isCompact = size === 'small' || size === 'small-long'
 
-  // ---------------------------------------------------------------------------
-  // RENDER
-  // ---------------------------------------------------------------------------
   return (
     <WidgetCard title="Duration Performance">
       <div className="w-full h-full">
@@ -167,7 +113,6 @@ export default function TradeDurationPerformance({ size = 'small-long' }: TradeD
               margin={{ top: 20, right: 20, left: 10, bottom: 20 }}
               barGap={4}
             >
-              {/* Subtle Grid - Horizontal Only */}
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke={COLORS.grid}
@@ -175,7 +120,6 @@ export default function TradeDurationPerformance({ size = 'small-long' }: TradeD
                 vertical={false}
               />
 
-              {/* X Axis - Duration Buckets */}
               <XAxis
                 dataKey="bucket"
                 stroke={COLORS.axis}
@@ -188,9 +132,8 @@ export default function TradeDurationPerformance({ size = 'small-long' }: TradeD
                 height={40}
               />
 
-              {/* Y Axis - Currency */}
               <YAxis
-                tickFormatter={formatAxisValue}
+                tickFormatter={(value) => formatValue(value, { kind: 'money', compact: true, sensitive: true })}
                 stroke={COLORS.axis}
                 fontSize={isCompact ? 10 : 11}
                 tickLine={false}
@@ -198,7 +141,6 @@ export default function TradeDurationPerformance({ size = 'small-long' }: TradeD
                 width={50}
               />
 
-              {/* Zero Reference Line */}
               <ReferenceLine
                 y={0}
                 stroke={COLORS.axis}
@@ -206,13 +148,11 @@ export default function TradeDurationPerformance({ size = 'small-long' }: TradeD
                 strokeOpacity={CHART_CONFIG.referenceLineOpacity}
               />
 
-              {/* Tooltip */}
               <RechartsTooltip
                 content={<SharedChartTooltip />}
                 cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
               />
 
-              {/* Bars with Rounded Tops */}
               <Bar
                 dataKey="pnl"
                 radius={CHART_CONFIG.barRadius}

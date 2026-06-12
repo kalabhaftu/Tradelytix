@@ -101,7 +101,7 @@ export default function NetDailyPnL({ size = 'small-long' }: NetDailyPnLProps) {
   const { statistics } = useData()
   const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
   const { data: rawChartData, isLoading } = useWidgetData('netDailyPnl')
-  const { formatValue, transformValue } = useDashboardDisplay()
+  const { formatValue, transformValue, isPrivacyMode } = useDashboardDisplay()
   const chartData = React.useMemo(
     () =>
       (rawChartData ?? []).map((item: any) => ({
@@ -197,14 +197,15 @@ export default function NetDailyPnL({ size = 'small-long' }: NetDailyPnLProps) {
             tickMargin={8}
           />
           <YAxis
-            tickFormatter={(value) => formatValue(value, { kind: 'money', compact: true })}
+            tick={isPrivacyMode ? false : { fontSize: 10 }}
+            tickFormatter={(value) => isPrivacyMode ? "" : formatValue(value, { kind: 'money', compact: true })}
             stroke={COLORS.axis}
             fontSize={10}
             tickLine={false}
             axisLine={false}
             domain={yDomain}
             ticks={yTicks}
-            width={50}
+            width={isPrivacyMode ? 10 : 50}
           />
           <RechartsTooltip
             content={<SharedChartTooltip />}

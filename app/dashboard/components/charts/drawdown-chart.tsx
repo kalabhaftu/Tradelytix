@@ -36,22 +36,11 @@ const COLORS = {
   axis: 'hsl(var(--muted-foreground))'
 } as const
 
-function formatAxisValue(value: number): string {
-  const absValue = Math.abs(value)
-  if (absValue >= 1000000) {
-    return `-$${formatNumber(absValue / 1000000, 1)}M`
-  }
-  if (absValue >= 1000) {
-    return `-$${formatNumber(absValue / 1000, 1)}k`
-  }
-  if (value === 0) return '$0'
-  return `-$${formatNumber(absValue, 0)}`
-}
 
 export default function DrawdownChart({ size = 'small-long' }: DrawdownChartProps) {
   const { data: rawChartData, isLoading } = useWidgetData('dailyCumulativePnl')
   const chartData = React.useMemo(() => rawChartData ?? [], [rawChartData])
-  const { formatValue, transformValue } = useDashboardDisplay()
+  const { formatValue, transformValue, isPrivacyMode } = useDashboardDisplay()
   const { chartStyle } = useTheme()
 
   const drawdownData: DrawdownDataPoint[] = React.useMemo(() => {
@@ -138,12 +127,13 @@ export default function DrawdownChart({ size = 'small-long' }: DrawdownChartProp
             />
 
             <YAxis
-              tickFormatter={(value) => formatValue(value, { kind: 'money', compact: true })}
+              tick={isPrivacyMode ? false : { fontSize: isCompact ? 10 : 11 }}
+              tickFormatter={(value) => isPrivacyMode ? "" : formatValue(value, { kind: 'money', compact: true })}
               stroke={COLORS.axis}
               fontSize={isCompact ? 10 : 11}
               tickLine={false}
               axisLine={false}
-              width={55}
+              width={isPrivacyMode ? 10 : 55}
               domain={[(dataMin: number) => Math.floor(dataMin * 1.1), 0]}
               tickCount={6}
             />

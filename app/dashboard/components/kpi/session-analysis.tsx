@@ -1,10 +1,11 @@
 'use client'
 
 import { WidgetCard } from '../widget-card'
-import { useWidgetData } from '@/hooks/use-widget-data'
-import { MarketSession } from '@/lib/time-utils'
+import { useWidgetData } from "@/hooks/use-widget-data"
 import { cn } from '@/lib/utils'
 import { Moon, Sun, Sunrise } from 'lucide-react'
+import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
+import { MarketSession } from '@/lib/time-utils'
 
 interface SessionAnalysisProps {
   size?: string
@@ -17,6 +18,7 @@ const SESSION_META: Record<MarketSession, { name: string; icon: any; color: stri
 }
 
 export default function SessionAnalysis({ size: _size }: SessionAnalysisProps) {
+  const { formatValue } = useDashboardDisplay()
   const { data: sessionStats } = useWidgetData('sessionAnalysis')
 
   if (!sessionStats || Object.keys(sessionStats).length === 0) {
@@ -66,8 +68,7 @@ export default function SessionAnalysis({ size: _size }: SessionAnalysisProps) {
                   isPositive ? 'text-long' : 'text-short'
                 )}
               >
-                {isPositive ? '+' : ''}
-                ${session.pnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatValue(session.pnl, { kind: 'money', sensitive: true })}
               </div>
             </div>
           )

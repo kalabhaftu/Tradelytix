@@ -8,6 +8,9 @@ import { signOut } from '@/server/auth'
 import { createClient } from '@/lib/supabase'
 import { useUserStore } from '@/store/user-store'
 import { useAutoCacheCleanup } from '@/hooks/use-auto-cache-cleanup'
+import { useQueryClient } from '@tanstack/react-query'
+import { mutate } from 'swr'
+import { useTradesStore } from '@/store/trades-store'
 
 interface AuthContextType {
   isLoading: boolean
@@ -28,6 +31,7 @@ const AuthContext = createContext<AuthContextType>({
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient()
   const [isLoading, setIsLoading] = useState(true)
   const [session, setSession] = useState<Session | null>(null)
   const router = useRouter()
@@ -195,6 +199,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false)
     lastSyncedSessionRef.current = null
     
+    // Clear Zustand stores
+    try {
+      useTradesStore.getState().setTrades([])
+    } catch (e) {}
+
+    // Clear React Query cache
+    try {
+      queryClient.clear()
+    } catch (e) {}
+
+    // Clear SWR cache completely
+    try {
+      mutate(() => true, undefined, { revalidate: false })
+    } catch (e) {}
+
     // Clear any cached auth data
     localStorage.removeItem('tradelytix_user_data')
     // Clear Supabase auth tokens (they start with 'sb-')
@@ -204,7 +223,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' })
     }
-  }, [clearBrowserAuthStorage, resetUser, setSupabaseUser])
+  }, [clearBrowserAuthStorage, resetUser, setSupabaseUser, queryClient])
 
   const refreshOnceForAuthEvent = useCallback((event: string, nextSession: Session | null) => {
     if (event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') {

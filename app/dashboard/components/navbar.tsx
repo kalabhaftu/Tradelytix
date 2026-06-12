@@ -54,7 +54,7 @@ export default function Navbar() {
   const [mobileAccountsOpen, setMobileAccountsOpen] = useState(false)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
 
-  const { accountNumbers, isMobile } = useData()
+  const { accountNumbers, isMobile, isDemoMode } = useData()
   const { forceClearAuth } = useAuth()
 
   useKeyboardShortcuts()
@@ -216,7 +216,7 @@ export default function Navbar() {
 
               <DropdownMenuItem asChild>
                 <Link
-                  href="/dashboard/settings"
+                  href={isDemoMode ? "/demo/settings" : "/dashboard/settings"}
                   className="cursor-pointer"
                   onClick={() => setProfileMenuOpen(false)}
                 >

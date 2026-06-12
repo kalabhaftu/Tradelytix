@@ -64,6 +64,7 @@ import {
 } from '@/hooks/use-data-provider-filter-state';
 import { defaultLayouts } from '@/lib/dashboard/default-layouts';
 import { useDataProviderTradeMutations } from '@/hooks/use-data-provider-trade-mutations';
+import * as mockData from '@/lib/demo/mock-data';
 
 // Types from trades-data.tsx
 type StatisticsProps = {
@@ -397,17 +398,8 @@ export const DataProvider: React.FC<{
         setIsLoading(true);
 
         if (isDemoMode) {
-          setUser({ id: 'demo-user', firstName: 'Demo', lastName: 'User', settings: {} } as any)
-          setAccounts([{
-            id: 'mock-acc-1',
-            number: 'DEMO-123',
-            name: 'Demo Account',
-            accountType: 'live',
-            startingBalance: 100000,
-            balanceToDate: 105432,
-            isArchived: false,
-            status: 'active'
-          }] as any)
+          setUser(mockData.MOCK_USER_PROFILE as any)
+          setAccounts(mockData.MOCK_ACCOUNTS as any)
           setIsLoading(false)
           hasLoadedDataRef.current = true
           return

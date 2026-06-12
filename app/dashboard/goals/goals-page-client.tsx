@@ -161,7 +161,7 @@ import { useUserStore } from "@/store/user-store"
 export function GoalsPageClient() {
   const qc = useQueryClient()
   const user = useUserStore(state => state.user)
-  const isDemo = user?.id === 'demo-user'
+  const isDemo = typeof window !== 'undefined' && window.location.pathname.startsWith('/demo')
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [form, setForm] = useState({

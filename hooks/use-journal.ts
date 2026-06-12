@@ -1,7 +1,7 @@
 import useSWR from 'swr'
 import { Trade } from '@prisma/client'
 import { useData } from '@/context/data-provider'
-import { getMockTradesList } from './use-filtered-trades'
+import { getMockTradesList } from '@/lib/demo/mock-data'
 import { calculateStatistics } from '@/lib/utils'
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())

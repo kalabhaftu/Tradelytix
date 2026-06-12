@@ -84,6 +84,7 @@ interface UsePropFirmRealtimeResult {
 
 export function usePropFirmRealtime(options: UsePropFirmRealtimeOptions): UsePropFirmRealtimeResult {
   const { accountId, enabled = true } = options
+  const isDemo = typeof window !== 'undefined' && window.location.pathname.startsWith('/demo')
   const user = useUserStore(state => state.user)
   
   const [account, setAccount] = useState<PropFirmAccountLocal | null>(null)

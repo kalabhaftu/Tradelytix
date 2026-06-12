@@ -27,8 +27,10 @@ import {
     Image as ImageIcon,
     LayoutDashboard,
     AlertCircle,
-    Link as LinkIcon
+    Link as LinkIcon,
+    Settings
 } from 'lucide-react'
+import { SharedLinksManager } from './components/shared-links-manager'
 import {
     format,
     startOfYear,
@@ -523,6 +525,17 @@ export default function ReportsPageClient({
                                     <LinkIcon className="h-3.5 w-3.5" />
                                     Generate Public Link
                                 </DropdownMenuItem>
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="gap-2 text-xs font-medium cursor-pointer">
+                                            <Settings className="h-3.5 w-3.5" />
+                                            Manage Shared Links
+                                        </DropdownMenuItem>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-2xl bg-card border border-border/10 p-0 overflow-hidden rounded-[32px]">
+                                        <SharedLinksManager />
+                                    </DialogContent>
+                                </Dialog>
                             </DropdownMenuContent>
                         </DropdownMenu>
                       </div>

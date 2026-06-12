@@ -164,20 +164,32 @@ function MetricCard({
   trend?: 'up' | 'down' | 'neutral';
   className?: string;
 }) {
-  const trendColor = trend === 'up' ? 'text-long' : trend === 'down' ? 'text-short' : 'text-muted-foreground'
+  const trendColor = trend === 'up' ? 'text-profit font-black' : trend === 'down' ? 'text-loss font-black' : 'text-foreground'
+  const isLoss = trend === 'down'
+  const isWin = trend === 'up'
 
   return (
-    <div className={cn("p-4.5 bg-card/35 flex flex-col justify-between min-h-[96px]", className)}>
-      <div className="flex items-center gap-2 mb-2">
-        <Icon className="h-4 w-4 text-muted-foreground/75" />
-        <span className="text-xs font-semibold text-muted-foreground/80">{label}</span>
+    <div className={cn(
+      "rounded-xl border border-border/30 bg-card/70 p-4 flex flex-col justify-between min-h-[100px] shadow-sm backdrop-blur-sm transition-all hover:bg-card/85",
+      className
+    )}>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <span className="text-[10px] uppercase font-extrabold tracking-wider text-muted-foreground/85">{label}</span>
+        <span className={cn(
+          "rounded-lg p-1.5 shrink-0",
+          isWin && "bg-profit/10 text-profit",
+          isLoss && "bg-loss/10 text-loss",
+          !isWin && !isLoss && "bg-muted/30 text-muted-foreground"
+        )}>
+          <Icon className="h-3.5 w-3.5" />
+        </span>
       </div>
       <div>
-        <div className={cn("text-lg sm:text-xl font-bold tracking-tight font-mono", trendColor)}>
+        <div className={cn("text-base sm:text-lg font-black tracking-tight font-mono", trendColor)}>
           {value}
         </div>
         {subValue && (
-          <div className="text-[10px] text-muted-foreground/60 mt-0.5 font-medium">{subValue}</div>
+          <div className="text-[10px] text-muted-foreground/60 mt-1 font-semibold tracking-wide">{subValue}</div>
         )}
       </div>
     </div>
@@ -677,7 +689,7 @@ export function WeeklyModal({
               {/* Overview Tab */}
               <TabsContent value="overview" className="m-0 px-4 py-5 sm:px-6 lg:px-8 space-y-6">
                 {/* Key Metrics Grid */}
-                <div className="grid grid-cols-2 xl:grid-cols-6 gap-px bg-border/25 border border-border/30 bg-card/45 rounded-xl overflow-hidden">
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
                   <MetricCard
                     icon={Coins}
                     label="Total P&L"

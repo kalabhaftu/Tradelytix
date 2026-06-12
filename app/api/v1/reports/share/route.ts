@@ -171,3 +171,40 @@ export async function GET(req: NextRequest) {
     return createErrorResponse('Internal server error', 500)
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  const rl = await applyRateLimit(req, apiLimiter)
+  if (rl) return rl
+
+  try {
+    const { internalUserId } = await getResolvedUserIdentity()
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return createErrorResponse('Missing report ID', 400)
+    }
+
+    const report = await prisma.sharedReport.findUnique({
+      where: { id },
+      select: { userId: true },
+    })
+
+    if (!report) {
+      return createErrorResponse('Report not found', 404)
+    }
+
+    if (report.userId !== internalUserId) {
+      return createErrorResponse('Unauthorized', 403)
+    }
+
+    await prisma.sharedReport.delete({
+      where: { id },
+    })
+
+    return createSuccessResponse({ deleted: true })
+  } catch (err) {
+    logger.error('Reports share deletion failed', {}, 'api')
+    return createErrorResponse('Internal server error', 500)
+  }
+}

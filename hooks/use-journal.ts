@@ -30,6 +30,63 @@ export function useJournal(params: UseJournalParams) {
   const dataContext = useData()
   const isDemoMode = !!dataContext?.isDemoMode
 
+  const queryParams = new URLSearchParams()
+  const normalizedSearch = search.trim()
+  const exactDateMatch = normalizedSearch.match(/^(\d{4}-\d{2}-\d{2})$/)
+  const normalizedTradeDate = tradeDate.trim()
+  
+  // Pagination via offset since /v1/trades leverages pageLimit & pageOffset
+  queryParams.append('pageLimit', limit.toString())
+  queryParams.append('pageOffset', ((page - 1) * limit).toString())
+  
+  // Search
+  if (normalizedTradeDate) {
+    queryParams.append('tradeDate', normalizedTradeDate)
+  } else if (exactDateMatch) {
+    queryParams.append('tradeDate', exactDateMatch[1])
+  } else if (normalizedSearch) {
+    queryParams.append('search', normalizedSearch)
+  }
+  
+  // Win/Loss
+  if (filterBy === 'wins') {
+    queryParams.append('outcome', 'win')
+  } else if (filterBy === 'losses') {
+    queryParams.append('outcome', 'loss')
+  } else if (filterBy === 'breakeven') {
+    queryParams.append('outcome', 'breakeven')
+  }
+
+  // Buy/Sell
+  if (filterBy === 'buys') {
+    queryParams.append('side', 'BUY')
+  } else if (filterBy === 'sells') {
+    queryParams.append('side', 'SELL')
+  }
+
+  // Tags
+  if (selectedTagIds.length > 0) {
+    queryParams.append('tags', selectedTagIds.join(','))
+  }
+
+  // Global Accounts Filter
+  if (accountNumbers.length > 0) {
+    queryParams.append('accounts', accountNumbers.join(','))
+  }
+
+  // Only ask for trade array, no need to recalc huge stats arrays if the Journal doesn't use all of them
+  // Actually Journal uses its own stats logic locally but to do that we need the aggregated stats from backend
+  // because we are lazy loading! Let's request includeStats=true
+  queryParams.append('includeStats', 'true')
+  queryParams.append('includeCalendar', 'false')
+  queryParams.append('groupByExecution', 'true')
+
+  const url = isDemoMode ? null : `/api/v1/trades?${queryParams.toString()}`
+
+  const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
+    keepPreviousData: true,
+  })
+
   if (isDemoMode) {
     let mockTrades = getMockTradesList()
 
@@ -92,63 +149,6 @@ export function useJournal(params: UseJournalParams) {
       refetch: async () => {}
     }
   }
-
-  const queryParams = new URLSearchParams()
-  const normalizedSearch = search.trim()
-  const exactDateMatch = normalizedSearch.match(/^(\d{4}-\d{2}-\d{2})$/)
-  const normalizedTradeDate = tradeDate.trim()
-  
-  // Pagination via offset since /v1/trades leverages pageLimit & pageOffset
-  queryParams.append('pageLimit', limit.toString())
-  queryParams.append('pageOffset', ((page - 1) * limit).toString())
-  
-  // Search
-  if (normalizedTradeDate) {
-    queryParams.append('tradeDate', normalizedTradeDate)
-  } else if (exactDateMatch) {
-    queryParams.append('tradeDate', exactDateMatch[1])
-  } else if (normalizedSearch) {
-    queryParams.append('search', normalizedSearch)
-  }
-  
-  // Win/Loss
-  if (filterBy === 'wins') {
-    queryParams.append('outcome', 'win')
-  } else if (filterBy === 'losses') {
-    queryParams.append('outcome', 'loss')
-  } else if (filterBy === 'breakeven') {
-    queryParams.append('outcome', 'breakeven')
-  }
-
-  // Buy/Sell
-  if (filterBy === 'buys') {
-    queryParams.append('side', 'BUY')
-  } else if (filterBy === 'sells') {
-    queryParams.append('side', 'SELL')
-  }
-
-  // Tags
-  if (selectedTagIds.length > 0) {
-    queryParams.append('tags', selectedTagIds.join(','))
-  }
-
-  // Global Accounts Filter
-  if (accountNumbers.length > 0) {
-    queryParams.append('accounts', accountNumbers.join(','))
-  }
-
-  // Only ask for trade array, no need to recalc huge stats arrays if the Journal doesn't use all of them
-  // Actually Journal uses its own stats logic locally but to do that we need the aggregated stats from backend
-  // because we are lazy loading! Let's request includeStats=true
-  queryParams.append('includeStats', 'true')
-  queryParams.append('includeCalendar', 'false')
-  queryParams.append('groupByExecution', 'true')
-
-  const url = `/api/v1/trades?${queryParams.toString()}`
-
-  const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
-    keepPreviousData: true,
-  })
 
   return {
     trades: (data?.trades as Trade[]) || [],

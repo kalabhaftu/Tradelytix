@@ -24,6 +24,7 @@ import {
   Tags,
   Share2,
   CircleHelp,
+  Brain,
 } from 'lucide-react'
 import {
   Tooltip,
@@ -60,6 +61,7 @@ const adminNavItems = [
   { id: 'widget-catalog', label: 'Widget Catalog', icon: SlidersHorizontal, href: '/admin/widget-catalog', hint: 'Control dashboard widget availability, labels, and lifecycle state.' },
   { id: 'dashboard-presets', label: 'Dashboard Presets', icon: LayoutTemplate, href: '/admin/dashboard-presets', hint: 'Manage reusable dashboard layouts users can adopt.' },
   { id: 'feature-controls', label: 'Feature Controls', icon: ToggleLeft, href: '/admin/feature-controls', hint: 'Enable or disable guarded platform features.' },
+  { id: 'ai', label: 'AI Settings', icon: Brain, href: '/admin/ai', hint: 'Configure AI assistant models, plans, context limits, and consumption metrics.' },
   { id: 'data-quality', label: 'Data Quality', icon: DatabaseZap, href: '/admin/data-quality', hint: 'Find duplicate, orphaned, or inconsistent production data.' },
   { id: 'taxonomy', label: 'Taxonomy', icon: Tags, href: '/admin/taxonomy', hint: 'Review user tags, symbols, strategies, and cleanup candidates.' },
   { id: 'sharing-governance', label: 'Sharing Governance', icon: Share2, href: '/admin/sharing-governance', hint: 'Monitor and govern public report sharing.' },

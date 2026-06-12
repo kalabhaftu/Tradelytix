@@ -20,6 +20,7 @@ import {
   Heart,
   Trophy,
   LogOut,
+  Brain,
 } from 'lucide-react'
 
 import {
@@ -94,6 +95,7 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
     if (p.startsWith(`${base}/reports`)) return 'reports'
     if (p.startsWith(`${base}/settings`)) return 'settings'
     if (p.startsWith(`${base}/data`)) return 'data'
+    if (p.startsWith(`${base}/ai`)) return 'ai'
     if (p.startsWith('/docs')) return 'docs'
     return 'widgets'
   }
@@ -194,6 +196,32 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarGroup className={cn('pt-4', isOverlay ? 'px-0' : 'px-0')}>
+              <SidebarGroupLabel className={cn(isOverlay && 'h-7 px-1 text-[11px] tracking-wide')}>AI Assistant</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className={cn(isOverlay && 'gap-1')}>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      size={isOverlay ? 'lg' : 'default'}
+                      variant={isCollapsed ? 'icon' : 'default'}
+                      tooltip="AI Assistant"
+                      isActive={activeId === 'ai'}
+                      asChild
+                      className={cn(
+                        isOverlay && 'h-11 rounded-2xl px-4 text-[15px] [&>svg]:size-[17px]',
+                        !isOverlay && !isCollapsed && 'px-3'
+                      )}
+                    >
+                      <Link href={getDemoAdjustedHref('/dashboard/ai')} onClick={handleMobileClose}>
+                        <Brain />
+                        <span>AI Assistant</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>

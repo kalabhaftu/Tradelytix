@@ -63,7 +63,7 @@ function useGridContainerWidth() {
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { X, Plus, GripVertical } from 'lucide-react'
-import { useIsMobile } from '@/hooks/use-mobile'
+import { useIsMobile } from '@/hooks/use-is-mobile'
 import { WIDGET_REGISTRY } from '../config/widget-registry-lazy'
 import { useTemplateEditStore } from '@/store/template-edit-store'
 import { useTemplates } from '@/context/template-provider'

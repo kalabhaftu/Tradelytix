@@ -27,7 +27,7 @@ vi.mock('@/server/admin-auth', () => ({
   requireAdmin: mocks.requireAdmin,
 }))
 
-vi.mock('@/lib/services/ai-guard', () => ({
+vi.mock('@/lib/services/ai-guard-service', () => ({
   checkAIAccess: mocks.checkAIAccess,
 }))
 

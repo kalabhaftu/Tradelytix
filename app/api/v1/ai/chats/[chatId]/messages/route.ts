@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
-import { checkAIAccess } from '@/lib/services/ai-guard'
+import { checkAIAccess } from '@/lib/services/ai-guard-service'
 import { createOpenAI } from '@ai-sdk/openai'
 import { streamText } from 'ai'
 import { subDays } from 'date-fns'
@@ -52,7 +52,7 @@ function isPromptOffScope(prompt: string): boolean {
 }
 
 async function resolveDataContext(userId: string, chat: any) {
-  const { accounts, dateRange, customFrom, customTo, dataSources } = chat
+  const { accounts, dateRange, customFrom, customTo } = chat
   
   let fromDate = subDays(new Date(), 30)
   let toDate = new Date()
@@ -73,135 +73,150 @@ async function resolveDataContext(userId: string, chat: any) {
   
   let contextText = `User Profile Context:\n`
   
-  const queries: Promise<any>[] = []
-  const sourceSet = new Set(dataSources)
-  
-  // Trades
-  if (sourceSet.has('trades') || sourceSet.has('performance') || sourceSet.has('notes')) {
-    const whereClause: any = {
-      userId,
-      entryDate: {
-        gte: fromStr,
-        lte: toStr
-      }
-    }
-    if (accounts && accounts.length > 0) {
-      whereClause.OR = [
-        { accountId: { in: accounts } },
-        { accountNumber: { in: accounts } }
-      ]
-    }
-    queries.push(
-      prisma.trade.findMany({
-        where: whereClause,
-        orderBy: { entryDate: 'asc' },
-        include: { TradingModel: true }
-      }).then(trades => ({ type: 'trades', data: trades }))
+  // Resolve standard accounts and phase accounts to IDs/numbers
+  let resolvedAccountIds: string[] = []
+  let resolvedAccountNumbers: string[] = []
+  let resolvedPhaseAccountIds: string[] = []
+  let resolvedPhaseIds: string[] = []
+  let rawNumbers: string[] = []
+
+  if (accounts && accounts.length > 0) {
+    const userAccounts = await prisma.account.findMany({
+      where: {
+        userId,
+        OR: [
+          { id: { in: accounts } },
+          { number: { in: accounts } }
+        ]
+      },
+      select: { id: true, number: true }
+    })
+
+    const userPhaseAccounts = await prisma.phaseAccount.findMany({
+      where: {
+        MasterAccount: { userId },
+        OR: [
+          { id: { in: accounts } },
+          { phaseId: { in: accounts } }
+        ]
+      },
+      select: { id: true, phaseId: true }
+    })
+
+    resolvedAccountIds = userAccounts.map(a => a.id)
+    resolvedAccountNumbers = userAccounts.map(a => a.number)
+    resolvedPhaseAccountIds = userPhaseAccounts.map(pa => pa.id)
+    resolvedPhaseIds = userPhaseAccounts.map(pa => pa.phaseId).filter(Boolean) as string[]
+
+    rawNumbers = accounts.filter(
+      (num: string) => !resolvedAccountIds.includes(num) && !resolvedPhaseAccountIds.includes(num)
     )
   }
-  
-  // Journals
-  if (sourceSet.has('journals')) {
-    const whereClause: any = {
+
+  // 1. Fetch Trades
+  const tradesWhere: any = {
+    userId,
+    entryDate: {
+      gte: fromStr,
+      lte: toStr
+    }
+  }
+
+  if (accounts && accounts.length > 0) {
+    tradesWhere.OR = [
+      { accountId: { in: resolvedAccountIds } },
+      { phaseAccountId: { in: resolvedPhaseAccountIds } },
+      {
+        AND: [
+          { accountId: null },
+          { phaseAccountId: null },
+          { accountNumber: { in: [...resolvedAccountNumbers, ...resolvedPhaseIds, ...rawNumbers] } }
+        ]
+      }
+    ]
+  }
+
+  const tradesPromise = prisma.trade.findMany({
+    where: tradesWhere,
+    orderBy: { entryDate: 'asc' },
+    include: { TradingModel: true }
+  })
+
+  // 2. Fetch Daily Journal Notes
+  const journalsWhere: any = {
+    userId,
+    date: {
+      gte: fromDate,
+      lte: toDate
+    }
+  }
+
+  if (accounts && accounts.length > 0) {
+    journalsWhere.OR = [
+      { accountId: { in: resolvedAccountIds } },
+      { Account: { number: { in: [...resolvedAccountNumbers, ...rawNumbers] } } }
+    ]
+  }
+
+  const journalsPromise = prisma.dailyNote.findMany({
+    where: journalsWhere,
+    orderBy: { date: 'asc' }
+  })
+
+  // 3. Fetch Weekly Performance Reviews
+  const weeklyReviewsPromise = prisma.weeklyReview.findMany({
+    where: {
       userId,
-      date: {
+      startDate: {
         gte: fromDate,
         lte: toDate
       }
-    }
-    if (accounts && accounts.length > 0) {
-      whereClause.accountId = { in: accounts }
-    }
-    queries.push(
-      prisma.dailyNote.findMany({
-        where: whereClause,
-        orderBy: { date: 'asc' }
-      }).then(journals => ({ type: 'journals', data: journals }))
-    )
-  }
-  
-  // Weekly Reviews
-  if (sourceSet.has('reviews')) {
-    queries.push(
-      prisma.weeklyReview.findMany({
-        where: {
-          userId,
-          startDate: {
-            gte: fromDate,
-            lte: toDate
-          }
-        },
-        orderBy: { startDate: 'asc' }
-      }).then(reviews => ({ type: 'weeklyReviews', data: reviews }))
-    )
-  }
-  
-  // AI Reviews
-  if (sourceSet.has('ai-journal-analysis')) {
-    queries.push(
-      prisma.weeklyAIReview.findMany({
-        where: {
-          userId,
-          weekStart: {
-            gte: fromDate,
-            lte: toDate
-          }
-        },
-        orderBy: { weekStart: 'asc' }
-      }).then(aiReviews => ({ type: 'aiReviews', data: aiReviews }))
-    )
-  }
-  
-  // Accounts
-  if (sourceSet.has('statistics')) {
-    queries.push(
-      prisma.masterAccount.findMany({
-        where: {
-          userId,
-          isArchived: false,
-          ...(accounts && accounts.length > 0 ? { id: { in: accounts } } : {})
-        },
-        include: {
-          PhaseAccount: {
-            where: { status: 'active' }
-          }
-        }
-      }).then(accountsInfo => ({ type: 'accountsInfo', data: accountsInfo }))
-    )
-  }
-  
-  const results = await Promise.all(queries)
-  
-  let tradesList: any[] = []
-  let journalsList: any[] = []
-  let weeklyReviewsList: any[] = []
-  let aiReviewsList: any[] = []
-  let accountsList: any[] = []
-  
-  results.forEach(res => {
-    if (res.type === 'trades') tradesList = res.data
-    else if (res.type === 'journals') journalsList = res.data
-    else if (res.type === 'weeklyReviews') weeklyReviewsList = res.data
-    else if (res.type === 'aiReviews') aiReviewsList = res.data
-    else if (res.type === 'accountsInfo') accountsList = res.data
+    },
+    orderBy: { startDate: 'asc' }
   })
-  
-  if (sourceSet.has('trades') && tradesList.length > 0) {
+
+  // 4. Fetch AI Performance Reports
+  const aiReviewsPromise = prisma.weeklyAIReview.findMany({
+    where: {
+      userId,
+      weekStart: {
+        gte: fromDate,
+        lte: toDate
+      }
+    },
+    orderBy: { weekStart: 'asc' }
+  })
+
+  // 5. Fetch Accounts/Metrics
+  const accountsPromise = prisma.masterAccount.findMany({
+    where: {
+      userId,
+      isArchived: false,
+      ...(accounts && accounts.length > 0 ? { id: { in: accounts } } : {})
+    },
+    include: {
+      PhaseAccount: {
+        where: { status: 'active' }
+      }
+    }
+  })
+
+  const [tradesList, journalsList, weeklyReviewsList, aiReviewsList, accountsList] = await Promise.all([
+    tradesPromise,
+    journalsPromise,
+    weeklyReviewsPromise,
+    aiReviewsPromise,
+    accountsPromise
+  ])
+
+  // Build context text
+  if (tradesList.length > 0) {
     contextText += `### TRADING HISTORY (${tradesList.length} trades in range):\n`
     contextText += tradesList.map(t => {
       return `- Date: ${t.entryDate}, Symbol: ${t.instrument}, Side: ${t.side}, Net PnL: $${t.pnl}, Setup Tag: ${t.setup || 'None'}, Rule Broken: ${t.ruleBroken ? 'Yes' : 'No'}`
     }).join('\n') + '\n\n'
-  }
-  
-  if (sourceSet.has('notes') && tradesList.length > 0) {
-    const notedTrades = tradesList.filter(t => t.comment)
-    if (notedTrades.length > 0) {
-      contextText += `### INDIVIDUAL TRADE COMMENTS:\n`
-      contextText += notedTrades.map(t => `- Trade on ${t.instrument} (${t.entryDate}): "${t.comment}"`).join('\n') + '\n\n'
-    }
-  }
-  
-  if (sourceSet.has('performance') && tradesList.length > 0) {
+    
+    // Add summary stats
     const totalTrades = tradesList.length
     const wins = tradesList.filter(t => t.pnl > 10).length
     const losses = tradesList.filter(t => t.pnl < -10).length
@@ -211,31 +226,68 @@ async function resolveDataContext(userId: string, chat: any) {
     
     contextText += `### PERFORMANCE SUMMARY STATS:\n`
     contextText += `- Total Trade Executions: ${totalTrades}\n- Win Rate: ${winRate.toFixed(1)}%\n- Wins: ${wins}, Losses: ${losses}, Breakevens: ${breakevens}\n- Total Net P&L: $${totalPnL.toFixed(2)}\n\n`
+    
+    // Add comments
+    const notedTrades = tradesList.filter(t => t.comment)
+    if (notedTrades.length > 0) {
+      contextText += `### INDIVIDUAL TRADE COMMENTS:\n`
+      contextText += notedTrades.map(t => `- Trade on ${t.instrument} (${t.entryDate}): "${t.comment}"`).join('\n') + '\n\n'
+    }
   }
-  
-  if (sourceSet.has('journals') && journalsList.length > 0) {
-    contextText += `### JOURNAL NOTES & EMOTIONAL TRACERS:\n`
-    contextText += journalsList.map(j => `- Date: ${j.date.toISOString().split('T')[0]}, Emotion: ${j.emotion || 'neutral'}, Note: "${j.note}"`).join('\n') + '\n\n'
-  }
-  
-  if (sourceSet.has('reviews') && weeklyReviewsList.length > 0) {
-    contextText += `### WEEKLY PERFORMANCE REVIEWS:\n`
-    contextText += weeklyReviewsList.map(r => `- Week of ${r.startDate.toISOString().split('T')[0]}: Expectation: ${r.expectation || 'None'}, Actual: ${r.actualOutcome || 'None'}, Notes: "${r.notes || ''}"`).join('\n') + '\n\n'
-  }
-  
-  if (sourceSet.has('ai-journal-analysis') && aiReviewsList.length > 0) {
-    contextText += `### PREVIOUS AI GENERATED PERFORMANCE AUDITS:\n`
-    contextText += aiReviewsList.map(ar => `- Week: ${ar.weekStart.toISOString().split('T')[0]}, Grade: ${ar.grade}, Summary: "${ar.summary}"`).join('\n') + '\n\n'
-  }
-  
-  if (sourceSet.has('statistics') && accountsList.length > 0) {
-    contextText += `### PORTFOLIOS ACCOUNTS STATUS:\n`
-    contextText += accountsList.map(a => {
-      const activePhase = a.PhaseAccount[0]
-      return `- Account Name: ${a.accountName} (${a.propFirmName}), Size: $${a.accountSize}, Status: ${a.status}, Current Phase: ${a.currentPhase}${activePhase ? ` (Target: ${activePhase.profitTargetPercent}%, Max Drawdown: ${activePhase.maxDrawdownPercent}%)` : ''}`
+
+  if (journalsList.length > 0) {
+    contextText += `### DAILY TRADING JOURNAL ENTRIES:\n`
+    contextText += journalsList.map(j => {
+      const dateStr = j.date instanceof Date ? j.date.toISOString().split('T')[0] : String(j.date)
+      return `- Date: ${dateStr}, Emotion: ${j.emotion || 'None'}, Note: "${j.note}"`
     }).join('\n') + '\n\n'
   }
-  
+
+  if (weeklyReviewsList.length > 0) {
+    contextText += `### WEEKLY PERFORMANCE REVIEWS:\n`
+    contextText += weeklyReviewsList.map(r => {
+      const dateStr = r.startDate instanceof Date ? r.startDate.toISOString().split('T')[0] : String(r.startDate)
+      return `- Week of ${dateStr}: Expectation: ${r.expectation || 'None'}, Actual: ${r.actualOutcome || 'None'}, Notes: "${r.notes || ''}"`
+    }).join('\n') + '\n\n'
+  }
+
+  if (aiReviewsList.length > 0) {
+    contextText += `### WEEKLY AI PERFORMANCE REPORT CARDS:\n`
+    contextText += aiReviewsList.map(r => {
+      const dateStr = r.weekStart instanceof Date ? r.weekStart.toISOString().split('T')[0] : String(r.weekStart)
+      return `- Week of ${dateStr}: Grade: ${r.grade}, Summary: "${r.summary}", Focus next week: "${r.focusNextWeek || 'None'}"`
+    }).join('\n') + '\n\n'
+  }
+
+  if (accountsList.length > 0) {
+    contextText += `### ACCOUNTS & BALANCE METRICS:\n`
+    contextText += accountsList.map(acc => {
+      const activePhase = acc.PhaseAccount[0]
+      return `- Account: ${acc.accountName} (${acc.propFirmName}), Size: $${acc.accountSize}, Phase: ${acc.currentPhase}, Status: ${acc.status}${activePhase ? ` (Target: ${activePhase.profitTargetPercent}%, Max Drawdown: ${activePhase.maxDrawdownPercent}%)` : ''}`
+    }).join('\n') + '\n\n'
+  }
+
+  // Also include standard accounts if applicable
+  const standardAccountsList = await prisma.account.findMany({
+    where: {
+      userId,
+      isArchived: false,
+      ...(accounts && accounts.length > 0 ? {
+        OR: [
+          { id: { in: accounts } },
+          { number: { in: accounts } }
+        ]
+      } : {})
+    }
+  })
+
+  if (standardAccountsList.length > 0) {
+    contextText += `### STANDARD TRADING ACCOUNTS:\n`
+    contextText += standardAccountsList.map(acc => {
+      return `- Account Number: ${acc.number}, Name: ${acc.name || 'Unnamed'}, Broker: ${acc.broker || 'Unknown'}, Starting Balance: $${acc.startingBalance}`
+    }).join('\n') + '\n\n'
+  }
+
   return contextText
 }
 

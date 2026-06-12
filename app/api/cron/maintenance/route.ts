@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateCronRequest } from '@/lib/cron-auth'
-import { runSubscriptionChecks, reconcilePendingPayments } from '@/lib/services/subscription'
+import { runSubscriptionChecks, reconcilePendingPayments } from '@/lib/services/subscription-service'
 import { evaluateAllActivePhases } from '@/lib/services/phase-service'
 import { createAllDailyAnchors } from '@/lib/services/anchor-service'
-import { runDailyMaintenance } from '@/lib/services/maintenance'
+import { runDailyMaintenance } from '@/lib/services/maintenance-service'
 import { logger } from '@/lib/logger'
 
 /**

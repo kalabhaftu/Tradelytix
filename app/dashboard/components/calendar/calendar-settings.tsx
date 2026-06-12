@@ -4,7 +4,7 @@
 import { Check, Settings as SettingsIcon } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
-import { useCalendarViewStore, VisibleStats } from "@/store/calendar-view"
+import { useCalendarViewStore, VisibleStats } from "@/store/calendar-view-store"
 import { cn } from "@/lib/utils"
 
 export function CalendarSettings() {

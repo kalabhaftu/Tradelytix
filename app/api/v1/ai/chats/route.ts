@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
-import { checkAIAccess } from '@/lib/services/ai-guard'
+import { checkAIAccess } from '@/lib/services/ai-guard-service'
 
 export async function GET(request: NextRequest) {
   const rl = await applyRateLimit(request, apiLimiter)

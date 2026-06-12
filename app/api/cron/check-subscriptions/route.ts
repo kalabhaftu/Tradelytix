@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { runSubscriptionChecks } from '@/lib/services/subscription'
+import { runSubscriptionChecks } from '@/lib/services/subscription-service'
 import { validateCronRequest } from '@/lib/cron-auth'
 import { logger } from '@/lib/logger'
 

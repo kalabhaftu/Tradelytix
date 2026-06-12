@@ -31,13 +31,18 @@ export function WeeklyReviewTrigger() {
     if (typeof window === 'undefined') return
 
     // Only trigger on Saturday(6), Sunday(0), Monday(1)
-    const dayOfWeek = new Date().getDay()
+    const now = new Date()
+    const dayOfWeek = now.getDay()
     if (dayOfWeek !== 0 && dayOfWeek !== 1 && dayOfWeek !== 6) return
 
-    const reviewWeekKey = format(
-      startOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 }),
-      'yyyy-MM-dd'
-    )
+    let targetWeekStart: Date
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      targetWeekStart = startOfWeek(now, { weekStartsOn: 1 })
+    } else {
+      targetWeekStart = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 })
+    }
+
+    const reviewWeekKey = format(targetWeekStart, 'yyyy-MM-dd')
     const sessionKey = `tradelytix_weekly_review_checked_${internalUser.id}_${reviewWeekKey}`
     if (sessionStorage.getItem(sessionKey)) return
 

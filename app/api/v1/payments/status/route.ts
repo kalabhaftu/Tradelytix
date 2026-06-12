@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { prisma } from '@/lib/prisma'
-import { refreshPaymentRecordStatus } from '@/lib/services/subscription'
+import { refreshPaymentRecordStatus } from '@/lib/services/subscription-service'
 import { logger } from '@/lib/logger'
 
 export async function GET(request: NextRequest) {

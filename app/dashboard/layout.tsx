@@ -14,7 +14,7 @@ import { GlobalTradeController } from "./components/global-trade-controller";
 import { WeeklyReviewTrigger } from "@/components/weekly-review-trigger";
 import { KeyboardShortcutsModal } from "@/components/ui/keyboard-shortcuts-modal";
 import { getInitBootstrapData } from "@/server/init-bootstrap";
-import { checkSubscriptionAccess } from "@/lib/services/subscription-guard";
+import { checkSubscriptionAccess } from "@/lib/services/subscription-guard-service";
 import { redirect } from "next/navigation";
 import { getSiteUiSettings } from "@/server/site-ui-settings";
 

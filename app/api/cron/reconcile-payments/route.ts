@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { validateCronRequest } from '@/lib/cron-auth'
-import { reconcilePendingPayments } from '@/lib/services/subscription'
+import { reconcilePendingPayments } from '@/lib/services/subscription-service'
 import { logger } from '@/lib/logger'
 
 export async function GET(request: NextRequest) {

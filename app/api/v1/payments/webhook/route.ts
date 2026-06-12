@@ -6,8 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyIpnSignature, type IpnPayload } from '@/lib/services/nowpayments'
-import { handleIpnWebhook } from '@/lib/services/subscription'
+import { verifyIpnSignature, type IpnPayload } from '@/lib/services/nowpayments-service'
+import { handleIpnWebhook } from '@/lib/services/subscription-service'
 import { logger } from '@/lib/logger'
 
 const MAX_WEBHOOK_BODY_BYTES = 256 * 1024

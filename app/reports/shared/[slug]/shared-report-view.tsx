@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { cn } from "@/lib/utils"
 import { Activity, Calendar, Eye, LockKeyhole, Share2, ShieldCheck, TrendingUp } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -43,6 +43,7 @@ function MetricRow({ label, value, tone }: { label: string; value: string; tone?
 
 export function SharedReportView({ report }: Props) {
   const [viewCount, setViewCount] = useState(report.viewCount)
+  const viewedRef = useRef(false)
   const snap = report.snapshot as any
   const reportData = snap?.reportData ?? snap
   const activity = reportData?.tradingActivity ?? snap?.tradingActivity
@@ -54,6 +55,9 @@ export function SharedReportView({ report }: Props) {
     : 'All Time'
 
   useEffect(() => {
+    if (viewedRef.current) return
+    viewedRef.current = true
+
     let cancelled = false
 
     const recordView = async () => {
@@ -93,13 +97,17 @@ export function SharedReportView({ report }: Props) {
             </div>
             <div>
               <h1 className="text-lg font-extrabold tracking-tight">{report.title}</h1>
-              <p className="mt-1 flex flex-wrap items-center gap-2 text-[12px] font-semibold text-slate-500">
-                <Calendar className="h-3.5 w-3.5" />
-                {dateRange}
-                <span className="text-slate-300">/</span>
-                <Eye className="h-3.5 w-3.5" />
-                {viewCount} views
-              </p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                  <span>{dateRange}</span>
+                </div>
+                <span className="text-slate-300 font-normal">|</span>
+                <div className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-slate-600 border border-slate-200/50">
+                  <Eye className="h-3.5 w-3.5 text-slate-400" />
+                  <span>{viewCount} views</span>
+                </div>
+              </div>
             </div>
           </div>
           <Badge variant="outline" className="h-8 rounded-sm border-slate-300 bg-white px-3 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-700">

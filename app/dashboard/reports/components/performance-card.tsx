@@ -133,14 +133,16 @@ export function PerformanceCard({ period, stats, userName }: PerformanceCardProp
                 )}
                 style={{ minHeight: 280 }}
             >
-                {/* Subtle background glow — uses theme colors, not hardcoded */}
-                <div className="pointer-events-none absolute inset-0">
-                    <div className={cn(
-                        "absolute top-0 right-0 w-1/2 h-1/2 rounded-full blur-3xl opacity-20",
-                        isProfit ? "bg-long" : "bg-short"
-                    )} />
-                    <div className="absolute bottom-0 left-0 w-1/3 h-1/3 rounded-full blur-3xl opacity-10 bg-primary" />
-                </div>
+                {/* Subtle background glow — using radial gradients supported by html2canvas */}
+                <div 
+                    className="pointer-events-none absolute inset-0 opacity-20 z-0" 
+                    style={{
+                        background: `
+                            radial-gradient(circle 200px at 100% 0%, ${isProfit ? 'hsl(var(--chart-profit))' : 'hsl(var(--chart-loss))'}, transparent 70%),
+                            radial-gradient(circle 180px at 0% 100%, hsl(var(--primary)), transparent 70%)
+                        `
+                    }}
+                />
 
                 {/* Header */}
                 <div className="relative flex items-start justify-between gap-4 z-10">

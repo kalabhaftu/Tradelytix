@@ -18,33 +18,35 @@ export function useKeyboardShortcuts() {
       return true;
     };
 
+    const getBase = () => typeof window !== 'undefined' && window.location.pathname.startsWith('/demo') ? '/demo' : '/dashboard';
+
     hotkeys('ctrl+d, cmd+d', (event) => {
       event.preventDefault();
-      router.push('/dashboard');
+      router.push(getBase());
       toast.success('Dashboard', { description: 'Navigated to dashboard' });
     });
 
     hotkeys('ctrl+a, cmd+a', (event) => {
       event.preventDefault();
-      router.push('/dashboard/accounts');
+      router.push(`${getBase()}/accounts`);
       toast.success('Accounts', { description: 'Navigated to accounts' });
     });
 
     hotkeys('ctrl+s, cmd+s', (event) => {
       event.preventDefault();
-      router.push('/dashboard/data');
+      router.push(`${getBase()}/data`);
       toast.success('Data Management', { description: 'Navigated to data page' });
     });
 
     hotkeys('ctrl+p, cmd+p', (event) => {
       event.preventDefault();
-      router.push('/dashboard/prop-firm');
+      router.push(`${getBase()}/prop-firm`);
       toast.success('Prop Firm', { description: 'Navigated to prop firm dashboard' });
     });
 
     hotkeys('ctrl+t, cmd+t', (event) => {
       event.preventDefault();
-      router.push('/dashboard/settings');
+      router.push(`${getBase()}/settings`);
       toast.success('Settings', { description: 'Navigated to settings' });
     });
 

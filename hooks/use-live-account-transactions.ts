@@ -12,7 +12,7 @@ interface Transaction {
 
 export function useLiveAccountTransactions() {
   const user = useUserStore(state => state.user)
-  const isDemo = user?.id === 'demo-user'
+  const isDemo = typeof window !== 'undefined' && window.location.pathname.startsWith('/demo')
 
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [isLoading, setIsLoading] = useState(true)

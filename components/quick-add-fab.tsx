@@ -34,7 +34,7 @@ export function QuickAddFAB({ className }: QuickAddFABProps) {
     const closeQuickAdd = useQuickAddStore((state) => state.closeQuickAdd)
     const setQuickAddOpen = useQuickAddStore((state) => state.setQuickAddOpen)
     const user = useUserStore((state) => state.user)
-    const isDemo = user?.id === 'demo-user'
+    const isDemo = typeof window !== 'undefined' && window.location.pathname.startsWith('/demo')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [formData, setFormData] = useState({
         instrument: '',

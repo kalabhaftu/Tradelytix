@@ -72,6 +72,7 @@ export function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedFilter, setSelectedFilter] = useState<FilterCategory>('all')
   const user = useUserStore(state => state.user)
+  const isDemo = typeof window !== 'undefined' && window.location.pathname.startsWith('/demo')
 
   // Dialog states
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
@@ -89,11 +90,11 @@ export function NotificationCenter() {
   }, [isOpen])
 
   const fetchNotifications = useCallback(async () => {
-    if (!user?.id) {
+    if (!user?.id && !isDemo) {
       setIsLoading(false)
       return
     }
-    if (user.id === 'demo-user') {
+    if (isDemo || user?.id === 'demo-user') {
       setIsLoading(true)
       const mockNotifications: any[] = [
         {
@@ -148,6 +149,7 @@ export function NotificationCenter() {
   }, [user?.id])
 
   const refreshUnreadCount = useCallback(async () => {
+    if (isDemo) return
     if (!user?.id || user.id === 'demo-user') return
     try {
       const response = await fetch(`/api/v1/notifications?unreadOnly=true&limit=1&t=${Date.now()}`, {
@@ -163,7 +165,7 @@ export function NotificationCenter() {
   }, [user?.id])
 
   useEffect(() => {
-    if (!user?.id || user.id === 'demo-user') return
+    if (!isDemo && (!user?.id || user.id === 'demo-user')) return
     fetchNotifications()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
@@ -239,7 +241,7 @@ export function NotificationCenter() {
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
-      if (user?.id === 'demo-user') {
+      if (isDemo || user?.id === 'demo-user') {
         setNotifications(prev =>
           prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
         )
@@ -264,7 +266,7 @@ export function NotificationCenter() {
 
   const handleMarkAllAsRead = async () => {
     try {
-      if (user?.id === 'demo-user') {
+      if (isDemo || user?.id === 'demo-user') {
         setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
         setUnreadCount(0)
         toast.success('All notifications marked as read')
@@ -285,7 +287,7 @@ export function NotificationCenter() {
 
   const handleDelete = async (notificationId: string) => {
     try {
-      if (user?.id === 'demo-user') {
+      if (isDemo || user?.id === 'demo-user') {
         setNotifications(prev => prev.filter(n => n.id !== notificationId))
         const deleted = notifications.find(n => n.id === notificationId)
         if (deleted && !deleted.isRead) {
@@ -312,7 +314,7 @@ export function NotificationCenter() {
 
   const handleClearAll = async () => {
     try {
-      if (user?.id === 'demo-user') {
+      if (isDemo || user?.id === 'demo-user') {
         setNotifications([])
         setUnreadCount(0)
         toast.success('All notifications cleared')

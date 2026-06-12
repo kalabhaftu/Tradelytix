@@ -40,7 +40,7 @@ export interface UseAccountFilterSettingsResult {
 export function useAccountFilterSettings(): UseAccountFilterSettingsResult {
   const queryClient = useQueryClient()
   const user = useUserStore(state => state.user)
-  const isDemo = user?.id === 'demo-user'
+  const isDemo = typeof window !== 'undefined' && window.location.pathname.startsWith('/demo')
 
   const { data: settings = DEFAULT_FILTER_SETTINGS, isLoading, error, refetch } = useQuery({
     queryKey: [...QUERY_KEY, isDemo],

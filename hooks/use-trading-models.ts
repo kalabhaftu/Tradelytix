@@ -25,7 +25,7 @@ function buildTradingModelQuery(filters?: TradingModelFilters) {
 
 export function useTradingModels(filters?: TradingModelFilters) {
   const user = useUserStore(state => state.user)
-  const isDemo = user?.id === 'demo-user'
+  const isDemo = typeof window !== 'undefined' && window.location.pathname.startsWith('/demo')
 
   const { data, isLoading, error } = useQuery<TradingModel[] | null>({
     queryKey: ['trading-models', filters ?? {}, isDemo],

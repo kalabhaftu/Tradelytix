@@ -69,7 +69,7 @@ function getPreferredAccount(accounts: DashboardPropFirmAccountOption[]) {
 
 export function useDashboardPropFirmAccount() {
   const user = useUserStore(state => state.user)
-  const isDemo = user?.id === 'demo-user'
+  const isDemo = typeof window !== 'undefined' && window.location.pathname.startsWith('/demo')
 
   const [accounts, setAccounts] = useState<DashboardPropFirmAccountOption[]>([])
   const [selectedMasterAccountId, setSelectedMasterAccountIdState] = useState<string | null>(null)

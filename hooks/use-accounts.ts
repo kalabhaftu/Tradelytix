@@ -81,43 +81,18 @@ export function useAccounts(options: UseAccountsOptions = {}) {
   
   const router = useRouter()
   const user = useUserStore(state => state.user)
-  const isDemo = user?.id === 'demo-user'
+  const isDemo = typeof window !== 'undefined' && window.location.pathname.startsWith('/demo')
 
   // We use SWR for pagination and targeted cache updates
-  const url = (user?.id && !isDemo) ? `/api/v1/accounts?page=${page}&limit=${limit}&status=${status}&type=${type}&search=${encodeURIComponent(search)}` : null
+  const url = (user?.id || isDemo) ? `/api/v1/accounts?page=${page}&limit=${limit}&status=${status}&type=${type}&search=${encodeURIComponent(search)}` : null
   
   const { data, error, isLoading, mutate } = useSWR(url, fetcher, {
     keepPreviousData: true,
   })
 
   const accounts: UnifiedAccount[] = useMemo(() => {
-    if (isDemo) {
-      return [{
-        id: 'mock-acc-1',
-        number: 'DEMO-123',
-        name: 'Demo Account',
-        propfirm: 'FTMO',
-        broker: 'Mock Broker',
-        startingBalance: 100000,
-        calculatedEquity: 105432,
-        pnl: 5432,
-        currentBalance: 105432,
-        currentEquity: 105432,
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        userId: 'demo-user',
-        groupId: null,
-        group: null,
-        accountType: 'live',
-        displayName: 'Demo Account (DEMO-123)',
-        tradeCount: 80,
-        owner: null,
-        isOwner: true,
-        currentPhase: null
-      }]
-    }
     return data?.data || []
-  }, [data, isDemo])
+  }, [data])
   const pagination = data?.pagination || { total: 0, page: 1, limit: 50, totalPages: 1 }
 
   const refetch = useCallback(async () => {

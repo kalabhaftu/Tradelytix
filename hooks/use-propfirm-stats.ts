@@ -4,7 +4,7 @@ import { useUserStore } from '@/store/user-store'
 
 export function usePropFirmStats(initialData?: PropFirmSummaryDTO) {
   const user = useUserStore(state => state.user)
-  const isDemo = user?.id === 'demo-user'
+  const isDemo = typeof window !== 'undefined' && window.location.pathname.startsWith('/demo')
 
   return useQuery<PropFirmSummaryDTO>({
     queryKey: ['propfirm-stats', isDemo],

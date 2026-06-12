@@ -12,7 +12,7 @@ export interface TradeTag {
 export function useTags() {
   const queryClient = useQueryClient()
   const user = useUserStore(state => state.user)
-  const isDemo = user?.id === 'demo-user'
+  const isDemo = typeof window !== 'undefined' && window.location.pathname.startsWith('/demo')
 
   const { data: tags = [], isLoading, error } = useQuery<TradeTag[]>({
     queryKey: ['tags', isDemo],

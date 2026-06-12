@@ -17,7 +17,7 @@ import { useMediaQuery } from "@/hooks/use-media-query"
 import { useDashboardDisplay } from "@/hooks/use-dashboard-display"
 
 import { CalendarData } from "@/app/dashboard/types/calendar"
-import { useCalendarViewStore } from "@/store/calendar-view"
+import { useCalendarViewStore } from "@/store/calendar-view-store"
 import { useUserStore } from "@/store/user-store"
 import { calculateDailyStats } from "./calendar-utils"
 import { useData } from '@/context/data-provider'

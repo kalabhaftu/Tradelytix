@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
-import { getUserAccessStatus } from '@/lib/services/subscription'
+import { getUserAccessStatus } from '@/lib/services/subscription-service'
 import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 

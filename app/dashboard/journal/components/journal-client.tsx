@@ -352,16 +352,6 @@ export function JournalClient() {
           actions={
             <>
               <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push(isDemoMode ? '/demo/ai' : '/dashboard/ai')}
-                className="gap-2"
-              >
-                <Sparkles className="h-4 w-4" />
-                <span className="hidden sm:inline">AI Assistant</span>
-                <span className="sm:hidden">AI</span>
-              </Button>
-              <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleRefresh}

@@ -85,8 +85,23 @@ export async function POST(request: NextRequest) {
 
     // Calculate last week's window (Mon–Sun)
     const now = new Date()
-    const lastWeekStart = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 })
-    const lastWeekEnd = endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 })
+    const dayOfWeek = now.getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    let lastWeekStart: Date
+    let lastWeekEnd: Date
+
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      // Saturday or Sunday: review the week starting this Monday
+      lastWeekStart = startOfWeek(now, { weekStartsOn: 1 })
+      lastWeekEnd = endOfWeek(now, { weekStartsOn: 1 })
+    } else {
+      // Monday through Friday: review the week starting last Monday
+      lastWeekStart = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 })
+      lastWeekEnd = endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 })
+    }
+    
+    // Normalize to start and end of day
+    lastWeekStart.setHours(0, 0, 0, 0)
+    lastWeekEnd.setHours(23, 59, 59, 999)
 
     // Idempotent: return existing review if already generated
     const existing = await prisma.weeklyAIReview.findUnique({

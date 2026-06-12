@@ -27,7 +27,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
 import { Badge } from '@/components/ui/badge'
 import { JournalPageSkeleton } from './journal-page-skeleton'
-import { AIAnalysisDialog } from '@/app/dashboard/components/journal/ai-analysis-dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -193,7 +192,7 @@ function EmptyState({
 export function JournalClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { formattedTrades, updateTrades, accountNumbers } = useData()
+  const { formattedTrades, updateTrades, accountNumbers, isDemoMode } = useData()
   const { tags } = useTags()
   const searchInputRef = useRef<HTMLInputElement>(null)
 
@@ -206,7 +205,7 @@ export function JournalClient() {
   const [currentPage, setCurrentPage] = useState(1)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [tradeToDelete, setTradeToDelete] = useState<Trade | null>(null)
-  const [showAIAnalysis, setShowAIAnalysis] = useState(false)
+  // showAIAnalysis state removed
   const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid')
   const [notePanelDate, setNotePanelDate] = useState<Date | null>(null)
 
@@ -355,11 +354,11 @@ export function JournalClient() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowAIAnalysis(true)}
+                onClick={() => router.push(isDemoMode ? '/demo/ai' : '/dashboard/ai')}
                 className="gap-2"
               >
                 <Sparkles className="h-4 w-4" />
-                <span className="hidden sm:inline">AI Analysis</span>
+                <span className="hidden sm:inline">AI Assistant</span>
                 <span className="sm:hidden">AI</span>
               </Button>
               <Button
@@ -734,11 +733,7 @@ export function JournalClient() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AIAnalysisDialog
-        isOpen={showAIAnalysis}
-        onClose={() => setShowAIAnalysis(false)}
-        accountId={null}
-      />
+      {/* AIAnalysisDialog removed - redirected to AI Assistant workspace */}
 
       {/* Daily Note Panel */}
       {notePanelDate && (

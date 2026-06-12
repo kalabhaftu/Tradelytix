@@ -491,6 +491,8 @@ model User {
   SharedReport           SharedReport[]
   settings               UserSettings?
   Subscription           Subscription?
+  AIChat                 AIChat[]
+  AISavedInsight         AISavedInsight[]
 
   @@index([auth_user_id])
   @@index([email])
@@ -1213,5 +1215,91 @@ model FreeAccessInvite {
 
   @@index([email])
   @@index([isActive])
+  @@schema("public")
+}
+
+model AIChat {
+  id           String           @id @default(cuid())
+  userId       String
+  title        String           @default("New Conversation")
+  isPinned     Boolean          @default(false)
+  isArchived   Boolean          @default(false)
+  isDeleted    Boolean          @default(false)
+  
+  // Data Context Selection
+  accounts     String[]         // Selected account IDs/numbers
+  dateRange    String           // "last-7-days" | "last-30-days" | "last-90-days" | "custom"
+  customFrom   DateTime?        // For custom range
+  customTo     DateTime?        // For custom range
+  dataSources  String[]         // e.g. ["trades", "journals", "reviews", ...]
+  
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  
+  User         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages     AIChatMessage[]
+
+  @@index([userId, isPinned, isArchived, isDeleted])
+  @@schema("public")
+}
+
+model AIChatMessage {
+  id        String   @id @default(cuid())
+  chatId    String
+  role      String   // "user" | "assistant"
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  
+  Chat      AIChat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId, createdAt])
+  @@schema("public")
+}
+
+model AISavedInsight {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  content     String   @db.Text
+  category    String   @default("insight") // "insight" | "mistake" | "strategy"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  User        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@schema("public")
+}
+
+model AdminAISetting {
+  id                         String   @id @default("global")
+  enabled                    Boolean  @default(true)
+  demoModeEnabled            Boolean  @default(true)
+  freePlanAccess             Boolean  @default(false)
+  paidPlanAccess             Boolean  @default(true)
+  adminAccess                Boolean  @default(true)
+  maxContextSize             Int      @default(32768)
+  maxMessagesPerDay          Int      @default(50)
+  maxTokensPerResponse       Int      @default(2048)
+  conversationRetentionDays  Int      @default(30)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@schema("public")
+}
+
+model AIChatUsageLog {
+  id              String   @id @default(cuid())
+  userId          String
+  chatId          String?
+  promptTokens    Int      @default(0)
+  completionTokens Int     @default(0)
+  totalTokens     Int      @default(0)
+  estimatedCost   Float    @default(0)
+  responseTimeMs  Int      @default(0)
+  createdAt       DateTime @default(now())
+  
+  @@index([userId, createdAt])
+  @@index([createdAt])
   @@schema("public")
 }

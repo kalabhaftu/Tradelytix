@@ -57,7 +57,9 @@ async function resolveDataContext(userId: string, chat: any) {
   let fromDate = subDays(new Date(), 30)
   let toDate = new Date()
   
-  if (dateRange === 'last-7-days') {
+  if (dateRange === 'all-time') {
+    fromDate = subDays(new Date(), 3650) // ~10 years back
+  } else if (dateRange === 'last-7-days') {
     fromDate = subDays(new Date(), 7)
   } else if (dateRange === 'last-30-days') {
     fromDate = subDays(new Date(), 30)

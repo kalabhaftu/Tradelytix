@@ -23,9 +23,13 @@ import { cn, formatCurrency, formatQuantity, parsePositionTime, getPnlIntensity,
 import { formatTradePrice } from '@/lib/trading/precision'
 import { useTableConfigStore } from '@/store/table-config-store'
 import { useUserStore } from '@/store/user-store'
-import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, BarChart3, Info, Tag } from 'lucide-react'
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, BarChart3, Info, Tag, Cable } from 'lucide-react'
 import { Trade } from '@prisma/client'
 import { useTags, TradeTag } from '@/hooks/use-tags'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useTradovateSyncContext } from '@/context/tradovate-sync-context'
+import { useDxFeedSyncContext } from '@/context/dxfeed-sync-context'
+import { getAllRithmicData } from '@/lib/rithmic-storage'
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -414,6 +418,27 @@ export function TradeTableReview() {
 
   const router = useRouter()
 
+  const [activeTab, setActiveTab] = React.useState<'all' | 'live'>('all')
+  const user = useUserStore((state) => state.user)
+  const { accounts: tradovateAccounts } = useTradovateSyncContext()
+  const { accounts: dxfeedAccounts } = useDxFeedSyncContext()
+  
+  const [hasRithmic, setHasRithmic] = React.useState(false)
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setHasRithmic(Object.keys(getAllRithmicData()).length > 0)
+    }
+  }, [])
+
+  const hasConnectedAutomation = React.useMemo(() => {
+    return (
+      (tradovateAccounts || []).length > 0 ||
+      (dxfeedAccounts || []).length > 0 ||
+      hasRithmic ||
+      !!user?.thorToken
+    )
+  }, [tradovateAccounts, dxfeedAccounts, hasRithmic, user?.thorToken])
+
   const tableConfig = useTableConfigStore((state) => state.tables['trade-table'])
   const updateSorting = useTableConfigStore((state) => state.updateSorting)
   const updateColumnFilters = useTableConfigStore((state) => state.updateColumnFilters)
@@ -506,7 +531,12 @@ export function TradeTableReview() {
     [updatePageIndex]
   )
 
-  // Server-paginated trades (prevents multi-MB payloads on \"All time\")
+  React.useEffect(() => {
+    setPageIndex(0)
+    updatePageIndex('trade-table', 0)
+  }, [activeTab, updatePageIndex])
+
+  // Server-paginated trades (prevents multi-MB payloads on "All time")
   const { data: pagedTradesData } = useFilteredTrades({
     accounts: accountNumbers?.length ? accountNumbers : undefined,
     dateFrom: dateRange?.from?.toISOString?.(),
@@ -522,6 +552,7 @@ export function TradeTableReview() {
     timezone: timezone || 'UTC',
     pageLimit: pageSize,
     pageOffset: pageIndex * pageSize,
+    liveOnly: activeTab === 'live',
   }, true)
 
   const formattedTrades = React.useMemo(() => pagedTradesData?.trades ?? [], [pagedTradesData?.trades])
@@ -635,6 +666,15 @@ export function TradeTableReview() {
 
   return (
     <section className="w-full max-w-full space-y-6 py-4">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'all' | 'live')} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 max-w-[320px] bg-muted/40 p-1 rounded-xl">
+          <TabsTrigger value="all" className="rounded-lg text-xs font-semibold">All Trades</TabsTrigger>
+          <TabsTrigger value="live" className="rounded-lg text-xs font-semibold flex items-center gap-1.5 justify-center">
+            <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", hasConnectedAutomation ? "bg-green-500 animate-pulse" : "bg-muted-foreground/30")} />
+            Live Sync Trades
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -692,77 +732,53 @@ export function TradeTableReview() {
         </div>
       </div>
 
-      <div className="rounded-2xl sm:rounded-3xl border border-border bg-background shadow-md w-full">
-        {isMobile ? (
-          <div className="w-full px-3 py-3 sm:px-4">
-            {table.getRowModel().rows.length > 0 ? (
-              <div className="space-y-3">
-                {table.getRowModel().rows.map((row) => (
-                  <TradeTableMobileCard
-                    key={row.id}
-                    trade={row.original}
-                    timezone={timezone}
-                    isSelected={row.getIsSelected()}
-                    isExpanded={row.getIsExpanded()}
-                    canExpand={(row.original.trades?.length || 0) > 1}
-                    onToggleSelect={() => {
-                      const tradeIds = [row.original.id, ...(row.original.trades?.map((t) => t.id) || [])].filter(Boolean) as string[]
-                      const nextValue = !row.getIsSelected()
-                      row.toggleSelected(nextValue)
-                      handleSelectTrade(tradeIds, nextValue)
-                    }}
-                    onToggleExpand={() => row.toggleExpanded()}
-                    onViewDetails={() => handleViewDetails(row.original)}
-                    onEdit={() => handleEditTrade(row.original)}
-                    onViewChart={() => handleViewChart(row.original)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-border/40 bg-muted/10 text-muted-foreground p-8 text-center">
-                <div className="rounded-full bg-muted/30 p-4 shadow-sm">
-                  <BarChart3 className="h-8 w-8 opacity-40" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-base font-semibold text-foreground">No trades found</p>
-                  <p className="text-sm text-muted-foreground/70 max-w-[240px]">
-                    We couldn't find any trades matching your current filters.
-                  </p>
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-2 rounded-full px-6"
-                  onClick={() => router.push('/dashboard/table')}
-                >
-                  Clear all filters
-                </Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="relative w-full overflow-x-auto rounded-3xl max-h-[800px] overflow-y-auto">
-            <Table className="w-full min-w-[1100px] lg:min-w-full text-sm">
-              <TableHeader className="sticky top-0 z-20 bg-background border-b shadow-sm">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id} className="hover:bg-transparent">
-                    {headerGroup.headers.map((header) => (
-                      <TableHead
-                        key={header.id}
-                        className={cn(
-                          'h-11 px-2.5 text-left align-middle font-medium text-muted-foreground text-[11px] uppercase tracking-wide',
-                          '[&:has([role=checkbox])]:pr-2'
-                        )}
-                      >
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows.length ? (
-                  table.getRowModel().rows.map((row, idx) => (
+      <div className="rounded-2xl sm:rounded-3xl border border-border bg-background shadow-md w-full overflow-hidden">
+        {table.getRowModel().rows.length > 0 ? (
+          isMobile ? (
+            <div className="w-full px-3 py-3 sm:px-4 space-y-3">
+              {table.getRowModel().rows.map((row) => (
+                <TradeTableMobileCard
+                  key={row.id}
+                  trade={row.original}
+                  timezone={timezone}
+                  isSelected={row.getIsSelected()}
+                  isExpanded={row.getIsExpanded()}
+                  canExpand={(row.original.trades?.length || 0) > 1}
+                  onToggleSelect={() => {
+                    const tradeIds = [row.original.id, ...(row.original.trades?.map((t) => t.id) || [])].filter(Boolean) as string[]
+                    const nextValue = !row.getIsSelected()
+                    row.toggleSelected(nextValue)
+                    handleSelectTrade(tradeIds, nextValue)
+                  }}
+                  onToggleExpand={() => row.toggleExpanded()}
+                  onViewDetails={() => handleViewDetails(row.original)}
+                  onEdit={() => handleEditTrade(row.original)}
+                  onViewChart={() => handleViewChart(row.original)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="relative w-full overflow-x-auto rounded-3xl max-h-[800px] overflow-y-auto">
+              <Table className="w-full min-w-[1100px] lg:min-w-full text-sm">
+                <TableHeader className="sticky top-0 z-20 bg-background border-b shadow-sm">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                      {headerGroup.headers.map((header) => (
+                        <TableHead
+                          key={header.id}
+                          className={cn(
+                            'h-11 px-2.5 text-left align-middle font-medium text-muted-foreground text-[11px] uppercase tracking-wide',
+                            '[&:has([role=checkbox])]:pr-2'
+                          )}
+                        >
+                          {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  {table.getRowModel().rows.map((row, idx) => (
                     <React.Fragment key={row.id}>
                       <TableRow
                         data-state={row.getIsSelected() && 'selected'}
@@ -808,35 +824,81 @@ export function TradeTableReview() {
                         </TableRow>
                       )}
                     </React.Fragment>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center px-4 py-3 align-middle">
-                      No results.
+                  ))}
+                </TableBody>
+                <TableFooter className="sticky bottom-0 bg-background z-20 shadow-inner">
+                  <TableRow className="hover:bg-transparent border-t">
+                    <TableCell colSpan={6} className="font-medium text-xs border-r">
+                      Total Trades: {totalTrades}
                     </TableCell>
+                    <TableCell colSpan={3} className="text-right font-medium text-xs">
+                      Page P&L:
+                    </TableCell>
+                    <TableCell className="text-right font-bold font-mono">
+                      <span className={cn(table.getCoreRowModel().rows.reduce((sum, row) => sum + (row.original.pnl || 0), 0) >= 0 ? "text-profit" : "text-loss")}>
+                        {formatValue(table.getCoreRowModel().rows.reduce((sum, row) => sum + (row.original.pnl || 0), 0), { kind: 'money' })}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-muted-foreground">
+                      {formatValue(table.getCoreRowModel().rows.reduce((sum, row) => sum + (row.original.commission || 0), 0), { kind: 'money' })}
+                    </TableCell>
+                    <TableCell colSpan={2}></TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-              <TableFooter className="sticky bottom-0 bg-background z-20 shadow-inner">
-                <TableRow className="hover:bg-transparent border-t">
-                  <TableCell colSpan={6} className="font-medium text-xs border-r">
-                    Total Trades: {totalTrades}
-                  </TableCell>
-                  <TableCell colSpan={3} className="text-right font-medium text-xs">
-                    Page P&L:
-                  </TableCell>
-                  <TableCell className="text-right font-bold font-mono">
-                    <span className={cn(table.getCoreRowModel().rows.reduce((sum, row) => sum + (row.original.pnl || 0), 0) >= 0 ? "text-profit" : "text-loss")}>
-                      {formatValue(table.getCoreRowModel().rows.reduce((sum, row) => sum + (row.original.pnl || 0), 0), { kind: 'money' })}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-muted-foreground">
-                    {formatValue(table.getCoreRowModel().rows.reduce((sum, row) => sum + (row.original.commission || 0), 0), { kind: 'money' })}
-                  </TableCell>
-                  <TableCell colSpan={2}></TableCell>
-                </TableRow>
-              </TableFooter>
-            </Table>
+                </TableFooter>
+              </Table>
+            </div>
+          )
+        ) : (
+          <div className="flex min-h-[350px] flex-col items-center justify-center gap-4 bg-muted/10 text-muted-foreground p-8 text-center w-full border border-dashed border-border/40 rounded-2xl sm:rounded-3xl">
+            {activeTab === 'live' && !hasConnectedAutomation ? (
+              <>
+                <div className="rounded-full bg-muted/30 p-4 shadow-sm">
+                  <Cable className="h-8 w-8 opacity-60 text-primary animate-pulse" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-base font-semibold text-foreground">No Automated Sync Connected</p>
+                  <p className="text-sm text-muted-foreground/70 max-w-[320px] mx-auto">
+                    Connect your Tradovate, Rithmic, DxFeed, or Thor accounts to automatically sync your trades.
+                  </p>
+                </div>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="mt-2 rounded-full px-6 shadow-sm font-semibold"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(new CustomEvent('open-import-modal'))
+                    }
+                  }}
+                >
+                  Connect Automated Sync
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="rounded-full bg-muted/30 p-4 shadow-sm">
+                  <BarChart3 className="h-8 w-8 opacity-40" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-base font-semibold text-foreground">
+                    {activeTab === 'live' ? "No synced trades found" : "No trades found"}
+                  </p>
+                  <p className="text-sm text-muted-foreground/70 max-w-[280px] mx-auto">
+                    {activeTab === 'live' 
+                      ? "We synchronized your accounts but couldn't find any trades matching your current filters."
+                      : "We couldn't find any trades matching your current filters."}
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2 rounded-full px-6"
+                  onClick={() => router.push('/dashboard/table')}
+                >
+                  Clear all filters
+                </Button>
+              </>
+            )}
           </div>
         )}
       </div>

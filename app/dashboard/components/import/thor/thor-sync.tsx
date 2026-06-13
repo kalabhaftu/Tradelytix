@@ -2,8 +2,8 @@
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { CopyIcon, RefreshCwIcon, EyeIcon } from "lucide-react"
-import { useState, useRef, useEffect } from "react"
+import { CopyIcon, RefreshCwIcon, EyeIcon, ArrowLeft } from "lucide-react"
+import { useState } from "react"
 import { generateThorToken } from "@/server/thor"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -21,44 +21,11 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useUserStore } from "@/store/user-store"
 
-export function ThorSync({ setIsOpen }: { setIsOpen: (isOpen: boolean) => void }) {
+export function ThorSync({ setIsOpen, onBack }: { setIsOpen: (isOpen: boolean) => void; onBack?: () => void }) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isRevealed, setIsRevealed] = useState(false)
   const user = useUserStore((state) => state.user)
   const setUser = useUserStore((state) => state.setUser)
-  const videoRef = useRef<HTMLVideoElement>(null)
-
-  // Handle video playback
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-
-    // Reset video state
-    video.pause()
-    video.currentTime = 0
-
-    // Play video when component mounts
-    const playVideo = () => {
-      video.play().catch((error) => {
-        console.error('Video playback error:', error)
-      })
-    }
-
-    // Play video when it's ready
-    if (video.readyState >= 2) {
-      playVideo()
-    } else {
-      video.addEventListener('loadeddata', playVideo, { once: true })
-    }
-
-    // Cleanup
-    return () => {
-      if (video) {
-        video.pause()
-        video.removeEventListener('loadeddata', () => {})
-      }
-    }
-  }, [])
 
   const handleGenerateToken = async () => {
     try {
@@ -92,11 +59,24 @@ export function ThorSync({ setIsOpen }: { setIsOpen: (isOpen: boolean) => void }
 
   return (
     <div className="flex flex-col space-y-4 p-6">
-      <div className="flex flex-col space-y-2">
-        <h2 className="text-lg font-semibold">Thor Copy Trader Sync</h2>
-        <p className="text-sm text-muted-foreground">
-          Connect Thor Copy Trader to automatically sync your trades in real-time. Thor runs as a local background process on your machine and forwards execution events directly to our API.
-        </p>
+      <div className="flex items-start gap-4">
+        {onBack && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onBack}
+            className="mt-1 h-8 px-3 text-xs border-border/50 hover:bg-muted"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 mr-1" />
+            Back
+          </Button>
+        )}
+        <div className="flex flex-col space-y-1">
+          <h2 className="text-lg font-semibold">Thor Copy Trader Sync</h2>
+          <p className="text-sm text-muted-foreground">
+            Connect Thor Copy Trader to automatically sync your trades in real-time. Thor runs as a local background process on your machine and forwards execution events directly to our API.
+          </p>
+        </div>
       </div>
 
       <div className="flex space-x-2">
@@ -157,33 +137,70 @@ export function ThorSync({ setIsOpen }: { setIsOpen: (isOpen: boolean) => void }
         <p>Note: Generating a new token will immediately invalidate your previous Thor integration token. Ensure you update the token in your local Thor agent settings.</p>
       </div>
 
-      <div className="mt-8 space-y-4">
-        <h2 className="text-2xl font-bold">How to set up Thor</h2>
-        <div className="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 transition-transform duration-300 hover:scale-[1.02]">
-          <video
-            ref={videoRef}
-            height="600"
-            width="600"
-            preload="metadata"
-            loop
-            muted
-            controls
-            playsInline
-            className="rounded-lg border border-gray-200 dark:border-gray-800 shadow-lg w-full h-full object-cover"
-          >
-            <source src="/videos/thor-tutorial.mp4" type="video/mp4" />
-            <track
-              src="/path/to/captions.vtt"
-              kind="subtitles"
-              srcLang="en"
-              label="English"
-            />
-            Your browser does not support the video tag.
-          </video>
+      <div className="mt-6 border-t pt-6 space-y-4">
+        <h3 className="text-base font-semibold text-foreground">How to configure Thor Copy Trader</h3>
+        
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="border border-border/60 bg-muted/20 rounded-xl p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">1</span>
+              <h4 className="text-sm font-semibold">Generate Token</h4>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Click the refresh/generate button above to create a secure API access token. Copy this token to your clipboard.
+            </p>
+          </div>
+
+          <div className="border border-border/60 bg-muted/20 rounded-xl p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">2</span>
+              <h4 className="text-sm font-semibold">Copy API Endpoint</h4>
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-xs text-muted-foreground">
+                Set your Thor client's endpoint URL to our API receiver:
+              </p>
+              <div className="flex items-center gap-1.5 bg-background border rounded-lg px-2.5 py-1 text-[11px] font-mono select-all">
+                <span className="truncate flex-1 text-muted-foreground">
+                  {typeof window !== 'undefined' ? `${window.location.origin}/api/v1/thor/store` : '/api/v1/thor/store'}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 hover:bg-muted"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      navigator.clipboard.writeText(`${window.location.origin}/api/v1/thor/store`)
+                      toast.success('Endpoint URL copied to clipboard')
+                    }
+                  }}
+                >
+                  <CopyIcon className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="border border-border/60 bg-muted/20 rounded-xl p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">3</span>
+              <h4 className="text-sm font-semibold">Configure Local Agent</h4>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Open the Thor Copy Trader application on your machine, go to settings, and paste the API Endpoint and your secure API Token under the authorization section.
+            </p>
+          </div>
+
+          <div className="border border-border/60 bg-muted/20 rounded-xl p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">4</span>
+              <h4 className="text-sm font-semibold">Enable Real-Time Sync</h4>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Ensure the local copier is active and running while you trade. Trade executions will sync instantly with Tradelytix.
+            </p>
+          </div>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Download and install the Thor copier software, copy your API token, and paste it into the Thor configurations. Ensure your copier is active during trading hours.
-        </p>
       </div>
     </div>
   )

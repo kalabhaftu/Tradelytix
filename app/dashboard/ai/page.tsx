@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Fragment } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Brain,
@@ -14,6 +14,7 @@ import {
   X,
   Bookmark,
   ChevronRight,
+  ChevronLeft,
   Info,
   Calendar,
   List,
@@ -29,7 +30,16 @@ import {
   User,
   History,
   Send,
-  PinOff
+  PinOff,
+  PanelLeftClose,
+  PanelLeft,
+  Eye,
+  Target,
+  Lightbulb,
+  ShieldAlert,
+  Flame,
+  Crosshair,
+  Zap
 } from 'lucide-react'
 import { useData } from '@/context/data-provider'
 import { Button } from '@/components/ui/button'
@@ -38,6 +48,23 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { PromptBox } from '@/components/ui/ai-prompt-input'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Spinner } from '@/components/ui/spinner'
@@ -174,6 +201,17 @@ export default function AIChatWorkspace() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [isInitializing, setIsInitializing] = useState(true)
   const [paywallError, setPaywallError] = useState<string | null>(null)
+  
+  // Sidebar collapsed state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  
+  // Delete confirmation state
+  const [deleteChatId, setDeleteChatId] = useState<string | null>(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  
+  // Full-screen analysis dialog
+  const [selectedReview, setSelectedReview] = useState<any | null>(null)
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false)
   
   const chatEndRef = useRef<HTMLDivElement>(null)
 
@@ -587,7 +625,18 @@ In a real subscription, the assistant analyzes your actual trading records. Here
     }
   }
 
-  const handleDeleteChat = async (chatId: string) => {
+  // Delete with confirmation
+  const handleRequestDelete = (chatId: string) => {
+    setDeleteChatId(chatId)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deleteChatId) return
+    const chatId = deleteChatId
+    setIsDeleteDialogOpen(false)
+    setDeleteChatId(null)
+
     if (isDemoMode) {
       setChats(prev => prev.filter(c => c.id !== chatId))
       if (selectedChatId === chatId) {
@@ -609,6 +658,8 @@ In a real subscription, the assistant analyzes your actual trading records. Here
           setMessages([])
         }
         toast.success('Conversation deleted')
+      } else {
+        toast.error('Failed to delete chat.')
       }
     } catch {
       toast.error('Failed to delete chat.')
@@ -727,33 +778,72 @@ In a real subscription, the assistant analyzes your actual trading records. Here
     return followUpSuggestions.default
   }
 
+  // Helper to render inline bold (**text**) in a line
+  const renderInlineFormatting = (text: string) => {
+    // Handle **bold** markers
+    const parts = text.split(/(\*\*[^*]+\*\*)/g)
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} className="font-semibold text-foreground">{part.slice(2, -2)}</strong>
+      }
+      return <Fragment key={i}>{part}</Fragment>
+    })
+  }
+
   // Helper to render customized markdown tags as sleek styled JSX
   const renderMessageContent = (text: string) => {
     if (!text) return null
     
     const lines = text.split('\n')
     return (
-      <div className="space-y-3">
+      <div className="space-y-2">
         {lines.map((line, idx) => {
-          if (line.startsWith('### ')) {
-            return <h4 key={idx} className="text-sm font-bold mt-4 mb-2 text-foreground tracking-tight border-b border-border/40 pb-1">{line.slice(4)}</h4>
+          const trimmed = line.trim()
+          
+          // Skip horizontal rules
+          if (trimmed === '---' || trimmed === '***' || trimmed === '___') return null
+          
+          // Skip empty lines
+          if (trimmed.length === 0) return null
+          
+          // Handle ### headers
+          if (trimmed.startsWith('### ')) {
+            return <h4 key={idx} className="text-sm font-bold mt-4 mb-2 text-foreground tracking-tight">{renderInlineFormatting(trimmed.slice(4))}</h4>
           }
-          if (line.startsWith('## ')) {
-            return <h3 key={idx} className="text-base font-bold mt-4 mb-2 text-primary tracking-tight">{line.slice(3)}</h3>
+          // Handle ## headers
+          if (trimmed.startsWith('## ')) {
+            return <h3 key={idx} className="text-base font-bold mt-4 mb-2 text-foreground tracking-tight">{renderInlineFormatting(trimmed.slice(3))}</h3>
           }
-          if (line.startsWith('- ')) {
+          // Handle # headers
+          if (trimmed.startsWith('# ') && !trimmed.startsWith('# ')) {
+            return <h2 key={idx} className="text-lg font-bold mt-4 mb-2 text-foreground tracking-tight">{renderInlineFormatting(trimmed.slice(2))}</h2>
+          }
+          // Handle bullet points
+          if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+            const bulletContent = trimmed.slice(2)
             return (
               <div key={idx} className="flex items-start gap-2 text-sm pl-2">
                 <span className="text-primary mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                <span className="leading-relaxed text-muted-foreground">{line.slice(2)}</span>
+                <span className="leading-relaxed text-muted-foreground">{renderInlineFormatting(bulletContent)}</span>
               </div>
             )
           }
-          if (line.trim().length === 0) return null
+          // Handle numbered lists
+          if (/^\d+\.\s/.test(trimmed)) {
+            const content = trimmed.replace(/^\d+\.\s/, '')
+            const num = trimmed.match(/^(\d+)\./)?.[1]
+            return (
+              <div key={idx} className="flex items-start gap-2 text-sm pl-2">
+                <span className="text-primary font-semibold text-xs mt-0.5 shrink-0 min-w-[1rem]">{num}.</span>
+                <span className="leading-relaxed text-muted-foreground">{renderInlineFormatting(content)}</span>
+              </div>
+            )
+          }
           
+          // Default paragraph - render inline formatting
           return (
             <p key={idx} className="text-sm leading-relaxed text-muted-foreground">
-              {line}
+              {renderInlineFormatting(trimmed)}
             </p>
           )
         })}
@@ -779,10 +869,191 @@ In a real subscription, the assistant analyzes your actual trading records. Here
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-background">
+    <div className="h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-background overflow-hidden">
       
-      {/* 1. SIDEBAR PANEL */}
-      <div className="w-full lg:w-80 shrink-0 border-b lg:border-b-0 lg:border-r border-border/50 bg-card flex flex-col">
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Conversation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this conversation? This action cannot be undone and all messages will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setDeleteChatId(null); setIsDeleteDialogOpen(false) }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Full-Screen Analysis Review Dialog */}
+      <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5 text-primary" />
+              Weekly Performance Audit
+            </DialogTitle>
+            <DialogDescription>Full analysis details</DialogDescription>
+          </DialogHeader>
+          {selectedReview && (
+            <div className="space-y-5 pt-2">
+              {/* Grade and Score */}
+              <div className="flex items-center gap-4">
+                <div className="bg-primary/10 rounded-xl px-4 py-2 text-center">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Grade</span>
+                  <span className="text-2xl font-extrabold text-primary">{selectedReview.riskGrade || 'A'}</span>
+                </div>
+                <div className="bg-muted/50 rounded-xl px-4 py-2 text-center">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Consistency</span>
+                  <span className="text-2xl font-extrabold text-foreground">{selectedReview.consistencyScore || '7'}/10</span>
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+                  <BookOpen className="h-3.5 w-3.5" /> Summary
+                </h4>
+                <p className="text-sm text-foreground leading-relaxed">{selectedReview.summary}</p>
+              </div>
+
+              {/* Strengths */}
+              {selectedReview.strengths && selectedReview.strengths.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-green-500 mb-2 flex items-center gap-1.5">
+                    <TrendingUp className="h-3.5 w-3.5" /> Strengths
+                  </h4>
+                  <div className="space-y-1.5">
+                    {selectedReview.strengths.map((s: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2 text-sm">
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-green-500" />
+                        <span className="text-muted-foreground">{s}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Weaknesses */}
+              {selectedReview.weaknesses && selectedReview.weaknesses.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-red-500 mb-2 flex items-center gap-1.5">
+                    <AlertCircle className="h-3.5 w-3.5" /> Weaknesses
+                  </h4>
+                  <div className="space-y-1.5">
+                    {selectedReview.weaknesses.map((w: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2 text-sm">
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
+                        <span className="text-muted-foreground">{w}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Performance Insights */}
+              {selectedReview.performanceInsights && selectedReview.performanceInsights.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-2 flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5" /> Performance Insights
+                  </h4>
+                  <div className="space-y-1.5">
+                    {selectedReview.performanceInsights.map((p: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2 text-sm">
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                        <span className="text-muted-foreground">{p}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recommendations */}
+              {selectedReview.recommendations && selectedReview.recommendations.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-2 flex items-center gap-1.5">
+                    <Lightbulb className="h-3.5 w-3.5" /> Recommendations
+                  </h4>
+                  <div className="space-y-1.5">
+                    {selectedReview.recommendations.map((r: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2 text-sm">
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                        <span className="text-muted-foreground">{r}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Top Priority Fix */}
+              {selectedReview.topPriorityFix && (
+                <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-red-500 mb-1.5 flex items-center gap-1.5">
+                    <Target className="h-3.5 w-3.5" /> Top Priority Fix
+                  </h4>
+                  <p className="text-sm text-foreground">{selectedReview.topPriorityFix}</p>
+                </div>
+              )}
+
+              {/* Emotional Patterns */}
+              {selectedReview.emotionalPatterns && selectedReview.emotionalPatterns.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-purple-500 mb-2 flex items-center gap-1.5">
+                    <Heart className="h-3.5 w-3.5" /> Emotional Patterns
+                  </h4>
+                  <div className="space-y-1.5">
+                    {selectedReview.emotionalPatterns.map((e: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2 text-sm">
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-500" />
+                        <span className="text-muted-foreground">{e}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Discuss Button */}
+              <Button
+                className="w-full"
+                onClick={() => {
+                  setIsReviewDialogOpen(false)
+                  setSelectedChatId(null)
+                  handleStartChat(`Summarize and expand on my weekly analysis: ${selectedReview.summary}`)
+                }}
+              >
+                <Brain className="h-4 w-4 mr-2" />
+                Discuss This Analysis with Coach
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* 1. SIDEBAR PANEL - Collapsible */}
+      <div className={cn(
+        "shrink-0 border-b lg:border-b-0 lg:border-r border-border/50 bg-background flex flex-col transition-all duration-300 overflow-hidden",
+        sidebarCollapsed ? "w-0 lg:w-0" : "w-full lg:w-80"
+      )}>
+        {/* Sidebar Header with collapse toggle */}
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border/40 shrink-0">
+          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">AI Assistant</span>
+          <button
+            onClick={() => setSidebarCollapsed(true)}
+            className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors hidden lg:flex"
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </button>
+        </div>
+
         {/* Sidebar Tabs */}
         <div className="flex border-b border-border/40 shrink-0">
           <button
@@ -875,7 +1146,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
                           <Archive className="h-3 w-3" />
                         </button>
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleDeleteChat(chat.id); }}
+                          onClick={(e) => { e.stopPropagation(); handleRequestDelete(chat.id); }}
                           className="p-1 hover:bg-background rounded-md text-red-500 hover:text-red-400"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -895,7 +1166,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
                 <p className="text-xs text-muted-foreground text-center py-6">No saved insights yet.</p>
               ) : (
                 savedInsights.map(insight => (
-                  <Card key={insight.id} className="border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow relative group">
+                  <Card key={insight.id} className="border-border/40 bg-muted/30 shadow-sm hover:shadow-md transition-shadow relative group">
                     <CardContent className="p-3 space-y-2">
                       <div className="flex justify-between items-start">
                         <h4 className="text-xs font-bold text-foreground truncate max-w-[85%]">{insight.title}</h4>
@@ -915,34 +1186,33 @@ In a real subscription, the assistant analyzes your actual trading records. Here
             </div>
           )}
 
-          {/* Analyses Tab */}
+          {/* Analyses Tab - Clickable to open full-screen dialog */}
           {activeTab === 'history' && (
             <div className="space-y-3">
               {weeklyAIReviews.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-6">No previous weekly analyses found.</p>
               ) : (
                 weeklyAIReviews.map((review, idx) => (
-                  <Card key={idx} className="border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow">
+                  <Card
+                    key={idx}
+                    className="border-border/40 bg-muted/30 shadow-sm hover:shadow-md transition-shadow cursor-pointer hover:border-primary/30"
+                    onClick={() => {
+                      setSelectedReview(review)
+                      setIsReviewDialogOpen(true)
+                    }}
+                  >
                     <CardContent className="p-3 space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-bold text-foreground">Weekly Performance Audit</span>
                         <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold">Grade {review.riskGrade || 'A'}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-4">{review.summary}</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">{review.summary}</p>
                       <div className="flex justify-between items-center text-[10px] text-muted-foreground pt-1">
                         <span>Consistency: {review.consistencyScore || '7'}/10</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-[10px]"
-                          onClick={() => {
-                            setSelectedChatId(null)
-                            handleStartChat(`Summarize and expand on my weekly analysis: ${review.summary}`)
-                          }}
-                        >
-                          Discuss
-                          <ChevronRight className="h-3 w-3" />
-                        </Button>
+                        <span className="flex items-center gap-1 text-primary font-semibold">
+                          <Eye className="h-3 w-3" />
+                          View Full Report
+                        </span>
                       </div>
                     </CardContent>
                   </Card>
@@ -955,8 +1225,18 @@ In a real subscription, the assistant analyzes your actual trading records. Here
       </div>
 
       {/* 2. MAIN WORKSPACE AREA */}
-      <div className="flex-1 flex flex-col min-w-0 bg-background">
+      <div className="flex-1 flex flex-col min-w-0 bg-background overflow-hidden">
         
+        {/* Sidebar expand toggle (shown when collapsed) */}
+        {sidebarCollapsed && (
+          <button
+            onClick={() => setSidebarCollapsed(false)}
+            className="absolute left-2 top-[5rem] z-20 p-2 bg-muted/80 hover:bg-muted rounded-lg border border-border/40 text-muted-foreground hover:text-foreground transition-colors shadow-sm hidden lg:flex"
+          >
+            <PanelLeft className="h-4 w-4" />
+          </button>
+        )}
+
         {/* Demo Mode Banner */}
         {isDemoMode && (
           <div className="bg-primary/20 border-b border-primary/20 px-4 py-2 flex items-center justify-between shrink-0">
@@ -972,7 +1252,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
 
         {/* Chatting View */}
         {selectedChatId ? (
-          <div className="flex-1 flex flex-col min-h-0 bg-background">
+          <div className="flex-1 flex flex-col min-h-0 bg-background overflow-hidden">
             {/* Active Chat Header */}
             <div className="px-5 py-3 border-b border-border/40 bg-background flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3 overflow-hidden mr-4">
@@ -1014,6 +1294,17 @@ In a real subscription, the assistant analyzes your actual trading records. Here
               </div>
 
               <div className="flex items-center gap-2">
+                {sidebarCollapsed && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-xs rounded-xl hidden lg:flex"
+                    onClick={() => setSidebarCollapsed(false)}
+                  >
+                    <PanelLeft className="h-4 w-4 mr-1" />
+                    Sidebar
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -1028,7 +1319,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
               </div>
             </div>
 
-            {/* Chat message bubbles */}
+            {/* Chat message bubbles - scrollable area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0 bg-background custom-scrollbar">
               {isLoadingMessages ? (
                 <div className="flex flex-col items-center justify-center py-20 space-y-3">
@@ -1046,11 +1337,11 @@ In a real subscription, the assistant analyzes your actual trading records. Here
                       )}
                     >
                       {msg.role === 'user' ? (
-                        <div className="bg-muted dark:bg-[#303030] text-foreground rounded-[20px] px-4 py-2.5 max-w-[85%] sm:max-w-[75%] shadow-sm text-sm">
+                        <div className="bg-muted text-foreground rounded-[20px] px-4 py-2.5 max-w-[85%] sm:max-w-[75%] shadow-sm text-sm">
                           <p className="leading-relaxed text-xs sm:text-sm whitespace-pre-wrap">{msg.content}</p>
                         </div>
                       ) : (
-                        <div className="w-full text-foreground leading-relaxed text-xs sm:text-sm py-4 border-b border-border/10 relative group">
+                        <div className="w-full text-foreground leading-relaxed text-xs sm:text-sm py-4 relative group">
                           <div className="flex items-start gap-3.5">
                             <div className="bg-primary/10 rounded-lg p-1.5 w-7 h-7 flex items-center justify-center shrink-0 border border-primary/20">
                               <Brain className="h-4 w-4 text-primary" />
@@ -1078,7 +1369,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
                   {/* Streaming SSE Message */}
                   {streamingText && (
                     <div className="flex w-full justify-start">
-                      <div className="w-full text-foreground leading-relaxed text-xs sm:text-sm py-4 border-b border-border/10">
+                      <div className="w-full text-foreground leading-relaxed text-xs sm:text-sm py-4">
                         <div className="flex items-start gap-3.5">
                           <div className="bg-primary/10 rounded-lg p-1.5 w-7 h-7 flex items-center justify-center shrink-0 border border-primary/20">
                             <Brain className="h-4 w-4 text-primary animate-pulse" />
@@ -1109,7 +1400,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
                           <button
                             key={idx}
                             onClick={() => handleStartChat(followUp)}
-                            className="px-3.5 py-1.5 bg-card hover:bg-muted border border-border/40 hover:border-primary/30 rounded-full text-xs text-muted-foreground hover:text-primary transition-all shadow-sm font-medium"
+                            className="px-3.5 py-1.5 bg-muted/50 hover:bg-muted border border-border/40 hover:border-primary/30 rounded-full text-xs text-muted-foreground hover:text-primary transition-all shadow-sm font-medium"
                           >
                             {followUp}
                           </button>
@@ -1123,8 +1414,8 @@ In a real subscription, the assistant analyzes your actual trading records. Here
               )}
             </div>
 
-            {/* Message Input Box */}
-            <div className="p-4 border-t border-border/40 bg-background shrink-0">
+            {/* Message Input Box - pinned at the bottom */}
+            <div className="p-4 bg-background shrink-0">
               <div className="max-w-3xl mx-auto w-full">
                 <PromptBox
                   onSubmit={(message) => handleStartChat(message)}
@@ -1137,7 +1428,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
         ) : (
           
           /* 3. INITIAL CHATGPT-STYLE HOMEPAGE */
-          <div className="flex-1 flex flex-col justify-between p-6 max-w-3xl mx-auto w-full min-h-0 bg-background">
+          <div className="flex-1 flex flex-col justify-between p-6 max-w-3xl mx-auto w-full min-h-0 bg-background overflow-y-auto">
             
             {/* Centered Welcome Title & Context Selector */}
             <div className="flex-1 flex flex-col justify-center items-center space-y-8 min-h-0">
@@ -1223,13 +1514,14 @@ In a real subscription, the assistant analyzes your actual trading records. Here
 
                 <div className="h-4 w-px bg-border/60" />
 
-                {/* Period Selector Dropdown */}
+                {/* Period Selector Dropdown - with All Time option */}
                 <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
                   <SelectTrigger className="h-8 border-none bg-transparent hover:bg-background rounded-xl shadow-none px-3 text-xs font-semibold gap-1.5 focus:ring-0">
                     <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
                     <SelectValue placeholder="Select period" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border border-border/80 bg-card">
+                    <SelectItem value="all-time" className="text-xs">All Time</SelectItem>
                     <SelectItem value="last-7-days" className="text-xs">Last 7 Days</SelectItem>
                     <SelectItem value="last-30-days" className="text-xs">Last 30 Days</SelectItem>
                     <SelectItem value="last-90-days" className="text-xs">Last 90 Days</SelectItem>

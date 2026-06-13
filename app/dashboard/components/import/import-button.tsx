@@ -100,6 +100,15 @@ const stepIcons: Record<string, React.ReactNode> = {
 
 export default function ImportButton() {
   const [isOpen, setIsOpen] = useState<boolean>(false)
+  
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleOpen = () => setIsOpen(true)
+      window.addEventListener('open-import-modal', handleOpen)
+      return () => window.removeEventListener('open-import-modal', handleOpen)
+    }
+  }, [])
+
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
   const [step, setStep] = useState<Step>('select-import-type')
   const [importType, setImportType] = useState<ImportType>('')

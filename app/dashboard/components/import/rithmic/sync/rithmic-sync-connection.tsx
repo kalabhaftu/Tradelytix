@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2 } from 'lucide-react'
+import { Loader2, ArrowLeft } from 'lucide-react'
 import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
 import { toast } from 'sonner'
@@ -680,12 +680,26 @@ export function RithmicSyncConnection({ setIsOpen }: RithmicSyncConnectionProps)
 
 interface RithmicSyncWrapperProps {
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>
+  onBack?: () => void
 }
 
-export function RithmicSyncWrapper({ setIsOpen }: RithmicSyncWrapperProps) {
+export function RithmicSyncWrapper({ setIsOpen, onBack }: RithmicSyncWrapperProps) {
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold font-semibold">Rithmic Automated Sync</h2>
+      <div className="flex items-start gap-4">
+        {onBack && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onBack}
+            className="mt-1 h-8 px-3 text-xs border-border/50 hover:bg-muted"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 mr-1" />
+            Back
+          </Button>
+        )}
+        <h2 className="text-2xl font-bold font-semibold">Rithmic Automated Sync</h2>
+      </div>
       <RithmicSyncConnection 
         setIsOpen={setIsOpen}
       />

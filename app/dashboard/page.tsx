@@ -112,7 +112,7 @@ function DashboardContent() {
           exit="out"
           variants={pageVariants}
           transition={pageTransition}
-          className="px-4"
+          className="px-4 dashboard-page-content"
         >
           <WidgetCanvas />
         </motion.div>

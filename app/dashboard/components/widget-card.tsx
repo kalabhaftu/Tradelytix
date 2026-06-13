@@ -76,9 +76,9 @@ export function WidgetCard({
     return (
       <div
         className={cn(
-          'w-full h-full overflow-hidden widget-card group lg:isolate relative z-0',
+          'w-full h-full overflow-hidden widget-card group lg:isolate relative lg:z-0',
           isGlass
-            ? 'max-lg:bg-card bg-card/95 dark:bg-card/80 border border-border/60 dark:border-border/30 rounded-2xl shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]'
+            ? 'bg-card lg:bg-card/95 lg:dark:bg-card/80 border border-border/60 dark:border-border/30 rounded-2xl lg:shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]'
             : 'bg-card border border-border/60 dark:border-border/30 shadow-sm rounded-xl min-[1440px]:rounded-2xl',
           'p-3 min-[1440px]:p-4',
           className
@@ -94,9 +94,9 @@ export function WidgetCard({
   return (
     <div
       className={cn(
-        'w-full h-full overflow-hidden flex flex-col widget-card group lg:isolate relative z-0',
+        'w-full h-full overflow-hidden flex flex-col widget-card group lg:isolate relative lg:z-0',
         isGlass
-          ? 'max-lg:bg-card bg-card/95 dark:bg-card/80 border border-border/60 dark:border-border/30 rounded-2xl shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]'
+          ? 'bg-card lg:bg-card/95 lg:dark:bg-card/80 border border-border/60 dark:border-border/30 rounded-2xl lg:shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]'
           : 'bg-card border border-border/60 dark:border-border/30 shadow-sm rounded-xl sm:rounded-2xl',
         !noPadding && 'p-3 sm:p-5',
         className

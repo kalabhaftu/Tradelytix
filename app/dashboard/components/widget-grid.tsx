@@ -305,9 +305,9 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
   }
 
   return (
-    <div className={cn('space-y-3 lg:isolate relative z-0', className)}>
+    <div className={cn('space-y-3 lg:isolate', className)}>
       {/* KPI Row — mobile 1-up, tablet 2+2+1, narrow desktop 3+2, wide desktop 5-up */}
-      <div className="px-3 sm:px-4 pt-3 sm:pt-4 lg:isolate relative z-10">
+      <div className="px-3 sm:px-4 pt-3 sm:pt-4 kpi-row-container lg:isolate lg:relative lg:z-10">
         <div
           className={cn(
             'relative',
@@ -370,41 +370,41 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
 
       {/* Main Grid — react-grid-layout */}
       {/* The ref div MUST always be in the DOM so ResizeObserver can measure width */}
-      <div className="px-2 lg:isolate relative z-0" ref={gridContainerRef} data-tour="widget-canvas">
+      <div className="px-2 lg:isolate" ref={gridContainerRef} data-tour="widget-canvas">
         {isMobile ? (
-          <div className="flex flex-col gap-4 pb-4">
+          /* ----------------------------------------------------------------
+           * MOBILE RENDERING PATH — GPU-SAFE
+           *
+           * Flat DOM: no nested flex containers, no stacking contexts,
+           * no relative/z-index, no group hover, no transition-all.
+           * Each wrapper is a plain block div. Off-screen widgets are
+           * skipped by content-visibility: auto (set in globals.css).
+           * ---------------------------------------------------------------- */
+          <div className="pb-4 space-y-3">
             {gridWidgets.map(widget => {
               const config = WIDGET_REGISTRY[widget.type as WidgetType]
               if (!config) return null
 
-              const widgetHeight = widget.h * ROW_HEIGHT + (widget.h - 1) * GRID_MARGIN[1]
               const isChart = config.category === 'charts' || widget.type.startsWith('calendar')
+              const chartHeight = widget.h * ROW_HEIGHT + (widget.h - 1) * GRID_MARGIN[1]
 
               return (
-                <div 
-                  key={widget.i} 
-                  data-is-chart={isChart} 
-                  className={cn("widget-wrapper group flex flex-col relative z-0", isEditMode && "ring-1 ring-border/30 ring-inset rounded-2xl transition-all mb-4")}
-                  style={{ height: isChart ? widgetHeight : 'auto' }}
+                <div
+                  key={widget.i}
+                  className={cn('widget-wrapper', isEditMode && 'relative ring-1 ring-border/30 ring-inset rounded-2xl')}
+                  style={isChart ? { height: chartHeight } : undefined}
                 >
-                  <div className="relative w-full flex-1 flex flex-col">
-                    {/* Edit mode overlay controls */}
-                    {isEditMode && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-2 right-2 h-6 w-6 rounded-full p-0 shadow-md z-10"
-                        onClick={() => handleRemoveWidget(widget.i)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    )}
-
-                    {/* Widget content */}
-                    <div className="w-full flex-1 overflow-hidden flex flex-col">
-                      {config.getComponent({ size: widget.size as any })}
-                    </div>
-                  </div>
+                  {isEditMode && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2 h-6 w-6 rounded-full p-0 shadow-md z-10"
+                      onClick={() => handleRemoveWidget(widget.i)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                  {config.getComponent({ size: widget.size as any })}
                 </div>
               )
             })}

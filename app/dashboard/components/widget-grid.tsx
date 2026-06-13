@@ -305,9 +305,9 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
   }
 
   return (
-    <div className={cn('space-y-3 isolate relative z-0', className)}>
+    <div className={cn('space-y-3 lg:isolate relative z-0', className)}>
       {/* KPI Row — mobile 1-up, tablet 2+2+1, narrow desktop 3+2, wide desktop 5-up */}
-      <div className="px-3 sm:px-4 pt-3 sm:pt-4 isolate relative z-10">
+      <div className="px-3 sm:px-4 pt-3 sm:pt-4 lg:isolate relative z-10">
         <div
           className={cn(
             'relative',

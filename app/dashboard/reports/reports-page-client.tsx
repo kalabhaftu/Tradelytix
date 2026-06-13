@@ -533,7 +533,13 @@ export default function ReportsPageClient({
                                         </DropdownMenuItem>
                                     </DialogTrigger>
                                     <DialogContent className="sm:max-w-2xl bg-card border border-border/10 p-0 overflow-hidden rounded-[32px]">
-                                        <SharedLinksManager />
+                                        <div className="p-8">
+                                            <DialogHeader className="mb-6">
+                                                <DialogTitle className="text-xl font-black tracking-tighter uppercase">Manage Shared Links</DialogTitle>
+                                                <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">View and revoke active public sharing links for this page</DialogDescription>
+                                            </DialogHeader>
+                                            <SharedLinksManager />
+                                        </div>
                                     </DialogContent>
                                 </Dialog>
                             </DropdownMenuContent>

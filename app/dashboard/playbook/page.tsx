@@ -438,6 +438,9 @@ export default function PlaybookPage() {
         <AlertDialogContent className="max-w-2xl bg-background border-border/28">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-2xl font-black tracking-tighter uppercase">{viewModel?.name}</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs font-bold text-muted-foreground">
+              Review strategy performance metrics and playbook execution protocols.
+            </AlertDialogDescription>
             <div className="flex items-center gap-4 mt-2">
               <div className="flex flex-col">
                 <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50">Strategy Performance</span>

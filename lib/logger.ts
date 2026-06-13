@@ -19,8 +19,46 @@ const isProduction = process.env.NODE_ENV === 'production'
 /**
  * Forwards an error log to the centralized API endpoint.
  */
+const IGNORED_ERRORS = [
+  'user not authenticated',
+  'unauthorized',
+  'token expired',
+  'invalid token',
+  'auth-token',
+  'lock:sb-'
+]
+
+/**
+ * Checks if the error message or metadata represents a normal authentication
+ * event that shouldn't pollute the persistent error log database table.
+ */
+export function shouldIgnoreError(message: string, metadata?: any): boolean {
+  const msg = (message || '').toLowerCase()
+  if (IGNORED_ERRORS.some(err => msg.includes(err))) {
+    return true
+  }
+
+  if (metadata && typeof metadata === 'object') {
+    try {
+      const metaStr = JSON.stringify(metadata).toLowerCase()
+      if (IGNORED_ERRORS.some(err => metaStr.includes(err))) {
+        return true
+      }
+    } catch {}
+  }
+
+  return false
+}
+
+/**
+ * Forwards an error log to the centralized API endpoint.
+ */
 async function reportToApi(entry: LogEntry) {
   try {
+    if (shouldIgnoreError(entry.message, entry.data)) {
+      return
+    }
+
     const baseUrl = typeof window !== 'undefined' ? '' : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     
     // Map internal LogLevel to Prisma ErrorLevel
@@ -45,6 +83,39 @@ async function reportToApi(entry: LogEntry) {
         return { error: 'Failed to serialize metadata', details: String(e) };
       }
     })() : undefined
+
+    if (typeof window === 'undefined') {
+      try {
+        const { prisma } = await import('@/lib/prisma')
+        const { getResolvedUserIdentitySafe } = await import('@/server/user-identity')
+        const { extractIP } = await import('@/server/geolocation')
+        const { headers } = await import('next/headers')
+
+        const headersList = await headers()
+        const ip = extractIP(headersList)
+        const identity = await getResolvedUserIdentitySafe()
+
+        await prisma.errorLog.create({
+          data: {
+            source: 'SERVER',
+            level: prismaLevel,
+            message: entry.message.slice(0, 2000),
+            stack: entry.stack ? entry.stack.slice(0, 5000) : null,
+            url: entry.url || headersList.get('referer')?.slice(0, 500) || null,
+            userId: identity?.internalUserId || null,
+            metadata: {
+              ...safeData,
+              context: entry.context,
+              timestamp: entry.timestamp
+            } as any,
+            ipAddress: ip,
+          },
+        })
+        return
+      } catch (dbErr) {
+        console.error('[Logger] Direct server database write failed:', dbErr)
+      }
+    }
 
     await fetch(`${baseUrl}/api/v1/errors`, {
       method: 'POST',

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { ErrorSource, ErrorLevel } from '@prisma/client'
+import { shouldIgnoreError } from '@/lib/logger'
 
 interface ErrorLogInput {
   source: ErrorSource
@@ -18,11 +19,16 @@ interface ErrorLogInput {
  */
 export async function logError(input: ErrorLogInput): Promise<void> {
   try {
+    const messageStr = String(input.message || '')
+    if (shouldIgnoreError(messageStr, input.metadata)) {
+      return
+    }
+
     await prisma.errorLog.create({
       data: {
         source: input.source,
         level: input.level ?? 'ERROR',
-        message: input.message.slice(0, 2000),
+        message: messageStr.slice(0, 2000),
         stack: input.stack?.slice(0, 5000),
         url: input.url?.slice(0, 500),
         userId: input.userId,

@@ -17,6 +17,9 @@ import { TourProvider } from "@/context/tour-context";
 import { TourTooltip } from "@/components/tour/tour-tooltip";
 import { ResumeWidget } from "@/components/tour/resume-widget";
 import { DemoNetworkInterceptor } from "./components/demo-network-interceptor";
+import { TradovateSyncContextProvider } from "@/context/tradovate-sync-context";
+import { DxFeedSyncContextProvider } from "@/context/dxfeed-sync-context";
+import { RithmicSyncContextProvider } from "@/context/rithmic-sync-context";
 
 export default async function DemoLayout({ children }: { children: ReactElement }) {
   const siteUiSettings = await getSiteUiSettings()
@@ -25,30 +28,36 @@ export default async function DemoLayout({ children }: { children: ReactElement 
     <TooltipProvider>
       <DemoNetworkInterceptor />
       <DataProvider isDemoMode={true}>
-        <TourProvider>
-          <TagsProvider>
-            <TemplateProvider initialActiveTemplate={null}>
-                <div className="min-h-screen flex flex-col">
-                  <Suspense fallback={<div className="flex flex-1" />}>
-                    <SidebarLayout siteUiSettings={siteUiSettings}>
-                      {children}
-                    </SidebarLayout>
-                  </Suspense>
-                  <Modals />
-                  <MobileBottomNav />
-                  <QuickAddFAB />
-                  <CommandPalette />
-                  <KeyboardShortcutsModal />
-                  <Suspense fallback={null}>
-                    <GlobalTradeController />
-                  </Suspense>
-                  <WeeklyReviewTrigger />
-                  <TourTooltip />
-                  <ResumeWidget />
-                </div>
-            </TemplateProvider>
-          </TagsProvider>
-        </TourProvider>
+        <TradovateSyncContextProvider>
+          <DxFeedSyncContextProvider>
+            <RithmicSyncContextProvider>
+              <TourProvider>
+                <TagsProvider>
+                  <TemplateProvider initialActiveTemplate={null}>
+                      <div className="min-h-screen flex flex-col">
+                        <Suspense fallback={<div className="flex flex-1" />}>
+                          <SidebarLayout siteUiSettings={siteUiSettings}>
+                            {children}
+                          </SidebarLayout>
+                        </Suspense>
+                        <Modals />
+                        <MobileBottomNav />
+                        <QuickAddFAB />
+                        <CommandPalette />
+                        <KeyboardShortcutsModal />
+                        <Suspense fallback={null}>
+                          <GlobalTradeController />
+                        </Suspense>
+                        <WeeklyReviewTrigger />
+                        <TourTooltip />
+                        <ResumeWidget />
+                      </div>
+                  </TemplateProvider>
+                </TagsProvider>
+              </TourProvider>
+            </RithmicSyncContextProvider>
+          </DxFeedSyncContextProvider>
+        </TradovateSyncContextProvider>
       </DataProvider>
     </TooltipProvider>
   );

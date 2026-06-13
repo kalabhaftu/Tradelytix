@@ -110,6 +110,8 @@ export interface Account extends Omit<PrismaAccount, 'payouts'> {
   balanceToDate?: number
   status?: string
   accountType?: 'live' | 'prop-firm'
+  displayName?: string
+  propfirm?: string
 }
 
 

@@ -10,7 +10,7 @@ import {
   clearAllCaches,
   clearAccountCaches,
   getCacheStats
-} from '@/lib/cache-manager'
+} from '@/lib/cache/persistent-cache'
 import { invalidateAccountsCache } from '@/hooks/use-accounts'
 import { Trash2 as Trash, Info, CheckCircle2 as CheckCircle } from "lucide-react"
 import { toast } from 'sonner'

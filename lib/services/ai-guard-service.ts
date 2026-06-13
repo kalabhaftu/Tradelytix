@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { checkSubscriptionAccess } from './subscription-guard'
+import { checkSubscriptionAccess } from './subscription-guard-service'
 
 export interface AIGuardResult {
   hasAccess: boolean

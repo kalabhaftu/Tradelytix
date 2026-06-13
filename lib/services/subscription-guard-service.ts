@@ -4,7 +4,7 @@
  * Used in server components / layouts to gate access.
  */
 
-import { getUserAccessStatus } from './subscription'
+import { getUserAccessStatus } from './subscription-service'
 import { prisma } from '@/lib/prisma'
 
 export interface SubscriptionGuardResult {

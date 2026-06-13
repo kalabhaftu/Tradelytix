@@ -72,7 +72,11 @@ export function WeeklyReviewTrigger() {
         const aiSettings = profileData.data?.aiSettings
         if (!aiSettings?.autoGenerateInsights) return
 
-        const response = await fetch('/api/v1/weekly-review', { method: 'POST' })
+        const response = await fetch('/api/v1/weekly-review', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clientDate: new Date().toISOString() })
+        })
         if (!response.ok) {
           scheduleRetry()
           return

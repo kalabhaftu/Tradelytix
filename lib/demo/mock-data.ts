@@ -19,7 +19,7 @@ import {
   calculateTagPerformance,
   calculateTimeOfDayPerformance,
   calculateDisciplineAnalytics,
-} from '@/lib/dashboard-math'
+} from '@/lib/dashboard/analytics-calculations'
 import { calculateBalanceInfo } from '@/lib/utils/balance-calculator'
 import { formatCalendarData, calculateStatistics } from '@/lib/utils'
 

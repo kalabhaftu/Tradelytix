@@ -84,7 +84,13 @@ export async function POST(request: NextRequest) {
     const { internalUserId } = await getResolvedUserIdentity()
 
     // Calculate last week's window (Mon–Sun)
-    const now = new Date()
+    let clientDate: string | null = null
+    try {
+      const body = await request.json()
+      clientDate = body.clientDate
+    } catch {}
+
+    const now = clientDate ? new Date(clientDate) : new Date()
     const dayOfWeek = now.getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
     let lastWeekStart: Date
     let lastWeekEnd: Date

@@ -11,6 +11,10 @@ import MatchTraderProcessor from '../match-trader/match-trader-processor'
 import ExnessProcessor from '../exness/exness-processor'
 import UniversalProcessor from '../universal/universal-processor'
 import ManualTradeForm from '../manual-trade-entry/manual-trade-form'
+import { RithmicSyncWrapper } from '../rithmic/sync/rithmic-sync-connection'
+import { TradovateSync } from '../tradovate/sync/tradovate-sync'
+import { DxFeedSync } from '../dxfeed/sync/dxfeed-sync'
+import { ThorSync } from '../thor/thor-sync'
 import { Step } from '../import-button'
 import { Sparkles, Plus, Wand2 } from 'lucide-react'
 
@@ -33,6 +37,10 @@ type StepComponent =
   | typeof MatchTraderProcessor
   | typeof UniversalProcessor
   | typeof ManualTradeForm
+  | typeof RithmicSyncWrapper
+  | typeof TradovateSync
+  | typeof DxFeedSync
+  | typeof ThorSync
 
 export interface PlatformConfig {
   platformName: string
@@ -314,6 +322,119 @@ export const platforms: PlatformConfig[] = [
         title: 'Process Trades',
         description: 'Processing your trades',
         component: ExnessProcessor,
+        isLastStep: true
+      }
+    ]
+  },
+  {
+    platformName: 'rithmic-sync',
+    type: 'rithmic-sync',
+    name: 'Rithmic Sync',
+    description: 'Sync your trades automatically with Rithmic credentials',
+    category: 'Direct Account Sync',
+    details: 'Daily automated background sync for your Rithmic accounts.',
+    logo: {
+      path: '/logos/rithmic.png',
+      alt: 'Rithmic Logo'
+    },
+    isRithmic: true,
+    customComponent: RithmicSyncWrapper,
+    steps: [
+      {
+        id: 'select-import-type',
+        title: 'Select Platform',
+        description: 'Choose the platform you want to import from',
+        component: ImportTypeSelection
+      },
+      {
+        id: 'complete',
+        title: 'Connect Account',
+        description: 'Connect your Rithmic account',
+        component: RithmicSyncWrapper,
+        isLastStep: true
+      }
+    ]
+  },
+  {
+    platformName: 'thor-sync',
+    type: 'thor-sync',
+    name: 'Thor Sync',
+    description: 'Sync your trades automatically via Thor Copy Trader',
+    category: 'Direct Account Sync',
+    details: 'Real-time trade copying from Thor Copy Trader agent.',
+    logo: {
+      path: '/logos/thor.png',
+      alt: 'Thor Logo'
+    },
+    customComponent: ThorSync,
+    steps: [
+      {
+        id: 'select-import-type',
+        title: 'Select Platform',
+        description: 'Choose the platform you want to import from',
+        component: ImportTypeSelection
+      },
+      {
+        id: 'complete',
+        title: 'Connect Account',
+        description: 'Connect your Thor account',
+        component: ThorSync,
+        isLastStep: true
+      }
+    ]
+  },
+  {
+    platformName: 'tradovate-sync',
+    type: 'tradovate-sync',
+    name: 'Tradovate Sync',
+    description: 'Sync your trades automatically with Tradovate OAuth',
+    category: 'Direct Account Sync',
+    details: 'Daily automated synchronization for Tradovate accounts.',
+    logo: {
+      path: '/logos/tradovate.png',
+      alt: 'Tradovate Logo'
+    },
+    customComponent: TradovateSync,
+    steps: [
+      {
+        id: 'select-import-type',
+        title: 'Select Platform',
+        description: 'Choose the platform you want to import from',
+        component: ImportTypeSelection
+      },
+      {
+        id: 'complete',
+        title: 'Connect Account',
+        description: 'Connect your Tradovate account',
+        component: TradovateSync,
+        isLastStep: true
+      }
+    ]
+  },
+  {
+    platformName: 'dxfeed-sync',
+    type: 'dxfeed-sync',
+    name: 'DxFeed Sync',
+    description: 'Sync your trades automatically with DxFeed account',
+    category: 'Direct Account Sync',
+    details: 'Daily automated synchronization for DxFeed accounts.',
+    logo: {
+      path: '/logos/dxfeed.png',
+      alt: 'DxFeed Logo'
+    },
+    customComponent: DxFeedSync,
+    steps: [
+      {
+        id: 'select-import-type',
+        title: 'Select Platform',
+        description: 'Choose the platform you want to import from',
+        component: ImportTypeSelection
+      },
+      {
+        id: 'complete',
+        title: 'Connect Account',
+        description: 'Connect your DxFeed account',
+        component: DxFeedSync,
         isLastStep: true
       }
     ]

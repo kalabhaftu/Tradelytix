@@ -15,7 +15,7 @@ import {
   isFailureStatus,
   type NowPaymentStatus,
   type IpnPayload,
-} from './nowpayments'
+} from './nowpayments-service'
 import { createOrUpdateNotification } from './notification-service'
 
 const PRICE_USD = parseFloat(process.env.SUBSCRIPTION_PRICE_USD || '10')

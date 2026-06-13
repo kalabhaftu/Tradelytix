@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { autoCleanStaleCache, clearAccountCaches, getCacheStats } from '@/lib/cache-manager'
+import { autoCleanStaleCache, clearAccountCaches, getCacheStats } from '@/lib/cache/persistent-cache'
 import { invalidateAccountsCache } from './use-accounts'
 
 interface UseAutoCacheCleanupOptions {

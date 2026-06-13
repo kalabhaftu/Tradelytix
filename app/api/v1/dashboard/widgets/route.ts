@@ -9,7 +9,7 @@ import {
   calculateAccountBalanceChart,
   calculateCalendarData,
   calculateSessionAnalysis
-} from '@/lib/dashboard-math'
+} from '@/lib/dashboard/analytics-calculations'
 import { prisma } from '@/lib/prisma'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'

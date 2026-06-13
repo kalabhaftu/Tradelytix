@@ -68,8 +68,8 @@ async function resolveDataContext(userId: string, chat: any) {
     toDate = new Date(customTo)
   }
   
-  const fromStr = fromDate.toISOString().split('T')[0]
-  const toStr = toDate.toISOString().split('T')[0]
+  const fromStr = `${fromDate.toISOString().split('T')[0]}T00:00:00.000Z`
+  const toStr = `${toDate.toISOString().split('T')[0]}T23:59:59.999Z`
   
   let contextText = `User Profile Context:\n`
   

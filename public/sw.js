@@ -14,31 +14,10 @@ const STATIC_FILES = [
   '/offline.html',
 ]
 
-// Read-only user-scoped API endpoints that are useful for cached offline viewing.
-const CACHE_API_PATTERNS = [
-  /^\/api\/v1\/trades(?:\?|$)/,
-  /^\/api\/v1\/accounts(?:\?|$)/,
-  /^\/api\/v1\/journal\/list(?:\?|$)/,
-  /^\/api\/v1\/tags(?:\?|$)/,
-  /^\/api\/v1\/settings\/account-filters(?:\?|$)/,
-  /^\/api\/v1\/reports\/shared\/[^/]+(?:\?|$)/,
-]
-
-const EXCLUDED_API_PATTERNS = [
-  /^\/api\/auth\//,
-  /^\/api\/v1\/admin\//,
-  /^\/api\/v1\/payments\//,
-  /^\/api\/v1\/import\//,
-  /^\/api\/v1\/data\/(?:import|export)/,
-  /^\/api\/v1\/trades\/import\//,
-  /\/webhook\//,
-]
-
 // Background sync tags
 const SYNC_TAGS = {
   TRADE_UPLOAD: 'trade-upload',
   PROFILE_UPDATE: 'profile-update',
-  ANALYTICS_REQUEST: 'analytics-request',
 }
 
 // Install event - cache static resources
@@ -131,67 +110,13 @@ async function handleStaticRequest(request) {
   }
 }
 
-// Handle API requests with caching strategy
+// Handle API requests (no caching, requires live connection)
 async function handleAPIRequest(request) {
-  const cache = await caches.open(API_CACHE)
-  const url = new URL(request.url)
-  
-  // Check if this API should be cached
-  const shouldCache =
-    CACHE_API_PATTERNS.some(pattern => pattern.test(url.pathname)) &&
-    !EXCLUDED_API_PATTERNS.some(pattern => pattern.test(url.pathname))
-  
-  if (!shouldCache) {
-    return fetch(request)
-  }
-  
   try {
-    // Try network first for fresh data
-    const response = await fetch(request)
-    
-    if (response.ok) {
-      // Cache successful read-only responses with a marker for offline-aware UI.
-      const headers = new Headers(response.headers)
-      headers.set('X-Tradelytix-Cache-Source', 'network')
-      headers.set('X-Tradelytix-Cached-At', new Date().toISOString())
-      const cacheableResponse = new Response(response.clone().body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers,
-      })
-      await cache.put(request, cacheableResponse)
-      return response
-    } else {
-      // If network fails, try cache
-      const cachedResponse = await cache.match(request)
-      return cachedResponse || response
-    }
+    return await fetch(request)
   } catch (error) {
-    
-    // Network failed, try cache
-    const cachedResponse = await cache.match(request)
-    
-    if (cachedResponse) {
-      return cachedResponse
-    }
-    
-    // Return offline response for critical endpoints
-    if (url.pathname.includes('/api/v1/trades')) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Offline', 
-          trades: [], 
-          cached: true 
-        }), 
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      )
-    }
-    
     return new Response(
-      JSON.stringify({ error: 'Service unavailable offline' }), 
+      JSON.stringify({ error: 'Offline', message: 'Tradelytix needs an internet connection to sync live data.' }), 
       {
         status: 503,
         headers: { 'Content-Type': 'application/json' }
@@ -289,9 +214,6 @@ self.addEventListener('sync', (event) => {
     case SYNC_TAGS.PROFILE_UPDATE:
       event.waitUntil(syncProfileUpdates())
       break
-    case SYNC_TAGS.ANALYTICS_REQUEST:
-      event.waitUntil(syncAnalyticsRequests())
-      break
   }
 })
 
@@ -346,29 +268,6 @@ async function syncProfileUpdates() {
   } catch (error) {
   }
 }
-
-// Sync analytics requests
-async function syncAnalyticsRequests() {
-  try {
-    // Refresh cached analytics data
-    const cache = await caches.open(API_CACHE)
-    const analyticsUrls = [
-      '/api/v1/trades'
-    ]
-    
-    for (const url of analyticsUrls) {
-      try {
-        const response = await fetch(url)
-        if (response.ok) {
-          await cache.put(url, response.clone())
-        }
-      } catch (error) {
-      }
-    }
-  } catch (error) {
-  }
-}
-
 // Message handling for communication with main thread
 self.addEventListener('message', (event) => {
   if (!event.data) return
@@ -379,20 +278,8 @@ self.addEventListener('message', (event) => {
     case 'SKIP_WAITING':
       self.skipWaiting()
       break
-    case 'CACHE_TRADE_DATA':
-      if (event.data.data) {
-        cacheTradeData(event.data.data)
-      }
-      break
     case 'CLEAR_CACHE':
       clearAllCaches()
-      break
-    case 'GET_CACHE_STATUS':
-      getCacheStatus().then(status => {
-        if (event.ports && event.ports[0]) {
-          event.ports[0].postMessage(status)
-        }
-      })
       break
     case 'SET_USER_ID':
       const newUserId = event.data.userId
@@ -405,18 +292,6 @@ self.addEventListener('message', (event) => {
   }
 })
 
-// Cache trade data for offline access
-async function cacheTradeData(data) {
-  try {
-    const cache = await caches.open(API_CACHE)
-    const response = new Response(JSON.stringify(data), {
-      headers: { 'Content-Type': 'application/json' }
-    })
-    await cache.put('/api/v1/trades/cached', response)
-  } catch (error) {
-  }
-}
-
 // Clear all caches
 async function clearAllCaches() {
   try {
@@ -425,24 +300,6 @@ async function clearAllCaches() {
       cacheNames.map(cacheName => caches.delete(cacheName))
     )
   } catch (error) {
-  }
-}
-
-// Get cache status
-async function getCacheStatus() {
-  try {
-    const cacheNames = await caches.keys()
-    const status = {}
-    
-    for (const cacheName of cacheNames) {
-      const cache = await caches.open(cacheName)
-      const keys = await cache.keys()
-      status[cacheName] = keys.length
-    }
-    
-    return status
-  } catch (error) {
-    return {}
   }
 }
 

@@ -157,8 +157,8 @@ export default function ImportButton() {
 
   const totalSteps = platform?.steps.length ?? 1
 
-  // Check if this is manual trade entry (has custom component)
-  const isManualEntry = importType === 'manual-trade-entry' && platform?.customComponent
+  // Check if this is manual trade entry or custom sync engine (has custom component)
+  const isManualEntry = !!platform?.customComponent
 
   const resetImportState = useCallback(() => {
     setImportType('')

@@ -300,6 +300,7 @@ model Trade {
   accountNumber        String
   quantity             Float            @default(0)
   entryId              String?
+  closeId              String?
   tradeIdentityKey     String?
   instrument           String
   entryPrice           String
@@ -493,6 +494,9 @@ model User {
   Subscription           Subscription?
   AIChat                 AIChat[]
   AISavedInsight         AISavedInsight[]
+  etpToken               String?
+  thorToken              String?
+  synchronizations       Synchronization[]
 
   @@index([auth_user_id])
   @@index([email])
@@ -1303,3 +1307,24 @@ model AIChatUsageLog {
   @@index([createdAt])
   @@schema("public")
 }
+
+model Synchronization {
+  id               String    @id @default(uuid())
+  userId           String
+  service          String
+  accountId        String
+  lastSyncedAt     DateTime
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  token            String?
+  tokenExpiresAt   DateTime?
+  dailySyncTime    DateTime?
+  includedFeeTypes Json?
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, service, accountId])
+  @@index([userId])
+  @@index([service])
+  @@schema("public")
+}
+

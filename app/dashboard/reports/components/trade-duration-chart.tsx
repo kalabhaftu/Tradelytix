@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { cn, formatCurrency } from '@/lib/utils'
-import { calculateTradeDurationPerformance } from '@/lib/dashboard-math'
+import { calculateTradeDurationPerformance } from '@/lib/dashboard/analytics-calculations'
 import {
   Bar,
   BarChart,

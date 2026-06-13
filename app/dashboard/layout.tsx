@@ -21,6 +21,9 @@ import { getSiteUiSettings } from "@/server/site-ui-settings";
 import { TourProvider } from "@/context/tour-context";
 import { TourTooltip } from "@/components/tour/tour-tooltip";
 import { ResumeWidget } from "@/components/tour/resume-widget";
+import { TradovateSyncContextProvider } from "@/context/tradovate-sync-context";
+import { DxFeedSyncContextProvider } from "@/context/dxfeed-sync-context";
+import { RithmicSyncContextProvider } from "@/context/rithmic-sync-context";
 
 export default async function RootLayout({ children }: { children: ReactElement }) {
   const initialBootstrapData = await getInitBootstrapData()
@@ -39,30 +42,36 @@ export default async function RootLayout({ children }: { children: ReactElement 
   return (
     <TooltipProvider>
       <DataProvider initialBootstrapData={initialBootstrapData}>
-        <TourProvider>
-          <TagsProvider>
-            <TemplateProvider initialActiveTemplate={initialBootstrapData.activeTemplateShell}>
-                <div className="min-h-screen flex flex-col">
-                  <Suspense fallback={<div className="flex flex-1" />}>
-                    <SidebarLayout siteUiSettings={siteUiSettings}>
-                      {children}
-                    </SidebarLayout>
-                  </Suspense>
-                  <Modals />
-                  <MobileBottomNav />
-                  <QuickAddFAB />
-                  <CommandPalette />
-                  <KeyboardShortcutsModal />
-                  <Suspense fallback={null}>
-                    <GlobalTradeController />
-                  </Suspense>
-                  <WeeklyReviewTrigger />
-                  <TourTooltip />
-                  <ResumeWidget />
-                </div>
-            </TemplateProvider>
-          </TagsProvider>
-        </TourProvider>
+        <TradovateSyncContextProvider>
+          <DxFeedSyncContextProvider>
+            <RithmicSyncContextProvider>
+              <TourProvider>
+                <TagsProvider>
+                  <TemplateProvider initialActiveTemplate={initialBootstrapData.activeTemplateShell}>
+                      <div className="min-h-screen flex flex-col">
+                        <Suspense fallback={<div className="flex flex-1" />}>
+                          <SidebarLayout siteUiSettings={siteUiSettings}>
+                            {children}
+                          </SidebarLayout>
+                        </Suspense>
+                        <Modals />
+                        <MobileBottomNav />
+                        <QuickAddFAB />
+                        <CommandPalette />
+                        <KeyboardShortcutsModal />
+                        <Suspense fallback={null}>
+                          <GlobalTradeController />
+                        </Suspense>
+                        <WeeklyReviewTrigger />
+                        <TourTooltip />
+                        <ResumeWidget />
+                      </div>
+                  </TemplateProvider>
+                </TagsProvider>
+              </TourProvider>
+            </RithmicSyncContextProvider>
+          </DxFeedSyncContextProvider>
+        </TradovateSyncContextProvider>
       </DataProvider>
     </TooltipProvider>
   );

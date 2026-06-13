@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { MAJOR_NEWS_EVENTS } from '@/lib/major-news-events'
+import { MAJOR_NEWS_EVENTS } from '@/lib/constants/major-news-events'
 import { CacheHeaders } from '@/lib/api-cache-headers'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 

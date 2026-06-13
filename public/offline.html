@@ -259,7 +259,7 @@
         </div>
         <h1>You're Offline</h1>
         <p class="subtitle">
-            Previously viewed dashboards, journal ranges, reports, accounts, tags, and filters may still be available from your local cache. Editing, importing, exporting, payments, and admin actions require a live connection.
+            Tradelytix needs an internet connection to sync live data. Reconnect and try again.
         </p>
 
         <div class="connection-status" id="connectionStatus">
@@ -271,25 +271,8 @@
 
         <div class="action-buttons">
             <button class="btn btn-primary" onclick="retryConnection()" id="retryBtn">
-                Try Again
+                Retry
             </button>
-            <button class="btn btn-secondary" onclick="goToCache()" id="cacheBtn">
-                View Cached Data
-            </button>
-        </div>
-
-        <div class="offline-features">
-            <h3>Available Offline</h3>
-            <ul>
-                <li>View previously loaded dashboard data</li>
-                <li>Browse cached journal ranges and trade lists</li>
-                <li>Review cached account filters, tags, and reports</li>
-                <li>Reconnect to save changes, import/export, or sync fresh data</li>
-            </ul>
-        </div>
-
-        <div class="footer">
-            <p>Cached data is read-only while offline. Fresh data and changes sync after reconnection.</p>
         </div>
     </div>
 
@@ -307,7 +290,7 @@
             } else {
                 statusIndicator.className = 'status-indicator status-offline';
                 statusText.textContent = 'No internet connection';
-                retryBtn.textContent = 'Try Again';
+                retryBtn.textContent = 'Retry';
                 retryBtn.onclick = retryConnection;
             }
         }
@@ -330,36 +313,14 @@
                             window.location.href = '/';
                         })
                         .catch(() => {
-                            retryBtn.textContent = 'Try Again';
+                            retryBtn.textContent = 'Retry';
                             alert('Still unable to connect. Please check your internet connection.');
                         });
                 } else {
-                    retryBtn.textContent = 'Try Again';
+                    retryBtn.textContent = 'Retry';
                     updateConnectionStatus();
                 }
             }, 2000);
-        }
-
-        function goToCache() {
-            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                const channel = new MessageChannel();
-
-                channel.port1.onmessage = (event) => {
-                    const cacheStatus = event.data;
-                    if (Object.keys(cacheStatus).length > 0) {
-                        window.location.href = '/dashboard?offline=true';
-                    } else {
-                        alert('No cached data is available yet. Reconnect once to load dashboard data.');
-                    }
-                };
-
-                navigator.serviceWorker.controller.postMessage(
-                    { type: 'GET_CACHE_STATUS' },
-                    [channel.port2]
-                );
-            } else {
-                alert('Offline functionality is not available yet. Reconnect and try again.');
-            }
         }
 
         window.addEventListener('online', updateConnectionStatus);
@@ -390,9 +351,6 @@
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 retryConnection();
-            } else if (e.key === 'c' || e.key === 'C') {
-                e.preventDefault();
-                goToCache();
             }
         });
     </script>

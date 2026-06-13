@@ -33,7 +33,7 @@ import {
   calculateTagPerformance,
   calculateTimeOfDayPerformance,
   calculateDisciplineAnalytics,
-} from '@/lib/dashboard-math'
+} from '@/lib/dashboard/analytics-calculations'
 import { calculateBalanceInfo } from '@/lib/utils/balance-calculator'
 import { CacheHeaders } from '@/lib/api-cache-headers'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'

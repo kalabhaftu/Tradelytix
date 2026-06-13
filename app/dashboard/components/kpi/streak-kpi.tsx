@@ -5,7 +5,7 @@ import { WidgetCard } from '../widget-card'
 import { useData } from '@/context/data-provider'
 import { cn } from '@/lib/utils'
 import { Flame, TrendingUp, TrendingDown, Info } from "lucide-react"
-import { calculateTradingOverviewKpis } from '@/lib/dashboard-math'
+import { calculateTradingOverviewKpis } from '@/lib/dashboard/analytics-calculations'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import {
   Tooltip,

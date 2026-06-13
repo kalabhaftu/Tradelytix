@@ -55,7 +55,7 @@ import { TradeDetailPanel } from '@/app/dashboard/components/tables/trade-detail
 import { Trade } from '@prisma/client'
 import { groupTradesByExecution, formatCurrency } from '@/lib/utils'
 import Fuse from 'fuse.js'
-import { getAssetSearchTerms } from '@/lib/asset-aliases'
+import { getAssetSearchTerms } from '@/lib/constants/asset-aliases'
 import { useTags } from '@/context/tags-provider'
 import { cn, ensureExtendedTrade } from '@/lib/utils'
 import { useJournal } from '@/hooks/use-journal'

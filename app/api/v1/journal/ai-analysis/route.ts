@@ -44,8 +44,8 @@ export async function GET(request: NextRequest) {
     const tradesWhere: any = {
       userId: internalUserId,
       entryDate: {
-        gte: startDate,
-        lte: endDate
+        gte: startDate.includes('T') ? startDate : `${startDate}T00:00:00.000Z`,
+        lte: endDate.includes('T') ? endDate : `${endDate}T23:59:59.999Z`
       }
     }
 

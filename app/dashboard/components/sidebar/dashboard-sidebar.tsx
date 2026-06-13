@@ -40,6 +40,12 @@ import { Logo } from '@/components/logo'
 import { cn } from '@/lib/utils'
 import { useData } from '@/context/data-provider'
 import type { SiteUiSettingsPayload } from '@/server/site-ui-settings'
+import { useTradovateSyncContext } from '@/context/tradovate-sync-context'
+import { useDxFeedSyncContext } from '@/context/dxfeed-sync-context'
+import { useRithmicSyncContext } from '@/context/rithmic-sync-context'
+import { getAllRithmicData } from '@/lib/rithmic-storage'
+import { toast } from 'sonner'
+import { useState } from 'react'
 
 const coreNavItems = [
   { id: 'widgets', label: 'Overview', icon: LayoutDashboard, href: '/dashboard' },
@@ -59,6 +65,90 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
   const pathname = usePathname()
   const { refreshTrades, isDemoMode } = useData()
   const { state, toggleSidebar, isOverlay, setOpenMobile } = useSidebar()
+  
+  const tradovateSyncContext = useTradovateSyncContext()
+  const dxfeedSyncContext = useDxFeedSyncContext()
+  const rithmicSyncContext = useRithmicSyncContext()
+  const [isSyncing, setIsSyncing] = useState(false)
+
+  const handleManualSync = async () => {
+    if (isSyncing) return
+    setIsSyncing(true)
+    toast.info("Starting manual broker sync...", {
+      description: "Syncing your active broker integrations in the background."
+    })
+    
+    const syncPromises: Promise<any>[] = []
+    
+    // Tradovate
+    if (tradovateSyncContext && tradovateSyncContext.accounts.length > 0) {
+      syncPromises.push(
+        tradovateSyncContext.performSyncForAllAccounts()
+          .then(() => ({ service: 'Tradovate', success: true }))
+          .catch((err) => ({ service: 'Tradovate', success: false, error: err }))
+      )
+    }
+    
+    // DxFeed
+    if (dxfeedSyncContext && dxfeedSyncContext.accounts.length > 0) {
+      syncPromises.push(
+        dxfeedSyncContext.performSyncForAllAccounts()
+          .then(() => ({ service: 'DxFeed', success: true }))
+          .catch((err) => ({ service: 'DxFeed', success: false, error: err }))
+      )
+    }
+    
+    // Rithmic
+    const rithmicCredentials = typeof window !== 'undefined' ? getAllRithmicData() : {}
+    const rithmicIds = Object.keys(rithmicCredentials)
+    if (rithmicSyncContext && rithmicIds.length > 0) {
+      rithmicIds.forEach((id) => {
+        syncPromises.push(
+          rithmicSyncContext.performSyncForCredential(id)
+            .then(() => ({ service: 'Rithmic', success: true }))
+            .catch((err) => ({ service: 'Rithmic', success: false, error: err }))
+        )
+      })
+    }
+    
+    // If no integrations configured, fallback to standard data refresh
+    if (syncPromises.length === 0) {
+      try {
+        await refreshTrades()
+        toast.success("Data refreshed")
+      } catch (err) {
+        toast.error("Failed to refresh data")
+      } finally {
+        setIsSyncing(false)
+      }
+      return
+    }
+    
+    // Run all configured sync runs in parallel
+    try {
+      const results = await Promise.all(syncPromises)
+      const failures = results.filter(r => !r.success)
+      
+      await refreshTrades()
+      
+      if (failures.length === 0) {
+        toast.success("Manual sync completed successfully!", {
+          description: `All ${results.length} broker integrations synchronized.`
+        })
+      } else {
+        const failedServices = failures.map(f => f.service).join(', ')
+        toast.warning("Manual sync completed with warnings", {
+          description: `Failed to sync: ${failedServices}. Others succeeded.`
+        })
+      }
+    } catch (err) {
+      console.error("Error during manual sync:", err)
+      await refreshTrades()
+      toast.error("Manual sync failed to complete")
+    } finally {
+      setIsSyncing(false)
+    }
+  }
   const isCollapsed = state === 'collapsed' && !isOverlay
 
   const getDemoAdjustedHref = (href: string) => {
@@ -234,18 +324,19 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
                     <SidebarMenuButton
                       size={isOverlay ? 'lg' : 'default'}
                       variant={isCollapsed ? 'icon' : 'default'}
-                      tooltip="Refresh Data"
+                      tooltip={isSyncing ? "Syncing brokers..." : "Refresh / Sync Broker"}
                       className={cn(
                         isOverlay && 'h-11 rounded-2xl px-4 text-[15px] [&>svg]:size-[17px]',
                         !isOverlay && !isCollapsed && 'px-3'
                       )}
                       onClick={() => {
-                        refreshTrades()
+                        handleManualSync()
                         handleMobileClose()
                       }}
+                      disabled={isSyncing}
                     >
-                      <RefreshCw />
-                      <span>Refresh Data</span>
+                      <RefreshCw className={cn(isSyncing && "animate-spin")} />
+                      <span>{isSyncing ? "Syncing..." : "Sync Broker"}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 

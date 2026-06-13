@@ -164,6 +164,10 @@ export async function GET(request: NextRequest) {
     
     // Build Prisma where clause — ALL filtering server-side
     const whereClause: any = { userId: internalUserId }
+
+    if (params.get('liveOnly') === 'true') {
+      whereClause.tradeIdentityKey = { not: null }
+    }
     
     if (accountNumbers.length > 0) {
       // Find the user's regular accounts matching these accountNumbers (either by ID or number)

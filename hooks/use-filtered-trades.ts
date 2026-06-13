@@ -28,6 +28,7 @@ export interface TradeFilters {
   includeStats?: boolean
   includeCalendar?: boolean
   timezone?: string
+  liveOnly?: boolean
 }
 
 export interface FilteredTradesResponse {
@@ -57,6 +58,7 @@ function buildQueryString(filters: TradeFilters): string {
   if (filters.includeStats === false) params.set('includeStats', 'false')
   if (filters.includeCalendar === false) params.set('includeCalendar', 'false')
   if (filters.timezone) params.set('timezone', filters.timezone)
+  if (filters.liveOnly) params.set('liveOnly', 'true')
   
   return params.toString()
 }

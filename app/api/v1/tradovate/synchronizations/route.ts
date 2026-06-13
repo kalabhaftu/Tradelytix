@@ -15,9 +15,14 @@ export async function GET() {
       );
     }
 
+    const cleaned = (result.synchronizations || []).map((sync) => ({
+      ...sync,
+      token: sync.token ? 'present' : null
+    }));
+
     return NextResponse.json({
       success: true,
-      data: result.synchronizations || [],
+      data: cleaned,
     });
   } catch (error) {
     console.error("Error fetching Tradovate synchronizations:", error);

@@ -324,7 +324,7 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
                     <SidebarMenuButton
                       size={isOverlay ? 'lg' : 'default'}
                       variant={isCollapsed ? 'icon' : 'default'}
-                      tooltip={isSyncing ? "Syncing brokers..." : "Refresh / Sync Broker"}
+                      tooltip={isSyncing ? "Syncing data..." : "Sync & Refresh Data"}
                       className={cn(
                         isOverlay && 'h-11 rounded-2xl px-4 text-[15px] [&>svg]:size-[17px]',
                         !isOverlay && !isCollapsed && 'px-3'
@@ -336,7 +336,7 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
                       disabled={isSyncing}
                     >
                       <RefreshCw className={cn(isSyncing && "animate-spin")} />
-                      <span>{isSyncing ? "Syncing..." : "Sync Broker"}</span>
+                      <span>{isSyncing ? "Syncing..." : "Sync Data"}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 

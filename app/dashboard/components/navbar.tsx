@@ -68,7 +68,7 @@ export default function Navbar() {
 
   return (
     <motion.nav
-      className="sticky top-0 z-40 flex w-full items-center border-b border-sidebar-border/60 dark:border-sidebar-border/40 bg-sidebar/95 lg:bg-sidebar/80 text-foreground backdrop-blur-md isolate"
+      className="sticky top-0 z-40 flex w-full items-center border-b border-sidebar-border/60 dark:border-sidebar-border/40 bg-sidebar lg:bg-sidebar/80 text-foreground lg:backdrop-blur-md"
       initial={{ y: -48, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.25, ease: "easeOut" }}

@@ -763,12 +763,6 @@ code > [data-line]::before {
     height: auto !important;
   }
 
-  /* Force GPU rendering to invalidate layers and prevent ghosting/tearing */
-  .widget-card {
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-  }
-
   /* Make sure chart containers have a fixed height so Recharts doesn't collapse */
   [data-tour="widget-canvas"] .recharts-responsive-container {
     height: 240px !important;

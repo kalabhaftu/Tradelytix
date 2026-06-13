@@ -211,13 +211,17 @@ export default function AIChatWorkspace() {
   
   // Full-screen analysis dialog
   const [selectedReview, setSelectedReview] = useState<any | null>(null)
+  const [selectedReviewIndex, setSelectedReviewIndex] = useState<number | null>(null)
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false)
   
   const chatEndRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   // Auto Scroll Chat
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
+    }
   }, [messages, streamingText])
 
   // Initialize
@@ -302,13 +306,26 @@ export default function AIChatWorkspace() {
       }
       
       // Also fetch weekly reviews
-      const reviewsRes = await fetch('/api/v1/journal/ai-analysis?startDate=' + format(subDays(new Date(), 90), 'yyyy-MM-dd') + '&endDate=' + format(new Date(), 'yyyy-MM-dd'))
+      const reviewsRes = await fetch('/api/v1/weekly-review')
+      let loadedReviews: any[] = []
       if (reviewsRes.ok) {
-        const reviewData = await reviewsRes.json()
-        if (reviewData.analysis) {
-          setWeeklyAIReviews([reviewData.analysis])
+        const payload = await reviewsRes.json()
+        if (payload.success && Array.isArray(payload.data)) {
+          loadedReviews = payload.data
         }
       }
+
+      // If no historical reviews exist, generate the live one for last 30 days
+      if (loadedReviews.length === 0) {
+        const liveRes = await fetch('/api/v1/journal/ai-analysis?startDate=' + format(subDays(new Date(), 30), 'yyyy-MM-dd') + '&endDate=' + format(new Date(), 'yyyy-MM-dd'))
+        if (liveRes.ok) {
+          const liveData = await liveRes.json()
+          if (liveData.analysis) {
+            loadedReviews = [liveData.analysis]
+          }
+        }
+      }
+      setWeeklyAIReviews(loadedReviews)
     } catch (err) {
       toast.error('Failed to load AI Assistant data.')
     } finally {
@@ -398,6 +415,7 @@ Emotional states directly correlate with performance. Operating under stress or 
 
   // Create Chat and Send Message
   const handleStartChat = async (customPrompt?: string, sourceOverride?: string[]) => {
+    if (isSending) return
     const promptToSend = customPrompt || inputMessage
     if (!promptToSend.trim()) return
 
@@ -898,143 +916,199 @@ In a real subscription, the assistant analyzes your actual trading records. Here
       <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
         <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-primary" />
-              Weekly Performance Audit
-            </DialogTitle>
-            <DialogDescription>Full analysis details</DialogDescription>
-          </DialogHeader>
-          {selectedReview && (
-            <div className="space-y-5 pt-2">
-              {/* Grade and Score */}
-              <div className="flex items-center gap-4">
-                <div className="bg-primary/10 rounded-xl px-4 py-2 text-center">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Grade</span>
-                  <span className="text-2xl font-extrabold text-primary">{selectedReview.riskGrade || 'A'}</span>
-                </div>
-                <div className="bg-muted/50 rounded-xl px-4 py-2 text-center">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Consistency</span>
-                  <span className="text-2xl font-extrabold text-foreground">{selectedReview.consistencyScore || '7'}/10</span>
-                </div>
-              </div>
-
-              {/* Summary */}
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
-                  <BookOpen className="h-3.5 w-3.5" /> Summary
-                </h4>
-                <p className="text-sm text-foreground leading-relaxed">{selectedReview.summary}</p>
-              </div>
-
-              {/* Strengths */}
-              {selectedReview.strengths && selectedReview.strengths.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-green-500 mb-2 flex items-center gap-1.5">
-                    <TrendingUp className="h-3.5 w-3.5" /> Strengths
-                  </h4>
-                  <div className="space-y-1.5">
-                    {selectedReview.strengths.map((s: string, i: number) => (
-                      <div key={i} className="flex items-start gap-2 text-sm">
-                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-green-500" />
-                        <span className="text-muted-foreground">{s}</span>
-                      </div>
-                    ))}
-                  </div>
+            <div className="flex items-center justify-between w-full pr-6">
+              <DialogTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary" />
+                Weekly Performance Audit
+              </DialogTitle>
+              
+              {/* Pagination Controls in Header */}
+              {weeklyAIReviews.length > 1 && selectedReviewIndex !== null && (
+                <div className="flex items-center gap-1.5 bg-muted border border-border/40 rounded-lg p-0.5">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 rounded text-muted-foreground hover:text-foreground"
+                    disabled={selectedReviewIndex === weeklyAIReviews.length - 1}
+                    onClick={() => {
+                      const nextIdx = selectedReviewIndex + 1;
+                      setSelectedReviewIndex(nextIdx);
+                      setSelectedReview(weeklyAIReviews[nextIdx]);
+                    }}
+                    title="Older Review"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-[10px] font-bold text-muted-foreground min-w-[36px] text-center select-none">
+                    {selectedReviewIndex + 1} / {weeklyAIReviews.length}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 rounded text-muted-foreground hover:text-foreground"
+                    disabled={selectedReviewIndex === 0}
+                    onClick={() => {
+                      const prevIdx = selectedReviewIndex - 1;
+                      setSelectedReviewIndex(prevIdx);
+                      setSelectedReview(weeklyAIReviews[prevIdx]);
+                    }}
+                    title="Newer Review"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
                 </div>
               )}
-
-              {/* Weaknesses */}
-              {selectedReview.weaknesses && selectedReview.weaknesses.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-red-500 mb-2 flex items-center gap-1.5">
-                    <AlertCircle className="h-3.5 w-3.5" /> Weaknesses
-                  </h4>
-                  <div className="space-y-1.5">
-                    {selectedReview.weaknesses.map((w: string, i: number) => (
-                      <div key={i} className="flex items-start gap-2 text-sm">
-                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
-                        <span className="text-muted-foreground">{w}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Performance Insights */}
-              {selectedReview.performanceInsights && selectedReview.performanceInsights.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-2 flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5" /> Performance Insights
-                  </h4>
-                  <div className="space-y-1.5">
-                    {selectedReview.performanceInsights.map((p: string, i: number) => (
-                      <div key={i} className="flex items-start gap-2 text-sm">
-                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                        <span className="text-muted-foreground">{p}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Recommendations */}
-              {selectedReview.recommendations && selectedReview.recommendations.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-2 flex items-center gap-1.5">
-                    <Lightbulb className="h-3.5 w-3.5" /> Recommendations
-                  </h4>
-                  <div className="space-y-1.5">
-                    {selectedReview.recommendations.map((r: string, i: number) => (
-                      <div key={i} className="flex items-start gap-2 text-sm">
-                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                        <span className="text-muted-foreground">{r}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Top Priority Fix */}
-              {selectedReview.topPriorityFix && (
-                <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-red-500 mb-1.5 flex items-center gap-1.5">
-                    <Target className="h-3.5 w-3.5" /> Top Priority Fix
-                  </h4>
-                  <p className="text-sm text-foreground">{selectedReview.topPriorityFix}</p>
-                </div>
-              )}
-
-              {/* Emotional Patterns */}
-              {selectedReview.emotionalPatterns && selectedReview.emotionalPatterns.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-purple-500 mb-2 flex items-center gap-1.5">
-                    <Heart className="h-3.5 w-3.5" /> Emotional Patterns
-                  </h4>
-                  <div className="space-y-1.5">
-                    {selectedReview.emotionalPatterns.map((e: string, i: number) => (
-                      <div key={i} className="flex items-start gap-2 text-sm">
-                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-500" />
-                        <span className="text-muted-foreground">{e}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Discuss Button */}
-              <Button
-                className="w-full"
-                onClick={() => {
-                  setIsReviewDialogOpen(false)
-                  setSelectedChatId(null)
-                  handleStartChat(`Summarize and expand on my weekly analysis: ${selectedReview.summary}`)
-                }}
-              >
-                <Brain className="h-4 w-4 mr-2" />
-                Discuss This Analysis with Coach
-              </Button>
             </div>
-          )}
+            <DialogDescription>
+              {selectedReview?.weekStart 
+                ? `Performance audit for the week of ${format(new Date(selectedReview.weekStart), 'MMMM d, yyyy')}`
+                : 'Full analysis details'}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedReview && (() => {
+            // Normalize review fields
+            const grade = selectedReview.grade || selectedReview.riskGrade || 'A';
+            const consistency = selectedReview.consistencyScore || selectedReview.stats?.consistencyScore || '7';
+            const highlights = selectedReview.highlights || selectedReview.strengths || [];
+            const lowlights = selectedReview.lowlights || selectedReview.weaknesses || [];
+            const recommendations = selectedReview.recommendations || (selectedReview.focusNextWeek ? [selectedReview.focusNextWeek] : []);
+            const performanceInsights = selectedReview.performanceInsights || [];
+            const topPriorityFix = selectedReview.topPriorityFix || selectedReview.stats?.topPriorityFix || null;
+            const emotionalPatterns = selectedReview.emotionalPatterns || [];
+
+            return (
+              <div className="space-y-5 pt-2">
+                {/* Grade and Score */}
+                <div className="flex items-center gap-4">
+                  <div className="bg-primary/10 rounded-xl px-4 py-2 text-center">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Grade</span>
+                    <span className="text-2xl font-extrabold text-primary">{grade}</span>
+                  </div>
+                  <div className="bg-muted/50 rounded-xl px-4 py-2 text-center">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Consistency</span>
+                    <span className="text-2xl font-extrabold text-foreground">{consistency}/10</span>
+                  </div>
+                </div>
+
+                {/* Summary */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+                    <BookOpen className="h-3.5 w-3.5" /> Summary
+                  </h4>
+                  <p className="text-sm text-foreground leading-relaxed">{selectedReview.summary}</p>
+                </div>
+
+                {/* Strengths / Highlights */}
+                {Array.isArray(highlights) && highlights.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-green-500 mb-2 flex items-center gap-1.5">
+                      <TrendingUp className="h-3.5 w-3.5" /> Strengths & Highlights
+                    </h4>
+                    <div className="space-y-1.5">
+                      {highlights.map((s: string, i: number) => (
+                        <div key={i} className="flex items-start gap-2 text-sm">
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-green-500" />
+                          <span className="text-muted-foreground">{s}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Weaknesses / Lowlights */}
+                {Array.isArray(lowlights) && lowlights.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-red-500 mb-2 flex items-center gap-1.5">
+                      <AlertCircle className="h-3.5 w-3.5" /> Weaknesses & Lowlights
+                    </h4>
+                    <div className="space-y-1.5">
+                      {lowlights.map((w: string, i: number) => (
+                        <div key={i} className="flex items-start gap-2 text-sm">
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
+                          <span className="text-muted-foreground">{w}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Performance Insights */}
+                {Array.isArray(performanceInsights) && performanceInsights.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-2 flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5" /> Performance Insights
+                    </h4>
+                    <div className="space-y-1.5">
+                      {performanceInsights.map((p: string, i: number) => (
+                        <div key={i} className="flex items-start gap-2 text-sm">
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                          <span className="text-muted-foreground">{p}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Recommendations */}
+                {Array.isArray(recommendations) && recommendations.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-2 flex items-center gap-1.5">
+                      <Lightbulb className="h-3.5 w-3.5" /> Recommendations & Focus Areas
+                    </h4>
+                    <div className="space-y-1.5">
+                      {recommendations.map((r: string, i: number) => (
+                        <div key={i} className="flex items-start gap-2 text-sm">
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                          <span className="text-muted-foreground">{r}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Top Priority Fix */}
+                {topPriorityFix && (
+                  <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-red-500 mb-1.5 flex items-center gap-1.5">
+                      <Target className="h-3.5 w-3.5" /> Top Priority Fix
+                    </h4>
+                    <p className="text-sm text-foreground">{topPriorityFix}</p>
+                  </div>
+                )}
+
+                {/* Emotional Patterns */}
+                {Array.isArray(emotionalPatterns) && emotionalPatterns.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-purple-500 mb-2 flex items-center gap-1.5">
+                      <Heart className="h-3.5 w-3.5" /> Emotional Patterns
+                    </h4>
+                    <div className="space-y-1.5">
+                      {emotionalPatterns.map((e: string, i: number) => (
+                        <div key={i} className="flex items-start gap-2 text-sm">
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-500" />
+                          <span className="text-muted-foreground">{e}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Discuss Button */}
+                <Button
+                  className="w-full"
+                  disabled={isSending}
+                  onClick={() => {
+                    setIsReviewDialogOpen(false)
+                    setSelectedChatId(null)
+                    handleStartChat(`Summarize and expand on my weekly analysis: ${selectedReview.summary}`)
+                  }}
+                >
+                  <Brain className="h-4 w-4 mr-2" />
+                  Discuss This Analysis with Coach
+                </Button>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
@@ -1198,17 +1272,22 @@ In a real subscription, the assistant analyzes your actual trading records. Here
                     className="border-border/40 bg-muted/30 shadow-sm hover:shadow-md transition-shadow cursor-pointer hover:border-primary/30"
                     onClick={() => {
                       setSelectedReview(review)
+                      setSelectedReviewIndex(idx)
                       setIsReviewDialogOpen(true)
                     }}
                   >
                     <CardContent className="p-3 space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-xs font-bold text-foreground">Weekly Performance Audit</span>
-                        <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold">Grade {review.riskGrade || 'A'}</span>
+                        <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold">Grade {review.grade || review.riskGrade || 'A'}</span>
                       </div>
                       <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">{review.summary}</p>
                       <div className="flex justify-between items-center text-[10px] text-muted-foreground pt-1">
-                        <span>Consistency: {review.consistencyScore || '7'}/10</span>
+                        <span>
+                          {review.weekStart 
+                            ? `Week of ${format(new Date(review.weekStart), 'MMM d, yyyy')}`
+                            : `Consistency: ${review.consistencyScore || '7'}/10`}
+                        </span>
                         <span className="flex items-center gap-1 text-primary font-semibold">
                           <Eye className="h-3 w-3" />
                           View Full Report
@@ -1225,17 +1304,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
       </div>
 
       {/* 2. MAIN WORKSPACE AREA */}
-      <div className="flex-1 flex flex-col min-w-0 bg-background overflow-hidden">
-        
-        {/* Sidebar expand toggle (shown when collapsed) */}
-        {sidebarCollapsed && (
-          <button
-            onClick={() => setSidebarCollapsed(false)}
-            className="absolute left-2 top-[5rem] z-20 p-2 bg-muted/80 hover:bg-muted rounded-lg border border-border/40 text-muted-foreground hover:text-foreground transition-colors shadow-sm hidden lg:flex"
-          >
-            <PanelLeft className="h-4 w-4" />
-          </button>
-        )}
+      <div className="flex-1 flex flex-col min-w-0 bg-background overflow-hidden relative">
 
         {/* Demo Mode Banner */}
         {isDemoMode && (
@@ -1250,77 +1319,86 @@ In a real subscription, the assistant analyzes your actual trading records. Here
           </div>
         )}
 
+        {/* Unified Workspace Header */}
+        <div className="px-5 py-3 border-b border-border/40 bg-background flex items-center justify-between shrink-0 min-h-[52px]">
+          <div className="flex items-center gap-3 overflow-hidden mr-4">
+            {sidebarCollapsed && (
+              <button
+                onClick={() => setSidebarCollapsed(false)}
+                className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors mr-1"
+                title="Expand Sidebar"
+              >
+                <PanelLeft className="h-4 w-4" />
+              </button>
+            )}
+            
+            {selectedChatId ? (
+              isRenameMode ? (
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    className="border border-border/80 bg-background text-sm rounded px-2 py-0.5 max-w-[200px] outline-none"
+                    onKeyDown={(e) => e.key === 'Enter' && handleRenameChat(selectedChatId)}
+                    autoFocus
+                  />
+                  <button onClick={() => handleRenameChat(selectedChatId)} className="p-1 hover:bg-muted rounded text-green-500">
+                    <Check className="h-3.5 w-3.5" />
+                  </button>
+                  <button onClick={() => setIsRenameMode(false)} className="p-1 hover:bg-muted rounded text-red-500">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 overflow-hidden">
+                  <Brain className="h-5 w-5 text-primary shrink-0" />
+                  <h3 className="text-sm font-semibold truncate max-w-[250px] text-foreground">
+                    {chats.find(c => c.id === selectedChatId)?.title || 'Active Conversation'}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      const currentChat = chats.find(c => c.id === selectedChatId)
+                      setRenameValue(currentChat?.title || '')
+                      setIsRenameMode(true)
+                    }}
+                    className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-all"
+                  >
+                    <Edit3 className="h-3 w-3" />
+                  </button>
+                </div>
+              )
+            ) : (
+              <div className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary shrink-0" />
+                <span className="text-sm font-semibold text-foreground">New Analysis Session</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {selectedChatId && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 text-xs rounded-xl"
+                onClick={() => {
+                  setSelectedChatId(null)
+                  setMessages([])
+                }}
+              >
+                Configure Context
+              </Button>
+            )}
+          </div>
+        </div>
+
         {/* Chatting View */}
         {selectedChatId ? (
           <div className="flex-1 flex flex-col min-h-0 bg-background overflow-hidden">
-            {/* Active Chat Header */}
-            <div className="px-5 py-3 border-b border-border/40 bg-background flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3 overflow-hidden mr-4">
-                <Brain className="h-5 w-5 text-primary shrink-0" />
-                {isRenameMode ? (
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="text"
-                      value={renameValue}
-                      onChange={(e) => setRenameValue(e.target.value)}
-                      className="border border-border/80 bg-background text-sm rounded px-2 py-0.5 max-w-[200px]"
-                      onKeyDown={(e) => e.key === 'Enter' && handleRenameChat(selectedChatId)}
-                      autoFocus
-                    />
-                    <button onClick={() => handleRenameChat(selectedChatId)} className="p-1 hover:bg-muted rounded text-green-500">
-                      <Check className="h-3.5 w-3.5" />
-                    </button>
-                    <button onClick={() => setIsRenameMode(false)} className="p-1 hover:bg-muted rounded text-red-500">
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5 overflow-hidden">
-                    <h3 className="text-sm font-semibold truncate max-w-[250px] text-foreground">
-                      {chats.find(c => c.id === selectedChatId)?.title || 'Active Conversation'}
-                    </h3>
-                    <button
-                      onClick={() => {
-                        const currentChat = chats.find(c => c.id === selectedChatId)
-                        setRenameValue(currentChat?.title || '')
-                        setIsRenameMode(true)
-                      }}
-                      className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-all"
-                    >
-                      <Edit3 className="h-3 w-3" />
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                {sidebarCollapsed && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2 text-xs rounded-xl hidden lg:flex"
-                    onClick={() => setSidebarCollapsed(false)}
-                  >
-                    <PanelLeft className="h-4 w-4 mr-1" />
-                    Sidebar
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-2 text-xs rounded-xl"
-                  onClick={() => {
-                    setSelectedChatId(null)
-                    setMessages([])
-                  }}
-                >
-                  Configure Context
-                </Button>
-              </div>
-            </div>
 
             {/* Chat message bubbles - scrollable area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0 bg-background custom-scrollbar">
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0 bg-background custom-scrollbar">
               {isLoadingMessages ? (
                 <div className="flex flex-col items-center justify-center py-20 space-y-3">
                   <Spinner size="lg" />
@@ -1399,8 +1477,12 @@ In a real subscription, the assistant analyzes your actual trading records. Here
                         {getFollowUps().map((followUp, idx) => (
                           <button
                             key={idx}
-                            onClick={() => handleStartChat(followUp)}
-                            className="px-3.5 py-1.5 bg-muted/50 hover:bg-muted border border-border/40 hover:border-primary/30 rounded-full text-xs text-muted-foreground hover:text-primary transition-all shadow-sm font-medium"
+                            disabled={isSending}
+                            onClick={() => !isSending && handleStartChat(followUp)}
+                            className={cn(
+                              "px-3.5 py-1.5 bg-muted/50 hover:bg-muted border border-border/40 hover:border-primary/30 rounded-full text-xs text-muted-foreground hover:text-primary transition-all shadow-sm font-medium",
+                              isSending && "opacity-50 pointer-events-none"
+                            )}
                           >
                             {followUp}
                           </button>
@@ -1561,8 +1643,11 @@ In a real subscription, the assistant analyzes your actual trading records. Here
                   return (
                     <Card
                       key={tpl.id}
-                      className="border-border/40 bg-card hover:bg-muted/40 hover:border-primary/20 transition-all duration-300 shadow-sm cursor-pointer hover:shadow"
-                      onClick={() => handleStartChat(tpl.prompt)}
+                      className={cn(
+                        "border-border/40 bg-card hover:bg-muted/40 hover:border-primary/20 transition-all duration-300 shadow-sm cursor-pointer hover:shadow",
+                        isSending && "opacity-50 pointer-events-none"
+                      )}
+                      onClick={() => !isSending && handleStartChat(tpl.prompt)}
                     >
                       <CardContent className="p-3.5 flex gap-3">
                         <div className="p-2 bg-primary/10 rounded-xl shrink-0 h-9 w-9 flex items-center justify-center">
@@ -1584,6 +1669,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
               <PromptBox 
                 onSubmit={(message) => handleStartChat(message)}
                 placeholder="Ask your Coach (e.g. why am I losing on EURUSD?)"
+                disabled={isSending}
               />
             </div>
           </div>

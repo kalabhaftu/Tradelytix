@@ -18,7 +18,10 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
     return NextResponse.json({ goals })
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message?.includes('not authenticated') || err.message?.includes('Unauthorized')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     logger.error('Failed to fetch goals', err, 'Goals GET')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -58,7 +61,10 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json({ goal })
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message?.includes('not authenticated') || err.message?.includes('Unauthorized')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     logger.error('Failed to create goal', err, 'Goals POST')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

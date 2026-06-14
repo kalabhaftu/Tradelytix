@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
               notificationId: notification.id,
               ...(data ? { payload: JSON.stringify(data) } : {}),
             },
-          }).catch(pushError => {
+          }).catch((pushError: any) => {
             logger.error('FCM messaging send fail', { error: pushError?.message }, 'api')
           })
         }

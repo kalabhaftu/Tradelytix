@@ -71,6 +71,35 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Dispatch FCM Push Notification asynchronously if token exists
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: internalUserId },
+        select: { fcmToken: true },
+      })
+      if (user?.fcmToken) {
+        const { messaging } = await import('@/lib/firebase-admin')
+        if (messaging) {
+          await messaging.send({
+            token: user.fcmToken,
+            notification: {
+              title: title,
+              body: message,
+            },
+            data: {
+              type: type,
+              notificationId: notification.id,
+              ...(data ? { payload: JSON.stringify(data) } : {}),
+            },
+          }).catch(pushError => {
+            logger.error('FCM messaging send fail', { error: pushError?.message }, 'api')
+          })
+        }
+      }
+    } catch (pushError: any) {
+      logger.error('Failed to send push notification', { error: pushError?.message }, 'api')
+    }
+
     return NextResponse.json({ success: true, data: notification })
   } catch (error: any) {
     logger.error('POST /api/v1/notifications', { error: error?.message }, 'api')

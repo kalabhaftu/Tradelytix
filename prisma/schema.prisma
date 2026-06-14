@@ -496,6 +496,7 @@ model User {
   AISavedInsight         AISavedInsight[]
   etpToken               String?
   thorToken              String?
+  fcmToken               String?
   synchronizations       Synchronization[]
 
   @@index([auth_user_id])

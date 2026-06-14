@@ -306,3 +306,6 @@ build-output.log
 # Local scratch notes
 *.txt
 *.md
+
+# Firebase Service Account Credentials
+config/firebase-admin.json

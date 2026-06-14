@@ -14,6 +14,7 @@ import { ClientErrorReporter } from "@/components/error-reporter";
 import { ErrorBoundaryWrapper } from "@/components/error-boundary";
 import { SeasonalManager } from "@/app/dashboard/components/seasonal/seasonal-manager";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
+import { AppBanner } from "@/components/app-banner";
 import Script from "next/script"
 
 // Font configuration now imported from lib/fonts.ts
@@ -239,6 +240,7 @@ export default async function RootLayout({
                     <SafeToaster />
                     <ClientErrorReporter />
                     <SeasonalManager />
+                    <AppBanner />
                     {children}
                   </TooltipProvider>
                 </AuthProvider>

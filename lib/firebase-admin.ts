@@ -1,14 +1,17 @@
-import * as admin from 'firebase-admin'
+import { getApps, initializeApp, cert } from 'firebase-admin/app'
+import { getMessaging } from 'firebase-admin/messaging'
 
-if (!admin.apps.length) {
+const apps = getApps()
+
+if (!apps.length) {
   try {
     const privateKey = process.env.FIREBASE_PRIVATE_KEY
       ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
       : undefined
 
     if (process.env.FIREBASE_CLIENT_EMAIL && privateKey && process.env.FIREBASE_PROJECT_ID) {
-      admin.initializeApp({
-        credential: admin.credential.cert({
+      initializeApp({
+        credential: cert({
           projectId: process.env.FIREBASE_PROJECT_ID,
           clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
           privateKey: privateKey,
@@ -22,4 +25,4 @@ if (!admin.apps.length) {
   }
 }
 
-export const messaging = admin.apps.length ? admin.messaging() : null
+export const messaging = getApps().length ? getMessaging() : null

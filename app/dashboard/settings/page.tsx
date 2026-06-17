@@ -70,6 +70,7 @@ import {
   Webhook,
   Link2 as LinkIcon,
   BookMarked,
+  Eye,
 } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from 'next/link'
@@ -182,6 +183,22 @@ export default function SettingsPage() {
     lastName: '',
   })
   const avatarUrl = getUserAvatarUrl(user)
+
+  const [privacyMode, setPrivacyMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('privacyMode') === 'true'
+    }
+    return false
+  })
+
+  const handlePrivacyModeToggle = (checked: boolean) => {
+    setPrivacyMode(checked)
+    localStorage.setItem('privacyMode', String(checked))
+    toast.success(checked ? 'Privacy mode enabled' : 'Privacy mode disabled', {
+      description: checked ? 'Monetary values will be hidden across the app.' : 'Monetary values are visible.',
+      duration: 2000
+    })
+  }
 
   const [subscriptionData, setSubscriptionData] = useState<{
     hasAccess: boolean
@@ -1172,6 +1189,21 @@ export default function SettingsPage() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            }
+          />
+
+          <Separator className="my-1 border-border/30" />
+
+          {/* Privacy Mode */}
+          <SettingRow
+            icon={Eye}
+            label="Privacy Mode"
+            description="Hide monetary balances across the dashboard"
+            action={
+              <Switch
+                checked={privacyMode}
+                onCheckedChange={handlePrivacyModeToggle}
+              />
             }
           />
 

@@ -40,7 +40,10 @@ import {
   BarChart3,
   Sparkles,
   ChevronRight,
-  X
+  X,
+  Medal,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react"
 import { CreateLiveAccountDialog } from "../components/accounts/create-live-account-dialog"
 import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
@@ -92,6 +95,8 @@ interface Account {
   dailyDrawdownRemaining?: number
   maxDrawdownRemaining?: number
   totalPayouts?: number
+  pnl?: number
+  calculatedEquity?: number
   hasRecentBreach?: boolean
   createdAt?: string
   updatedAt?: string
@@ -200,6 +205,9 @@ export default function AccountsPage() {
       refetchAccounts()
     }
   })
+
+  // Leaderboard
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
 
   // Dialog states
   const [createLiveDialogOpen, setCreateLiveDialogOpen] = useState(false)
@@ -602,7 +610,32 @@ export default function AccountsPage() {
                 <TabsTrigger value="archived" className="text-xs px-3">Archived</TabsTrigger>
               </TabsList>
             </Tabs>
+
+            {/* Leaderboard toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowLeaderboard(prev => !prev)}
+              className={cn(
+                "gap-1.5 text-xs shrink-0",
+                showLeaderboard ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              <Medal className="h-3.5 w-3.5" />
+              {showLeaderboard ? 'Hide' : 'Leaderboard'}
+            </Button>
           </motion.div>
+
+          {/* Leaderboard */}
+          {showLeaderboard && serverAccounts.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6"
+            >
+              <AccountLeaderboard accounts={serverAccounts} />
+            </motion.div>
+          )}
 
           {/* Accounts Grid */}
           <motion.div
@@ -950,6 +983,76 @@ function AccountCard({
             View details <ChevronRight className="h-3 w-3" />
           </span>
         </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Account Leaderboard Component
+function AccountLeaderboard({ accounts }: { accounts: Account[] }) {
+  const sorted = [...accounts].sort((a, b) => (b.pnl || 0) - (a.pnl || 0))
+  const maxPnl = accounts.reduce((max, a) => Math.max(max, Math.abs(a.pnl || 0)), 1)
+  const totalPnl = accounts.reduce((sum, a) => sum + (a.pnl || 0), 0)
+  const best = sorted[0]
+  const worst = sorted[sorted.length - 1]
+
+  return (
+    <Card className="border-border/40">
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Medal className="h-4 w-4 text-primary" />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Account Leaderboard</span>
+          </div>
+          <span className={cn(
+            "text-[10px] font-black",
+            totalPnl >= 0 ? "text-long" : "text-short"
+          )}>
+            Total: {totalPnl >= 0 ? '+' : ''}{formatCurrency(totalPnl)}
+          </span>
+        </div>
+        <div className="space-y-1">
+          {sorted.map((acc, i) => {
+            const pnl = acc.pnl || 0
+            const isPositive = pnl >= 0
+            const barWidth = maxPnl > 0 ? (Math.abs(pnl) / maxPnl) * 100 : 0
+            const rankColor = i === 0 ? "text-amber-400" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-muted-foreground/30"
+
+            return (
+              <div key={acc.id} className="flex items-center gap-3 py-1.5 group">
+                <span className={cn("w-5 text-center text-xs font-black", rankColor)}>{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold truncate">{acc.displayName || acc.name || acc.number}</span>
+                    <span className={cn("text-xs font-black shrink-0 ml-2", isPositive ? "text-long" : "text-short")}>
+                      {isPositive ? '+' : ''}{formatCurrency(pnl)}
+                    </span>
+                  </div>
+                  <div className="h-1.5 mt-1 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={cn("h-full rounded-full transition-all", isPositive ? "bg-long" : "bg-short")}
+                      style={{ width: `${Math.min(100, barWidth)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        {sorted.length >= 2 && (
+          <div className="flex items-center gap-4 pt-2 border-t border-border/20">
+            <div className="flex items-center gap-1.5 text-xs">
+              <ArrowUp className="h-3 w-3 text-long" />
+              <span className="text-muted-foreground text-[10px]">Best:</span>
+              <span className="font-semibold truncate max-w-[120px]">{best.displayName || best.name || best.number}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs">
+              <ArrowDown className="h-3 w-3 text-short" />
+              <span className="text-muted-foreground text-[10px]">Worst:</span>
+              <span className="font-semibold truncate max-w-[120px]">{worst.displayName || worst.name || worst.number}</span>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

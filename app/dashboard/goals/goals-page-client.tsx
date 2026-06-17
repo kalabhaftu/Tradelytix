@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { toast } from "sonner"
-import { Target, Plus, Trash2, CheckCircle2, TrendingUp, Trophy, DollarSign, Flame, BarChart2, TrendingDown, Star } from "lucide-react"
+import { Target, Plus, Trash2, CheckCircle2, TrendingUp, Trophy, DollarSign, Flame, BarChart2, TrendingDown, Star, Pencil } from "lucide-react"
 import { GoalsPageSkeleton } from "./components/goals-page-skeleton"
 
 type GoalMetric = "pnl" | "winRate" | "trades" | "streak" | "drawdown" | "custom"
@@ -80,12 +80,22 @@ async function createGoal(data: Partial<Goal>): Promise<{ goal: Goal }> {
   return res.json()
 }
 
+async function updateGoal(id: string, data: Partial<Goal>): Promise<{ goal: Goal }> {
+  const res = await fetch(`/api/v1/goals/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error('Failed to update goal')
+  return res.json()
+}
+
 async function deleteGoal(id: string): Promise<void> {
   const res = await fetch(`/api/v1/goals/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error('Failed to delete goal')
 }
 
-function GoalCard({ goal, onDelete }: { goal: Goal; onDelete: (id: string) => void }) {
+function GoalCard({ goal, onDelete, onEdit }: { goal: Goal; onDelete: (id: string) => void; onEdit?: (goal: Goal) => void }) {
   const progressPct = Math.min((goal.currentValue / goal.targetValue) * 100, 100)
   const MetricIcon = METRIC_ICONS[goal.metric as GoalMetric]
 
@@ -113,11 +123,21 @@ function GoalCard({ goal, onDelete }: { goal: Goal; onDelete: (id: string) => vo
           <Badge variant="outline" className="text-[9px] font-black uppercase tracking-wider border-border/20">
             {goal.period}
           </Badge>
+          {onEdit && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 opacity-30 hover:opacity-100"
+              onClick={(e) => { e.stopPropagation(); onEdit(goal) }}
+            >
+              <Pencil className="h-3 w-3" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
             className="h-6 w-6 opacity-30 hover:opacity-100 hover:text-short"
-            onClick={() => onDelete(goal.id)}
+            onClick={(e) => { e.stopPropagation(); onDelete(goal.id) }}
           >
             <Trash2 className="h-3 w-3" />
           </Button>
@@ -297,6 +317,68 @@ export function GoalsPageClient() {
     onError: () => toast.error('Failed to delete goal'),
   })
 
+  // Edit state
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null)
+  const [editForm, setEditForm] = useState({
+    title: '',
+    description: '',
+    metric: 'pnl' as GoalMetric,
+    targetValue: '',
+    currentValue: '',
+    period: 'monthly' as GoalPeriod,
+    endDate: '',
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Goal> }) => {
+      if (isDemo) {
+        qc.setQueryData<{ goals: Goal[] }>(['goals', isDemo], (old) => ({
+          goals: (old?.goals || []).map(g => g.id === id ? { ...g, ...data } : g)
+        }))
+        return { goal: { ...data, id } as Goal }
+      }
+      return updateGoal(id, data)
+    },
+    onSuccess: () => {
+      if (!isDemo) qc.invalidateQueries({ queryKey: ['goals', isDemo] })
+      setEditingGoal(null)
+      toast.success('Goal updated')
+    },
+    onError: () => toast.error('Failed to update goal'),
+  })
+
+  const handleEditStart = useCallback((goal: Goal) => {
+    setEditingGoal(goal)
+    setEditForm({
+      title: goal.title,
+      description: goal.description || '',
+      metric: goal.metric,
+      targetValue: String(goal.targetValue),
+      currentValue: String(goal.currentValue),
+      period: goal.period,
+      endDate: goal.endDate || '',
+    })
+  }, [])
+
+  const handleEditSave = useCallback(() => {
+    if (!editingGoal || !editForm.title || !editForm.targetValue) {
+      toast.error('Title and target value are required')
+      return
+    }
+    updateMutation.mutate({
+      id: editingGoal.id,
+      data: {
+        title: editForm.title,
+        description: editForm.description || undefined,
+        metric: editForm.metric,
+        targetValue: parseFloat(editForm.targetValue),
+        currentValue: parseFloat(editForm.currentValue) || 0,
+        period: editForm.period,
+        endDate: editForm.endDate || undefined,
+      },
+    })
+  }, [editingGoal, editForm, updateMutation])
+
   const goals = data?.goals || []
   const active = goals.filter(g => !g.isCompleted)
   const completed = goals.filter(g => g.isCompleted)
@@ -342,7 +424,7 @@ export function GoalsPageClient() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {active.map(g => (
-                  <GoalCard key={g.id} goal={g} onDelete={id => deleteMutation.mutate(id)} />
+                  <GoalCard key={g.id} goal={g} onDelete={id => deleteMutation.mutate(id)} onEdit={handleEditStart} />
                 ))}
               </div>
             </div>
@@ -455,6 +537,104 @@ export function GoalsPageClient() {
             <Button variant="ghost" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
             <Button onClick={handleCreate} disabled={createMutation.isPending}>
               {createMutation.isPending ? 'Creating...' : 'Create Goal'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Goal Dialog */}
+      <Dialog open={!!editingGoal} onOpenChange={(open) => !open && setEditingGoal(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-black uppercase tracking-wider flex items-center gap-2">
+              <Pencil className="h-4 w-4 text-primary" />
+              Edit Goal
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Title</Label>
+              <Input
+                value={editForm.title}
+                onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}
+                placeholder="e.g. Achieve 60% win rate this month"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Description (optional)</Label>
+              <Textarea
+                value={editForm.description}
+                onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                placeholder="Additional context..."
+                className="min-h-[60px] resize-none"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Metric</Label>
+                <Select value={editForm.metric} onValueChange={v => setEditForm(f => ({ ...f, metric: v as GoalMetric }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(METRIC_LABELS).map(([k, v]) => {
+                      const ItemIcon = METRIC_ICONS[k as GoalMetric]
+                      return (
+                        <SelectItem key={k} value={k}>
+                          <span className="flex items-center gap-1.5">
+                            <ItemIcon className="h-3.5 w-3.5" />
+                            {v}
+                          </span>
+                        </SelectItem>
+                      )
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Period</Label>
+                <Select value={editForm.period} onValueChange={v => setEditForm(f => ({ ...f, period: v as GoalPeriod }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="all-time">All Time</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Target Value</Label>
+                <Input
+                  type="number"
+                  step="any"
+                  value={editForm.targetValue}
+                  onChange={e => setEditForm(f => ({ ...f, targetValue: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Current Value</Label>
+                <Input
+                  type="number"
+                  step="any"
+                  value={editForm.currentValue}
+                  onChange={e => setEditForm(f => ({ ...f, currentValue: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">End Date (optional)</Label>
+              <Input
+                type="date"
+                value={editForm.endDate}
+                onChange={e => setEditForm(f => ({ ...f, endDate: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditingGoal(null)}>Cancel</Button>
+            <Button onClick={handleEditSave} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -293,6 +293,50 @@ async function resolveDataContext(userId: string, chat: any) {
   return contextText
 }
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ chatId: string }> }
+) {
+  const identity = await getResolvedUserIdentitySafe()
+  if (!identity) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  const userId = identity.internalUserId
+  const { chatId } = await params
+
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const limit = parseInt(searchParams.get('limit') || '50', 10)
+    const skip = (page - 1) * limit
+
+    const chat = await prisma.aIChat.findFirst({
+      where: {
+        id: chatId,
+        userId,
+        isDeleted: false,
+      },
+    })
+
+    if (!chat) {
+      return NextResponse.json({ error: 'Chat not found' }, { status: 404 })
+    }
+
+    const messages = await prisma.aIChatMessage.findMany({
+      where: {
+        chatId,
+      },
+      orderBy: { createdAt: 'asc' },
+      skip,
+      take: limit,
+    })
+
+    return NextResponse.json({ success: true, data: messages })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 })
+  }
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ chatId: string }> }

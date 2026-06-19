@@ -146,10 +146,22 @@ export default async function proxy(request: NextRequest) {
       },
     })
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
+    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization')
+    let user = null
+    let authError = null
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.slice(7)
+      if (token.length > 0) {
+        const res = await supabase.auth.getUser(token)
+        user = res.data.user
+        authError = res.error
+      }
+    } else {
+      const res = await supabase.auth.getUser()
+      user = res.data.user
+      authError = res.error
+    }
 
     const isAuthenticated = !!user && !authError
 

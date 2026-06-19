@@ -659,23 +659,7 @@ export async function verifyOtp(email: string, token: string, type: 'email' | 's
 // Optimized function that uses middleware data when available
 export async function getUserId(): Promise<string> {
   try {
-    // First try to get user ID from middleware headers
     const headersList = await headers()
-    const userIdFromMiddleware = headersList.get('x-user-id')
-    const authStatus = headersList.get('x-user-authenticated')
-
-    if (userIdFromMiddleware && authStatus === "authenticated") {
-      return userIdFromMiddleware
-    }
-
-    // Check if middleware already detected auth failure
-    if (authStatus === "unauthenticated") {
-      const authError = headersList.get('x-auth-error')
-      if (authError && authError.includes("timeout")) {
-        throw new Error("Authentication service temporarily unavailable")
-      }
-      throw new Error("User not authenticated")
-    }
 
     // Support Authorization: Bearer token from mobile/CLI clients
     const authHeader = headersList.get('authorization') || headersList.get('Authorization')
@@ -697,6 +681,23 @@ export async function getUserId(): Promise<string> {
           }
         }
       }
+    }
+
+    // First try to get user ID from middleware headers
+    const userIdFromMiddleware = headersList.get('x-user-id')
+    const authStatus = headersList.get('x-user-authenticated')
+
+    if (userIdFromMiddleware && authStatus === "authenticated") {
+      return userIdFromMiddleware
+    }
+
+    // Check if middleware already detected auth failure
+    if (authStatus === "unauthenticated") {
+      const authError = headersList.get('x-auth-error')
+      if (authError && authError.includes("timeout")) {
+        throw new Error("Authentication service temporarily unavailable")
+      }
+      throw new Error("User not authenticated")
     }
   } catch (headerError) {
     // Headers not available, fallback to Supabase

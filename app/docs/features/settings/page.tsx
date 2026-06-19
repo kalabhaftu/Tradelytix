@@ -1,5 +1,4 @@
-import { Bot, Link2, Palette, User } from 'lucide-react'
-
+import { Bell, Bot, Globe, Link2, Palette, User } from 'lucide-react'
 import { DocsCardGrid, DocsInfoCard, DocsPage, DocsSection } from '@/components/docs/docs-page'
 
 export default function SettingsDocsPage() {
@@ -7,39 +6,71 @@ export default function SettingsDocsPage() {
     <DocsPage
       badge="Feature Guide"
       title="Settings"
-      description="Settings control profile information, display preferences, time-related behavior, linked accounts, AI preferences, and account-level actions."
+      description="Configure your profile, display preferences, time settings, linked accounts, AI features, and subscription."
     >
-      <DocsSection title="What you can configure">
-        <DocsCardGrid>
-          <DocsInfoCard
-            icon={User}
-            title="Profile"
-            description="Update first and last name, review your account email, and manage profile details through an explicit edit flow."
-          />
-          <DocsInfoCard
-            icon={Palette}
-            title="Preferences"
-            description="Theme, accent pack, timezone, time format, and break-even threshold all live in settings."
-          />
-          <DocsInfoCard
-            icon={Bot}
-            title="AI preferences"
-            description="Control whether AI review features are enabled for the parts of the product that support them."
-          />
-          <DocsInfoCard
-            icon={Link2}
-            title="Linked accounts and account actions"
-            description="Manage linked login providers, data management access, sign-out, and account deletion in one place."
-          />
-        </DocsCardGrid>
+      <DocsSection title="Profile">
+        <p>Manage your basic account information:</p>
+        <ul>
+          <li>Update first and last name</li>
+          <li>View your account email (managed through your auth provider)</li>
+          <li>Profile picture (if supported by auth provider)</li>
+        </ul>
       </DocsSection>
 
-      <DocsSection title="Layout notes">
-        <p>
-          The settings screen is organized as intentional sections instead of a brittle equal-height
-          two-column grid, so cards can grow naturally without leaving awkward dead space between
-          unrelated sections.
-        </p>
+      <DocsSection title="Preferences">
+        <ul>
+          <li><strong>Theme</strong> — Light, Dark, or System default</li>
+          <li><strong>Accent Pack</strong> — Choose from available accent color schemes</li>
+          <li><strong>Timezone</strong> — Set your local timezone for trade date grouping</li>
+          <li><strong>Time Format</strong> — 12-hour or 24-hour display</li>
+          <li><strong>Break-even Threshold</strong> — P&amp;L threshold (in currency units) below which a trade is considered break-even</li>
+          <li><strong>Starting Day of Week</strong> — Monday or Sunday as week start for reports</li>
+        </ul>
+      </DocsSection>
+
+      <DocsSection title="AI preferences">
+        <p>Control AI-powered features:</p>
+        <ul>
+          <li>Enable or disable AI review suggestions</li>
+          <li>Configure which AI provider to use (OpenAI or xAI)</li>
+          <li>Manage AI API keys if using a custom setup</li>
+        </ul>
+      </DocsSection>
+
+      <DocsSection title="Linked accounts">
+        <p>Manage authentication providers linked to your account:</p>
+        <ul>
+          <li>Link or unlink OAuth providers (Google, GitHub)</li>
+          <li>Manage email-based authentication</li>
+          <li>View connected broker sync accounts (Tradovate, Rithmic, etc.)</li>
+        </ul>
+      </DocsSection>
+
+      <DocsSection title="Notifications">
+        <p>Configure which notifications you receive:</p>
+        <ul>
+          <li>Prop-firm phase updates (passed, failed, funded)</li>
+          <li>Payout notifications</li>
+          <li>Import completion alerts</li>
+          <li>Weekly review reminders</li>
+          <li>Push notifications for mobile app</li>
+        </ul>
+      </DocsSection>
+
+      <DocsSection title="Subscription">
+        <p>Your Tradelytix subscription is managed in settings:</p>
+        <ul>
+          <li>View current plan and billing status</li>
+          <li>Payment history (crypto via NOWPayments)</li>
+          <li>Cancel subscription</li>
+        </ul>
+      </DocsSection>
+
+      <DocsSection title="Account actions">
+        <ul>
+          <li><strong>Sign Out</strong> — End current session</li>
+          <li><strong>Delete Account</strong> — Permanently delete your account and all associated data. This action is irreversible.</li>
+        </ul>
       </DocsSection>
     </DocsPage>
   )

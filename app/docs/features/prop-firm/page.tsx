@@ -1,43 +1,61 @@
 import { Building2, Flag, Shield, TrendingUp } from 'lucide-react'
-
-import { DocsCardGrid, DocsInfoCard, DocsPage, DocsSection } from '@/components/docs/docs-page'
+import { DocsCallout, DocsCardGrid, DocsInfoCard, DocsPage, DocsSection } from '@/components/docs/docs-page'
 
 export default function PropFirmDocsPage() {
   return (
     <DocsPage
       badge="Feature Guide"
       title="Prop Firm Tracking"
-      description="Tradelytix tracks prop-firm accounts at the master-account level so reporting reflects the real lifecycle of an evaluation instead of treating every historical phase like an active account."
+      description="Track prop-firm challenges, manage phase transitions, monitor drawdown limits, and log payouts — all within your existing dashboard and filter system."
     >
-      <DocsSection title="Tracking model">
-        <DocsCardGrid>
-          <DocsInfoCard
-            icon={Building2}
-            title="Master account centric"
-            description="Funded/prop-firm reporting is built around the current state of each master account, with phase history kept as supporting detail."
-          />
-          <DocsInfoCard
-            icon={Flag}
-            title="Lifecycle states"
-            description="Accounts resolve into meaningful states such as active, funded, failed, passed, or pending approval based on the current tradable phase."
-          />
-        </DocsCardGrid>
+      <DocsSection title="How prop-firm tracking works">
+        <p>Prop-firm accounts are organized around <strong>master accounts</strong>. Each master account represents one prop-firm challenge (e.g., FTMO 2-phase $100k). Within a master account, you track individual phases as they progress.</p>
       </DocsSection>
 
-      <DocsSection title="Performance interpretation">
-        <DocsCardGrid>
-          <DocsInfoCard
-            icon={TrendingUp}
-            title="Challenge progress"
-            description="Profit-target progress for challenge-style tracking is based on gross progress, while realized performance views can still show net values where appropriate."
-          />
-          <DocsInfoCard
-            icon={Shield}
-            title="Rule awareness"
-            description="Prop-firm pages are built to help users reason about status, phases, drawdown context, and account progression without mixing historical passed phases into active-account counts."
-          />
-        </DocsCardGrid>
+      <DocsSection title="Account lifecycle states">
+        <ul>
+          <li><strong>Active</strong> — Currently trading a challenge phase</li>
+          <li><strong>Passed</strong> — Successfully completed a phase</li>
+          <li><strong>Funded</strong> — Passed all phases and received funding</li>
+          <li><strong>Failed</strong> — Breached a rule and the challenge is over</li>
+          <li><strong>Pending Approval</strong> — Awaiting verification after passing</li>
+        </ul>
       </DocsSection>
+
+      <DocsSection title="Phase objectives">
+        <p>Each phase can have configurable objectives:</p>
+        <ul>
+          <li><strong>Profit Target</strong> — Gross profit goal (e.g., 10% of starting capital)</li>
+          <li><strong>Max Drawdown</strong> — Maximum allowed equity drawdown (e.g., 5% or 10%)</li>
+          <li><strong>Daily Loss Limit</strong> — Maximum loss allowed in a single trading day</li>
+          <li><strong>Minimum Trading Days</strong> — Minimum number of days required before passing</li>
+          <li><strong>Profit Target Split</strong> — For 2-phase challenges, tracking targets per phase</li>
+        </ul>
+      </DocsSection>
+
+      <DocsSection title="Managing prop-firm accounts">
+        <ol>
+          <li>Go to <strong>Accounts → Prop Firm</strong> to view your master accounts</li>
+          <li>Click <strong>Add Account</strong> to create a new challenge tracker</li>
+          <li>Configure phase objectives based on your prop firm's rules</li>
+          <li>Import or enter trades against the appropriate phase account</li>
+          <li>Track progress through the prop-firm dashboard widgets</li>
+        </ol>
+      </DocsSection>
+
+      <DocsSection title="Prop-firm widgets">
+        <p>Dashboard widgets available for prop-firm tracking:</p>
+        <ul>
+          <li><strong>Challenge Progress</strong> — Visual progress toward profit target with drawdown indicator</li>
+          <li><strong>Phase Timeline</strong> — History of phase transitions</li>
+          <li><strong>Payout Tracker</strong> — Log and track received payouts</li>
+          <li><strong>Rule Compliance</strong> — Summary of whether current trading stays within challenge rules</li>
+        </ul>
+      </DocsSection>
+
+      <DocsCallout title="Important" tone="warning">
+        Profit-target progress uses gross progress (sum of winning trades) rather than net P&amp;L. This matches how most prop firms calculate challenge completion. Your dashboard realized P&amp;L may differ from challenge progress.
+      </DocsCallout>
     </DocsPage>
   )
 }

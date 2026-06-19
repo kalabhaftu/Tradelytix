@@ -6,12 +6,20 @@ import { usePathname } from 'next/navigation'
 import Fuse from 'fuse.js'
 import {
   BookOpenText,
+  Bot,
+  CalendarDays,
   ChevronRight,
   Code,
+  Download,
   FileText,
+  FlaskConical,
+  GanttChartSquare,
+  Goal,
   List,
+  NotebookPen,
   Rocket,
   Search,
+  Smartphone,
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -23,6 +31,7 @@ import { cn } from '@/lib/utils'
 type DocsNavItem = {
   title: string
   href: string
+  description?: string
   subsections?: Array<{
     title: string
     href: string
@@ -40,27 +49,34 @@ const docsNavigation: DocsNavSection[] = [
     title: 'Getting Started',
     icon: Rocket,
     items: [
-      { title: 'Introduction', href: '/docs' },
-      { title: 'Quick Start', href: '/docs/getting-started' },
-      { title: 'Application Flow', href: '/docs/features/app-flow' },
+      { title: 'Introduction', href: '/docs', description: 'Overview of Tradelytix web and mobile' },
+      { title: 'Quick Start Guide', href: '/docs/getting-started', description: 'Step-by-step setup tutorial' },
+      { title: 'Application Flow', href: '/docs/features/app-flow', description: 'How pages, auth, and navigation connect' },
     ],
   },
   {
     title: 'Features',
     icon: BookOpenText,
     items: [
-      { title: 'Trade Import', href: '/docs/features/importing' },
-      { title: 'Dashboard', href: '/docs/features/dashboard' },
-      { title: 'Prop Firm Tracking', href: '/docs/features/prop-firm' },
-      { title: 'Journal & Notes', href: '/docs/features/journal' },
-      { title: 'Trade Table', href: '/docs/features/trade-table' },
-      { title: 'Accounts', href: '/docs/features/accounts' },
-      { title: 'Playbook & Models', href: '/docs/features/playbook' },
-      { title: 'Backtesting', href: '/docs/features/backtesting' },
-      { title: 'Widget Customization', href: '/docs/features/widgets' },
-      { title: 'Data Management', href: '/docs/features/data-management' },
-      { title: 'Settings', href: '/docs/features/settings' },
-      { title: 'Keyboard Shortcuts', href: '/docs/features/shortcuts' },
+      { title: 'Trade Import', href: '/docs/features/importing', description: 'Import trades from brokers and files' },
+      { title: 'Dashboard', href: '/docs/features/dashboard', description: 'KPI cards, widgets, filters, templates' },
+      { title: 'Prop Firm Tracking', href: '/docs/features/prop-firm', description: 'Challenge lifecycle and phase management' },
+      { title: 'Journal & Notes', href: '/docs/features/journal', description: 'Daily journal, trade notes, screenshots' },
+      { title: 'Trade Table', href: '/docs/features/trade-table', description: 'Detailed trade record view and editing' },
+      { title: 'Accounts', href: '/docs/features/accounts', description: 'Live and prop-firm account management' },
+      { title: 'Playbook & Models', href: '/docs/features/playbook', description: 'Setup library and strategy rules' },
+      { title: 'Backtesting', href: '/docs/features/backtesting', description: 'Strategy simulation and review' },
+      { title: 'AI Chat', href: '/docs/features/ai-chat', description: 'AI-powered performance analysis' },
+      { title: 'Reports & Sharing', href: '/docs/features/reports', description: 'Advanced analytics and public reports' },
+      { title: 'Widget Customization', href: '/docs/features/widgets', description: 'Dashboard layout and templates' },
+      { title: 'Notifications', href: '/docs/features/notifications', description: 'Real-time alerts and push notifications' },
+      { title: 'Weekly Review', href: '/docs/features/weekly-review', description: 'Weekly performance summary' },
+      { title: 'Goals', href: '/docs/features/goals', description: 'Set and track trading goals' },
+      { title: 'Demo Mode', href: '/docs/features/demo', description: 'Explore the app with sample data' },
+      { title: 'Data Management', href: '/docs/features/data-management', description: 'Account and trade maintenance' },
+      { title: 'Data Export', href: '/docs/features/data-export', description: 'Export trades, reports, and analytics' },
+      { title: 'Settings', href: '/docs/features/settings', description: 'Profile, preferences, linked accounts' },
+      { title: 'Keyboard Shortcuts', href: '/docs/features/shortcuts', description: 'Command palette and hotkeys' },
     ],
   },
   {
@@ -70,30 +86,32 @@ const docsNavigation: DocsNavSection[] = [
       {
         title: 'FAQ & Troubleshooting',
         href: '/docs/faq',
+        description: 'Common questions and solutions',
         subsections: [
           { title: 'Is Tradelytix free?', href: '/docs/faq#is-tradelytix-free' },
-          { title: 'What can I import?', href: '/docs/faq#what-can-i-import' },
+          { title: 'How do I import trades?', href: '/docs/faq#how-do-i-import-trades' },
+          { title: 'What data formats are supported?', href: '/docs/faq#what-data-formats-are-supported' },
+          { title: 'Is there a mobile app?', href: '/docs/faq#is-there-a-mobile-app' },
           { title: 'Where is my data stored?', href: '/docs/faq#where-is-my-data-stored' },
           { title: 'Why does the dashboard look empty?', href: '/docs/faq#why-does-the-dashboard-look-empty' },
+          { title: 'How do I cancel my subscription?', href: '/docs/faq#how-do-i-cancel-my-subscription' },
         ],
       },
-      { title: 'Feedback Guide', href: '/docs/feedback' },
-      { title: 'Support the Project', href: '/docs/donate' },
+      { title: 'Feedback Guide', href: '/docs/feedback', description: 'Report bugs and request features' },
+      { title: 'Support the Project', href: '/docs/donate', description: 'Donation and contribution options' },
     ],
   },
   {
     title: 'For Developers',
     icon: Code,
     items: [
-      { title: 'Tech Stack', href: '/docs/for-developers/tech-stack' },
-      { title: 'Frontend Guidelines', href: '/docs/for-developers/frontend' },
-      { title: 'Backend Structure', href: '/docs/for-developers/backend' },
-      { title: 'Architecture', href: '/docs/for-developers/architecture' },
-      { title: 'Data Model Principles', href: '/docs/for-developers/database' },
-      { title: 'Prisma Optimization', href: '/docs/for-developers/prisma-optimization' },
-      { title: 'Performance Baseline', href: '/docs/for-developers/performance-baseline' },
-      { title: 'TradeZella Comparison', href: '/docs/for-developers/tradezella-comparison' },
-      { title: 'Architecture Divergences', href: '/docs/for-developers/architecture-divergences' },
+      { title: 'Tech Stack', href: '/docs/for-developers/tech-stack', description: 'Technologies used across the platform' },
+      { title: 'Frontend Guidelines', href: '/docs/for-developers/frontend', description: 'UI patterns and conventions' },
+      { title: 'Backend Structure', href: '/docs/for-developers/backend', description: 'API and server architecture' },
+      { title: 'Architecture', href: '/docs/for-developers/architecture', description: 'System organization and boundaries' },
+      { title: 'Data Model Principles', href: '/docs/for-developers/database', description: 'Core data domains and rules' },
+      { title: 'Prisma Optimization', href: '/docs/for-developers/prisma-optimization', description: 'Database query performance' },
+      { title: 'Performance Baseline', href: '/docs/for-developers/performance-baseline', description: 'Performance targets and approach' },
     ],
   },
 ]
@@ -106,6 +124,7 @@ const searchablePages = docsNavigation.flatMap((section) =>
         href: item.href,
         section: section.title,
         parentTitle: null as string | null,
+        description: item.description ?? '',
       },
     ]
 
@@ -119,15 +138,22 @@ const searchablePages = docsNavigation.flatMap((section) =>
         href: subsection.href,
         section: section.title,
         parentTitle: item.title,
+        description: item.description ?? '',
       }))
     )
   })
 )
 
 const docsSearch = new Fuse(searchablePages, {
-  keys: ['title', 'section', 'parentTitle'],
-  threshold: 0.34,
+  keys: [
+    { name: 'title', weight: 2 },
+    { name: 'description', weight: 1 },
+    { name: 'section', weight: 1 },
+    { name: 'parentTitle', weight: 1 },
+  ],
+  threshold: 0.3,
   ignoreLocation: true,
+  minMatchCharLength: 2,
 })
 
 function normalizeHref(href: string) {
@@ -209,6 +235,8 @@ function DocsSearchPanel({
   setSearchQuery: (value: string) => void
   searchResults: Array<{ title: string; href: string; section: string; parentTitle: string | null }>
 }) {
+  const showResults = searchQuery.trim().length >= 2
+
   return (
     <div className="relative">
       <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -219,31 +247,50 @@ function DocsSearchPanel({
         className="h-10 rounded-2xl border-border/70 bg-background pl-9 text-sm shadow-none"
       />
 
-      {searchResults.length > 0 && (
+      {showResults && (
         <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border bg-popover shadow-2xl">
           <div className="max-h-[22rem] overflow-y-auto p-2">
-            {searchResults.map((result) => (
-              <Link
-                key={result.href}
-                href={result.href}
-                className="flex items-start justify-between gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-accent/60"
-                onClick={() => setSearchQuery('')}
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">
-                    {result.parentTitle ? `${result.parentTitle} / ` : ''}
-                    {result.title}
-                  </p>
-                  <p className="truncate text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                    {result.section}
-                  </p>
-                </div>
-                <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              </Link>
-            ))}
+            {searchResults.length > 0 ? (
+              searchResults.map((result) => (
+                <Link
+                  key={result.href}
+                  href={result.href}
+                  className="flex items-start justify-between gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-accent/60"
+                  onClick={() => setSearchQuery('')}
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">
+                      {result.parentTitle ? `${result.parentTitle} / ` : ''}
+                      {result.title}
+                    </p>
+                    <p className="truncate text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                      {result.section}
+                    </p>
+                  </div>
+                  <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                </Link>
+              ))
+            ) : (
+              <p className="px-3 py-4 text-center text-sm text-muted-foreground">
+                No results found for &quot;{searchQuery.trim()}&quot;
+              </p>
+            )}
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function OpenSourceNotice() {
+  return (
+    <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-400/90">
+        Status Change
+      </p>
+      <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
+        Tradelytix was open source until June 19, 2026. The project is now proprietary.
+      </p>
     </div>
   )
 }
@@ -254,7 +301,7 @@ export function DocsLayoutClient({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) {
+    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
       return []
     }
 
@@ -267,10 +314,10 @@ export function DocsLayoutClient({ children }: { children: ReactNode }) {
   }, [pathname])
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:py-8">
-      <div className="grid min-h-[calc(100vh-5.5rem)] grid-cols-1 items-start gap-6 md:grid-cols-[19rem_minmax(0,1fr)] xl:grid-cols-[20rem_minmax(0,1fr)]">
+    <div className="mx-auto max-w-[1600px] px-4 sm:px-6">
+      <div className="grid min-h-[calc(100dvh-3.5rem)] grid-cols-1 items-start gap-6 md:grid-cols-[19rem_minmax(0,1fr)] xl:grid-cols-[20rem_minmax(0,1fr)]">
         <aside className="hidden md:block">
-          <div className="sticky top-[4.75rem] h-[calc(100dvh-5.5rem)]">
+          <div className="sticky top-[3.5rem] h-[calc(100dvh-3.5rem)]">
             <div className="flex h-full flex-col rounded-[1.75rem] border border-border/70 bg-card/60 shadow-[0_18px_60px_-34px_rgba(0,0,0,0.42)] backdrop-blur-sm">
               <div className="border-b border-border/70 px-4 py-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
@@ -279,7 +326,7 @@ export function DocsLayoutClient({ children }: { children: ReactNode }) {
                       Documentation
                     </p>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Product guides, feature references, and safe developer notes.
+                      Web &amp; Mobile guides, feature references, and developer notes.
                     </p>
                   </div>
                   <Badge variant="outline" className="hidden rounded-full px-2.5 text-[10px] font-bold uppercase tracking-[0.18em] lg:inline-flex">
@@ -291,6 +338,9 @@ export function DocsLayoutClient({ children }: { children: ReactNode }) {
                   setSearchQuery={setSearchQuery}
                   searchResults={searchResults}
                 />
+                <div className="mt-3">
+                  <OpenSourceNotice />
+                </div>
               </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
@@ -300,7 +350,7 @@ export function DocsLayoutClient({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        <main className="min-w-0">
+        <main className="min-w-0 py-6 lg:py-8">
           <div className="mb-4 flex items-center justify-between gap-3 md:hidden">
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -324,6 +374,9 @@ export function DocsLayoutClient({ children }: { children: ReactNode }) {
                         setSearchQuery={setSearchQuery}
                         searchResults={searchResults}
                       />
+                    </div>
+                    <div className="mt-3">
+                      <OpenSourceNotice />
                     </div>
                   </div>
                   <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">

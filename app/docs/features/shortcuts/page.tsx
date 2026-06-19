@@ -1,5 +1,4 @@
 import { Keyboard, Search, Sparkles } from 'lucide-react'
-
 import { DocsCardGrid, DocsInfoCard, DocsPage, DocsSection } from '@/components/docs/docs-page'
 
 export default function ShortcutsDocsPage() {
@@ -7,27 +6,28 @@ export default function ShortcutsDocsPage() {
     <DocsPage
       badge="Feature Guide"
       title="Keyboard Shortcuts"
-      description="The fastest navigation tool in the dashboard is the command palette, which centralizes navigation and actions such as opening quick add."
+      description="The command palette is the fastest way to navigate and trigger actions in the dashboard."
     >
-      <DocsSection title="Primary shortcut">
-        <DocsCardGrid>
-          <DocsInfoCard
-            icon={Search}
-            title="Command palette"
-            description="Use Ctrl/Cmd + K to open the command palette and jump to pages or trigger shell actions."
-            items={['Navigation shortcuts live in one searchable place', 'Add New Trade launches the shared quick-add dialog', 'Palette behavior matches desktop shell conventions']}
-          />
-          <DocsInfoCard
-            icon={Keyboard}
-            title="Modal behavior"
-            description="Dialogs, sheets, and popovers are designed to stay keyboard accessible with standard escape-to-close behavior where appropriate."
-          />
-          <DocsInfoCard
-            icon={Sparkles}
-            title="Use shortcuts for speed, not discovery"
-            description="Shortcuts are best treated as a layer on top of the visible UI rather than the only way to reach core product actions."
-          />
-        </DocsCardGrid>
+      <DocsSection title="Command palette">
+        <p>Press <strong>Ctrl/Cmd + K</strong> to open the command palette. From there you can:</p>
+        <ul>
+          <li>Search and navigate to any dashboard page</li>
+          <li>Trigger actions like "Add New Trade" or "Import Data"</li>
+          <li>Quick-access recently visited pages</li>
+          <li>Run shell commands</li>
+        </ul>
+      </DocsSection>
+
+      <DocsSection title="Other shortcuts">
+        <ul>
+          <li><strong>Escape</strong> — Close dialogs, sheets, popovers, and modals</li>
+          <li><strong>Enter</strong> — Confirm current action in dialog</li>
+          <li><strong>Arrow keys</strong> — Navigate within tables and lists</li>
+        </ul>
+      </DocsSection>
+
+      <DocsSection title="Modal behavior">
+        <p>All dialogs, sheets, and popovers are keyboard accessible. Focus is managed automatically — when a modal opens, focus moves to the first interactive element. Escape always closes the active modal.</p>
       </DocsSection>
     </DocsPage>
   )

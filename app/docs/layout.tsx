@@ -15,7 +15,6 @@ export default async function DocsLayout({ children }: { children: ReactNode }) 
         navItems={filterSupportNavItems([
           { href: '/docs', label: 'Docs' },
           { href: '/feedback', label: 'Feedback' },
-          { href: '/donate', label: 'Donate' },
         ], siteUiSettings)}
         containerClassName="max-w-[1600px]"
       />

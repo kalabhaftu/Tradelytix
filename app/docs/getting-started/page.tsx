@@ -1,70 +1,192 @@
-import { CheckCircle2, Import, LayoutDashboard, Settings, BookOpenText, Filter } from 'lucide-react'
-
+import { CheckCircle2, Import, LayoutDashboard, Settings, Smartphone } from 'lucide-react'
 import { DocsCallout, DocsCardGrid, DocsInfoCard, DocsPage, DocsSection } from '@/components/docs/docs-page'
 
 export default function GettingStartedDocsPage() {
   return (
     <DocsPage
       badge="Getting Started"
-      title="Quick Start"
-      description="This guide walks through the first setup that matters: signing in, importing trades, checking filters, and confirming that your dashboard is reading the right data."
+      title="Getting Started with Tradelytix"
+      description="A complete walkthrough from signup to your first trade review — covering the web dashboard and mobile app."
     >
-      <DocsSection title="1. Sign in and reach the app shell">
+      <DocsSection title="1. Create your account">
         <p>
-          Sign in from the home page and let the app restore your session into the dashboard. If you
-          install the app as a PWA, reopening it should return you to the app flow instead of leaving
-          you at the public landing page.
+          Navigate to the Tradelytix landing page and click <strong>Sign In</strong>. You can sign up
+          using either an email magic link or an OAuth provider (Google, GitHub, or Discord).
+        </p>
+        <DocsCardGrid>
+          <DocsInfoCard
+            icon={CheckCircle2}
+            title="Email magic link"
+            description="Enter your email address and click Continue. A one-time sign-in link is sent to your inbox — no password required. Click the link and your session starts immediately."
+            items={['Check spam if the email does not arrive within 60 seconds', 'The link expires after 15 minutes; request a new one if needed', 'No password to remember or reset']}
+          />
+          <DocsInfoCard
+            icon={CheckCircle2}
+            title="OAuth sign-up"
+            description="Choose Google, GitHub, or Discord from the sign-in page. You are redirected to the provider, asked to consent, and returned to Tradelytix with an active session."
+            items={['Uses your existing provider account', 'No additional credentials to manage', 'Profile info (name, avatar) syncs from the provider']}
+          />
+        </DocsCardGrid>
+        <p>
+          After your first sign-in a workspace is provisioned automatically. You land on the dashboard
+          shell — your starting point for all trading analytics.
         </p>
       </DocsSection>
 
-      <DocsSection title="2. Import your first data">
+      <DocsSection title="2. Choose a subscription plan">
+        <p>
+          Tradelytix is a paid platform at <strong>$10/month</strong> (billed via cryptocurrency). The
+          subscription grants full access to every feature including trade import, dashboard widgets,
+          journaling, prop-firm tracking, AI chat, backtesting, playbook, and reports.
+        </p>
+        <DocsCardGrid>
+          <DocsInfoCard
+            icon={Settings}
+            title="How to subscribe"
+            description="Go to Settings → Subscription. Select the monthly plan, choose your preferred crypto payment method, and complete the transaction on the payment screen."
+            items={['Supported cryptocurrencies are listed at checkout', 'The subscription activates immediately after confirmation', 'Your workspace remains active as long as the subscription is current']}
+          />
+          <DocsInfoCard
+            icon={CheckCircle2}
+            title="Grace period & lapses"
+            description="If a subscription payment lapses, you have a 7-day grace period to renew before data access is restricted. No data is ever deleted."
+            items={['You can re-subscribe at any time to restore access', 'Historical data is preserved during lapses', 'Contact support via the feedback page for billing issues']}
+          />
+        </DocsCardGrid>
+      </DocsSection>
+
+      <DocsSection title="3. Import your first trades">
+        <p>
+          The import flow ingests trade data from multiple sources. Open the import dialog from the
+          dashboard navbar or by pressing <kbd>Cmd+I</kbd> (<kbd>Ctrl+I</kbd> on Windows).
+        </p>
         <DocsCardGrid>
           <DocsInfoCard
             icon={Import}
-            title="Import trades"
-            description="Use the import flow from the dashboard navbar to upload a broker export or supported trade file."
-            items={['Review mapped values before saving', 'Confirm the destination account', 'Use the data page later for account/trade maintenance']}
+            title="CSV import"
+            description="Download a broker export as CSV and upload it directly. A mapping preview lets you verify columns before saving."
+            items={['Supported brokers include TradeZella, Edgewonk, and generic CSV formats', 'Map your columns to Tradelytix fields in the preview step', 'Choose an existing account or create a new one during import']}
           />
           <DocsInfoCard
-            icon={Filter}
-            title="Check account filters"
-            description="Make sure the selected account set matches what you expect before judging dashboard or report totals."
-            items={['Account filters affect dashboard, reports, and journal views', 'Grouped trade counts are the canonical “Trades” value', 'Changing account filters updates visible performance totals']}
+            icon={Import}
+            title="Webhooks & sync sources"
+            description="For live syncing, configure a TradingView webhook or connect a Tradovate, DxFeed, Rithmic, Thor, Match-Trader, or Exness account."
+            items={['TradingView webhooks: copy the webhook URL from Settings → Integrations', 'Tradovate: authenticate via OAuth and select the accounts to sync', 'DxFeed, Rithmic, Thor, Match-Trader, Exness: enter your API credentials in Settings → Data Sources']}
           />
         </DocsCardGrid>
+        <p>
+          After the import completes, review the parsed trades on the confirmation screen. Verify row
+          counts, date ranges, and assigned accounts before finalizing. Imported trades appear
+          immediately in the dashboard, trade table, and journal.
+        </p>
       </DocsSection>
 
-      <DocsSection title="3. Review the dashboard">
+      <DocsSection title="4. Review the dashboard">
+        <p>
+          The dashboard is your performance command center. It aggregates all imported trades into KPI
+          cards, charts, and a calendar overview — all scoped by your active filters.
+        </p>
         <DocsCardGrid>
           <DocsInfoCard
             icon={LayoutDashboard}
-            title="Start with KPIs and charts"
-            description="The dashboard is the main performance review space, with responsive KPI rows, charts, and calendars."
-            items={['KPI cards summarize current filtered performance', 'Widgets share the active filter scope', 'Templates let you keep multiple dashboard arrangements']}
+            title="KPI cards & widgets"
+            description="The top row shows key metrics: total trades, win rate, profit factor, average RR, net P&L, and Sharpe ratio. Below the KPIs, widget panels display equity curves, daily P&L bars, trade distribution, and more."
+            items={['KPI values update automatically as you change filters', 'Widgets can be added, removed, resized, and rearranged', 'Dashboard templates let you save multiple layouts for different review modes']}
           />
           <DocsInfoCard
-            icon={BookOpenText}
-            title="Open journal and trade review"
-            description="Use the journal and trade table after import to confirm screenshots, notes, and grouped trades look correct."
-            items={['Journal cards reflect saved preview crops', 'Trade editing keeps notes/images visible while saving', 'Daily review flows connect through the calendar']}
+            icon={LayoutDashboard}
+            title="Filters & date range"
+            description="Use the filter bar to scope data by account, date range, symbol, strategy, and tags. All dashboard components respond to the active filter set."
+            items={['Date presets: Today, This Week, This Month, This Quarter, This Year, All Time', 'Account filters default to all accounts; toggle individual accounts on/off', 'Saved filter presets are available for quick switching']}
           />
         </DocsCardGrid>
       </DocsSection>
 
-      <DocsSection title="4. Set your preferences">
+      <DocsSection title="5. Set your preferences">
         <p>
-          Visit settings to review timezone, time format, theme, break-even threshold, linked
-          accounts, and profile details. These values affect how data is grouped and how outcomes are
-          classified across the app.
+          Visit <strong>Settings</strong> from the sidebar to configure how Tradelytix displays and
+          processes your data. These settings persist across sessions and devices.
         </p>
+        <DocsCardGrid>
+          <DocsInfoCard
+            icon={Settings}
+            title="Profile & display"
+            description="Set your timezone, date and time format, and theme (light, dark, or system). The timezone affects how trades are grouped into trading days."
+            items={['Timezone defaults to browser detection; override for consistent day boundaries', 'Theme applies to both web and mobile after sync', 'Display name and avatar sync from your OAuth provider or can be set manually']}
+          />
+          <DocsInfoCard
+            icon={Settings}
+            title="Trading defaults"
+            description="Configure the break-even threshold (used to classify trades as winners, losers, or break-even) and default account settings."
+            items={['Break-even threshold: trades within ±X% or ±X ticks of zero are classified as break-even', 'Default commission and fee rates apply to imported trades that lack cost data', 'Linked accounts connect Tradovate and other sync sources']}
+          />
+        </DocsCardGrid>
+      </DocsSection>
+
+      <DocsSection title="6. Set up the mobile app">
+        <p>
+          Tradelytix offers a companion mobile app built with Flutter, available on both Android and
+          iOS. It syncs with your web account in real time.
+        </p>
+        <DocsCardGrid>
+          <DocsInfoCard
+            icon={Smartphone}
+            title="Download & sign in"
+            description="Download Tradelytix from the Google Play Store or Apple App Store. Open the app and sign in using the same email magic link or OAuth provider you used on the web."
+            items={['No separate registration — your web account works directly', 'After sign-in, the app loads your dashboard, trades, journal, and challenges', 'Push notifications are enabled by default for trade alerts']}
+          />
+          <DocsInfoCard
+            icon={Smartphone}
+            title="Mobile navigation"
+            description="The mobile app uses bottom tab navigation: Dashboard, Trades, Journal, Challenges, and More. All data is synced from the same Supabase backend."
+            items={['Dashboard tab: KPI summary and charts optimized for mobile', 'Trades tab: searchable trade list with filters', 'Journal tab: voice-to-text journaling and day review', 'Challenges tab: prop-firm challenge tracking', 'More tab: settings, AI chat, and support']}
+          />
+        </DocsCardGrid>
+      </DocsSection>
+
+      <DocsSection title="7. Next steps">
+        <p>
+          With trades imported and both platforms set up, explore the deeper features that Tradelytix
+          offers for trade analysis and improvement.
+        </p>
+        <DocsCardGrid>
+          <DocsInfoCard
+            icon={CheckCircle2}
+            title="Journal & trade review"
+            description="Open the journal to add notes and screenshots to each trading day. Use the calendar to navigate between days and review individual trades."
+            items={['Attach screenshots with automatic cropping', 'Tag trades with custom labels for later filtering', 'Voice-to-text journaling available on mobile']}
+          />
+          <DocsInfoCard
+            icon={CheckCircle2}
+            title="Prop-firm challenges"
+            description="Track prop-firm challenge progress: set up challenge accounts, monitor rule compliance (profit targets, drawdown limits, trading days), and manage payouts."
+            items={['Configure challenge rules per firm', 'Live tracking of profit targets and max drawdown', 'Phase transition logging (simulated → funded → payout)']}
+          />
+          <DocsInfoCard
+            icon={CheckCircle2}
+            title="AI chat & insights"
+            description="Chat with the AI assistant to analyze your trading data. Ask questions like 'What is my win rate this month?' or 'Show me my worst trades by R multiple.'"
+            items={['Natural language queries over your trade data', 'Risk audits and strategy performance reviews', 'Pattern detection for common mistakes']}
+          />
+          <DocsInfoCard
+            icon={CheckCircle2}
+            title="Reports & backtesting"
+            description="Generate detailed analytics reports with chart views and shareable links. Use the backtesting module to test strategies against historical trade data."
+            items={['Export reports as PDF or share via public link', 'Backtesting supports custom entry/exit rules', 'Playbook builder for documenting and reusing trade setups']}
+          />
+        </DocsCardGrid>
       </DocsSection>
 
       <DocsCallout title="First-run checklist" tone="success">
         <ul>
-          <li>Sign in and confirm you land in the dashboard.</li>
-          <li>Import at least one account or trade file.</li>
-          <li>Check active account filters before comparing totals.</li>
-          <li>Open journal, reports, and settings once so your core flows are verified.</li>
+          <li>Sign in with email magic link or OAuth and confirm you reach the dashboard.</li>
+          <li>Complete the subscription payment in Settings → Subscription.</li>
+          <li>Import at least one set of trades via CSV, webhook, or sync source.</li>
+          <li>Verify KPI cards and widgets reflect your imported data.</li>
+          <li>Set your timezone, theme, and break-even threshold in Settings.</li>
+          <li>Download and sign in to the mobile app on your phone.</li>
+          <li>Open the journal and add a note to your first trading day.</li>
+          <li>Explore one bonus feature: AI chat, prop-firm tracking, or backtesting.</li>
         </ul>
       </DocsCallout>
     </DocsPage>

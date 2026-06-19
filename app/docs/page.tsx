@@ -1,17 +1,4 @@
-import {
-  Activity,
-  ArrowRight,
-  BookOpen,
-  Database,
-  FlaskConical,
-  LayoutDashboard,
-  MessageSquare,
-  Settings,
-  Shield,
-  Target,
-  Upload,
-  Users,
-} from 'lucide-react'
+import { BookOpenText, LayoutDashboard, Smartphone, Upload } from 'lucide-react'
 
 import {
   DocsCardGrid,
@@ -26,126 +13,128 @@ export default function DocsHome() {
     <DocsPage
       badge="Documentation"
       title="Tradelytix Knowledge Base"
-      description="Use these guides to get started, understand the product surface, and navigate the parts of Tradelytix you actually use day to day."
+      description="Complete guides for the Tradelytix trading analytics platform — covering the web dashboard and the companion mobile app for Android and iOS."
     >
       <DocsSection
         title="Start here"
-        description="If you are new to the app, begin with the onboarding path below before diving into feature-specific references."
+        description="New to Tradelytix? Begin with the onboarding path below."
       >
         <DocsLinkList
           links={[
             {
               href: '/docs/getting-started',
-              label: 'Quick Start',
-              description: 'Sign in, import data, review your dashboard, and verify your first setup.',
+              label: 'Quick Start Guide',
+              description: 'Sign up, import your first trades, configure your dashboard, and set up the mobile app — all in one walkthrough.',
             },
             {
               href: '/docs/features/app-flow',
               label: 'Application Flow',
-              description: 'Understand how public pages, auth, dashboard pages, and support flows connect.',
+              description: 'Understand how the web dashboard, mobile app, authentication, and support pages connect.',
             },
             {
               href: '/docs/faq',
               label: 'FAQ & Troubleshooting',
-              description: 'Find the current answers for common product questions and support issues.',
-            },
-            {
-              href: '/docs/feedback',
-              label: 'Feedback Guide',
-              description: 'See the fastest way to report bugs, request features, or send product notes.',
+              description: 'Browse common questions about pricing, data, imports, account management, and mobile sync.',
             },
           ]}
         />
       </DocsSection>
 
       <DocsSection
-        title="Core product areas"
-        description="These pages reflect the current dashboard shell and the tools available inside the authenticated app."
+        title="Platforms"
+        description="Tradelytix is available on web and mobile. Both platforms share the same backend and data."
       >
-        <DocsCardGrid className="lg:grid-cols-3">
-          <DocsInfoCard
-            icon={Upload}
-            title="Trade import"
-            description="Bring trades in, review parsing results, and keep account history current."
-            items={['Upload broker exports or supported trade files', 'Review parsing before committing changes', 'Use the data page for account and trade maintenance']}
-          />
+        <DocsCardGrid>
           <DocsInfoCard
             icon={LayoutDashboard}
-            title="Dashboard and widgets"
-            description="Track performance through KPI cards, charts, templates, filters, and calendar views."
-            items={['Responsive KPI layouts', 'Filter-aware widgets and reports', 'Edit mode, templates, and widget customization']}
+            title="Web Dashboard"
+            description="The full-featured web application built with Next.js. Access all analytics, journaling, prop-firm tracking, backtesting, AI chat, reports, and settings from any browser."
+            items={['Desktop-first responsive design', 'PWA installable for offline support', 'Real-time updates via Supabase', 'All features available']}
           />
           <DocsInfoCard
-            icon={BookOpen}
-            title="Journal and trade review"
-            description="Annotate trading days, add notes and screenshots, and review trades in context."
-            items={['Daily journal flow', 'Trade notes and image previews', 'Calendar-to-day review modal']}
-          />
-          <DocsInfoCard
-            icon={Users}
-            title="Accounts"
-            description="Manage live and prop-firm accounts with filter-aware reporting and current lifecycle states."
-            items={['Live account tracking', 'Prop-firm master account progress', 'Account filters across dashboard and reports']}
-          />
-          <DocsInfoCard
-            icon={Target}
-            title="Playbook and backtesting"
-            description="Keep a structured library of setups, models, and simulated review work."
-            items={['Setup and rule organization', 'Backtesting workflow', 'Strategy-oriented review notes']}
-          />
-          <DocsInfoCard
-            icon={Settings}
-            title="Settings and data"
-            description="Adjust profile, time, theme, linked accounts, AI preferences, and account data tooling."
-            items={['Profile and account preferences', 'Theme and time controls', 'Linked accounts and data management']}
+            icon={Smartphone}
+            title="Mobile App (Android & iOS)"
+            description="Native Flutter app for on-the-go trade review. Syncs with your web account automatically."
+            items={['Dashboard, trades, journal, and prop-firm views', 'Push notifications for alerts and reminders', 'Speech-to-text journaling', 'Available on Android and iOS via app stores']}
           />
         </DocsCardGrid>
       </DocsSection>
 
       <DocsSection
-        title="Reference paths"
-        description="Use these when you want a direct pointer to the exact area you need."
+        title="Core features"
+        description="Every feature is documented step by step. Pick the one you need."
+      >
+        <DocsCardGrid className="lg:grid-cols-3">
+          <DocsInfoCard
+            icon={Upload}
+            title="Trade Import"
+            description="Import trades from broker exports, CSV files, TradingView webhooks, Tradovate, DxFeed, Rithmic, Thor, Match-Trader, and Exness."
+            items={['Supported formats and sources', 'Parsing review before saving', 'Account mapping']}
+          />
+          <DocsInfoCard
+            icon={LayoutDashboard}
+            title="Dashboard & Widgets"
+            description="Customizable dashboard with KPI cards, charts, calendar views, and filter-aware widgets."
+            items={['Widget grid with drag-and-drop', 'Dashboard templates', 'Filter scoping']}
+          />
+          <DocsInfoCard
+            icon={BookOpenText}
+            title="Journal & Trade Review"
+            description="Daily journal entries, trade notes, screenshots, and calendar-connected review flows."
+            items={['Day-level journaling', 'Image previews and cropping', 'Calendar-to-day review modal']}
+          />
+        </DocsCardGrid>
+      </DocsSection>
+
+      <DocsSection
+        title="Quick navigation"
+        description="Direct links to the most commonly referenced guides."
       >
         <DocsLinkList
           links={[
             {
+              href: '/docs/features/importing',
+              label: 'Importing Trades',
+              description: 'Step-by-step import tutorial with all supported sources.',
+            },
+            {
               href: '/docs/features/dashboard',
-              label: 'Dashboard reference',
+              label: 'Dashboard Reference',
               description: 'KPIs, widget editing, filters, templates, and calendar behavior.',
             },
             {
-              href: '/docs/features/accounts',
-              label: 'Accounts reference',
-              description: 'Live account tracking, prop-firm account states, and filter usage.',
+              href: '/docs/features/prop-firm',
+              label: 'Prop Firm Tracking',
+              description: 'Challenge lifecycles, phase transitions, and payout management.',
             },
             {
-              href: '/docs/features/settings',
-              label: 'Settings reference',
-              description: 'Profile, preferences, linked accounts, and account actions.',
+              href: '/docs/features/ai-chat',
+              label: 'AI Chat & Insights',
+              description: 'AI-powered trade analysis, risk audits, and strategy reviews.',
             },
             {
-              href: '/docs/donate',
-              label: 'Support the project',
-              description: 'Donation options and non-code ways to support Tradelytix.',
+              href: '/docs/features/reports',
+              label: 'Reports & Sharing',
+              description: 'Analytics reports, chart views, and public share links.',
             },
           ]}
         />
       </DocsSection>
 
       <DocsSection
-        title="Developer notes"
-        description="The public developer section stays high level by design. It explains the product architecture and ownership boundaries without exposing internal-only operational detail."
+        title="Developer documentation"
+        description="For developers interested in understanding the architecture, tech stack, and contribution guidelines."
       >
         <DocsCardGrid>
           <DocsInfoCard
-            icon={Shield}
-            title="Safe by default"
-            description="Developer docs focus on concepts, responsibilities, and extension points instead of secrets, raw schema dumps, or maintenance commands."
+            icon={LayoutDashboard}
+            title="Tech Stack & Architecture"
+            description="Next.js, TypeScript, Flutter, Supabase, PostgreSQL, and more. Learn how the platform is built."
           />
           <DocsInfoCard
-            icon={Database}
-            title="Product-aware references"
-            description="Architecture, backend, and data pages are written to support onboarding and contribution planning without mirroring private infrastructure documentation."
+            icon={Smartphone}
+            title="Mobile App Architecture"
+            description="Flutter/Dart codebase, Riverpod state management, go_router navigation, and Supabase integration."
           />
         </DocsCardGrid>
       </DocsSection>

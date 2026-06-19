@@ -1,5 +1,4 @@
-import { ArrowRight, BookOpen, LayoutDashboard, MessageSquare, Shield } from 'lucide-react'
-
+import { ArrowRight, BookOpen, LayoutDashboard, MessageSquare, Shield, Smartphone } from 'lucide-react'
 import { DocsCardGrid, DocsInfoCard, DocsPage, DocsSection } from '@/components/docs/docs-page'
 
 export default function AppFlowDocsPage() {
@@ -7,54 +6,129 @@ export default function AppFlowDocsPage() {
     <DocsPage
       badge="Feature Guide"
       title="Application Flow"
-      description="Tradelytix has two major surfaces: the public support/docs experience and the authenticated trading workspace. This page explains how users move between them."
+      description="Tradelytix has two major surfaces — a public support/docs experience and an authenticated trading workspace — with a companion mobile app that mirrors the same backend."
     >
-      <DocsSection title="Public surface">
+      <DocsSection title="1. Public surface & authentication flow">
         <p>
-          Public pages include the landing/sign-in page, documentation, feedback, and donation flows.
-          They share a common header and a smart primary action that either signs the user in or sends
-          them back into the dashboard when a session already exists.
+          Unauthenticated users land on the public surface: the landing page, documentation, feedback
+          form, FAQ, and donation page. All public pages share a common header that displays a
+          context-aware primary action — <strong>Sign In</strong> when no session is active, or
+          <strong>Back to App</strong> (pointing to <code>/dashboard</code>) when a session exists.
         </p>
-      </DocsSection>
-
-      <DocsSection title="Authenticated workspace">
         <DocsCardGrid>
           <DocsInfoCard
-            icon={LayoutDashboard}
-            title="Dashboard shell"
-            description="After authentication, users work inside the dashboard shell with a persistent sidebar, navbar actions, filters, and quick-add flows."
-            items={['Dashboard', 'Reports', 'Trades', 'Journal', 'Playbook', 'Accounts', 'Backtesting', 'Data', 'Settings']}
-          />
-          <DocsInfoCard
-            icon={BookOpen}
-            title="Review loop"
-            description="A typical review path is import → dashboard → journal/trade table → reports → settings adjustments."
-            items={['Filters stay in sync across major analytics views', 'Calendar day selection opens detailed day review', 'Command palette and quick-add support fast navigation']}
-          />
-        </DocsCardGrid>
-      </DocsSection>
-
-      <DocsSection title="Support loop">
-        <DocsCardGrid>
-          <DocsInfoCard
-            icon={MessageSquare}
-            title="Feedback flow"
-            description="Users can send product feedback from the public feedback page or from the dashboard utility navigation."
+            icon={ArrowRight}
+            title="Magic link sign-in"
+            description="The user enters their email and receives a one-time link. Clicking it creates or resumes a Supabase session. The browser redirects to /dashboard with a persistent cookie."
+            items={['No password database to compromise', 'Session lasts up to 30 days of inactivity before requiring re-auth', 'Works across devices — sign in on mobile with the same email']}
           />
           <DocsInfoCard
             icon={Shield}
-            title="Session restoration"
-            description="Cold opens, especially in installed-app mode, should restore the user into the app flow instead of forcing a fresh sign-in every time."
+            title="OAuth & session restoration"
+            description="OAuth via Google, GitHub, or Discord redirects to the provider, then back with an access token. Session tokens are stored in an HTTP-only cookie and refreshed automatically by Supabase."
+            items={['OAuth identity is linked to the workspace on first login', 'Cold opens (e.g. installed PWA, browser restart) restore the session silently', 'Sign-out clears the client-side session; data remains on the server']}
           />
         </DocsCardGrid>
       </DocsSection>
 
-      <DocsSection title="Routing expectations">
+      <DocsSection title="2. Web dashboard shell">
+        <p>
+          After authentication, the user enters the dashboard shell — the primary workspace for all
+          trading analytics. The shell provides consistent navigation, global filters, and a command
+          palette that follows the user across every page.
+        </p>
+        <DocsCardGrid>
+          <DocsInfoCard
+            icon={LayoutDashboard}
+            title="Sidebar & navbar"
+            description="The left sidebar lists all major sections: Dashboard, Reports, Trades, Journal, Playbook, Accounts, Backtesting, Data, Challenges, and Settings. The top navbar includes global search, quick-add (trade, journal entry, account), notifications, and the user menu."
+            items={['Sidebar collapses to icons on smaller viewports', 'Navbar breadcrumbs show the current page context', 'Quick-add buttons open inline modals without leaving the current page']}
+          />
+          <DocsInfoCard
+            icon={LayoutDashboard}
+            title="Filters & command palette"
+            description="The filter bar sits below the navbar and controls data scoping across dashboard, trades, reports, and journal views. The command palette (<kbd>Cmd+K</kbd>) provides keyboard-driven navigation and actions."
+            items={['Account, date range, symbol, strategy, and tag filters', 'Filter presets can be saved and shared across sessions', 'Command palette: type to search pages, jump to trades, or run actions']}
+          />
+          <DocsInfoCard
+            icon={LayoutDashboard}
+            title="Routing model"
+            description="Authenticated routes follow a flat hierarchy under /dashboard/*. Each section is a separate route: /dashboard, /dashboard/reports, /dashboard/trades, /dashboard/journal, etc. Public routes (/docs/*, /faq, /feedback) remain accessible without auth."
+            items={['Public CTA changes to "Back to App" when a session is detected', '/dashboard is the post-auth landing and the primary app entry point', 'Direct navigation to a protected route redirects to sign-in if unauthenticated']}
+          />
+        </DocsCardGrid>
+      </DocsSection>
+
+      <DocsSection title="3. Mobile app navigation & sync">
+        <p>
+          The Flutter mobile app mirrors the web dashboard's data model but uses a touch-optimized
+          interface with bottom tab navigation. It connects to the same Supabase backend and shares
+          the same PostgreSQL database, user-scoped row-level security, and real-time subscriptions.
+        </p>
+        <DocsCardGrid>
+          <DocsInfoCard
+            icon={Smartphone}
+            title="Bottom tab structure"
+            description="Five tabs: Dashboard (KPI summary and mini-charts), Trades (paginated trade list with symbol/date/strategy filters), Journal (day-level journaling with voice-to-text), Challenges (prop-firm tracking), and More (settings, AI chat, support, subscription)."
+            items={['Tabs persist their scroll position when switching', 'Pull-to-refresh triggers a data sync from Supabase', 'Push notifications surface trade alerts and daily reminders']}
+          />
+          <DocsInfoCard
+            icon={Smartphone}
+            title="Real-time sync"
+            description="Both platforms subscribe to the same Supabase channels. A trade imported on the web appears in the mobile app within milliseconds. Changes to settings, journal entries, or challenge progress sync automatically."
+            items={['Supabase Realtime pushes row-level changes to active clients', 'Offline-capable reads from a local cache when connectivity is intermittent', 'Conflicts are last-write-wins; the same user cannot create conflicting edits']}
+          />
+          <DocsInfoCard
+            icon={Smartphone}
+            title="Cross-platform consistency"
+            description="The mobile app renders the same computed metrics (win rate, profit factor, Sharpe ratio, etc.) as the web dashboard because they derive from the same trade data and server-side calculations."
+            items={['Filter scoping works identically: account, date, symbol, strategy', 'Journal images are uploaded to Supabase Storage and accessible from both platforms', 'AI chat history is shared; conversations started on one device appear on the other']}
+          />
+        </DocsCardGrid>
+      </DocsSection>
+
+      <DocsSection title="4. Typical review workflow">
+        <p>
+          Most users follow a repeatable loop: import fresh trades, review performance on the
+          dashboard, journal the trading day, generate reports, and adjust their approach. The
+          platform is designed to minimize friction between each step.
+        </p>
+        <DocsCardGrid>
+          <DocsInfoCard
+            icon={ArrowRight}
+            title="Import → Dashboard"
+            description="Trades are imported via CSV, webhook, or sync source. The import confirmation screen links directly to the dashboard so the user can immediately see updated KPIs."
+            items={['Bulk imports process in the background; the dashboard polls for completion', 'New trades are tagged with the current date as the import date', 'Duplicate detection prevents re-importing the same trade']}
+          />
+          <DocsInfoCard
+            icon={BookOpen}
+            title="Dashboard → Journal"
+            description="From the dashboard calendar, click a trading day to open the day review modal. The journal tab shows all notes, screenshots, and tags attached to that day."
+            items={['Calendar heatmap colors days by P&L intensity', 'Day review modal includes the trade list for that day', 'Journal entries can reference specific trades or the day as a whole']}
+          />
+          <DocsInfoCard
+            icon={ArrowRight}
+            title="Journal → Reports"
+            description="After journaling, users often generate reports to share or reflect. Reports aggregate filtered trade data into shareable analytics views."
+            items={['Reports include equity curve, drawdown chart, monthly P&L, and trade distribution', 'Reports can be exported as PDF or shared via a public link', 'Report parameters inherit the current filter scope']}
+          />
+          <DocsInfoCard
+            icon={ArrowRight}
+            title="Reports → Adjust"
+            description="Based on report insights, users tune their strategy, update their playbook, or revisit settings. The playbook builder documents setups, rules, and tagged examples."
+            items={['Playbook entries can link to specific trades as reference examples', 'Strategy tags on trades feed into filterable strategy performance views', 'Settings changes (e.g. break-even threshold) reclassify existing trade outcomes retroactively']}
+          />
+        </DocsCardGrid>
+      </DocsSection>
+
+      <DocsSection title="5. Routing expectations">
         <ul>
           <li>Public CTA when signed out: <strong>Sign In</strong></li>
-          <li>Public CTA when signed in: <strong>Back to App</strong></li>
+          <li>Public CTA when signed in: <strong>Back to App</strong> → <code>/dashboard</code></li>
           <li>Primary authenticated destination: <code>/dashboard</code></li>
-          <li>Support pages remain public and do not require an account</li>
+          <li>Support pages (<code>/docs/*</code>, <code>/faq</code>, <code>/feedback</code>) remain public and do not require an account</li>
+          <li>Direct access to <code>/dashboard/*</code> without a session redirects to the sign-in page</li>
+          <li>Mobile deep links follow the same routing: <code>tradelytix://dashboard</code> opens the dashboard tab</li>
         </ul>
       </DocsSection>
     </DocsPage>

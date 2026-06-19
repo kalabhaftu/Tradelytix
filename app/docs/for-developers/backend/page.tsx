@@ -1,5 +1,4 @@
 import { Database, ShieldCheck, Workflow } from 'lucide-react'
-
 import { DocsCardGrid, DocsInfoCard, DocsPage, DocsSection } from '@/components/docs/docs-page'
 
 export default function BackendDocsPage() {
@@ -7,26 +6,35 @@ export default function BackendDocsPage() {
     <DocsPage
       badge="For Developers"
       title="Backend Structure"
-      description="Backend documentation here stays product-focused: request boundaries, ownership patterns, and data-safety expectations rather than raw internal implementation details."
+      description="The Tradelytix backend is primarily server-side, handling data aggregation, filtering, authentication, and analytics computations."
     >
-      <DocsSection title="Backend responsibilities">
-        <DocsCardGrid>
-          <DocsInfoCard
-            icon={Workflow}
-            title="Server-side ownership"
-            description="Filtering, aggregation, auth-aware routing, and dashboard/report calculations are primarily server responsibilities."
-          />
-          <DocsInfoCard
-            icon={ShieldCheck}
-            title="User isolation"
-            description="User-scoped access is a core invariant. Product data flows are designed so one user’s data never leaks into another user’s surface."
-          />
-          <DocsInfoCard
-            icon={Database}
-            title="Product data flows"
-            description="Trades, accounts, journal entries, prop-firm state, and settings all connect through a shared application data layer rather than isolated feature silos."
-          />
-        </DocsCardGrid>
+      <DocsSection title="API architecture">
+        <ul>
+          <li><strong>Route handlers:</strong> Next.js App Router route handlers in <code>app/api/</code></li>
+          <li><strong>API versioning:</strong> v1 API under <code>app/api/v1/</code></li>
+          <li><strong>Server utilities:</strong> Shared server logic in <code>server/</code> directory</li>
+          <li><strong>Authentication:</strong> Edge middleware in <code>proxy.ts</code> for auth checks</li>
+        </ul>
+      </DocsSection>
+
+      <DocsSection title="Key backend responsibilities">
+        <ul>
+          <li>Dashboard data aggregation and filtering</li>
+          <li>Report generation and analytics computation</li>
+          <li>User-scoped data isolation (one user never sees another's data)</li>
+          <li>Trade import parsing and validation</li>
+          <li>Prop-firm phase evaluation and tracking</li>
+          <li>Background jobs via Vercel Cron (daily maintenance, phase evaluation, subscription checks)</li>
+        </ul>
+      </DocsSection>
+
+      <DocsSection title="Security">
+        <ul>
+          <li>Row-Level Security (RLS) via Supabase for database-level user isolation</li>
+          <li>Server-side auth enforcement in all route handlers</li>
+          <li>Rate limiting on API endpoints</li>
+          <li>CSP headers configured in security.config.js</li>
+        </ul>
       </DocsSection>
     </DocsPage>
   )

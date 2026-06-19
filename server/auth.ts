@@ -676,6 +676,28 @@ export async function getUserId(): Promise<string> {
       }
       throw new Error("User not authenticated")
     }
+
+    // Support Authorization: Bearer token from mobile/CLI clients
+    const authHeader = headersList.get('authorization') || headersList.get('Authorization')
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.slice(7)
+      if (token.length > 0) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        if (supabaseUrl && supabaseKey) {
+          const supabase = createServerClient(supabaseUrl, supabaseKey, {
+            cookies: {
+              getAll: () => [],
+              setAll: () => {},
+            },
+          })
+          const { data: { user }, error } = await supabase.auth.getUser(token)
+          if (!error && user) {
+            return user.id
+          }
+        }
+      }
+    }
   } catch (headerError) {
     // Headers not available, fallback to Supabase
   }

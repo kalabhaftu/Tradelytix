@@ -390,12 +390,21 @@ export default function SettingsPage() {
     }
   }
 
-  const handleTimezoneChange = (value: string) => {
+  const handleTimezoneChange = async (value: string) => {
     setTimezone(value)
-    toast.success("Timezone updated", {
-      description: `Timezone changed to ${value.replace('_', ' ')}.`,
-      duration: 2000
-    })
+    try {
+      await fetch('/api/auth/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timezone: value }),
+      })
+      toast.success("Timezone updated", {
+        description: `Timezone changed to ${value.replace('_', ' ')}.`,
+        duration: 2000
+      })
+    } catch {
+      toast.error("Failed to sync timezone")
+    }
   }
 
   const handleAutoAdjustChange = async (checked: boolean) => {

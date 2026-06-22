@@ -15,6 +15,7 @@ export const USER_SETTINGS_SELECT = {
   breakEvenThreshold: true,
   pnlDisplayMode: true,
   accentPack: true,
+  widgetStyle: true,
   chartStyle: true,
   autoAdjustAccountDate: true,
 } satisfies Prisma.UserSettingsSelect
@@ -32,6 +33,7 @@ export const USER_SETTINGS_FIELDS = [
   'breakEvenThreshold',
   'pnlDisplayMode',
   'accentPack',
+  'widgetStyle',
   'chartStyle',
   'autoAdjustAccountDate',
 ] as const
@@ -58,6 +60,7 @@ export function getDefaultUserSettings(): UserSettingsShape {
     breakEvenThreshold: 10,
     pnlDisplayMode: 'net',
     accentPack: 'classic',
+    widgetStyle: 'default',
     chartStyle: 'smooth',
     autoAdjustAccountDate: false,
   }
@@ -77,6 +80,7 @@ export function mergeUserSettings<T extends Record<string, unknown>>(
     breakEvenThreshold: settings?.breakEvenThreshold ?? defaults.breakEvenThreshold,
     pnlDisplayMode: settings?.pnlDisplayMode ?? defaults.pnlDisplayMode,
     accentPack: settings?.accentPack ?? defaults.accentPack,
+    widgetStyle: settings?.widgetStyle ?? defaults.widgetStyle,
     chartStyle: settings?.chartStyle ?? defaults.chartStyle,
     autoAdjustAccountDate: settings?.autoAdjustAccountDate ?? defaults.autoAdjustAccountDate,
   }
@@ -100,6 +104,7 @@ export function extractUserSettingsData(
     breakEvenThreshold: source?.breakEvenThreshold ?? defaults.breakEvenThreshold,
     pnlDisplayMode: source?.pnlDisplayMode ?? defaults.pnlDisplayMode,
     accentPack: source?.accentPack ?? defaults.accentPack,
+    widgetStyle: source?.widgetStyle ?? defaults.widgetStyle,
     chartStyle: source?.chartStyle ?? defaults.chartStyle,
     autoAdjustAccountDate: source?.autoAdjustAccountDate ?? defaults.autoAdjustAccountDate,
   }
@@ -127,6 +132,7 @@ export function extractUserSettingsWriteData(
     breakEvenThreshold: normalized.breakEvenThreshold,
     pnlDisplayMode: normalized.pnlDisplayMode,
     accentPack: normalized.accentPack,
+    widgetStyle: normalized.widgetStyle,
     chartStyle: normalized.chartStyle,
     autoAdjustAccountDate: normalized.autoAdjustAccountDate,
   }
@@ -156,6 +162,9 @@ export function buildUserSettingsUpdateData(
   }
   if ('accentPack' in source && source.accentPack !== undefined) {
     update.accentPack = source.accentPack
+  }
+  if ('widgetStyle' in source && source.widgetStyle !== undefined) {
+    update.widgetStyle = source.widgetStyle
   }
   if ('chartStyle' in source && source.chartStyle !== undefined) {
     update.chartStyle = source.chartStyle

@@ -104,6 +104,23 @@ export async function GET(request: NextRequest) {
 
     // 4. Apply Filters (Server-side simulation)
     const filtered = unified.filter(acc => {
+      if (statusFilter === 'all_inclusive') {
+         // Type filter
+         if (typeFilter !== 'all' && acc.accountType !== typeFilter) return false
+         
+         // Search
+         if (search) {
+            if (
+              !acc.displayName?.toLowerCase().includes(search) &&
+              !acc.number?.toLowerCase().includes(search) &&
+              !acc.broker?.toLowerCase().includes(search)
+            ) {
+              return false
+            }
+         }
+         return true
+      }
+
       // Archival filter: The 'archived' tab shows ONLY archived. Other tabs EXCLUDE archived.
       if (statusFilter === 'archived') {
          if (!acc.isArchived) return false

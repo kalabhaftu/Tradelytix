@@ -77,7 +77,7 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json()
 
-    const {
+        const {
       firstName,
       lastName,
       accentPack,
@@ -87,7 +87,9 @@ export async function PATCH(request: NextRequest) {
       breakEvenThreshold,
       pnlDisplayMode,
       aiSettings,
-      onboardingStatus
+      onboardingStatus,
+      timezone,
+      widgetStyle
     } = body
 
     // Validate input — only check fields that are actually provided
@@ -121,6 +123,20 @@ export async function PATCH(request: NextRequest) {
     if (pnlDisplayMode !== undefined && pnlDisplayMode !== 'net' && pnlDisplayMode !== 'gross') {
       return NextResponse.json(
         { error: 'Invalid pnlDisplayMode format' },
+        { status: 400 }
+      )
+    }
+
+    if (timezone !== undefined && typeof timezone !== 'string' && timezone !== null) {
+      return NextResponse.json(
+        { error: 'Invalid timezone format' },
+        { status: 400 }
+      )
+    }
+
+    if (widgetStyle !== undefined && widgetStyle !== 'default' && widgetStyle !== 'glass') {
+      return NextResponse.json(
+        { error: 'Invalid widgetStyle format' },
         { status: 400 }
       )
     }
@@ -166,6 +182,8 @@ export async function PATCH(request: NextRequest) {
       accentPack,
       theme,
       chartStyle,
+      timezone,
+      widgetStyle,
       autoAdjustAccountDate: autoAdjustAccountDate !== undefined ? !!autoAdjustAccountDate : undefined,
       breakEvenThreshold: breakEvenThreshold !== undefined ? getBreakEvenThreshold(breakEvenThreshold) : undefined,
       pnlDisplayMode: pnlDisplayMode !== undefined ? normalizePnlDisplayMode(pnlDisplayMode) : undefined,

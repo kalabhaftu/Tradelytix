@@ -22,8 +22,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
-    const statusFilter = searchParams.get('status') || 'all' // 'active', 'failed', 'archived', 'all'
-    const typeFilter = searchParams.get('type') || 'all' // 'live', 'prop-firm', 'all'
+    let statusFilter = searchParams.get('status') || 'all'
+    const archivedParam = searchParams.get('archived')
+    if (archivedParam === 'true') {
+      statusFilter = 'archived'
+    } else if (archivedParam === 'false' && statusFilter === 'all') {
+      statusFilter = 'all'
+    }
+    const typeFilter = searchParams.get('type') || 'all'
     const search = searchParams.get('search')?.toLowerCase() || ''
 
     // 1. Fetch live accounts

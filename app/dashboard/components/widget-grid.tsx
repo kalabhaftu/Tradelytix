@@ -390,7 +390,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
 
               return (
                 <div
-                  key={widget.i}
+                  key={`mobile-${widget.i}`}
                   className={cn('widget-wrapper', isEditMode && 'relative ring-1 ring-border/30 ring-inset rounded-2xl')}
                   style={isChart ? { height: chartHeight } : undefined}
                 >

@@ -79,13 +79,19 @@ function getYAxisConfig(chartData: any[], refs: ReturnType<typeof getReferenceVa
   const balances = chartData.map((p) => Number(p.balance || 0)).filter((v) => !isNaN(v) && v > 0)
   const currentBalance = balances.length > 0 ? balances[balances.length - 1] : refs.accountSize
 
-  // Gather all reference values + min/max balance
-  const allValues = [
+  // Gather all reference values that MUST be shown:
+  const keyRefs = [
     refs.accountSize,
     refs.targetBalance,
-    refs.dailyLossFloor,
-    refs.maxLossFloor,
-    currentBalance,
+  ]
+  if (refs.dailyLossFloor > 0) keyRefs.push(refs.dailyLossFloor)
+  if (refs.maxLossFloor > 0) keyRefs.push(refs.maxLossFloor)
+  if (Math.abs(currentBalance - refs.accountSize) > 1) {
+    keyRefs.push(Math.round(currentBalance * 100) / 100)
+  }
+
+  const allValues = [
+    ...keyRefs,
     ...balances,
   ].filter((v) => !isNaN(v) && v > 0)
 
@@ -98,17 +104,36 @@ function getYAxisConfig(chartData: any[], refs: ReturnType<typeof getReferenceVa
   const domainMin = Math.floor(rawMin - pad)
   const domainMax = Math.ceil(rawMax + pad)
 
-  // Build custom ticks: exact reference values + current balance
-  // Deduplicate and sort
-  const tickSet = new Set<number>()
-  tickSet.add(refs.accountSize)
-  tickSet.add(refs.targetBalance)
-  if (refs.dailyLossFloor > 0) tickSet.add(refs.dailyLossFloor)
-  if (refs.maxLossFloor > 0) tickSet.add(refs.maxLossFloor)
-  // Only add current balance if it's meaningfully different from accountSize
-  if (Math.abs(currentBalance - refs.accountSize) > 1) {
-    tickSet.add(Math.round(currentBalance * 100) / 100)
+  const tickSet = new Set<number>(keyRefs)
+
+  // Find a nice step size
+  const rawStep = range / 6
+  let step = 10
+  if (rawStep > 5000) step = 5000
+  else if (rawStep > 2000) step = 2000
+  else if (rawStep > 1000) step = 1000
+  else if (rawStep > 500) step = 500
+  else if (rawStep > 200) step = 200
+  else if (rawStep > 100) step = 100
+  else if (rawStep > 50) step = 50
+  else if (rawStep > 20) step = 20
+  else if (rawStep > 10) step = 10
+  else if (rawStep > 5) step = 5
+  else if (rawStep > 2) step = 2
+  else if (rawStep > 1) step = 1
+
+  // Minimum distance between ticks to prevent overlapping/cluttering (e.g. 2.5% of range)
+  const minDistance = Math.max(range * 0.025, 2)
+
+  const startTick = Math.ceil(domainMin / step) * step
+  for (let t = startTick; t <= domainMax; t += step) {
+    // Only add if it's not too close to any key reference value
+    const isTooClose = keyRefs.some(ref => Math.abs(ref - t) < minDistance)
+    if (!isTooClose) {
+      tickSet.add(t)
+    }
   }
+
   const ticks = Array.from(tickSet).sort((a, b) => a - b)
 
   return {
@@ -167,10 +192,10 @@ function GrowthTooltip({ active, payload, refs }: any) {
         {/* Reference line distances */}
         <div className="flex justify-between gap-4">
           <span className="flex items-center gap-1.5">
-            <span className="inline-block w-2 h-[2px] rounded bg-[hsl(var(--long))]" />
+            <span className="inline-block w-2 h-[2px] rounded bg-long" />
             To target
           </span>
-          <span className="font-mono text-[hsl(var(--long))]">
+          <span className="font-mono text-long">
             {formatValue(targetDistance, { kind: 'money', sensitive: true, forceMode: forcedMode })}
           </span>
         </div>
@@ -185,10 +210,10 @@ function GrowthTooltip({ active, payload, refs }: any) {
         </div>
         <div className="flex justify-between gap-4">
           <span className="flex items-center gap-1.5">
-            <span className="inline-block w-2 h-[2px] rounded bg-[hsl(var(--short))]" />
+            <span className="inline-block w-2 h-[2px] rounded bg-short" />
             Above max DD
           </span>
-          <span className="font-mono text-[hsl(var(--short))]">
+          <span className="font-mono text-short">
             {formatValue(maxDistance, { kind: 'money', sensitive: true, forceMode: forcedMode })}
           </span>
         </div>
@@ -196,7 +221,7 @@ function GrowthTooltip({ active, payload, refs }: any) {
         {/* Starting balance reference */}
         <div className="flex justify-between gap-4">
           <span className="flex items-center gap-1.5">
-            <span className="inline-block w-2 h-[2px] rounded bg-[hsl(var(--muted-foreground))]" />
+            <span className="inline-block w-2 h-[2px] rounded bg-muted-foreground" />
             Start
           </span>
           <span className="font-mono text-muted-foreground">
@@ -335,13 +360,13 @@ export function PropFirmGrowthCurveWidget() {
                   />
                   <ReferenceLine
                     y={refs.targetBalance}
-                    stroke="hsl(var(--long))"
+                    stroke="hsl(var(--success))"
                     strokeDasharray="5 5"
                     label={{
                       value: 'Target',
                       position: 'right',
                       fontSize: 9,
-                      fill: 'hsl(var(--long))',
+                      fill: 'hsl(var(--success))',
                       offset: 8,
                     }}
                   />
@@ -359,13 +384,13 @@ export function PropFirmGrowthCurveWidget() {
                   />
                   <ReferenceLine
                     y={refs.maxLossFloor}
-                    stroke="hsl(var(--short))"
+                    stroke="hsl(var(--destructive))"
                     strokeDasharray="5 5"
                     label={{
                       value: 'Max DD',
                       position: 'right',
                       fontSize: 9,
-                      fill: 'hsl(var(--short))',
+                      fill: 'hsl(var(--destructive))',
                       offset: 8,
                     }}
                   />

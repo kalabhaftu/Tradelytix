@@ -7,6 +7,7 @@ import {
   buildPropFirmDailyDrawdown,
   buildPropFirmGrowth,
   buildPropFirmTodayStats,
+  getPropFirmTradeTimestamp,
 } from '@/lib/prop-firm/widget-metrics'
 
 type PropFirmTrade = {
@@ -109,6 +110,24 @@ export function usePropFirmDashboardWidgetData() {
   const computed = useMemo(() => {
     const account = accountPayload?.account ?? null
     const resetTimezone = selection.resetTimezone || 'UTC'
+
+    // Sort trades to find the last trade's timestamp
+    const sortedTrades = [...trades].sort((a, b) => {
+      const timeA = getPropFirmTradeTimestamp(a)?.getTime() || 0
+      const timeB = getPropFirmTradeTimestamp(b)?.getTime() || 0
+      return timeA - timeB
+    })
+    const lastTrade = sortedTrades[sortedTrades.length - 1]
+    const lastTradeTime = lastTrade ? getPropFirmTradeTimestamp(lastTrade) : null
+
+    // Check if the account or current phase is failed/passed/blown/ended
+    const currentPhase = account?.currentPhase || {}
+    const isMasterFailed = String(account?.status || '').toLowerCase() === 'failed'
+    const isPhaseFinished = String(currentPhase?.status || '').toLowerCase() !== 'active'
+    const isFinished = isMasterFailed || isPhaseFinished
+
+    const referenceDate = isFinished && lastTradeTime ? lastTradeTime : new Date()
+
     const growthResult = buildPropFirmGrowth(account, trades, resetTimezone)
     return {
       account,
@@ -116,10 +135,10 @@ export function usePropFirmDashboardWidgetData() {
       statistics: accountPayload?.statistics ?? null,
       trades,
       accountExtremes: buildPropFirmAccountExtremes(trades),
-      dailyDrawdown: buildPropFirmDailyDrawdown(account, trades, resetTimezone),
+      dailyDrawdown: buildPropFirmDailyDrawdown(account, trades, resetTimezone, referenceDate),
       resetTimezone,
       groupedTradeCount: trades.length,
-      todayStats: buildPropFirmTodayStats(trades, resetTimezone),
+      todayStats: buildPropFirmTodayStats(trades, resetTimezone, referenceDate),
       growth: growthResult.points,
       peakEquity: growthResult.peakEquity,
       maxDrawdown: growthResult.maxDrawdown,

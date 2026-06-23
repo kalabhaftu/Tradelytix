@@ -49,6 +49,13 @@ function getCurrentPhase(account: DashboardPropFirmAccountOption) {
   return account.PhaseAccount?.find((phase) => phase.phaseNumber === account.currentPhase) ?? null
 }
 
+export const isTrulyActive = (a: DashboardPropFirmAccountOption) => {
+  const accountStatus = String(a.status || '').toLowerCase()
+  const currentPhase = getCurrentPhase(a)
+  const currentPhaseStatus = String(currentPhase?.status || '').toLowerCase()
+  return accountStatus === 'active' && currentPhaseStatus === 'active'
+}
+
 function isSelectableOrBlownAccount(account: DashboardPropFirmAccountOption) {
   const accountStatus = String(account.status || '').toLowerCase()
   const evaluationType = String(account.evaluationType || '').toLowerCase()
@@ -56,13 +63,16 @@ function isSelectableOrBlownAccount(account: DashboardPropFirmAccountOption) {
   // Always exclude instant accounts
   if (evaluationType.includes('instant')) return false
 
-  // Allow blown/failed accounts
+  // Allow blown/failed master accounts
   if (accountStatus === 'failed') return true
 
-  // For active accounts, must have active current phase and not be funded
   const currentPhase = getCurrentPhase(account)
   const currentPhaseStatus = String(currentPhase?.status || '').toLowerCase()
 
+  // Allow accounts where the current phase has failed/blown
+  if (currentPhaseStatus === 'failed') return true
+
+  // For active accounts, must have active current phase and not be funded
   return (
     accountStatus === 'active' &&
     currentPhaseStatus === 'active' &&
@@ -72,7 +82,7 @@ function isSelectableOrBlownAccount(account: DashboardPropFirmAccountOption) {
 
 function getPreferredAccount(accounts: DashboardPropFirmAccountOption[]) {
   // Prefer the first active account, fallback to first in list
-  return accounts.find(a => String(a.status || '').toLowerCase() === 'active') ?? accounts[0] ?? null
+  return accounts.find(isTrulyActive) ?? accounts[0] ?? null
 }
 
 export function useDashboardPropFirmAccount() {
@@ -126,13 +136,13 @@ export function useDashboardPropFirmAccount() {
           
           const stored = getStoredSelection()
           const storedAccount = stored ? nextAccounts.find(a => a.id === stored) : null
-          const isStoredActive = storedAccount && String(storedAccount.status || '').toLowerCase() === 'active'
+          const isStoredActive = storedAccount && isTrulyActive(storedAccount)
           
           let preferred: string | null = null
           if (isStoredActive) {
             preferred = stored!
           } else {
-            const firstActive = nextAccounts.find(a => String(a.status || '').toLowerCase() === 'active')
+            const firstActive = nextAccounts.find(isTrulyActive)
             if (firstActive) {
               preferred = firstActive.id
             } else {
@@ -159,13 +169,13 @@ export function useDashboardPropFirmAccount() {
         
         const stored = getStoredSelection()
         const storedAccount = stored ? nextAccounts.find(a => a.id === stored) : null
-        const isStoredActive = storedAccount && String(storedAccount.status || '').toLowerCase() === 'active'
+        const isStoredActive = storedAccount && isTrulyActive(storedAccount)
         
         let preferred: string | null = null
         if (isStoredActive) {
           preferred = stored!
         } else {
-          const firstActive = nextAccounts.find(a => String(a.status || '').toLowerCase() === 'active')
+          const firstActive = nextAccounts.find(isTrulyActive)
           if (firstActive) {
             preferred = firstActive.id
           } else {

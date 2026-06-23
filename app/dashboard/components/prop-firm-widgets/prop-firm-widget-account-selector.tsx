@@ -25,7 +25,9 @@ type TimezoneProps = {
 
 function getLabel(account: DashboardPropFirmAccountOption) {
   const phase = account.currentPhase ? `Phase ${account.currentPhase}` : 'No current phase'
-  const isFailed = String(account.status || '').toLowerCase() === 'failed'
+  const currentPhase = account.PhaseAccount?.find((p) => p.phaseNumber === account.currentPhase)
+  const isPhaseFailed = String(currentPhase?.status || '').toLowerCase() === 'failed'
+  const isFailed = String(account.status || '').toLowerCase() === 'failed' || isPhaseFailed
   const suffix = isFailed ? ' (Blown)' : ''
   return `${account.accountName || account.propFirmName} · ${phase}${suffix}`
 }

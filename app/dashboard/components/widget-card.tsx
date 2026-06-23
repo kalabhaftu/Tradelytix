@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { inferMetricKind } from '@/lib/dashboard/display-mode'
 import { useTheme } from '@/context/theme-provider'
+import { useIsMobile } from '@/hooks/use-is-mobile'
 import { Info } from 'lucide-react'
 import {
   Tooltip,
@@ -39,7 +40,7 @@ function getWidgetDescription(title: string): string | null {
     return 'Tracks your active prop-firm trading objectives (profit target, max daily loss, max overall loss, minimum trading days) alongside today\'s current performance.'
   }
   if (t.includes('CALENDAR')) return 'Displays daily and weekly trade performance statistics, net P&L, traded days, win rate, and R-Multiple.'
-  
+
   return null
 }
 
@@ -60,6 +61,9 @@ interface WidgetCardProps {
 /**
  * Shared widget wrapper — applies the reports page design language
  * to all dashboard widgets for visual consistency.
+ *
+ * MOBILE: renders with GPU-safe flat styles (no glass, no blur, no isolation).
+ * DESKTOP: renders with full glass/shadow effects.
  */
 export function WidgetCard({
   children,
@@ -70,15 +74,79 @@ export function WidgetCard({
   noPadding = false,
 }: WidgetCardProps) {
   const { widgetStyle } = useTheme()
+  const isMobile = useIsMobile()
   const isGlass = widgetStyle === 'glass'
 
+  /* ── MOBILE: flat, GPU-safe rendering ─────────────────────────── */
+  /* No isolation, no z-index, no backdrop-blur, fully opaque bg,
+   * no box-shadow, no group hover effects.
+   * This eliminates ALL GPU compositing layer sources. */
+  if (isMobile) {
+    if (isKpi) {
+      return (
+        <div
+          className={cn(
+            'w-full h-full overflow-hidden widget-card',
+            'bg-card border border-border/60 dark:border-border/30 rounded-xl',
+            'p-3',
+            className
+          )}
+        >
+          {children}
+        </div>
+      )
+    }
+
+    const description = title ? getWidgetDescription(title) : null
+
+    return (
+      <div
+        className={cn(
+          'w-full h-full overflow-hidden flex flex-col widget-card',
+          'bg-card border border-border/60 dark:border-border/30 rounded-xl',
+          !noPadding && 'p-3',
+          className
+        )}
+      >
+        {title && (
+          <div className="flex items-center justify-between mb-3 flex-shrink-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <h3 className="text-[9px] uppercase font-black tracking-widest text-muted-foreground truncate">
+                {title}
+              </h3>
+              {description && (
+                <TooltipProvider delayDuration={100}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="cursor-help flex items-center justify-center shrink-0">
+                        <Info className="h-3 w-3 text-muted-foreground/60" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={5} className="max-w-[240px] text-xs py-1.5 px-2.5 bg-popover border border-border/30 shadow-md">
+                      <p className="font-medium text-foreground">{description}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
+            {headerRight}
+          </div>
+        )}
+        <div className="flex-1 min-h-0 w-full flex flex-col">
+          {children}
+        </div>
+      </div>
+    )
+  }
+
+  /* ── DESKTOP: full glass/shadow rendering ──────────────────────── */
   if (isKpi) {
     return (
       <div
         className={cn(
-          'w-full h-full overflow-hidden widget-card group lg:isolate relative lg:z-0',
+          'w-full h-full overflow-hidden widget-card group isolate relative z-0',
           isGlass
-            ? 'bg-card lg:bg-card/95 lg:dark:bg-card/80 border border-border/60 dark:border-border/30 rounded-2xl lg:shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]'
+            ? 'bg-card/95 dark:bg-card/80 border border-border/60 dark:border-border/30 rounded-2xl shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]'
             : 'bg-card border border-border/60 dark:border-border/30 shadow-sm rounded-xl min-[1440px]:rounded-2xl',
           'p-3 min-[1440px]:p-4',
           className
@@ -94,9 +162,9 @@ export function WidgetCard({
   return (
     <div
       className={cn(
-        'w-full h-full overflow-hidden flex flex-col widget-card group lg:isolate relative lg:z-0',
+        'w-full h-full overflow-hidden flex flex-col widget-card group isolate relative z-0',
         isGlass
-          ? 'bg-card lg:bg-card/95 lg:dark:bg-card/80 border border-border/60 dark:border-border/30 rounded-2xl lg:shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]'
+          ? 'bg-card/95 dark:bg-card/80 border border-border/60 dark:border-border/30 rounded-2xl shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]'
           : 'bg-card border border-border/60 dark:border-border/30 shadow-sm rounded-xl sm:rounded-2xl',
         !noPadding && 'p-3 sm:p-5',
         className

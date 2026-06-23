@@ -13,7 +13,9 @@ function getReferenceValues(account: any, data: any) {
   const dailyLossFloor = data.dailyDrawdown.dailyLossFloor
   const highWaterMark = Math.max(Number(data.peakEquity || accountSize), accountSize)
   const isTrailing = phase.maxDrawdownType === 'trailing'
-  const maxLossFloor = isTrailing ? highWaterMark - (highWaterMark * (Number(phase.maxDrawdownPercent || 0) / 100)) : accountSize - maxLossLimit
+  const maxLossFloor = isTrailing
+    ? highWaterMark - (highWaterMark * (Number(phase.maxDrawdownPercent || 0) / 100))
+    : accountSize - maxLossLimit
 
   return {
     accountSize,
@@ -56,25 +58,39 @@ function buildChartData(account: any, data: any, refs: ReturnType<typeof getRefe
   return points
 }
 
-function getYAxisDomain(chartData: any[], refs: ReturnType<typeof getReferenceValues>) {
-  const values = [
+function getYAxisDomain(chartData: any[], refs: ReturnType<typeof getReferenceValues>): [number, number] {
+  // Collect all meaningful values: reference lines + actual balance data
+  const balances = chartData.map((p) => Number(p.balance || 0)).filter((v) => !isNaN(v) && v > 0)
+
+  const allValues = [
     refs.accountSize,
     refs.targetBalance,
     refs.dailyLossFloor,
     refs.maxLossFloor,
-    ...chartData.map((point) => Number(point.balance || 0)),
-  ]
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const padding = Math.max((max - min) * 0.12, refs.accountSize * 0.01, 50)
+    ...balances,
+  ].filter((v) => !isNaN(v) && v > 0)
 
-  return [Math.floor(min - padding), Math.ceil(max + padding)] as [number, number]
+  if (allValues.length === 0) return [0, 1]
+
+  const rawMin = Math.min(...allValues)
+  const rawMax = Math.max(...allValues)
+  const range = rawMax - rawMin
+
+  // Padding: 8% of the total range so reference lines don't sit on the edges,
+  // but minimum 20 to avoid zero-range charts looking weird.
+  const pad = Math.max(range * 0.08, 20)
+
+  // Snap to clean numbers: floor down for min, ceil up for max
+  const domainMin = Math.floor((rawMin - pad) / 10) * 10
+  const domainMax = Math.ceil((rawMax + pad) / 10) * 10
+
+  return [domainMin, domainMax]
 }
 
 function GrowthTooltip({ active, payload }: any) {
   const { formatValue, isPrivacyMode } = useDashboardDisplay()
   const forcedMode = isPrivacyMode ? 'privacy' : 'dollars'
-  
+
   if (!active || !payload?.length) return null
   const point = payload[0]?.payload
   if (!point) return null
@@ -128,7 +144,12 @@ export function PropFirmGrowthCurveWidget() {
             </div>
             <div className="min-h-0 flex-1">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData} margin={{ top: 18, right: 56, bottom: 8, left: 10 }}>
+                <AreaChart
+                  data={chartData}
+                  margin={{ top: 18, right: 60, bottom: 8, left: 10 }}
+                  // tooltip fires over the entire chart background, not just the filled area
+                  onMouseLeave={undefined}
+                >
                   <defs>
                     <linearGradient id="propFirmGrowth" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor={gradientColor} stopOpacity={0.32} />
@@ -138,19 +159,45 @@ export function PropFirmGrowthCurveWidget() {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.35} />
                   <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} minTickGap={14} />
                   <YAxis
-                    width={48}
+                    width={56}
                     domain={yDomain}
                     tickLine={false}
                     axisLine={false}
                     tick={isPrivacyMode ? false : { fontSize: 10 }}
-                    tickFormatter={(value) => isPrivacyMode ? '' : formatValue(Number(value), { kind: 'money', compact: true, sensitive: true, forceMode: forcedMode })}
+                    tickCount={6}
+                    tickFormatter={(value) =>
+                      isPrivacyMode
+                        ? ''
+                        : formatValue(Number(value), { kind: 'money', compact: true, sensitive: true, forceMode: forcedMode })
+                    }
                   />
-                  <Tooltip content={<GrowthTooltip />} cursor={{ stroke: strokeColor, strokeDasharray: '4 4', strokeWidth: 1.5 }} />
-                  <ReferenceLine y={refs.accountSize} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" label={{ value: 'Start', position: 'right', fontSize: 10 }} />
-                  <ReferenceLine y={refs.targetBalance} stroke="hsl(var(--long))" strokeDasharray="5 5" label={{ value: 'Target', position: 'right', fontSize: 10 }} />
-                  <ReferenceLine y={refs.dailyLossFloor} stroke="#f59e0b" strokeDasharray="5 5" label={{ value: 'Daily DD', position: 'right', fontSize: 10 }} />
-                  <ReferenceLine y={refs.maxLossFloor} stroke="hsl(var(--short))" strokeDasharray="5 5" label={{ value: 'Max DD', position: 'right', fontSize: 10 }} />
-                  <Area type={curveType} dataKey="balance" stroke={strokeColor} strokeWidth={2.5} fill="url(#propFirmGrowth)" dot={false} activeDot={{ r: 4, strokeWidth: 2 }} />
+                  {/* 
+                    cursor covers the FULL chart column (not just filled area) so
+                    tooltip activates on hover anywhere along the x-axis 
+                  */}
+                  <Tooltip
+                    content={<GrowthTooltip />}
+                    cursor={{ stroke: strokeColor, strokeDasharray: '4 4', strokeWidth: 1.5 }}
+                    isAnimationActive={false}
+                    filterNull={false}
+                  />
+                  <ReferenceLine y={refs.accountSize} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" label={{ value: 'Start', position: 'right', fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                  <ReferenceLine y={refs.targetBalance} stroke="hsl(var(--long))" strokeDasharray="5 5" label={{ value: 'Target', position: 'right', fontSize: 10, fill: 'hsl(var(--long))' }} />
+                  <ReferenceLine y={refs.dailyLossFloor} stroke="#f59e0b" strokeDasharray="5 5" label={{ value: 'Daily DD', position: 'right', fontSize: 10, fill: '#f59e0b' }} />
+                  <ReferenceLine y={refs.maxLossFloor} stroke="hsl(var(--short))" strokeDasharray="5 5" label={{ value: 'Max DD', position: 'right', fontSize: 10, fill: 'hsl(var(--short))' }} />
+                  <Area
+                    type={curveType}
+                    dataKey="balance"
+                    stroke={strokeColor}
+                    strokeWidth={2.5}
+                    fill="url(#propFirmGrowth)"
+                    dot={false}
+                    activeDot={{ r: 4, strokeWidth: 2 }}
+                    isAnimationActive={false}
+                    // Extend the hover zone to full chart width by using a transparent
+                    // baseline so the whole column is interactive
+                    baseValue={yDomain[0]}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

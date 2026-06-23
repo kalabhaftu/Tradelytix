@@ -1,10 +1,8 @@
 'use client'
 
 import NextDynamic from 'next/dynamic'
-import { useEffect, useRef, useState, Suspense } from 'react'
+import { useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useUserStore } from "@/store/user-store"
-import { cn } from "@/lib/utils"
 
 // Import components normally
 import { DashboardErrorBoundary, ErrorBoundaryWrapper } from '@/components/error-boundary'
@@ -19,20 +17,11 @@ const EditModeControls = NextDynamic(() => import('./components/edit-mode-contro
 })
 
 // Accounts, Journal, Backtesting, and Table are now standalone routes
-// They don't need to be imported here anymore
-
 // Sidebar moved to layout.tsx - it now wraps all dashboard routes
 
-// Dynamic imports for heavy dependencies
-import { motion, AnimatePresence } from 'framer-motion'
-
 function DashboardContent() {
-  const mainRef = useRef<HTMLElement>(null)
   const searchParams = useSearchParams()
   const router = useRouter()
-
-  // Simple user check
-  const user = useUserStore(state => state.user)
 
   // Redirect old ?tab= URLs to new standalone routes (backwards compatibility)
   useEffect(() => {
@@ -52,7 +41,8 @@ function DashboardContent() {
 
   useEffect(() => {
     const updateNavbarHeight = () => {
-      const navbar = document.querySelector('nav[class*="fixed"]') as HTMLElement
+      // The navbar is now sticky (not fixed), query by sticky class
+      const navbar = document.querySelector('nav.sticky') as HTMLElement
       if (navbar) {
         const height = navbar.offsetHeight
         document.documentElement.style.setProperty('--navbar-height', `${height}px`)
@@ -62,8 +52,8 @@ function DashboardContent() {
     // Initial calculation
     updateNavbarHeight()
 
-    // Use ResizeObserver which is much more performant than MutationObserver for size changes
-    const navbar = document.querySelector('nav[class*="fixed"]')
+    // Use ResizeObserver for navbar height changes
+    const navbar = document.querySelector('nav.sticky')
     let resizeObserver: ResizeObserver | null = null
 
     if (navbar) {
@@ -76,7 +66,7 @@ function DashboardContent() {
 
     // Fallback window resize listener
     window.addEventListener('resize', updateNavbarHeight)
-    
+
     return () => {
       window.removeEventListener('resize', updateNavbarHeight)
       if (resizeObserver) {
@@ -85,51 +75,16 @@ function DashboardContent() {
     }
   }, [])
 
-  // Sidebar state management moved to sidebar-layout.tsx
-
-
-  const pageVariants = {
-    initial: { opacity: 0 },
-    in: { opacity: 1 },
-    out: { opacity: 0 }
-  }
-
-  const pageTransition = {
-    type: 'tween',
-    ease: 'easeInOut',
-    duration: 0.2
-  }
-
-  // Main dashboard only renders widgets now
-  // All other views (table, accounts, journal, backtesting) are standalone routes
-  const renderContent = () => {
-    return (
-      <ErrorBoundaryWrapper context="Widgets">
-        <motion.div
-          key="widgets"
-          initial="initial"
-          animate="in"
-          exit="out"
-          variants={pageVariants}
-          transition={pageTransition}
-          className="px-4 dashboard-page-content"
-        >
-          <WidgetCanvas />
-        </motion.div>
-      </ErrorBoundaryWrapper>
-    )
-  }
-
-
   return (
     <DashboardErrorBoundary>
       <div className="flex flex-1 flex-col w-full">
         {/* Edit Mode Controls */}
         <EditModeControls />
-        
-        <AnimatePresence mode="wait" initial={false}>
-          {renderContent()}
-        </AnimatePresence>
+        <ErrorBoundaryWrapper context="Widgets">
+          <div className="px-4 dashboard-page-content">
+            <WidgetCanvas />
+          </div>
+        </ErrorBoundaryWrapper>
       </div>
     </DashboardErrorBoundary>
   )

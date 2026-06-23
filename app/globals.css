@@ -283,6 +283,24 @@
    GLOBAL RESPONSIVENESS SAFEGUARDS
    ======================================== */
 
+/* Navbar slide-in: pure CSS animation, no JS/Framer inline styles */
+@keyframes navbarSlideIn {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.navbar-slide-in {
+  animation: navbarSlideIn 0.25s ease-out both;
+}
+/* On mobile: kill the animation entirely to avoid GPU layer */
+@media (max-width: 1023px) {
+  .navbar-slide-in {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+
+
 /* Prevent horizontal overflow on all screens */
 html {
   overflow-x: hidden;
@@ -758,28 +776,39 @@ code > [data-line]::before {
 
 /* ==========================================================================
    MOBILE DASHBOARD — GPU-SAFE RENDERING
-   
-   Problem: On mobile Chromium, excessive GPU compositing layers cause 
-   texture memory corruption (flickering, ghost text, horizontal noise).
-   
-   Root causes eliminated here:
-   1. Framer-motion leaves inline transform/opacity → permanent GPU layers
-   2. Overlapping composited layers cascade via "implicit compositing"
-   3. Many stacking contexts (z-index, isolation) multiply layer count
-   4. Semi-transparent backgrounds require per-element compositing
-   
-   Solution: Force flat rendering on mobile — no transforms, no opacity
-   animations, explicit containment, content-visibility for off-screen
-   widgets, opaque backgrounds everywhere.
+
+   Problem: On mobile Chromium, excessive GPU compositing layers cause
+   texture memory corruption — flickering, ghost text, rainbow noise bands.
+
+   Root causes fixed here:
+   1. sticky + z-index nav → implicit compositing of ALL content below it
+   2. Semi-transparent / glass backgrounds → per-element alpha compositing
+   3. backdrop-filter (blur) → forces GPU layer on the element AND neighbors
+   4. isolation:isolate + z-index on widget cards → stacking context explosion
+   5. content-visibility needs stable heights for Recharts to measure correctly
    ========================================================================== */
 @media (max-width: 1023px) {
   /*
-   * 1. KILL FRAMER-MOTION GPU LAYERS
-   * Framer-motion sets inline transform: translateY(0px) and opacity: 1
-   * AFTER animation completes. These inline styles permanently promote
-   * elements to GPU compositing layers. The navbar (sticky, z-40) and
-   * page wrapper then cause ALL overlapping content to be implicitly
-   * composited — creating 10+ GPU layers that exceed mobile GPU memory.
+   * 1. NAVBAR — FLAT, NO GPU LAYER
+   * sticky + any transform/opacity = composited layer.
+   * Any element scrolling beneath a composited sticky gets implicitly
+   * composited too → cascade of 50+ layers → GPU OOM → texture corruption.
+   * Solution: force nav to be a plain stacking context with no transform.
+   */
+  nav.sticky,
+  nav[class*="sticky"] {
+    transform: none !important;
+    will-change: auto !important;
+    /* Remove backdrop-blur on mobile — single largest compositing trigger */
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    /* Ensure opaque background so no alpha compositing needed */
+    background-color: hsl(var(--sidebar)) !important;
+  }
+
+  /*
+   * 2. PAGE CONTENT WRAPPER
+   * Kill any lingering Framer Motion inline transforms on the page div.
    */
   .dashboard-page-content {
     transform: none !important;
@@ -787,60 +816,74 @@ code > [data-line]::before {
     will-change: auto !important;
   }
 
-  nav[class*="sticky"] {
-    transform: none !important;
-    opacity: 1 !important;
-    will-change: auto !important;
-  }
-
   /*
-   * 2. WIDGET WRAPPERS — CONTENT VISIBILITY
-   * Skip rendering of off-screen widgets entirely. Instead of 10+ widgets
-   * all composited simultaneously, only 2-3 visible ones are active.
-   * contain-intrinsic-size provides a height estimate for scroll bar
-   * stability. The "auto" keyword caches actual size after first render.
-   */
-  [data-tour="widget-canvas"] .widget-wrapper {
-    height: auto !important;
-    content-visibility: auto;
-    contain-intrinsic-size: auto 320px;
-  }
-
-  /*
-   * 3. WIDGET CARDS — CONTAINMENT & FLAT RENDERING
-   * contain: content (= layout + paint + style) tells the browser this
-   * element's internals are independent, allowing it to skip re-paint
-   * of card contents when other parts of the page change.
-   * Force z-index to auto to prevent stacking context creation.
-   * Force opaque background to prevent per-element alpha compositing.
+   * 3. WIDGET CARDS — OPAQUE + CONTAINED
+   * Semi-transparent backgrounds (bg-card/80, bg-card/95) require
+   * per-element compositing on mobile. Force fully opaque.
+   * contain: layout style paint lets browser skip repaints of card
+   * internals when other cards change.
    */
   .widget-card {
-    contain: content;
+    contain: layout style paint;
     z-index: auto !important;
-  }
-
-  /* In dark + glass mode, Tailwind's dark:bg-card/80 (specificity 0-2-0)
-   * beats max-lg:bg-card (specificity 0-1-0), leaving every widget with
-   * 80% opacity background → each needs its own compositing layer.
-   * Fix: force opaque bg in dark mode on mobile. */
-  .dark .widget-card {
+    isolation: auto !important;
+    /* Opaque in BOTH light and dark modes */
     background-color: hsl(var(--card)) !important;
+    /* Kill any glass/blur effects on mobile */
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    /* No box-shadow compositing either */
+    box-shadow: none !important;
   }
 
   /*
-   * 4. KPI ROW — NO STACKING CONTEXT ON MOBILE
+   * 4. KPI ROW — NO STACKING CONTEXT
    */
   .kpi-row-container {
     z-index: auto !important;
+    isolation: auto !important;
   }
 
   /*
-   * 5. RECHARTS — FIXED HEIGHT
-   * Recharts needs explicit dimensions; content-visibility + containment
-   * can cause it to measure 0 otherwise.
+   * 5. WIDGET WRAPPERS — CONTENT VISIBILITY
+   * Off-screen widgets are skipped entirely by the renderer.
+   * "auto" keyword caches the measured size after first paint.
+   * Give a generous intrinsic-size so scroll bar doesn't jump.
+   */
+  [data-tour="widget-canvas"] .widget-wrapper {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 300px;
+  }
+
+  /*
+   * 6. RECHARTS — STABLE HEIGHT ON MOBILE
+   * content-visibility containment can cause Recharts to measure 0 height.
+   * We give each chart a minimum so it renders correctly.
+   * The widget shell sets explicit heights via inline style; this is a
+   * safety net for any chart that doesn't.
    */
   [data-tour="widget-canvas"] .recharts-responsive-container {
-    height: 240px !important;
-    min-height: 240px !important;
+    min-height: 200px !important;
+  }
+
+  /*
+   * 7. ISOLATE GROUPS — kill all stacking contexts in widget grid
+   * lg:isolate on the grid wrappers creates isolation on desktop,
+   * which is fine — but on mobile it creates unnecessary GPU layers.
+   */
+  .lg\:isolate {
+    isolation: auto !important;
+  }
+
+  /*
+   * 8. SIDEBAR + POPOVER OVERLAYS
+   * Any fixed/absolute element with backdrop-filter is a compositing bomb.
+   * Strip blur on mobile for all overlays.
+   */
+  [data-radix-popper-content-wrapper],
+  [role="dialog"],
+  [data-state="open"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 }

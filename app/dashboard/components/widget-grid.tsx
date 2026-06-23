@@ -96,6 +96,52 @@ const generateWidgetId = () => {
 
 const isKpiRowWidget = (widget: WidgetLayout) => widget.y === 0 && widget.h === 1
 
+function LazyMobileWidget({ children, height, isEditMode }: { children: React.ReactNode; height?: number; isEditMode: boolean }) {
+  const [isIntersecting, setIsIntersecting] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (isEditMode) {
+      setIsIntersecting(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsIntersecting(true)
+          observer.disconnect()
+        }
+      },
+      {
+        rootMargin: '200px',
+      }
+    )
+
+    const el = ref.current
+    if (el) {
+      observer.observe(el)
+    }
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [isEditMode])
+
+  return (
+    <div ref={ref} style={height ? { minHeight: height } : undefined} className="w-full h-full">
+      {isIntersecting ? (
+        children
+      ) : (
+        <div 
+          className="w-full h-full bg-muted/10 animate-pulse rounded-xl border border-border/40" 
+          style={height ? { height } : undefined}
+        />
+      )}
+    </div>
+  )
+}
+
 interface WidgetGridProps {
   className?: string
 }
@@ -404,7 +450,9 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
                       <X className="h-3 w-3" />
                     </Button>
                   )}
-                  {config.getComponent({ size: widget.size as any })}
+                  <LazyMobileWidget height={isChart ? chartHeight : undefined} isEditMode={isEditMode}>
+                    {config.getComponent({ size: widget.size as any })}
+                  </LazyMobileWidget>
                 </div>
               )
             })}

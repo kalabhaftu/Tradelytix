@@ -174,7 +174,6 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
     return () => {
       mounted = false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadTemplates])
 
   // Create new template

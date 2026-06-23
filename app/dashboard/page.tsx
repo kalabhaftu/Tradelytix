@@ -49,6 +49,13 @@ function DashboardContent() {
       }
     }
 
+    // Skip ResizeObserver and event listeners on mobile/tablet screens to prevent layout thrashing
+    const isMobileScreen = typeof window !== 'undefined' && window.innerWidth < 1024
+    if (isMobileScreen) {
+      document.documentElement.style.setProperty('--navbar-height', '48px')
+      return
+    }
+
     // Initial calculation
     updateNavbarHeight()
 

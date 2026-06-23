@@ -846,13 +846,12 @@ code > [data-line]::before {
 
   /*
    * 5. WIDGET WRAPPERS — CONTENT VISIBILITY
-   * Off-screen widgets are skipped entirely by the renderer.
-   * "auto" keyword caches the measured size after first paint.
-   * Give a generous intrinsic-size so scroll bar doesn't jump.
+   * Disable content-visibility auto on mobile to prevent GPU layer thrashing
+   * and widget size measurement feedback loops.
    */
   [data-tour="widget-canvas"] .widget-wrapper {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 300px;
+    content-visibility: visible !important;
+    contain-intrinsic-size: unset !important;
   }
 
   /*

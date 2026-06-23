@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { Responsive, verticalCompactor } from 'react-grid-layout'
 
-function useGridContainerWidth() {
+function useGridContainerWidth(isMobile?: boolean) {
   const [width, setWidth] = useState(0)
   const [mounted, setMounted] = useState(false)
   const lastWidthRef = useRef(0)
@@ -19,7 +19,7 @@ function useGridContainerWidth() {
     timersRef.current.forEach(clearTimeout)
     timersRef.current = []
 
-    if (!node) return
+    if (!node || isMobile) return
 
     const measure = () => {
       const w = node.offsetWidth
@@ -48,7 +48,7 @@ function useGridContainerWidth() {
         })
       }, delay)
     )
-  }, [mounted])
+  }, [mounted, isMobile])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -58,7 +58,7 @@ function useGridContainerWidth() {
     }
   }, [])
 
-  return { width, containerRef, mounted }
+  return { width, containerRef, mounted: isMobile ? true : mounted }
 }
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -101,19 +101,19 @@ interface WidgetGridProps {
 }
 
 export default function WidgetGrid({ className }: WidgetGridProps) {
+  const isMobile = useIsMobile()
   const { isEditMode, currentLayout, updateLayout } = useTemplateEditStore()
   const { activeTemplate, isLoading } = useTemplates()
   const { accountNumbers, formattedTrades, isLoadingAccountFilterSettings, accountFilterSettings } = useData()
   const { accounts } = useAccounts()
   const [showWidgetLibrary, setShowWidgetLibrary] = useState(false)
   const [showKpiSelector, setShowKpiSelector] = useState(false)
-  const { width: containerWidth, containerRef: gridContainerRef, mounted: gridMounted } = useGridContainerWidth()
+  const { width: containerWidth, containerRef: gridContainerRef, mounted: gridMounted } = useGridContainerWidth(isMobile)
   const [targetSlot, setTargetSlot] = useState<{
     slotIndex?: number
     x?: number
     y?: number
   } | null>(null)
-  const isMobile = useIsMobile()
 
   // Ref to prevent layout save loops
   const isInternalUpdate = useRef(false)
@@ -279,7 +279,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
   }
 
   // Whether the grid has finished its initial width measurement
-  const gridReady = gridMounted && containerWidth > 0
+  const gridReady = isMobile ? true : (gridMounted && containerWidth > 0)
   const shouldShowTemplateSkeleton = isLoading || !activeTemplate || !gridReady
   const skeletonLayout = layout.length > 0
     ? layout

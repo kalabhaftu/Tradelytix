@@ -824,7 +824,7 @@ code > [data-line]::before {
    * internals when other cards change.
    */
   .widget-card {
-    contain: layout style paint;
+    contain: style;
     z-index: auto !important;
     isolation: auto !important;
     /* Opaque in BOTH light and dark modes */
@@ -834,6 +834,11 @@ code > [data-line]::before {
     -webkit-backdrop-filter: none !important;
     /* No box-shadow compositing either */
     box-shadow: none !important;
+
+    /* Ensure stable GPU rasterization context */
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    transform: translateZ(0);
   }
 
   /*
@@ -882,6 +887,12 @@ code > [data-line]::before {
   [data-radix-popper-content-wrapper],
   [role="dialog"],
   [data-state="open"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Global Mobile GPU safety net: strip all backdrop blurs */
+  *, *::before, *::after {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }

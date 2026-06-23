@@ -94,10 +94,126 @@ export function buildPropFirmGrowth(account: any, trades: PropFirmWidgetTrade[],
   return { points, peakEquity, maxDrawdown, tradingDays: dayKeys.size }
 }
 
-export function buildPropFirmDailyDrawdown(account: any, trades: PropFirmWidgetTrade[], timezone = DEFAULT_PROP_FIRM_RESET_TIMEZONE, now = new Date()) {
+export function findFirstBreach(account: any, trades: PropFirmWidgetTrade[], timezone = DEFAULT_PROP_FIRM_RESET_TIMEZONE) {
   const accountSize = Number(account?.accountSize || 0)
   const phase = account?.currentPhase || {}
-  const dailyLimit = accountSize * (Number(phase.dailyDrawdownPercent || 0) / 100)
+  const dailyDrawdownPercent = Number(phase.dailyDrawdownPercent || 0)
+  const maxDrawdownPercent = Number(phase.maxDrawdownPercent || 0)
+  const maxDrawdownType = phase.maxDrawdownType || 'static'
+  const dailyLimit = accountSize * (dailyDrawdownPercent / 100)
+
+  const sortedTrades = [...trades].sort((a, b) => {
+    const timeA = getPropFirmTradeTimestamp(a)?.getTime() || 0
+    const timeB = getPropFirmTradeTimestamp(b)?.getTime() || 0
+    return timeA - timeB
+  })
+
+  let runningBalance = accountSize
+  let highWaterMark = accountSize
+  let currentDayKey: string | null = null
+  let dailyStartBalance = accountSize
+
+  for (const trade of sortedTrades) {
+    const timestamp = getPropFirmTradeTimestamp(trade)
+    if (!timestamp) continue
+    const dateKey = getPropFirmDateKey(timestamp, timezone)
+
+    if (currentDayKey === null) {
+      currentDayKey = dateKey
+      dailyStartBalance = runningBalance
+    } else if (dateKey !== currentDayKey) {
+      currentDayKey = dateKey
+      dailyStartBalance = runningBalance
+    }
+
+    const netPnl = getPropFirmTradeNetPnl(trade)
+    runningBalance += netPnl
+    highWaterMark = Math.max(highWaterMark, runningBalance)
+
+    const dailyLossFloor = dailyStartBalance - dailyLimit
+    const maxDrawdownLimit = accountSize * (maxDrawdownPercent / 100)
+    const maxLossFloor = maxDrawdownType === 'trailing'
+      ? highWaterMark - maxDrawdownLimit
+      : accountSize - maxDrawdownLimit
+
+    // Check daily breach
+    const dailyDrawdownUsed = Math.max(0, dailyStartBalance - runningBalance)
+    const dailyBreached = dailyDrawdownPercent > 0 && dailyDrawdownUsed > dailyLimit
+
+    // Check max breach
+    const maxDrawdownUsed = Math.max(0, (maxDrawdownType === 'trailing' ? highWaterMark : accountSize) - runningBalance)
+    const maxBreached = maxDrawdownPercent > 0 && maxDrawdownUsed > maxDrawdownLimit
+
+    if (dailyBreached || maxBreached) {
+      return {
+        isBreached: true,
+        breachType: dailyBreached && maxBreached
+          ? 'daily_and_max_drawdown'
+          : dailyBreached
+            ? 'daily_drawdown'
+            : 'max_drawdown',
+        dailyStartBalance,
+        dailyDrawdownUsed,
+        dailyLossFloor,
+        dailyLimit,
+        notes: dailyBreached && maxBreached
+          ? 'Daily and Max Drawdown Limits exceeded'
+          : dailyBreached
+            ? `Daily Drawdown Limit exceeded by $${(dailyDrawdownUsed - dailyLimit).toFixed(2)}`
+            : `Max Drawdown Limit exceeded by $${(maxDrawdownUsed - maxDrawdownLimit).toFixed(2)}`
+      }
+    }
+  }
+
+  return null
+}
+
+export function buildPropFirmDailyDrawdown(
+  account: any,
+  trades: PropFirmWidgetTrade[],
+  timezone = DEFAULT_PROP_FIRM_RESET_TIMEZONE,
+  now = new Date(),
+  apiDrawdown?: any
+) {
+  const accountSize = Number(account?.accountSize || 0)
+  const phase = account?.currentPhase || {}
+  const dailyDrawdownPercent = Number(phase.dailyDrawdownPercent || 0)
+  const dailyLimit = accountSize * (dailyDrawdownPercent / 100)
+
+  // 1. If API already has a breach state and a frozen dailyStartBalance, use it
+  if (apiDrawdown?.isBreached && apiDrawdown?.dailyStartBalance) {
+    const dailyStartBalance = Number(apiDrawdown.dailyStartBalance)
+    const dailyDrawdownUsed = Math.max(0, dailyStartBalance - Number(apiDrawdown.currentEquity || 0))
+    const dailyDrawdownRemaining = Math.max(0, dailyLimit - dailyDrawdownUsed)
+    const dailyLossFloor = dailyStartBalance - dailyLimit
+    return {
+      dailyStartBalance,
+      dailyDrawdownUsed,
+      dailyDrawdownRemaining,
+      dailyLossFloor,
+      dailyLimit,
+      isBreached: true,
+      breachType: apiDrawdown.breachType,
+      notes: apiDrawdown.notes,
+    }
+  }
+
+  // 2. Chronological simulation fallback for breach freeze
+  const breach = findFirstBreach(account, trades, timezone)
+  if (breach) {
+    return {
+      dailyStartBalance: breach.dailyStartBalance,
+      dailyDrawdownUsed: breach.dailyDrawdownUsed,
+      dailyDrawdownRemaining: 0,
+      dailyLossFloor: breach.dailyLossFloor,
+      dailyLimit: breach.dailyLimit,
+      isBreached: true,
+      breachType: breach.breachType,
+      notes: breach.notes,
+    }
+  }
+
+  // 3. Active account calculations
   const todayKey = getPropFirmDateKey(now, timezone)
   let pnlBeforeToday = 0
   let todayPnl = 0
@@ -126,6 +242,7 @@ export function buildPropFirmDailyDrawdown(account: any, trades: PropFirmWidgetT
     dailyDrawdownRemaining,
     dailyLossFloor,
     dailyLimit,
+    isBreached: false,
   }
 }
 

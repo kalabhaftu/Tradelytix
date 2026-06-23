@@ -74,7 +74,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
       }),
 
-      // 2. Get phases with 10 most recent trades using nested include
+      // 2. Get phases with 10 most recent trades and breach records using nested include
       prisma.phaseAccount.findMany({
         where: {
           masterAccountId
@@ -91,6 +91,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             },
             orderBy: { exitTime: 'desc' },
             take: 10
+          },
+          BreachRecord: {
+            orderBy: { breachTime: 'asc' },
+            take: 1
           }
         },
         orderBy: { phaseNumber: 'asc' }
@@ -251,6 +255,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       } else if (maxDrawdownUsed > maxDrawdownLimit) {
         drawdownData.isBreached = true
         drawdownData.breachType = 'max_drawdown'
+      }
+
+      // If there is an actual BreachRecord in the database, override calculations to freeze details
+      const firstBreach = (currentPhase as any).BreachRecord?.[0]
+      if (firstBreach) {
+        drawdownData.isBreached = true
+        drawdownData.breachType = firstBreach.breachType
+        drawdownData.dailyStartBalance = firstBreach.dailyStartBalance || masterAccount.accountSize
+        drawdownData.highestEquity = firstBreach.highWaterMark || masterAccount.accountSize
+        drawdownData.currentEquity = firstBreach.currentEquity
+        drawdownData.dailyDrawdownRemaining = 0
+        drawdownData.maxDrawdownRemaining = 0
+        ;(drawdownData as any).notes = firstBreach.notes
+        ;(drawdownData as any).breachTime = firstBreach.breachTime
+        ;(drawdownData as any).breachAmount = firstBreach.breachAmount
       }
     }
 

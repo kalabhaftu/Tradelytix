@@ -135,7 +135,7 @@ export function usePropFirmDashboardWidgetData() {
       statistics: accountPayload?.statistics ?? null,
       trades,
       accountExtremes: buildPropFirmAccountExtremes(trades),
-      dailyDrawdown: buildPropFirmDailyDrawdown(account, trades, resetTimezone, referenceDate),
+      dailyDrawdown: buildPropFirmDailyDrawdown(account, trades, resetTimezone, referenceDate, accountPayload?.drawdown),
       resetTimezone,
       groupedTradeCount: trades.length,
       todayStats: buildPropFirmTodayStats(trades, resetTimezone, referenceDate),

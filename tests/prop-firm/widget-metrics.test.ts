@@ -72,4 +72,37 @@ describe('prop firm widget metrics', () => {
     expect(formatPropFirmAxisMoney(4400)).toBe('$4,400')
     expect(formatPropFirmAxisMoney(50000)).toBe('$50,000')
   })
+
+  it('freezes daily drawdown start balance and loss floor when account breaches', () => {
+    const failedAccount = {
+      accountSize: 50000,
+      currentPhase: {
+        dailyDrawdownPercent: 5,
+        maxDrawdownPercent: 10,
+        maxDrawdownType: 'static',
+      },
+    }
+
+    // Start balance: 50,000.
+    // Day 1: Trade 1: -1,000 -> balance: 49,000. Daily floor was 47,500. Not breached.
+    // Day 2: Start balance: 49,000. Trade 2: -4,000 -> balance: 45,000. Daily floor: 49,000 - 2,500 = 46,500. Breached!
+    // Day 3: Start balance: 45,000. Trade 3: -1,000 -> balance: 44,000.
+    const trades = [
+      { id: '1', netPnL: -1000, exitTime: '2026-06-21T12:00:00.000Z' },
+      { id: '2', netPnL: -4000, exitTime: '2026-06-22T12:00:00.000Z' },
+      { id: '3', netPnL: -1000, exitTime: '2026-06-23T12:00:00.000Z' },
+    ]
+
+    const daily = buildPropFirmDailyDrawdown(
+      failedAccount,
+      trades,
+      'UTC',
+      new Date('2026-06-23T18:00:00.000Z')
+    )
+
+    expect(daily.isBreached).toBe(true)
+    expect(daily.breachType).toBe('daily_drawdown')
+    expect(daily.dailyStartBalance).toBe(49000)
+    expect(daily.dailyLossFloor).toBe(46500)
+  })
 })

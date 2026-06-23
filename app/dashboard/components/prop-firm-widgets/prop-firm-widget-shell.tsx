@@ -19,6 +19,21 @@ export function PropFirmWidgetShell({ title, children }: Props) {
       title={title}
       headerRight={
         <div className="flex flex-wrap items-center justify-end gap-2">
+          {data?.dailyDrawdown?.isBreached && (
+            <div
+              title={data.dailyDrawdown.notes || undefined}
+              className="flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-destructive cursor-help shadow-sm transition-all hover:bg-destructive/15"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />
+              <span>
+                {data.dailyDrawdown.breachType === 'daily_drawdown'
+                  ? 'Daily DD Breached'
+                  : data.dailyDrawdown.breachType === 'max_drawdown'
+                  ? 'Max DD Breached'
+                  : 'Account Breached'}
+              </span>
+            </div>
+          )}
           <PropFirmWidgetTimezoneSelector value={resetTimezone} onChange={setResetTimezone} />
           <PropFirmWidgetAccountSelector
             accounts={accounts}

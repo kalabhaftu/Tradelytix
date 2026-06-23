@@ -825,6 +825,7 @@ code > [data-line]::before {
    */
   .widget-card {
     contain: style;
+    overflow: clip !important; /* Establish a clip context without establishing a GPU scroll container */
     z-index: auto !important;
     isolation: auto !important;
     /* Opaque in BOTH light and dark modes */
@@ -834,11 +835,10 @@ code > [data-line]::before {
     -webkit-backdrop-filter: none !important;
     /* No box-shadow compositing either */
     box-shadow: none !important;
-
-    /* Ensure stable GPU rasterization context */
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    transform: translateZ(0);
+    
+    /* Remove translateZ as it is no longer needed when we use clip */
+    transform: none !important;
+    will-change: auto !important;
   }
 
   /*
@@ -895,5 +895,15 @@ code > [data-line]::before {
   *, *::before, *::after {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+  }
+
+  /* 
+   * Convert all nested overflow-hidden classes inside the widgets to overflow-clip.
+   * This prevents nested containers (like calendar day grids and charts) from establishing 
+   * GPU scroll containers that suffer from paint invalidation trails.
+   */
+  [data-tour="widget-canvas"] div[class*="overflow-hidden"],
+  [data-tour="widget-canvas"] .overflow-hidden {
+    overflow: clip !important;
   }
 }

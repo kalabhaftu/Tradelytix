@@ -28,7 +28,12 @@ import {
   Leaf,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { LexicalEditor } from '@/components/ui/editor/lexical-editor'
+import dynamic from 'next/dynamic'
+
+const LexicalEditor = dynamic(
+  () => import('@/components/ui/editor/lexical-editor').then(m => ({ default: m.LexicalEditor })),
+  { ssr: false }
+)
 import { JOURNAL_EMOTIONS, getJournalEmotionLabel, type JournalEmotion } from '@/lib/journal-emotions'
 import { useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'

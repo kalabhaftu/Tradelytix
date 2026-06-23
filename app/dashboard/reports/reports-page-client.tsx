@@ -39,7 +39,6 @@ import {
     endOfDay
 } from 'date-fns'
 import { motion } from 'framer-motion'
-import html2canvas from 'html2canvas'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useUserStore } from '@/store/user-store'
 import { getPnlDisplayLabel, getTradeNetPnl, getTradePnlByMode, normalizePnlDisplayMode } from '@/lib/metrics/pnl'
@@ -368,6 +367,7 @@ export default function ReportsPageClient({
             const rect = element.getBoundingClientRect()
             const dpr = window.devicePixelRatio || 1
 
+            const html2canvas = (await import('html2canvas')).default
             const canvas = await html2canvas(element, {
                 scale: Math.max(dpr, 2),
                 backgroundColor: resolvedBg,

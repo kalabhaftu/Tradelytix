@@ -1,29 +1,22 @@
 import { DataProvider } from "@/context/data-provider";
-export const dynamic = 'force-dynamic'
-
 import { TemplateProvider } from "@/context/template-provider";
 import { TagsProvider } from "@/context/tags-provider";
 import Modals from "@/components/modals";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ReactElement, Suspense } from "react";
+import { redirect } from "next/navigation";
 import { SidebarLayout } from "./components/sidebar-layout";
 import { MobileBottomNav } from "@/components/ui/mobile-nav";
 import { QuickAddFAB } from "@/components/quick-add-fab";
-import { CommandPalette } from "@/components/command-palette";
-import { GlobalTradeController } from "./components/global-trade-controller";
-import { WeeklyReviewTrigger } from "@/components/weekly-review-trigger";
-import { KeyboardShortcutsModal } from "@/components/ui/keyboard-shortcuts-modal";
 import { getInitBootstrapData } from "@/server/init-bootstrap";
 import { checkSubscriptionAccess } from "@/lib/services/subscription-guard-service";
-import { redirect } from "next/navigation";
 import { getSiteUiSettings } from "@/server/site-ui-settings";
 
-import { TourProvider } from "@/context/tour-context";
-import { TourTooltip } from "@/components/tour/tour-tooltip";
-import { ResumeWidget } from "@/components/tour/resume-widget";
-import { TradovateSyncContextProvider } from "@/context/tradovate-sync-context";
-import { DxFeedSyncContextProvider } from "@/context/dxfeed-sync-context";
-import { RithmicSyncContextProvider } from "@/context/rithmic-sync-context";
+import { SyncContextWrapper } from "./components/sync-context-wrapper";
+import { TourWrapper } from "./components/tour-wrapper";
+import { ClientDynamicComponents } from "./components/client-dynamic-components";
+
+export const dynamic = 'force-dynamic'
 
 export default async function RootLayout({ children }: { children: ReactElement }) {
   const initialBootstrapData = await getInitBootstrapData()
@@ -42,10 +35,8 @@ export default async function RootLayout({ children }: { children: ReactElement 
   return (
     <TooltipProvider>
       <DataProvider initialBootstrapData={initialBootstrapData}>
-        <TradovateSyncContextProvider>
-          <DxFeedSyncContextProvider>
-            <RithmicSyncContextProvider>
-              <TourProvider>
+        <SyncContextWrapper>
+          <TourWrapper>
                 <TagsProvider>
                   <TemplateProvider initialActiveTemplate={initialBootstrapData.activeTemplateShell}>
                       <div className="min-h-screen flex flex-col">
@@ -57,21 +48,12 @@ export default async function RootLayout({ children }: { children: ReactElement 
                         <Modals />
                         <MobileBottomNav />
                         <QuickAddFAB />
-                        <CommandPalette />
-                        <KeyboardShortcutsModal />
-                        <Suspense fallback={null}>
-                          <GlobalTradeController />
-                        </Suspense>
-                        <WeeklyReviewTrigger />
-                        <TourTooltip />
-                        <ResumeWidget />
+                        <ClientDynamicComponents />
                       </div>
                   </TemplateProvider>
                 </TagsProvider>
-              </TourProvider>
-            </RithmicSyncContextProvider>
-          </DxFeedSyncContextProvider>
-        </TradovateSyncContextProvider>
+              </TourWrapper>
+        </SyncContextWrapper>
       </DataProvider>
     </TooltipProvider>
   );

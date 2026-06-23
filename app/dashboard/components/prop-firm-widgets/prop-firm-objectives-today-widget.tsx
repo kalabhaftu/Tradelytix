@@ -72,7 +72,7 @@ export function PropFirmObjectivesTodayWidget() {
         const resetLabel = data.resetTimezone === 'UTC' ? 'UTC' : data.resetTimezone
 
         return (
-          <div className="grid h-full gap-4 xl:grid-cols-[1.35fr_0.85fr]">
+          <div className="grid h-auto xl:h-full gap-4 xl:grid-cols-[1.35fr_0.85fr]">
             <div className="grid gap-3 lg:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
               <ObjectiveCard
                 title="Profit target"

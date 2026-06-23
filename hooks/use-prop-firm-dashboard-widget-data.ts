@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
+import { create } from 'zustand'
 import { useDashboardPropFirmAccount } from './use-dashboard-prop-firm-account'
 import {
   buildPropFirmAccountExtremes,
@@ -66,46 +67,107 @@ export type PropFirmWidgetData = {
   tradingDays: number
 }
 
-export function usePropFirmDashboardWidgetData() {
-  const selection = useDashboardPropFirmAccount()
-  const [accountPayload, setAccountPayload] = useState<any | null>(null)
-  const [trades, setTrades] = useState<PropFirmTrade[]>([])
-  const [isDataLoading, setIsDataLoading] = useState(false)
-  const [dataError, setDataError] = useState<string | null>(null)
+interface PropFirmCacheEntry {
+  accountPayload: any | null
+  trades: PropFirmTrade[]
+  isLoading: boolean
+  error: string | null
+  promise?: Promise<void> | null
+}
 
-  useEffect(() => {
-    let cancelled = false
-    const id = selection.selectedMasterAccountId
-    if (!id) {
-      setAccountPayload(null)
-      setTrades([])
+interface PropFirmStore {
+  cache: Record<string, PropFirmCacheEntry>
+  fetchData: (id: string) => Promise<void>
+  clearCache: () => void
+}
+
+export const usePropFirmStore = create<PropFirmStore>((set, get) => ({
+  cache: {},
+  clearCache: () => set({ cache: {} }),
+  fetchData: async (id: string) => {
+    const entry = get().cache[id]
+    if (entry && (entry.isLoading || entry.promise || entry.accountPayload)) {
+      if (entry.promise) {
+        await entry.promise
+      }
       return
     }
 
-    async function loadData() {
-      setIsDataLoading(true)
-      setDataError(null)
-      try {
-        const [accountResponse, tradesResponse] = await Promise.all([
-          fetch(`/api/v1/prop-firm/accounts/${id}`),
-          fetch(`/api/v1/prop-firm/accounts/${id}/trades?phase=current`),
-        ])
-        const [accountJson, tradesJson] = await Promise.all([accountResponse.json(), tradesResponse.json()])
-        if (!accountResponse.ok || !accountJson.success) throw new Error(accountJson.error || 'Failed to load prop firm account')
-        if (!tradesResponse.ok || !tradesJson.success) throw new Error(tradesJson.error || 'Failed to load prop firm trades')
-        if (cancelled) return
-        setAccountPayload(accountJson.data)
-        setTrades(Array.isArray(tradesJson.data?.trades) ? tradesJson.data.trades : [])
-      } catch (err) {
-        if (!cancelled) setDataError(err instanceof Error ? err.message : 'Failed to load prop firm widget data')
-      } finally {
-        if (!cancelled) setIsDataLoading(false)
-      }
-    }
+    let resolvePromise: () => void = () => {}
+    const promise = new Promise<void>((resolve) => {
+      resolvePromise = resolve
+    })
 
-    loadData()
-    return () => { cancelled = true }
-  }, [selection.selectedMasterAccountId])
+    set((state) => ({
+      cache: {
+        ...state.cache,
+        [id]: {
+          accountPayload: null,
+          trades: [],
+          isLoading: true,
+          error: null,
+          promise,
+        },
+      },
+    }))
+
+    try {
+      const [accountResponse, tradesResponse] = await Promise.all([
+        fetch(`/api/v1/prop-firm/accounts/${id}`),
+        fetch(`/api/v1/prop-firm/accounts/${id}/trades?phase=current`),
+      ])
+      const [accountJson, tradesJson] = await Promise.all([accountResponse.json(), tradesResponse.json()])
+      if (!accountResponse.ok || !accountJson.success) throw new Error(accountJson.error || 'Failed to load prop firm account')
+      if (!tradesResponse.ok || !tradesJson.success) throw new Error(tradesJson.error || 'Failed to load prop firm trades')
+
+      set((state) => ({
+        cache: {
+          ...state.cache,
+          [id]: {
+            accountPayload: accountJson.data,
+            trades: Array.isArray(tradesJson.data?.trades) ? tradesJson.data.trades : [],
+            isLoading: false,
+            error: null,
+            promise: null,
+          },
+        },
+      }))
+    } catch (err) {
+      set((state) => ({
+        cache: {
+          ...state.cache,
+          [id]: {
+            accountPayload: null,
+            trades: [],
+            isLoading: false,
+            error: err instanceof Error ? err.message : 'Failed to load prop firm widget data',
+            promise: null,
+          },
+        },
+      }))
+    } finally {
+      resolvePromise()
+    }
+  },
+}))
+
+export function usePropFirmDashboardWidgetData() {
+  const selection = useDashboardPropFirmAccount()
+  const id = selection.selectedMasterAccountId
+
+  const cacheEntry = usePropFirmStore((state) => state.cache[id || ''])
+  const fetchData = usePropFirmStore((state) => state.fetchData)
+
+  useEffect(() => {
+    if (id) {
+      fetchData(id)
+    }
+  }, [id, fetchData])
+
+  const accountPayload = cacheEntry?.accountPayload ?? null
+  const trades = cacheEntry?.trades ?? []
+  const isDataLoading = id ? (!cacheEntry || cacheEntry.isLoading) : false
+  const dataError = cacheEntry?.error ?? null
 
   const computed = useMemo(() => {
     const account = accountPayload?.account ?? null

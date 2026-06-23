@@ -111,7 +111,7 @@ export default function PerformanceSummaryWidget() {
 
   return (
     <WidgetCard title="Performance">
-      <div className="grid h-full gap-4 xl:grid-cols-[1fr_1.15fr]">
+      <div className="grid h-auto xl:h-full gap-4 xl:grid-cols-[1fr_1.15fr]">
         {stats ? (
           <div className="grid content-start gap-px overflow-hidden rounded-lg border border-border/25 bg-border/20 sm:grid-cols-2">
             <div className="bg-card/80 px-3 py-3"><StatItem label="Total trades" value={String(stats.totalTrades)} /></div>

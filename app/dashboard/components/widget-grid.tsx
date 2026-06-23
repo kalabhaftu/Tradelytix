@@ -431,7 +431,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
               const config = WIDGET_REGISTRY[widget.type as WidgetType]
               if (!config) return null
 
-              const isChart = config.category === 'charts' || widget.type.startsWith('calendar')
+              const isChart = (config.category === 'charts' && widget.type !== 'performanceSummary') || widget.type.startsWith('calendar')
               const chartHeight = widget.h * ROW_HEIGHT + (widget.h - 1) * GRID_MARGIN[1]
 
               return (

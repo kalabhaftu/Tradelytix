@@ -65,6 +65,8 @@ import {
 import { defaultLayouts } from '@/lib/dashboard/default-layouts';
 import { useDataProviderTradeMutations } from '@/hooks/use-data-provider-trade-mutations';
 import * as mockData from '@/lib/demo/mock-data';
+import { usePropFirmStore } from '@/hooks/use-prop-firm-dashboard-widget-data';
+
 
 // Types from trades-data.tsx
 type StatisticsProps = {
@@ -651,6 +653,9 @@ export const DataProvider: React.FC<{
       
       hasLoadedDataRef.current = false
       activeLoadPromiseRef.current = null
+      
+      // Clear prop firm widgets cache
+      usePropFirmStore.getState().clearCache()
       
       await revalidateCache([`trades-${user.id}`, `user-data-${user.id}-${locale}`])
       

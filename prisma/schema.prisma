@@ -31,7 +31,7 @@ model Account {
 }
 
 model BacktestTrade {
-  id               String            @id
+  id               String            @id @default(cuid())
   userId           String
   pair             String
   direction        BacktestDirection
@@ -68,7 +68,7 @@ model BacktestTrade {
 }
 
 model BreachRecord {
-  id                String       @id
+  id                String       @id @default(cuid())
   phaseAccountId    String
   breachType        BreachType
   breachAmount      Float
@@ -87,7 +87,7 @@ model BreachRecord {
 }
 
 model DailyAnchor {
-  id             String       @id
+  id             String       @id @default(cuid())
   phaseAccountId String
   date           DateTime     @db.Date
   anchorEquity   Float
@@ -117,7 +117,7 @@ model DailyNote {
 }
 
 model DashboardTemplate {
-  id        String   @id
+  id        String   @id @default(cuid())
   userId    String
   name      String
   isDefault Boolean  @default(false)
@@ -202,7 +202,7 @@ model AdminSharingPolicy {
 }
 
 model LiveAccountTransaction {
-  id          String          @id
+  id          String          @id @default(cuid())
   accountId   String
   userId      String
   type        TransactionType
@@ -240,7 +240,7 @@ model MasterAccount {
 }
 
 model Payout {
-  id              String        @id
+  id              String        @id @default(cuid())
   masterAccountId String
   phaseAccountId  String
   amount          Float
@@ -367,7 +367,6 @@ model Trade {
 
   @@unique([userId, tradeIdentityKey], name: "trade_identity_key")
   @@index([accountId, exitTime])
-  @@index([accountId])
   @@index([accountId, phaseAccountId])
   @@index([accountNumber])
   @@index([entryId])
@@ -375,11 +374,9 @@ model Trade {
   @@index([groupId])
   @@index([modelId])
   @@index([phaseAccountId, exitTime])
-  @@index([phaseAccountId])
   @@index([symbol])
   @@index([tradeIdentityKey])
   @@index([userId, accountNumber, id])
-  @@index([userId, accountNumber])
   @@index([userId, entryDate(sort: Desc)])
   @@index([userId, accountId, entryDate(sort: Desc)])
   @@index([userId, phaseAccountId, entryDate(sort: Desc)])
@@ -387,7 +384,6 @@ model Trade {
   @@index([userId, modelId, entryDate(sort: Desc)])
   @@index([userId, ruleBroken, entryDate(sort: Desc)])
   @@index([userId, outcome, entryDate(sort: Desc)])
-  @@index([userId])
   // Composite indexes for server-side filtering (/api/v1/trades)
   @@index([userId, instrument])
   @@index([userId, accountNumber, entryDate])
@@ -396,7 +392,7 @@ model Trade {
 }
 
 model TradeExecution {
-  id                  String             @id
+  id                  String             @id @default(cuid())
   tradeId             String
   userId              String
   kind                TradeExecutionKind
@@ -422,7 +418,7 @@ model TradeExecution {
 }
 
 model TradeTag {
-  id        String   @id
+  id        String   @id @default(cuid())
   name      String
   color     String   @default("#3b82f6")
   userId    String
@@ -436,7 +432,7 @@ model TradeTag {
 }
 
 model TradingModel {
-  id        String   @id
+  id        String   @id @default(cuid())
   userId    String
   name      String
   rules     Json     @default("[]")
@@ -457,20 +453,9 @@ model User {
   email                  String                   @unique
   auth_user_id           String                   @unique
   isFirstConnection      Boolean                  @default(true)
-  timezone               String                   @default("America/New_York")
-  theme                  String                   @default("system")
   firstName              String?
   lastName               String?
-  accountFilterSettings  String?
-  aiSettings             Json?
-  backtestInputMode      String                   @default("manual")
-  breakEvenThreshold     Float                    @default(10)
-  pnlDisplayMode         String                   @default("net")
-  accentPack             String                   @default("classic")
-  widgetStyle            String                   @default("default")
-  chartStyle             String                   @default("smooth")
   role                   UserRole                 @default(user)
-  autoAdjustAccountDate  Boolean                  @default(false)
   onboardingStatus       Json?                    @map("onboarding_status")
   Account                Account[]
   BacktestTrade          BacktestTrade[]
@@ -604,7 +589,7 @@ model Notification {
 }
 
 model WeeklyReview {
-  id            String             @id
+  id            String             @id @default(cuid())
   userId        String
   startDate     DateTime           @db.Date
   endDate       DateTime           @db.Date

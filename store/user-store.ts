@@ -2,9 +2,12 @@ import { Account } from '@/context/data-provider'
 import { User } from '@prisma/client'
 import { User as SupabaseUser } from '@supabase/supabase-js'
 import { create } from 'zustand'
+import { UserSettingsShape } from '@/lib/user-settings'
+
+export type MergedUser = User & UserSettingsShape
 
 type UserStore = {
-  user: User | null
+  user: MergedUser | null
   supabaseUser: SupabaseUser | null
   accounts: Account[]
   dashboardLayout: {
@@ -21,7 +24,7 @@ type UserStore = {
   use24HourFormat: boolean
   setTimezone: (timezone: string) => void
   setUse24HourFormat: (value: boolean) => void
-  setUser: (user: User | null) => void
+  setUser: (user: MergedUser | null) => void
   setSupabaseUser: (supabaseUser: SupabaseUser | null) => void
   setAccounts: (accounts: Account[]) => void
   addAccount: (account: Account) => void

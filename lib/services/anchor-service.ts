@@ -89,7 +89,11 @@ export async function createAllDailyAnchors() {
             User: {
               select: {
                 id: true,
-                timezone: true
+                settings: {
+                  select: {
+                    timezone: true
+                  }
+                }
               }
             }
           }
@@ -102,7 +106,7 @@ export async function createAllDailyAnchors() {
     // Create anchors for each active phase
     for (const phase of activePhases) {
       try {
-        const timezone = phase.MasterAccount.User.timezone || 'UTC'
+        const timezone = phase.MasterAccount.User.settings?.timezone || 'UTC'
         const result = await createDailyAnchor(phase.id, timezone)
         
         if (result.created) {

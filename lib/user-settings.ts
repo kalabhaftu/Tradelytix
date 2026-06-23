@@ -92,7 +92,7 @@ export function mergeUserSettings<T extends Record<string, unknown>>(
 }
 
 export function extractUserSettingsData(
-  source: Partial<Pick<User, SettingsField>> | Partial<UserSettingsShape> | null | undefined
+  source: Partial<UserSettingsShape> | null | undefined
 ): UserSettingsShape {
   const defaults = getDefaultUserSettings()
   return {
@@ -119,7 +119,7 @@ function toNullableJsonInput(value: unknown): Prisma.InputJsonValue | Prisma.Nul
 }
 
 export function extractUserSettingsWriteData(
-  source: Partial<Pick<User, SettingsField>> | Partial<UserSettingsShape> | null | undefined
+  source: Partial<UserSettingsShape> | null | undefined
 ) {
   const normalized = extractUserSettingsData(source)
 
@@ -139,7 +139,7 @@ export function extractUserSettingsWriteData(
 }
 
 export function buildUserSettingsUpdateData(
-  source: Partial<Pick<User, SettingsField>> | Partial<UserSettingsShape>
+  source: Partial<UserSettingsShape>
 ): Prisma.UserSettingsUpdateInput {
   const update: Prisma.UserSettingsUpdateInput = {}
 
@@ -192,11 +192,11 @@ export function pickSettingsPatch(source: Record<string, unknown>) {
   return patch
 }
 
-export function settingsCreateFromUser(user: Pick<User, SettingsField>): Prisma.UserSettingsCreateInput {
+export function settingsCreateFromUser(user: { id: string } & Partial<UserSettingsShape>): Prisma.UserSettingsCreateInput {
   return {
     ...extractUserSettingsWriteData(user),
     User: {
-      connect: { id: (user as any).id },
+      connect: { id: user.id },
     },
   }
 }

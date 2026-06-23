@@ -86,7 +86,7 @@ export function WidgetCard({
       return (
         <div
           className={cn(
-            'w-full h-auto overflow-hidden widget-card',
+            'w-full h-full overflow-hidden widget-card',
             'bg-card border border-border/60 dark:border-border/30 rounded-xl',
             'p-3',
             className
@@ -102,7 +102,7 @@ export function WidgetCard({
     return (
       <div
         className={cn(
-          'w-full h-auto overflow-hidden flex flex-col widget-card',
+          'w-full h-full overflow-hidden flex flex-col widget-card',
           'bg-card border border-border/60 dark:border-border/30 rounded-xl',
           !noPadding && 'p-3',
           className

@@ -80,6 +80,8 @@ import { TemplateAwareDashboardSkeleton } from '@/components/ui/dashboard-skelet
 import { WIDGET_GRID_DEFAULTS } from '../config/widget-dimensions'
 import { buildResponsiveDashboardLayouts } from '@/lib/dashboard/responsive-layouts'
 import { toast } from 'sonner'
+import { useDashboardPropFirmAccount } from '@/hooks/use-dashboard-prop-firm-account'
+import { usePropFirmStore } from '@/hooks/use-prop-firm-dashboard-widget-data'
 
 import 'react-grid-layout/css/styles.css'
 
@@ -155,6 +157,22 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
   const [showWidgetLibrary, setShowWidgetLibrary] = useState(false)
   const [showKpiSelector, setShowKpiSelector] = useState(false)
   const { width: containerWidth, containerRef: gridContainerRef, mounted: gridMounted } = useGridContainerWidth(isMobile)
+
+  // Track initial mount and load state for active prop-firm challenge
+  const propFirmAccount = useDashboardPropFirmAccount()
+  const activePropFirmId = propFirmAccount.selectedMasterAccountId
+  const propFirmCache = usePropFirmStore(state => state.cache[activePropFirmId || ''])
+  const isPropFirmLoading = activePropFirmId
+    ? (propFirmAccount.isLoading || !propFirmCache || propFirmCache.isLoading)
+    : false
+
+  const [hasMountedOnce, setHasMountedOnce] = useState(false)
+  useEffect(() => {
+    const gridReady = isMobile ? true : (gridMounted && containerWidth > 0)
+    if (!isLoading && !isPropFirmLoading && gridReady && activeTemplate) {
+      setHasMountedOnce(true)
+    }
+  }, [isLoading, isPropFirmLoading, isMobile, gridMounted, containerWidth, activeTemplate])
   const [targetSlot, setTargetSlot] = useState<{
     slotIndex?: number
     x?: number
@@ -326,7 +344,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
 
   // Whether the grid has finished its initial width measurement
   const gridReady = isMobile ? true : (gridMounted && containerWidth > 0)
-  const shouldShowTemplateSkeleton = isLoading || !activeTemplate || !gridReady
+  const shouldShowTemplateSkeleton = !hasMountedOnce && (isLoading || !activeTemplate || !gridReady || isPropFirmLoading)
   const skeletonLayout = layout.length > 0
     ? layout
     : ((activeTemplate?.layout?.length ? activeTemplate.layout : cloneDefaultTemplateLayout()) as WidgetLayout[])
@@ -450,7 +468,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
                       <X className="h-3 w-3" />
                     </Button>
                   )}
-                  <LazyMobileWidget height={isChart ? chartHeight : undefined} isEditMode={isEditMode}>
+                  <LazyMobileWidget height={chartHeight} isEditMode={isEditMode}>
                     {config.getComponent({ size: widget.size as any })}
                   </LazyMobileWidget>
                 </div>

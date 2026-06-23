@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import ImportButton from './import/import-button'
 import { NotificationCenter } from '@/components/notifications/notification-center'
-import { motion } from 'framer-motion'
+
 import { useKeyboardShortcuts } from '../hooks/use-keyboard-shortcuts'
 import { CombinedFilters } from './navbar-filters/combined-filters'
 import { AccountSelector } from './navbar-filters/account-selector'
@@ -67,11 +67,8 @@ export default function Navbar() {
   }
 
   return (
-    <motion.nav
-      className="sticky top-0 z-40 flex w-full items-center border-b border-sidebar-border/60 dark:border-sidebar-border/40 bg-sidebar lg:bg-sidebar/80 text-foreground lg:backdrop-blur-md"
-      initial={{ y: -48, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.25, ease: "easeOut" }}
+    <nav
+      className="navbar-slide-in sticky top-0 z-40 flex w-full items-center border-b border-sidebar-border/60 dark:border-sidebar-border/40 bg-sidebar lg:bg-sidebar/80 text-foreground lg:backdrop-blur-md"
     >
       <div className="flex items-center justify-between w-full px-4 h-12">
         {/* Left: Sidebar mobile trigger & logo */}
@@ -270,6 +267,6 @@ export default function Navbar() {
           </div>
         </DialogContent>
       </Dialog>
-    </motion.nav>
+    </nav>
   )
 }

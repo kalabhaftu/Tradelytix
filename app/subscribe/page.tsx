@@ -88,6 +88,9 @@ export default function SubscribePage() {
           <p className="text-muted-foreground text-sm">
             Get full access to your trading journal and analytics
           </p>
+          <div className="mt-3 text-xs text-muted-foreground bg-muted/40 p-2.5 rounded-lg border border-border/40 text-center leading-relaxed">
+            Tradelytix was originally created for my personal use. If other traders wish to use it, a paid subscription is required to cover API costs and hosting.
+          </div>
         </div>
 
         {/* Pricing Card */}

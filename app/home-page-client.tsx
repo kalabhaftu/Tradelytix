@@ -54,6 +54,9 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-6">
+              This platform was built for my personal use. If other users need to use it, a paid subscription is required.
+            </div>
             <h1 className="text-5xl sm:text-7xl font-bold tracking-tighter leading-[1.1] mb-6">
               Master Your Edge.
             </h1>

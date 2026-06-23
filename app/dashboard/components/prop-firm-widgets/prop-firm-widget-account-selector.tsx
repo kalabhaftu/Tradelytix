@@ -25,7 +25,9 @@ type TimezoneProps = {
 
 function getLabel(account: DashboardPropFirmAccountOption) {
   const phase = account.currentPhase ? `Phase ${account.currentPhase}` : 'No current phase'
-  return `${account.accountName || account.propFirmName} · ${phase}`
+  const isFailed = String(account.status || '').toLowerCase() === 'failed'
+  const suffix = isFailed ? ' (Blown)' : ''
+  return `${account.accountName || account.propFirmName} · ${phase}${suffix}`
 }
 
 export function PropFirmWidgetTimezoneSelector({ value, onChange }: TimezoneProps) {

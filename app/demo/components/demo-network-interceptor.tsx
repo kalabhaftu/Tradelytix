@@ -98,26 +98,30 @@ export function DemoNetworkInterceptor() {
           }
 
           if (pathname.match(/^\/api\/v1\/prop-firm\/accounts\/[^\/]+$/)) {
-            return new Response(JSON.stringify({ success: true, data: mockData.MOCK_PROP_FIRM_DETAILS }), {
+            const isFailedAcc = pathname.includes('mock-propfirm-failed');
+            const data = mockData.getMockPropFirmDetails(isFailedAcc);
+            return new Response(JSON.stringify({ success: true, data }), {
               status: 200,
               headers: { 'Content-Type': 'application/json' }
-            })
+            });
           }
 
           if (pathname.match(/^\/api\/v1\/prop-firm\/accounts\/[^\/]+\/payouts\/eligibility$/)) {
             return new Response(JSON.stringify({ success: true, data: mockData.MOCK_PAYOUT_ELIGIBILITY }), {
               status: 200,
               headers: { 'Content-Type': 'application/json' }
-            })
+            });
           }
 
           if (pathname.match(/^\/api\/v1\/prop-firm\/accounts\/[^\/]+\/trades$/)) {
-            const allTrades = mockData.getMockTradesList()
-            const propFirmTrades = allTrades.filter(t => t.accountId === 'mock-propfirm-1')
+            const isFailedAcc = pathname.includes('mock-propfirm-failed');
+            const targetAccId = isFailedAcc ? 'mock-propfirm-failed' : 'mock-propfirm-1';
+            const allTrades = mockData.getMockTradesList();
+            const propFirmTrades = allTrades.filter(t => t.accountId === targetAccId);
             return new Response(JSON.stringify({ success: true, data: { trades: propFirmTrades } }), {
               status: 200,
               headers: { 'Content-Type': 'application/json' }
-            })
+            });
           }
 
           if (pathname.match(/^\/api\/v1\/trades$/)) {

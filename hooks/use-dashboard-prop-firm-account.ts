@@ -49,22 +49,30 @@ function getCurrentPhase(account: DashboardPropFirmAccountOption) {
   return account.PhaseAccount?.find((phase) => phase.phaseNumber === account.currentPhase) ?? null
 }
 
-function isSelectableChallengeAccount(account: DashboardPropFirmAccountOption) {
+function isSelectableOrBlownAccount(account: DashboardPropFirmAccountOption) {
   const accountStatus = String(account.status || '').toLowerCase()
+  const evaluationType = String(account.evaluationType || '').toLowerCase()
+
+  // Always exclude instant accounts
+  if (evaluationType.includes('instant')) return false
+
+  // Allow blown/failed accounts
+  if (accountStatus === 'failed') return true
+
+  // For active accounts, must have active current phase and not be funded
   const currentPhase = getCurrentPhase(account)
   const currentPhaseStatus = String(currentPhase?.status || '').toLowerCase()
-  const evaluationType = String(account.evaluationType || '').toLowerCase()
 
   return (
     accountStatus === 'active' &&
     currentPhaseStatus === 'active' &&
-    !evaluationType.includes('instant') &&
     !evaluationType.includes('funded')
   )
 }
 
 function getPreferredAccount(accounts: DashboardPropFirmAccountOption[]) {
-  return accounts[0] ?? null
+  // Prefer the first active account, fallback to first in list
+  return accounts.find(a => String(a.status || '').toLowerCase() === 'active') ?? accounts[0] ?? null
 }
 
 export function useDashboardPropFirmAccount() {
@@ -85,25 +93,53 @@ export function useDashboardPropFirmAccount() {
       setError(null)
       try {
         if (isDemo) {
-          const nextAccounts = [{
-            id: 'mock-prop-firm-1',
-            accountName: 'Demo Challenge',
-            propFirmName: 'FTMO',
-            accountSize: 100000,
-            evaluationType: '2-Phase Challenge',
-            status: 'active',
-            currentPhase: 1,
-            PhaseAccount: [
-              { id: 'mock-acc-1', phaseNumber: 1, phaseId: 'mock-acc-1', status: 'active' }
-            ]
-          }]
+          const nextAccounts = [
+            {
+              id: 'mock-propfirm-1',
+              accountName: 'Demo Challenge',
+              propFirmName: 'FTMO',
+              accountSize: 100000,
+              evaluationType: 'Two Step',
+              status: 'active',
+              currentPhase: 1,
+              PhaseAccount: [
+                { id: 'mock-acc-1', phaseNumber: 1, phaseId: 'FTMO-PHASE-1', status: 'active' }
+              ]
+            },
+            {
+              id: 'mock-propfirm-failed',
+              accountName: 'Failed Challenge (Old)',
+              propFirmName: 'MyForexFunds',
+              accountSize: 50000,
+              evaluationType: 'Two Step',
+              status: 'failed',
+              currentPhase: 1,
+              PhaseAccount: [
+                { id: 'mock-acc-failed', phaseNumber: 1, phaseId: 'OLD-CHALLENGE', status: 'failed' }
+              ]
+            }
+          ]
           
           if (cancelled) return
           setAccounts(nextAccounts)
           setResetTimezoneState(getStoredResetTimezone())
+          
           const stored = getStoredSelection()
-          const storedExists = stored && nextAccounts.some((account: DashboardPropFirmAccountOption) => account.id === stored)
-          const preferred = storedExists ? stored : getPreferredAccount(nextAccounts)?.id ?? null
+          const storedAccount = stored ? nextAccounts.find(a => a.id === stored) : null
+          const isStoredActive = storedAccount && String(storedAccount.status || '').toLowerCase() === 'active'
+          
+          let preferred: string | null = null
+          if (isStoredActive) {
+            preferred = stored!
+          } else {
+            const firstActive = nextAccounts.find(a => String(a.status || '').toLowerCase() === 'active')
+            if (firstActive) {
+              preferred = firstActive.id
+            } else {
+              preferred = storedAccount ? storedAccount.id : (nextAccounts[0]?.id ?? null)
+            }
+          }
+          
           setSelectedMasterAccountIdState(preferred)
           if (preferred && preferred !== stored) setStoredSelection(preferred)
           return
@@ -115,14 +151,28 @@ export function useDashboardPropFirmAccount() {
           throw new Error(payload.error || 'Failed to load prop firm accounts')
         }
 
-        const nextAccounts = (Array.isArray(payload.data) ? payload.data : []).filter(isSelectableChallengeAccount)
+        const nextAccounts: DashboardPropFirmAccountOption[] = (Array.isArray(payload.data) ? payload.data : []).filter(isSelectableOrBlownAccount)
         if (cancelled) return
 
         setAccounts(nextAccounts)
         setResetTimezoneState(getStoredResetTimezone())
+        
         const stored = getStoredSelection()
-        const storedExists = stored && nextAccounts.some((account: DashboardPropFirmAccountOption) => account.id === stored)
-        const preferred = storedExists ? stored : getPreferredAccount(nextAccounts)?.id ?? null
+        const storedAccount = stored ? nextAccounts.find(a => a.id === stored) : null
+        const isStoredActive = storedAccount && String(storedAccount.status || '').toLowerCase() === 'active'
+        
+        let preferred: string | null = null
+        if (isStoredActive) {
+          preferred = stored!
+        } else {
+          const firstActive = nextAccounts.find(a => String(a.status || '').toLowerCase() === 'active')
+          if (firstActive) {
+            preferred = firstActive.id
+          } else {
+            preferred = storedAccount ? storedAccount.id : (nextAccounts[0]?.id ?? null)
+          }
+        }
+        
         setSelectedMasterAccountIdState(preferred)
         if (preferred && preferred !== stored) setStoredSelection(preferred)
       } catch (err) {

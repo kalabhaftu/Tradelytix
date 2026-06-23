@@ -79,6 +79,39 @@ export const MOCK_ACCOUNTS = [
       masterAccountName: 'Demo Prop Firm Account',
       evaluationType: 'Two Step'
     }
+  },
+  {
+    id: 'mock-propfirm-failed',
+    number: 'OLD-CHALLENGE',
+    name: 'Failed Challenge (Old)',
+    propfirm: 'MyForexFunds',
+    broker: 'Mock Broker',
+    startingBalance: 50000,
+    calculatedEquity: 44000,
+    pnl: -6000,
+    currentBalance: 44000,
+    currentEquity: 44000,
+    status: 'failed',
+    createdAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
+    userId: 'demo-user',
+    groupId: null,
+    group: null,
+    accountType: 'prop-firm',
+    displayName: 'Failed Challenge (Old) (Blown)',
+    tradeCount: 20,
+    owner: null,
+    isOwner: true,
+    currentPhase: 1,
+    phaseAccountNumber: 'OLD-CHALLENGE',
+    isArchived: false,
+    currentPhaseDetails: {
+      phaseNumber: 1,
+      status: 'failed',
+      phaseId: 'OLD-CHALLENGE',
+      masterAccountId: 'mock-propfirm-failed',
+      masterAccountName: 'Failed Challenge (Old)',
+      evaluationType: 'Two Step'
+    }
   }
 ];
 
@@ -97,33 +130,82 @@ export const MOCK_LIVE_ACCOUNT_DETAILS = {
   createdAt: new Date().toISOString()
 };
 
-export const MOCK_PROP_FIRM_DETAILS = {
-  account: {
-    id: 'mock-propfirm-1',
-    accountName: 'Demo Prop Firm Account',
-    propFirmName: 'FTMO',
-    accountSize: 100000,
-    evaluationType: 'Two Step',
-    currentPhase: {
-      id: 'mock-phase-1',
-      phaseNumber: 1,
-      phaseId: 'FTMO-PHASE-1',
-      status: 'active',
-      profitTargetPercent: 10,
-      dailyDrawdownPercent: 5,
-      maxDrawdownPercent: 10,
-      maxDrawdownType: 'balance',
-      minTradingDays: 4,
-      timeLimitDays: null,
-      consistencyRulePercent: 0,
-      profitSplitPercent: 80,
-      payoutCycleDays: 14,
-      startDate: new Date().toISOString(),
-      endDate: null
-    },
-    status: 'active',
-    phases: [
-      {
+export function getMockPropFirmDetails(isFailed: boolean) {
+  if (isFailed) {
+    return {
+      account: {
+        id: 'mock-propfirm-failed',
+        accountName: 'Failed Challenge (Old)',
+        propFirmName: 'MyForexFunds',
+        accountSize: 50000,
+        evaluationType: 'Two Step',
+        currentPhase: {
+          id: 'mock-phase-failed',
+          phaseNumber: 1,
+          phaseId: 'OLD-CHALLENGE',
+          status: 'failed',
+          profitTargetPercent: 8,
+          dailyDrawdownPercent: 5,
+          maxDrawdownPercent: 10,
+          maxDrawdownType: 'balance',
+          minTradingDays: 5,
+          timeLimitDays: null,
+          consistencyRulePercent: 0,
+          profitSplitPercent: 75,
+          payoutCycleDays: 30,
+          startDate: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
+          endDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        status: 'failed',
+        phases: [
+          {
+            id: 'mock-phase-failed',
+            phaseNumber: 1,
+            phaseId: 'OLD-CHALLENGE',
+            status: 'failed',
+            profitTargetPercent: 8,
+            dailyDrawdownPercent: 5,
+            maxDrawdownPercent: 10,
+            maxDrawdownType: 'balance',
+            minTradingDays: 5,
+            timeLimitDays: null,
+            consistencyRulePercent: 0,
+            profitSplitPercent: 75,
+            payoutCycleDays: 30,
+            startDate: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
+            endDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+          }
+        ],
+        currentPnL: -6000,
+        currentGrossPnL: -5850,
+        currentNetPnL: -6000,
+        currentBalance: 44000,
+        currentEquity: 44000,
+        dailyDrawdownRemaining: 0,
+        maxDrawdownRemaining: 0,
+        profitTargetProgress: 0,
+        lastUpdated: new Date().toISOString()
+      },
+      drawdown: {
+        dailyDrawdownRemaining: 0,
+        maxDrawdownRemaining: 0,
+        dailyStartBalance: 50000,
+        highestEquity: 51200,
+        currentEquity: 44000,
+        isBreached: true,
+        breachType: 'max_drawdown'
+      }
+    };
+  }
+
+  return {
+    account: {
+      id: 'mock-propfirm-1',
+      accountName: 'Demo Prop Firm Account',
+      propFirmName: 'FTMO',
+      accountSize: 100000,
+      evaluationType: 'Two Step',
+      currentPhase: {
         id: 'mock-phase-1',
         phaseNumber: 1,
         phaseId: 'FTMO-PHASE-1',
@@ -139,27 +221,49 @@ export const MOCK_PROP_FIRM_DETAILS = {
         payoutCycleDays: 14,
         startDate: new Date().toISOString(),
         endDate: null
-      }
-    ],
-    currentPnL: 5432,
-    currentGrossPnL: 5600,
-    currentNetPnL: 5432,
-    currentBalance: 105432,
-    currentEquity: 105432,
-    dailyDrawdownRemaining: 4568,
-    maxDrawdownRemaining: 9568,
-    profitTargetProgress: 54.32,
-    lastUpdated: new Date().toISOString()
-  },
-  drawdown: {
-    dailyDrawdownRemaining: 4568,
-    maxDrawdownRemaining: 9568,
-    dailyStartBalance: 100000,
-    highestEquity: 105432,
-    currentEquity: 105432,
-    isBreached: false
-  }
-};
+      },
+      status: 'active',
+      phases: [
+        {
+          id: 'mock-phase-1',
+          phaseNumber: 1,
+          phaseId: 'FTMO-PHASE-1',
+          status: 'active',
+          profitTargetPercent: 10,
+          dailyDrawdownPercent: 5,
+          maxDrawdownPercent: 10,
+          maxDrawdownType: 'balance',
+          minTradingDays: 4,
+          timeLimitDays: null,
+          consistencyRulePercent: 0,
+          profitSplitPercent: 80,
+          payoutCycleDays: 14,
+          startDate: new Date().toISOString(),
+          endDate: null
+        }
+      ],
+      currentPnL: 5432,
+      currentGrossPnL: 5600,
+      currentNetPnL: 5432,
+      currentBalance: 105432,
+      currentEquity: 105432,
+      dailyDrawdownRemaining: 4568,
+      maxDrawdownRemaining: 9568,
+      profitTargetProgress: 54.32,
+      lastUpdated: new Date().toISOString()
+    },
+    drawdown: {
+      dailyDrawdownRemaining: 4568,
+      maxDrawdownRemaining: 9568,
+      dailyStartBalance: 100000,
+      highestEquity: 105432,
+      currentEquity: 105432,
+      isBreached: false
+    }
+  };
+}
+
+export const MOCK_PROP_FIRM_DETAILS = getMockPropFirmDetails(false);
 
 export const MOCK_PROP_FIRM_SETTINGS = {
   id: 'mock-propfirm-1',
@@ -290,11 +394,28 @@ export function getMockTradesList() {
       entryTime = new Date(prevYear, prevMonth, day)
     }
 
-    const isWin = Math.random() > 0.45
+    const accountChoice = i % 5 === 0 
+      ? 'failed-prop' 
+      : (i % 3 === 0 ? 'active-prop' : 'live')
+
+    const accountId = accountChoice === 'failed-prop' 
+      ? 'mock-propfirm-failed' 
+      : (accountChoice === 'active-prop' ? 'mock-propfirm-1' : 'mock-acc-1')
+
+    const accountNumber = accountChoice === 'failed-prop'
+      ? 'OLD-CHALLENGE'
+      : (accountChoice === 'active-prop' ? 'FTMO-PHASE-1' : 'DEMO-123')
+
+    const isWin = accountChoice === 'failed-prop'
+      ? Math.random() > 0.75
+      : Math.random() > 0.45
+
     const pnl = isWin 
-      ? Math.floor(150 + Math.random() * 800) 
-      : -Math.floor(100 + Math.random() * 350)
-      
+      ? Math.floor(150 + Math.random() * 500) 
+      : (accountChoice === 'failed-prop'
+          ? -Math.floor(300 + Math.random() * 800)
+          : -Math.floor(100 + Math.random() * 350))
+
     const quantity = Math.floor((1 + Math.random() * 4) * 10) / 10
     const commission = -Math.floor((1.5 + Math.random() * 2) * quantity * 100) / 100
     const netPnl = pnl + commission
@@ -312,11 +433,6 @@ export function getMockTradesList() {
     const tradeInstrument = instruments[i % instruments.length]
     const currentSetup = strategies[i % strategies.length]
     const isRuleBroken = Math.random() > 0.9
-
-    // Allocate 30% of trades to the Prop Firm account, 70% to the Live account
-    const isPropFirmTrade = i % 3 === 0
-    const accountId = isPropFirmTrade ? 'mock-propfirm-1' : 'mock-acc-1'
-    const accountNumber = isPropFirmTrade ? 'FTMO-PHASE-1' : 'DEMO-123'
 
     return {
       id: `demo-trade-${i}`,

@@ -824,7 +824,7 @@ code > [data-line]::before {
    * internals when other cards change.
    */
   .widget-card {
-    contain: layout style paint;
+    contain: style;
     overflow: clip !important; /* Establish a clip context without establishing a GPU scroll container */
     z-index: auto !important;
     isolation: auto !important;
@@ -836,11 +836,8 @@ code > [data-line]::before {
     /* No box-shadow compositing either */
     box-shadow: none !important;
     
-    /* Force GPU layer so browser composits card independently and clips nested elements cleanly */
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    transform: translateZ(0) !important;
-    will-change: transform !important;
+    transform: none !important;
+    will-change: auto !important;
   }
 
   /*

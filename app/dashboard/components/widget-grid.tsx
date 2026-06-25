@@ -98,7 +98,7 @@ const generateWidgetId = () => {
 
 const isKpiRowWidget = (widget: WidgetLayout) => widget.y === 0 && widget.h === 1
 
-function LazyMobileWidget({ children, height, isEditMode }: { children: React.ReactNode; height?: number; isEditMode: boolean }) {
+function LazyMobileWidget({ children, minHeight, height, isEditMode }: { children: React.ReactNode; minHeight?: number; height?: number; isEditMode: boolean }) {
   const [isIntersecting, setIsIntersecting] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -131,13 +131,13 @@ function LazyMobileWidget({ children, height, isEditMode }: { children: React.Re
   }, [isEditMode])
 
   return (
-    <div ref={ref} style={height ? { minHeight: height } : undefined} className="w-full h-full">
+    <div ref={ref} style={{ height, minHeight }} className="w-full h-full flex flex-col">
       {isIntersecting ? (
         children
       ) : (
         <div 
-          className="w-full h-full bg-muted/10 animate-pulse rounded-xl border border-border/40" 
-          style={height ? { height } : undefined}
+          className="w-full flex-1 bg-muted/10 animate-pulse rounded-xl border border-border/40" 
+          style={{ minHeight: height || minHeight }}
         />
       )}
     </div>
@@ -158,11 +158,30 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
   const [showKpiSelector, setShowKpiSelector] = useState(false)
   const { width: containerWidth, containerRef: gridContainerRef, mounted: gridMounted } = useGridContainerWidth(isMobile)
 
+  // Use current layout if in edit mode, otherwise use active template
+  const layout = useMemo(
+    () => (isEditMode && currentLayout ? currentLayout : activeTemplate?.layout ?? []),
+    [isEditMode, currentLayout, activeTemplate?.layout]
+  )
+
+  const hasPropFirmWidget = useMemo(() => {
+    return layout.some(w => w.type.startsWith('propFirm'))
+  }, [layout])
+
   // Track initial mount and load state for active prop-firm challenge
   const propFirmAccount = useDashboardPropFirmAccount()
   const activePropFirmId = propFirmAccount.selectedMasterAccountId
   const propFirmCache = usePropFirmStore(state => state.cache[activePropFirmId || ''])
-  const isPropFirmLoading = activePropFirmId
+  const fetchPropFirmData = usePropFirmStore(state => state.fetchData)
+
+  // Trigger fetch early if we have prop firm widgets so the dashboard skeleton can wait for it
+  useEffect(() => {
+    if (hasPropFirmWidget && activePropFirmId) {
+      fetchPropFirmData(activePropFirmId)
+    }
+  }, [hasPropFirmWidget, activePropFirmId, fetchPropFirmData])
+
+  const isPropFirmLoading = (hasPropFirmWidget && activePropFirmId)
     ? (propFirmAccount.isLoading || !propFirmCache || propFirmCache.isLoading)
     : false
 
@@ -188,12 +207,6 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
       setTargetSlot(null)
     }
   }, [showWidgetLibrary, showKpiSelector])
-
-  // Use current layout if in edit mode, otherwise use active template
-  const layout = useMemo(
-    () => (isEditMode && currentLayout ? currentLayout : activeTemplate?.layout ?? []),
-    [isEditMode, currentLayout, activeTemplate?.layout]
-  )
 
   // Separate KPI widgets from other widgets
   const kpiWidgets = useMemo(() => {
@@ -451,12 +464,15 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
 
               const isChart = (config.category === 'charts' && widget.type !== 'performanceSummary') || widget.type.startsWith('calendar')
               const chartHeight = widget.h * ROW_HEIGHT + (widget.h - 1) * GRID_MARGIN[1]
+              
+              const mobileHeight = isChart ? chartHeight : undefined
+              const minHeight = isChart ? chartHeight : (config.previewHeight || 200)
 
               return (
                 <div
                   key={`mobile-${widget.i}`}
-                  className={cn('widget-wrapper', isEditMode && 'relative ring-1 ring-border/30 ring-inset rounded-2xl')}
-                  style={isChart ? { height: chartHeight } : undefined}
+                  className={cn('widget-wrapper relative flex-shrink-0', isEditMode && 'ring-1 ring-border/30 ring-inset rounded-2xl')}
+                  style={isChart ? { height: chartHeight } : { minHeight }}
                 >
                   {isEditMode && (
                     <Button
@@ -468,7 +484,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
                       <X className="h-3 w-3" />
                     </Button>
                   )}
-                  <LazyMobileWidget height={chartHeight} isEditMode={isEditMode}>
+                  <LazyMobileWidget height={mobileHeight} minHeight={minHeight} isEditMode={isEditMode}>
                     {config.getComponent({ size: widget.size as any })}
                   </LazyMobileWidget>
                 </div>

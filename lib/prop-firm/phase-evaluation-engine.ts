@@ -798,6 +798,10 @@ export class PhaseEvaluationEngine {
         with: {
           MasterAccount: true,
           Trade: {
+            where: (table, { lt, isNull, or, and }) => or(
+              lt(table.exitTime, todayDate),
+              and(isNull(table.exitTime), lt(table.createdAt, todayDate))
+            ),
             orderBy: (trade, { asc }) => [asc(trade.exitTime)]
           }
         }

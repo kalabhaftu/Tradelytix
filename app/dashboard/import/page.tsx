@@ -64,15 +64,15 @@ export default function ImportCallbackPage() {
         const code = searchParams.get("code");
         const state = searchParams.get("state");
 
-        logger.info("OAuth callback received:", {
+        logger.info({
           hasCode: !!code,
           hasState: !!state,
-          state: state?.substring(0, 8) + "...",
-          environment: tradovateStore.environment,
-          userAgent: navigator.userAgent,
+          state: state || 'none',
+          environment: tradovateStore.environment || 'none',
+          userAgent: window.navigator.userAgent,
           timestamp: new Date().toISOString(),
           url: window.location.href,
-        });
+        }, "OAuth callback received:");
 
         if (!code) {
           setError("No authorization code received");
@@ -94,22 +94,22 @@ export default function ImportCallbackPage() {
             : null);
 
         if (!storedOAuthState) {
-          logger.error("Tradovate store not properly initialized:", {
+          logger.warn({
             hasStore: !!tradovateStore,
-            oauthState: tradovateStore?.oauthState,
-          });
+            oauthState: tradovateStore.oauthState,
+          }, "Tradovate store not properly initialized:");
           setError("OAuth state not found - please try again");
           setStatus("error");
           return;
         }
 
         if (state !== storedOAuthState) {
-          logger.error("State mismatch:", {
-            received: state?.substring(0, 8) + "...",
-            expected: storedOAuthState?.substring(0, 8) + "...",
-            receivedLength: state?.length,
-            expectedLength: storedOAuthState?.length,
-          });
+          logger.warn({
+            received: state,
+            expected: storedOAuthState,
+            receivedLength: state.length,
+            expectedLength: storedOAuthState.length,
+          }, "State mismatch:");
           setError("Invalid state parameter - possible security issue");
           setStatus("error");
           return;
@@ -127,7 +127,7 @@ export default function ImportCallbackPage() {
         }
 
         if (result.error) {
-          logger.error("OAuth callback error:", result.error);
+          logger.error({ error: result.error }, "OAuth callback error:");
           setError(result.error);
           setStatus("error");
           return;
@@ -135,12 +135,12 @@ export default function ImportCallbackPage() {
 
         // Validate all required fields exist and are strings
         if (!result.accessToken || !result.refreshToken || !result.expiresAt) {
-          logger.error("Missing required fields in OAuth result:", {
+          logger.error({
             hasAccessToken: !!result.accessToken,
             hasRefreshToken: !!result.refreshToken,
             hasExpiresAt: !!result.expiresAt,
             result,
-          });
+          }, "Missing required fields in OAuth result:");
           setError(
             "Invalid response from token exchange - missing required fields",
           );
@@ -157,7 +157,7 @@ export default function ImportCallbackPage() {
         try {
           await loadAccounts();
         } catch (loadError) {
-          logger.warn("Failed to refresh Tradovate synchronizations", loadError);
+          logger.warn({ error: loadError instanceof Error ? loadError.message : String(loadError) }, "Failed to refresh Tradovate synchronizations");
         }
 
         logger.info("OAuth flow completed successfully");
@@ -168,12 +168,12 @@ export default function ImportCallbackPage() {
           router.push("/dashboard");
         }, 1000);
       } catch (error) {
-        logger.error("OAuth callback error:", {
+        logger.error({
           error: error instanceof Error ? error.message : "Unknown error",
           stack: error instanceof Error ? error.stack : undefined,
           errorType: typeof error,
           errorString: String(error),
-        });
+        }, "OAuth callback error:");
 
         let errorMessage = "Unknown error occurred";
         if (error instanceof Error) {

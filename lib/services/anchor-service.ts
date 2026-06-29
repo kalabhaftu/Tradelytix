@@ -28,12 +28,16 @@ export async function createDailyAnchor(phaseAccountId: string, timezone: string
     return { created: false, reason: 'already_exists', anchor: existingAnchor }
   }
 
-  // Get phase account with trades
+  // Get phase account with trades before the anchor date (start of day)
   const phaseAccount = await db.query.PhaseAccount.findFirst({
     where: eq(schema.PhaseAccount.id, phaseAccountId),
     with: {
       MasterAccount: true,
       Trade: {
+        where: (table, { lt, isNull, or, and }) => or(
+          lt(table.exitTime, anchorDate),
+          and(isNull(table.exitTime), lt(table.createdAt, anchorDate))
+        ),
         columns: { pnl: true, commission: true }
       }
     }

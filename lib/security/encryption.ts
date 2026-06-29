@@ -44,9 +44,9 @@ export function decrypt(hash: string | null | undefined): string | null {
     const parts = hash.split(':');
     if (parts.length !== 3) return hash;
     
-    const iv = Buffer.from(parts[0], 'hex');
-    const authTag = Buffer.from(parts[1], 'hex');
-    const encryptedText = Buffer.from(parts[2], 'hex');
+    const iv = Buffer.from(parts[0] as string, 'hex');
+    const authTag = Buffer.from(parts[1] as string, 'hex');
+    const encryptedText = Buffer.from(parts[2] as string, 'hex');
     
     const decipher = crypto.createDecipheriv(ALGORITHM, getKey(), iv);
     decipher.setAuthTag(authTag);

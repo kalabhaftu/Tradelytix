@@ -409,6 +409,10 @@ export function calculatePerformanceScoreResult(
   trades: Partial<TradeType>[],
   breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
 ) {
+  if (!trades || trades.length < 10) {
+    return { hasData: false, reason: 'not_enough_data', message: 'Not enough data. Minimum 10 trades required.' }
+  }
+
   const metrics = calculateMetricsFromTrades(trades as any, breakEvenThreshold)
   if (!metrics) return { hasData: false }
   

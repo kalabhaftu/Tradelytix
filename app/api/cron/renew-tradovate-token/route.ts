@@ -79,6 +79,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
+import { encrypt, decrypt } from '@/lib/security/encryption';
+
 async function renewUserToken(synchronization: any): Promise<boolean> {
   try {
     const apiBaseUrl = synchronization.environment === 'demo' 
@@ -87,9 +89,11 @@ async function renewUserToken(synchronization: any): Promise<boolean> {
     
     logger.info(`[CRON] Attempting token renewal for account ${synchronization.accountId}`);
     
+    const decryptedToken = decrypt(synchronization.token) || synchronization.token;
+    
     const renewal = await fetch(`${apiBaseUrl}/auth/renewAccessToken`, {
       headers: {
-        'Authorization': `Bearer ${synchronization.token}`
+        'Authorization': `Bearer ${decryptedToken}`
       }
     });
     
@@ -104,7 +108,7 @@ async function renewUserToken(synchronization: any): Promise<boolean> {
     const renewalData = await renewal.json();
     
     // Update database
-    await db.update(schema.Synchronization).set({ token: renewalData.accessToken, tokenExpiresAt: new Date(renewalData.expirationTime) }).where(eq(schema.Synchronization.id, synchronization.id));
+    await db.update(schema.Synchronization).set({ token: encrypt(renewalData.accessToken), tokenExpiresAt: new Date(renewalData.expirationTime) }).where(eq(schema.Synchronization.id, synchronization.id));
 
     return true;
   } catch (error) {
@@ -124,7 +128,8 @@ async function performDailySync(synchronization: any): Promise<boolean> {
     
     // Use account-level fee config from DB (includedFeeTypes on sync record)
     const includedFeeTypes = synchronization.includedFeeTypes as Record<string, boolean> | null | undefined
-    const result = await getTradovateTrades(synchronization.token, {
+    const decryptedToken = decrypt(synchronization.token) || synchronization.token;
+    const result = await getTradovateTrades(decryptedToken, {
       userId: synchronization.userId,
       ...(includedFeeTypes && { includedFeeTypes: includedFeeTypes as any }),
     });

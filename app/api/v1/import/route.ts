@@ -7,7 +7,7 @@ import { createErrorResponse } from '@/lib/api-response'
 import { z } from 'zod'
 
 const MAX_TRADE_IMPORT_ROWS = 5000
-const MAX_TRADE_IMPORT_BODY_BYTES = 2 * 1024 * 1024
+const MAX_TRADE_IMPORT_BODY_BYTES = 5 * 1024 * 1024
 
 const tradeImportSchema = z.object({
   accountId: z.string().trim().min(1).max(128),

@@ -38,6 +38,7 @@ interface TradeImportJobState {
     evaluationType?: string | undefined
     propFirmName?: string | undefined
   } | undefined
+  rowErrors?: Array<{ row: number, message: string }>
 }
 
 const DEFAULT_TRADE_IMPORT_STATE: TradeImportJobState = {
@@ -66,6 +67,7 @@ function parseTradeImportState(state: unknown): TradeImportJobState {
     accountNumber: obj.accountNumber,
     masterAccountId: obj.masterAccountId,
     evaluation: obj.evaluation,
+    rowErrors: Array.isArray(obj.rowErrors) ? obj.rowErrors : [],
   }
 }
 
@@ -114,6 +116,7 @@ function serializeTradeImportJob(job: any) {
       phaseAccountId: state.phaseAccountId,
       regularAccountId: state.regularAccountId,
       evaluation: state.evaluation,
+      rowErrors: state.rowErrors,
     }
   }
 }
@@ -383,24 +386,62 @@ export async function processTradeImportJobChunk(jobId: string, internalUserId: 
     const endIndex = Math.min(totalItems, state.index + TRADE_IMPORT_CHUNK_SIZE)
     const chunk = payload.trades.slice(state.index, endIndex)
 
-    const preparedRows = chunk
-      .map((trade) => normalizeTrade(trade, internalUserId, state.accountNumber || ''))
-      .filter(Boolean)
-      .map((trade: any) => ({
-        ...trade,
-        accountId: state.accountType === 'live' ? state.regularAccountId || null : null,
-        phaseAccountId: state.accountType === 'prop-firm' ? state.phaseAccountId || null : null,
-      }))
+    state.rowErrors = state.rowErrors || []
+    
+    const preparedRows: any[] = []
+    for (let i = 0; i < chunk.length; i++) {
+      const rawTrade = chunk[i]
+      const rowIndex = state.index + i + 1
+      
+      if (!rawTrade || typeof rawTrade !== 'object') {
+        state.rowErrors.push({ row: rowIndex, message: 'Invalid trade data format' })
+        continue
+      }
+      
+      const trade = Object.fromEntries(
+        Object.entries(rawTrade).filter(([, value]) => value !== undefined)
+      ) as any
+      
+      if (!trade.instrument) {
+        state.rowErrors.push({ row: rowIndex, message: 'Missing instrument/symbol' })
+        continue
+      }
+      if (!trade.entryDate) {
+        state.rowErrors.push({ row: rowIndex, message: 'Missing entry date' })
+        continue
+      }
+      if (!trade.closeDate) {
+        state.rowErrors.push({ row: rowIndex, message: 'Missing close date' })
+        continue
+      }
+      if (isNaN(Number(trade.quantity))) {
+        state.rowErrors.push({ row: rowIndex, message: 'Invalid quantity' })
+        continue
+      }
+      
+      const normalized = normalizeTrade(rawTrade, internalUserId, state.accountNumber || '')
+      if (normalized) {
+        preparedRows.push({
+          ...normalized,
+          accountId: state.accountType === 'live' ? state.regularAccountId || null : null,
+          phaseAccountId: state.accountType === 'prop-firm' ? state.phaseAccountId || null : null,
+        })
+      } else {
+        state.rowErrors.push({ row: rowIndex, message: 'Failed to normalize trade data' })
+      }
+    }
 
     let inserted = 0
     if (preparedRows.length > 0) {
-      const createManyResult = await db.insert(schema.Trade).values(preparedRows).onConflictDoNothing()
-      inserted = (createManyResult as any).rowCount || (createManyResult as any).count || preparedRows.length
+      await db.transaction(async (tx) => {
+        const createManyResult = await tx.insert(schema.Trade).values(preparedRows).onConflictDoNothing()
+        inserted = (createManyResult as any).rowCount || (createManyResult as any).count || preparedRows.length
 
-      const executionRows = preparedRows.flatMap((trade: any) => buildSyntheticExecutionsFromTrade(trade))
-      if (executionRows.length > 0) {
-        await db.insert(schema.TradeExecution).values(executionRows as any).onConflictDoNothing()
-      }
+        const executionRows = preparedRows.flatMap((trade: any) => buildSyntheticExecutionsFromTrade(trade))
+        if (executionRows.length > 0) {
+          await tx.insert(schema.TradeExecution).values(executionRows as any).onConflictDoNothing()
+        }
+      })
     }
 
     state.imported += inserted

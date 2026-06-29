@@ -36,6 +36,32 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
+    // Convert storage paths or public URLs to signed URLs
+    const { createClient } = await import('@/lib/supabase/server')
+    const supabase = await createClient()
+
+    const imageFields = ['imageOne', 'imageTwo', 'imageThree', 'imageFour', 'imageFive', 'imageSix', 'cardPreviewImage'] as const
+    for (const field of imageFields) {
+      if (trade[field]) {
+        let path = trade[field]!
+        // If it's a full URL, try to extract the path.
+        if (path.includes('/trade-images/')) {
+          const parts = path.split('/trade-images/')
+          path = parts[parts.length - 1]
+        }
+        
+        // Remove query params if it's an old signed URL
+        if (path.includes('?')) {
+          path = path.split('?')[0]
+        }
+
+        const { data } = await supabase.storage.from('trade-images').createSignedUrl(path, 3600) // 1 hour
+        if (data?.signedUrl) {
+          (trade as any)[field] = data.signedUrl
+        }
+      }
+    }
+
     return NextResponse.json({ success: true, trade })
   } catch (error: any) {
     logger.error('GET /api/v1/trades/[id] failed', { error: error?.message }, 'api')

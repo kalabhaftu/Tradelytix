@@ -175,8 +175,12 @@ export default function PerformanceScore({ size = 'small-long' }: PerformanceSco
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center space-y-2">
               <Trophy className="h-12 w-12 text-muted-foreground/30 mx-auto" />
-              <p className="text-sm text-muted-foreground">No trading data available</p>
-              <p className="text-xs text-muted-foreground">Import trades to see your score</p>
+              <p className="text-sm font-medium text-foreground">
+                {scoreData?.reason === 'not_enough_data' ? "Not Enough Data" : "No trading data available"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {scoreData?.message || "Import trades to see your score"}
+              </p>
             </div>
           </div>
         )}

@@ -86,11 +86,13 @@ async function uploadImage(
 
   if (error || !uploadData) return null
 
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from('trade-images').getPublicUrl(path)
+  const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+    .from('trade-images')
+    .createSignedUrl(path, 60 * 60 * 24 * 365 * 10) // 10 years
 
-  return publicUrl
+  if (signedUrlError || !signedUrlData) return null
+
+  return signedUrlData.signedUrl
 }
 
 async function uploadTradeImages(

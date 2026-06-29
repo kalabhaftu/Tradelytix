@@ -24,9 +24,6 @@
     "test:e2e:ui": "playwright test --ui",
     "pre-deploy": "npm run type-check && npm run lint && npm test",
     "setup-env": "node scripts/setup-env.js",
-    "diagnose:metrics": "tsx scripts/diagnose-metric-consistency.ts",
-    "diagnose:data": "tsx scripts/diagnose-data-integrity.ts",
-    "diagnose:trade-counts": "tsx scripts/audit-trade-counts.ts",
     "cleanup:orphaned-users": "tsx scripts/cleanup-orphaned-users.ts",
     "manage:users": "tsx scripts/user-management.ts"
   },
@@ -108,7 +105,7 @@
     "fuse.js": "^7.0.0",
     "hotkeys-js": "^3.13.9",
     "html2canvas": "^1.4.1",
-    "inngest": "^4.11.0",
+    "inngest": "^3.54.2",
     "input-otp": "^1.4.1",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",

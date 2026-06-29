@@ -9,3 +9,5 @@ export * from './trades';
 export * from './playbook';
 export * from './misc';
 export * from './ai';
+
+export { AIChat as AiChat, AIChatMessage as AiChatMessage, AIChatUsageLog as AiChatUsageLog } from './misc';

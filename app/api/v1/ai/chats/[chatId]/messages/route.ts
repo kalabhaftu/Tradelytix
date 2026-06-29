@@ -304,7 +304,7 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '50', 10)
     const skip = (page - 1) * limit
 
-    const chat = await db.query.AiChat.findFirst({
+    const chat = await db.query.AIChat.findFirst({
       where: (table, { and, eq }) => and(
         eq(table.id, chatId),
         eq(table.userId, userId),
@@ -316,7 +316,7 @@ export async function GET(
       return NextResponse.json({ error: 'Chat not found' }, { status: 404 })
     }
 
-    const messages = await db.query.AiChatMessage.findMany({
+    const messages = await db.query.AIChatMessage.findMany({
       where: (table, { eq }) => eq(table.chatId, chatId),
       orderBy: (table, { asc }) => [asc(table.createdAt)],
       limit,
@@ -342,7 +342,7 @@ export async function POST(
   const { chatId } = await params
 
   try {
-    const chat = await db.query.AiChat.findFirst({
+    const chat = await db.query.AIChat.findFirst({
       where: (table, { and, eq }) => and(
         eq(table.id, chatId),
         eq(table.userId, userId),
@@ -383,14 +383,14 @@ export async function POST(
     }
 
     // Save user's message
-    await db.insert(schema.AiChatMessage).values({
+    await db.insert(schema.AIChatMessage).values({
       chatId,
       role: 'user',
       content: prompt,
     })
 
     // 2. Fetch Chat History
-    const history = await db.query.AiChatMessage.findMany({
+    const history = await db.query.AIChatMessage.findMany({
       where: (table, { eq }) => eq(table.chatId, chatId),
       orderBy: (table, { asc }) => [asc(table.createdAt)],
       limit: 12,
@@ -463,12 +463,12 @@ ${dataContext}`
         const estimatedCost = promptCost + completionCost
         
         await db.transaction(async (tx) => {
-          await tx.insert(schema.AiChatMessage).values({
+          await tx.insert(schema.AIChatMessage).values({
             chatId,
             role: 'assistant',
             content: event.text,
           })
-          await tx.insert(schema.AiChatUsageLog).values({
+          await tx.insert(schema.AIChatUsageLog).values({
             userId,
             chatId,
             promptTokens,
@@ -477,7 +477,7 @@ ${dataContext}`
             estimatedCost,
             responseTimeMs: Date.now() - startTime,
           })
-          await tx.update(schema.AiChat).set({ updatedAt: new Date() }).where(eq(schema.AiChat.id, chatId))
+          await tx.update(schema.AIChat).set({ updatedAt: new Date() }).where(eq(schema.AIChat.id, chatId))
         })
       },
     })

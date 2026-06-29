@@ -7,7 +7,6 @@ import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { extractIP } from '@/server/geolocation'
 import { logServerError } from '@/lib/error-logger'
 import { createErrorResponse, createSuccessResponse } from '@/lib/api-response'
-import { logger } from '@/lib/logger'
 import { z } from 'zod'
 import { buildFeedbackAttachmentPath } from '@/lib/storage/paths'
 

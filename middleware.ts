@@ -15,10 +15,8 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet: any[]) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
@@ -27,27 +25,44 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // IMPORTANT: Do NOT write any logic between createServerClient and
+  // supabase.auth.getUser(). A simple mistake could make it very hard to
+  // debug issues with users being randomly logged out.
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Protected routes check
-  const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard') || 
-                           request.nextUrl.pathname.startsWith('/admin')
-  
+  const { pathname } = request.nextUrl
+
+  // Protected routes — redirect unauthenticated users to /login
+  const isProtectedRoute =
+    pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
+
   if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    return NextResponse.redirect(url)
+    // IMPORTANT: carry forward the refreshed auth cookies so Supabase
+    // can re-validate on the /login page and avoid a double-redirect.
+    const redirectResponse = NextResponse.redirect(url)
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value)
+    })
+    return redirectResponse
   }
 
-  // Auth routes check (don't show login if already logged in)
-  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
+  // Auth routes — redirect authenticated users away from /login or /signup
+  if (user && (pathname === '/login' || pathname === '/signup')) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
+    const redirectResponse = NextResponse.redirect(url)
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value)
+    })
+    return redirectResponse
   }
 
+  // IMPORTANT: return supabaseResponse (not NextResponse.next()) to ensure
+  // the session cookies updated by getUser() are written to the browser.
   return supabaseResponse
 }
 
@@ -58,7 +73,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
+     * - api routes (handled server-side, no session needed at edge)
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],

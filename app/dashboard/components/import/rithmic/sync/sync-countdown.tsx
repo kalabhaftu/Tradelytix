@@ -5,6 +5,7 @@ import { useRithmicSyncStore } from '@/store/rithmic-sync-store'
 import { Badge } from "@/components/ui/badge"
 import { Clock } from 'lucide-react'
 import { useRithmicSyncContext } from '@/context/rithmic-sync-context'
+import { logger } from '@/lib/logger';
 
 interface SyncCountdownProps {
   lastSyncTime: string
@@ -32,10 +33,10 @@ export function SyncCountdown({ lastSyncTime, isAutoSyncing, credentialId }: Syn
         
         if (!hasTriggeredSyncRef.current && credentialId && !isAutoSyncing) {
           hasTriggeredSyncRef.current = true
-          console.log('Countdown reached Ready state, triggering immediate sync check for credential:', credentialId)
+          logger.info('Countdown reached Ready state, triggering immediate sync check for credential:', credentialId)
 
           performSyncForCredential(credentialId).catch(error => {
-            console.error('Error triggering immediate sync:', error)
+            logger.error('Error triggering immediate sync:', error)
           })
         }
         return

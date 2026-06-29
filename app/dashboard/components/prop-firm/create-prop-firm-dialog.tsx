@@ -85,7 +85,6 @@ export function CreatePropFirmDialog({ open, onOpenChange, onSuccess }: PropFirm
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
   const [isEditingRules, setIsEditingRules] = useState(false)
 
-
   const {
     register,
     control,
@@ -190,7 +189,6 @@ export function CreatePropFirmDialog({ open, onOpenChange, onSuccess }: PropFirm
       const result = await response.json()
 
       if (!response.ok) {
-        // Handle field-specific errors
         if (result.field === 'accountName') {
           setError('accountName', {
             type: 'manual',

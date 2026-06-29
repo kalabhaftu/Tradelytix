@@ -12,10 +12,10 @@ function makeQueryClient() {
         // Retry failed requests twice with exponential backoff
         retry: 2,
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
-        // Data considered fresh for 30 seconds
-        staleTime: 30 * 1000,
-        // Keep unused data in cache for 5 minutes
-        gcTime: 5 * 60 * 1000,
+        // Data considered fresh for 2 minutes
+        staleTime: 2 * 60 * 1000,
+        // Keep unused data in cache for 10 minutes
+        gcTime: 10 * 60 * 1000,
       },
       mutations: {
         retry: 1,

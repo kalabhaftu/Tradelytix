@@ -1,11 +1,6 @@
-/**
- * GET /api/v1/payments/status?paymentRecordId=xxx
- * Returns the current status of a payment record.
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 import { refreshPaymentRecordStatus } from '@/lib/services/subscription-service'
 import { logger } from '@/lib/logger'
 
@@ -26,14 +21,10 @@ export async function GET(request: NextRequest) {
       await refreshPaymentRecordStatus(paymentRecordId, identity.internalUserId)
     }
 
-    const record = await prisma.paymentRecord.findFirst({
-      where: { id: paymentRecordId, userId: identity.internalUserId },
-      include: {
-        Subscription: {
-          select: {
-            status: true,
-          },
-        },
+    const record = await db.query.PaymentRecord.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, paymentRecordId), eq(table.userId, identity.internalUserId)),
+      with: {
+        Subscription: true,
       },
     })
 

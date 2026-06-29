@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { z } from 'zod'
+import { eq, and } from 'drizzle-orm'
 
 const ruleCategorySchema = z.enum(['entry', 'target', 'confirmation', 'confluence', 'exit', 'risk', 'general'])
 
@@ -53,8 +55,8 @@ export async function PATCH(
     const validated = tradingModelSchema.parse(body)
 
     // Verify model belongs to user
-    const existing = await prisma.tradingModel.findUnique({
-      where: { id },
+    const existing = await db.query.TradingModel.findFirst({
+      where: (table, { eq }) => eq(table.id, id),
     })
 
     if (!existing) {
@@ -67,13 +69,8 @@ export async function PATCH(
 
     // If name is being changed, check for duplicates
     if (validated.name && validated.name !== existing.name) {
-      const duplicate = await prisma.tradingModel.findUnique({
-        where: {
-          userId_name: {
-            userId,
-            name: validated.name,
-          },
-        },
+      const duplicate = await db.query.TradingModel.findFirst({
+        where: (table, { and, eq }) => and(eq(table.userId, userId), eq(table.name, validated.name)),
       })
 
       if (duplicate) {
@@ -84,15 +81,12 @@ export async function PATCH(
       }
     }
 
-    const model = await prisma.tradingModel.update({
-      where: { id },
-      data: {
-        ...(validated.name && { name: validated.name }),
-        ...(validated.rules !== undefined && { rules: validated.rules }),
-        ...(validated.setups !== undefined && { setups: validated.setups }),
-        ...(validated.notes !== undefined && { notes: validated.notes }),
-      },
-    })
+    const model = (await db.update(schema.TradingModel).set({
+      ...(validated.name && { name: validated.name }),
+      ...(validated.rules !== undefined && { rules: validated.rules }),
+      ...(validated.setups !== undefined && { setups: validated.setups }),
+      ...(validated.notes !== undefined && { notes: validated.notes }),
+    }).where(eq(schema.TradingModel.id, id)).returning())[0]
 
     return NextResponse.json({ success: true, model })
   } catch (error) {
@@ -131,12 +125,10 @@ export async function DELETE(
     const userId = identity.internalUserId
 
     // Verify model belongs to user
-    const existing = await prisma.tradingModel.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: { Trade: true },
-        },
+    const existing = await db.query.TradingModel.findFirst({
+      where: (table, { eq }) => eq(table.id, id),
+      with: {
+        Trade: true,
       },
     })
 
@@ -148,13 +140,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Check if model is used in trades
-    const tradesCount = existing._count.Trade
+    const tradesCount = existing.Trade?.length ?? 0
 
     // Delete the model (trades will have modelId set to null due to onDelete: SetNull)
-    await prisma.tradingModel.delete({
-      where: { id },
-    })
+    await db.delete(schema.TradingModel).where(eq(schema.TradingModel.id, id))
 
     return NextResponse.json({
       success: true,

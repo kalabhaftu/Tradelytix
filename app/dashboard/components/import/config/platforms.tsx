@@ -1,5 +1,6 @@
 import React from 'react'
-import { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import type { ComponentType } from 'react'
 import ImportTypeSelection from '../import-type-selection'
 import FileUpload from '../file-upload'
@@ -24,8 +25,6 @@ export interface ProcessedData {
   headers: string[]
   processedData: string[][]
 }
-
-
 
 type StepComponent = 
   | typeof ImportTypeSelection
@@ -79,7 +78,6 @@ export interface PlatformConfig {
 }
 
 // Platform-specific processing functions
-
 
 const processStandardCsv = (data: string[][]): ProcessedData => {
   if (data.length === 0) {

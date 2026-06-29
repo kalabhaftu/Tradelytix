@@ -29,10 +29,6 @@ import { formatNumber } from "@/lib/utils"
 import { WidgetSize } from '@/app/dashboard/types/dashboard'
 import { calculateTotalStartingBalance } from '@/lib/utils/balance-calculator'
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
 interface AccountBalanceChartProps {
   size?: WidgetSize
 }
@@ -48,10 +44,6 @@ interface ChartDataPoint {
   hasActivity: boolean
 }
 
-// ============================================================================
-// CONSTANTS - Tradezella Premium Styling
-// ============================================================================
-
 const COLORS = {
   profit: 'hsl(var(--chart-profit))',
   loss: 'hsl(var(--chart-loss))',
@@ -65,13 +57,6 @@ const CHART_CONFIG = {
   strokeWidth: 2.5,
   dotRadius: 4
 } as const
-
-
-// ============================================================================
-// CUSTOM DOT COMPONENT
-// ============================================================================
-// CUSTOM DOT COMPONENT
-// ============================================================================
 
 function CustomDot(props: any) {
   const { cx, cy, payload, fill } = props
@@ -89,10 +74,6 @@ function CustomDot(props: any) {
   )
 }
 
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
 function formatAxisValue(value: number): string {
   const absValue = Math.abs(value)
   if (absValue >= 1000000) {
@@ -103,10 +84,6 @@ function formatAxisValue(value: number): string {
   }
   return `${value < 0 ? '-' : ''}$${formatNumber(absValue, 0)}`
 }
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
 
 function AccountBalanceChart({ size = 'small-long' }: AccountBalanceChartProps) {
   const { data: rawChartData, isLoading } = useWidgetData('accountBalanceChart')
@@ -142,21 +119,13 @@ function AccountBalanceChart({ size = 'small-long' }: AccountBalanceChartProps) 
     )
   }
 
-  // ---------------------------------------------------------------------------
   // LINE COLOR DETERMINATION (PRESERVED - DO NOT MODIFY)
-  // ---------------------------------------------------------------------------
   const initialBalance = chartData.length > 0 ? chartData[0].balance : 0
   const currentBalance = chartData.length > 0 ? chartData[chartData.length - 1].balance : initialBalance
   const isPositive = currentBalance >= initialBalance
 
-  // ---------------------------------------------------------------------------
-  // SIZE-RESPONSIVE VALUES
-  // ---------------------------------------------------------------------------
   const isCompact = size === 'small' || size === 'small-long'
 
-  // ---------------------------------------------------------------------------
-  // RENDER
-  // ---------------------------------------------------------------------------
   return (
     <WidgetCard title="Account Balance">
       <div className="w-full h-full">

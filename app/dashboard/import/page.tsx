@@ -17,6 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { useTradovateSyncContext } from "@/context/tradovate-sync-context";
+import logger from '@/lib/logger';
 
 export default function ImportCallbackPage() {
   const router = useRouter();
@@ -48,13 +49,13 @@ export default function ImportCallbackPage() {
   useEffect(() => {
     const handleCallback = async () => {
       if (!storeHydrated) {
-        console.log("Waiting for Tradovate store hydration...");
+        logger.info("Waiting for Tradovate store hydration...");
         return;
       }
 
       // Prevent double execution (React StrictMode in development)
       if (hasProcessed.current) {
-        console.log("Callback already processed, skipping...");
+        logger.info("Callback already processed, skipping...");
         return;
       }
       hasProcessed.current = true;
@@ -63,7 +64,7 @@ export default function ImportCallbackPage() {
         const code = searchParams.get("code");
         const state = searchParams.get("state");
 
-        console.log("OAuth callback received:", {
+        logger.info("OAuth callback received:", {
           hasCode: !!code,
           hasState: !!state,
           state: state?.substring(0, 8) + "...",
@@ -93,7 +94,7 @@ export default function ImportCallbackPage() {
             : null);
 
         if (!storedOAuthState) {
-          console.error("Tradovate store not properly initialized:", {
+          logger.error("Tradovate store not properly initialized:", {
             hasStore: !!tradovateStore,
             oauthState: tradovateStore?.oauthState,
           });
@@ -103,7 +104,7 @@ export default function ImportCallbackPage() {
         }
 
         if (state !== storedOAuthState) {
-          console.error("State mismatch:", {
+          logger.error("State mismatch:", {
             received: state?.substring(0, 8) + "...",
             expected: storedOAuthState?.substring(0, 8) + "...",
             receivedLength: state?.length,
@@ -119,14 +120,14 @@ export default function ImportCallbackPage() {
 
         // Defensive programming: ensure result is an object
         if (!result || typeof result !== "object") {
-          console.error("Invalid result from handleTradovateCallback:", result);
+          logger.error("Invalid result from handleTradovateCallback:", result);
           setError("Invalid response from OAuth callback handler");
           setStatus("error");
           return;
         }
 
         if (result.error) {
-          console.error("OAuth callback error:", result.error);
+          logger.error("OAuth callback error:", result.error);
           setError(result.error);
           setStatus("error");
           return;
@@ -134,7 +135,7 @@ export default function ImportCallbackPage() {
 
         // Validate all required fields exist and are strings
         if (!result.accessToken || !result.refreshToken || !result.expiresAt) {
-          console.error("Missing required fields in OAuth result:", {
+          logger.error("Missing required fields in OAuth result:", {
             hasAccessToken: !!result.accessToken,
             hasRefreshToken: !!result.refreshToken,
             hasExpiresAt: !!result.expiresAt,
@@ -156,10 +157,10 @@ export default function ImportCallbackPage() {
         try {
           await loadAccounts();
         } catch (loadError) {
-          console.warn("Failed to refresh Tradovate synchronizations", loadError);
+          logger.warn("Failed to refresh Tradovate synchronizations", loadError);
         }
 
-        console.log("OAuth flow completed successfully");
+        logger.info("OAuth flow completed successfully");
         setStatus("success");
 
         // Redirect back to dashboard after a short delay
@@ -167,7 +168,7 @@ export default function ImportCallbackPage() {
           router.push("/dashboard");
         }, 1000);
       } catch (error) {
-        console.error("OAuth callback error:", {
+        logger.error("OAuth callback error:", {
           error: error instanceof Error ? error.message : "Unknown error",
           stack: error instanceof Error ? error.stack : undefined,
           errorType: typeof error,

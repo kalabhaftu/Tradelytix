@@ -36,13 +36,11 @@ class MemoryCache {
       return null
     }
 
-    // Check if expired
     if (Date.now() > entry.expires) {
       this.cache.delete(key)
       return null
     }
 
-    // Update last accessed time
     entry.lastAccessed = Date.now()
     return entry.value as T
   }
@@ -51,7 +49,6 @@ class MemoryCache {
    * Set value in cache with TTL
    */
   set<T>(key: string, value: T, ttlSeconds: number = 60): void {
-    // Evict least recently used if at max size
     if (this.cache.size >= this.maxSize) {
       this.evictLRU()
     }
@@ -145,12 +142,10 @@ class MemoryCache {
   }
 }
 
-// Global instance
 const memoryCache = new MemoryCache()
 
 export default memoryCache
 
-// Export convenience functions
 export const memGet = <T>(key: string) => memoryCache.get<T>(key)
 export const memSet = <T>(key: string, value: T, ttl?: number) => memoryCache.set(key, value, ttl)
 export const memDelete = (key: string) => memoryCache.delete(key)

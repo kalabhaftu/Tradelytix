@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Trade } from '@prisma/client'
+import type { TradeType as Trade } from '@/lib/db/schema';
+
 import { ArrowUpRight, ArrowDownRight, CalendarDays, Clock, Target, DollarSign, MoreVertical, Eye, Pencil, Trash2 as Trash, AlertCircle } from 'lucide-react'
 import { cn, formatCurrency, formatQuantity, formatTradeData, classifyTrade } from '@/lib/utils'
 import { formatTradePrice } from '@/lib/trading/precision'
@@ -94,7 +95,6 @@ export function TradeCard({
     const side = trade.side?.toUpperCase()
     const isWin = netPnl > threshold
 
-    // Check for incomplete data
     const hasIncompleteData = !entryPrice || !closePrice || !stopLoss || !side
 
     // Need all required fields for calculation
@@ -171,7 +171,6 @@ export function TradeCard({
     }
   }
 
-  // Check if this is a grouped trade with partials
   const hasPartials = (trade as any).isGrouped || (trade as any).partialTrades?.length > 1
   const partialCount = (trade as any).partialTrades?.length || 1
 

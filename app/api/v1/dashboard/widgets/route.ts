@@ -10,13 +10,15 @@ import {
   calculateCalendarData,
   calculateSessionAnalysis
 } from '@/lib/dashboard/analytics-calculations'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { calculateBalanceInfo } from '@/lib/utils/balance-calculator'
 import { normalizePnlDisplayMode } from '@/lib/metrics/pnl'
 import { getRuntimePnlDisplayMode } from '@/server/user-settings'
+import { eq, inArray } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   const type = request.nextUrl.searchParams.get('type')
@@ -72,9 +74,9 @@ export async function GET(request: NextRequest) {
       let activeAccounts = []
       const internalUserId = await getInternalUserId()
       if (internalUserId) {
-        activeAccounts = await prisma.account.findMany({
-          where: { userId: internalUserId, isArchived: false },
-          select: { startingBalance: true }
+        activeAccounts = await db.query.Account.findMany({
+          where: (table, { eq, and }) => and(eq(table.userId, internalUserId), eq(table.isArchived, false)),
+          columns: { startingBalance: true }
         }) as any[]
       }
       result = calculateAccountBalanceChart(trades, activeAccounts)
@@ -90,8 +92,8 @@ export async function GET(request: NextRequest) {
       let transactions: any[] = []
       const accountOwnerId = await getInternalUserId()
       if (accountOwnerId) {
-        userAccounts = await prisma.account.findMany({
-          where: { userId: accountOwnerId }
+        userAccounts = await db.query.Account.findMany({
+          where: (table, { eq }) => eq(table.userId, accountOwnerId)
         }) as any[]
       }
       
@@ -101,20 +103,18 @@ export async function GET(request: NextRequest) {
         filteredDbAccounts = userAccounts.filter(acc => accountNumbers.includes(acc.number))
       }
       try {
-        if ('transaction' in prisma) {
-          const liveAccountIds = filteredDbAccounts
-            .filter((account: any) => account.accountType === 'live')
-            .map((account: any) => account.id)
-            .filter(Boolean)
-          if (liveAccountIds.length > 0 && accountOwnerId) {
-            transactions = await (prisma as any).transaction.findMany({
-              where: {
-                userId: accountOwnerId,
-                accountId: { in: liveAccountIds },
-              },
-              select: { accountId: true, amount: true },
-            })
-          }
+        const liveAccountIds = filteredDbAccounts
+          .filter((account: any) => account.accountType === 'live')
+          .map((account: any) => account.id)
+          .filter(Boolean)
+        if (liveAccountIds.length > 0 && accountOwnerId) {
+          transactions = await db.query.Transaction.findMany({
+            where: (table, { eq, and, inArray }) => and(
+              eq(table.userId, accountOwnerId),
+              inArray(table.accountId, liveAccountIds)
+            ),
+            columns: { accountId: true, amount: true }
+          })
         }
       } catch {
         transactions = []

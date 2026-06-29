@@ -1,5 +1,7 @@
+import { logger } from '@/lib/logger';
 import { NextResponse, NextRequest } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { applyRateLimit, feedbackLimiter } from '@/lib/rate-limiter'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { extractIP } from '@/server/geolocation'
@@ -140,19 +142,17 @@ export async function POST(req: NextRequest) {
     const ip = extractIP(req.headers)
     const userAgent = req.headers.get('user-agent') || undefined
 
-    const feedback = await prisma.feedback.create({
-      data: {
-        userId: identity?.internalUserId,
-        name: payload.name,
-        email: payload.email,
-        category: payload.category as any,
-        subject: payload.subject,
-        message: payload.message,
-        attachments: attachments.length > 0 ? attachments : undefined,
-        ipAddress: ip,
-        userAgent,
-      },
-    })
+    const feedback = (await db.insert(schema.Feedback).values({
+      userId: identity?.internalUserId,
+      name: payload.name,
+      email: payload.email,
+      category: payload.category as any,
+      subject: payload.subject,
+      message: payload.message,
+      attachments: attachments.length > 0 ? attachments : undefined,
+      ipAddress: ip,
+      userAgent,
+    }).returning())[0]
 
     return createSuccessResponse({ id: feedback.id })
   } catch (error: any) {

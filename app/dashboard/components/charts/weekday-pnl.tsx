@@ -27,10 +27,6 @@ import { useData } from "@/context/data-provider"
 import { classifyOutcome, getBreakEvenThreshold } from "@/lib/metrics/outcome"
 import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
 interface WeekdayPnLProps {
   size?: WidgetSize
 }
@@ -47,10 +43,6 @@ interface WeekdayData {
 
 const AnyBarChart = (RechartsPrimitive as any).BarChart as React.ComponentType<any>
 
-// ============================================================================
-// CONSTANTS - Tradezella Premium Styling
-// ============================================================================
-
 const COLORS = {
   profit: 'hsl(var(--chart-profit))',
   loss: 'hsl(var(--chart-loss))',
@@ -64,18 +56,10 @@ const CHART_CONFIG = {
   referenceLineOpacity: 0.4
 } as const
 
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
 const WeekdayPnL = React.memo(function WeekdayPnL({ size = 'small-long' }: WeekdayPnLProps) {
   const { statistics } = useData()
   const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
   const { formatValue } = useDashboardDisplay()
-  // ---------------------------------------------------------------------------
-  // DATA HOOKS (PRESERVED - DO NOT MODIFY)
-  // ---------------------------------------------------------------------------
   const { data: baseData = [], isLoading } = useWidgetData('weekdayPnl')
   const [showAverage, setShowAverage] = React.useState(false)
 
@@ -107,14 +91,8 @@ const WeekdayPnL = React.memo(function WeekdayPnL({ size = 'small-long' }: Weekd
     )
   }
 
-  // ---------------------------------------------------------------------------
-  // SIZE-RESPONSIVE VALUES
-  // ---------------------------------------------------------------------------
   const isCompact = size === 'small' || size === 'small-long'
 
-  // ---------------------------------------------------------------------------
-  // RENDER
-  // ---------------------------------------------------------------------------
   return (
     <WidgetCard title="Weekday P/L">
       <div className="w-full h-full">
@@ -124,7 +102,6 @@ const WeekdayPnL = React.memo(function WeekdayPnL({ size = 'small-long' }: Weekd
               margin={{ top: 20, right: 20, left: 10, bottom: 20 }}
               barGap={4}
             >
-              {/* Subtle Grid - Horizontal Only */}
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke={COLORS.grid}
@@ -132,7 +109,6 @@ const WeekdayPnL = React.memo(function WeekdayPnL({ size = 'small-long' }: Weekd
                 vertical={false}
               />
 
-              {/* X Axis - Days */}
               <XAxis
                 dataKey="dayName"
                 tickFormatter={(value) => value.substring(0, 3)}
@@ -143,7 +119,6 @@ const WeekdayPnL = React.memo(function WeekdayPnL({ size = 'small-long' }: Weekd
                 tickMargin={8}
               />
 
-{/* Y Axis - Currency */}
              <YAxis
                tickFormatter={(value) => formatValue(value, { kind: 'money', compact: true, sensitive: true })}
                stroke={COLORS.axis}
@@ -153,7 +128,6 @@ const WeekdayPnL = React.memo(function WeekdayPnL({ size = 'small-long' }: Weekd
                width={50}
              />
 
-              {/* Zero Reference Line */}
               <ReferenceLine
                 y={0}
                 stroke={COLORS.axis}
@@ -161,13 +135,11 @@ const WeekdayPnL = React.memo(function WeekdayPnL({ size = 'small-long' }: Weekd
                 strokeOpacity={CHART_CONFIG.referenceLineOpacity}
               />
 
-              {/* Tooltip */}
               <RechartsTooltip
                 content={<SharedChartTooltip />}
                 cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
               />
 
-              {/* Bars with Rounded Tops */}
               <Bar
                 dataKey="pnl"
                 radius={CHART_CONFIG.barRadius}

@@ -90,7 +90,6 @@ export function calculateRowSlots(widgets: WidgetLayout[], rowY: number): GridSl
     currentX = widget.x + widget.w
   }
   
-  // Check for space at end of row
   if (currentX < GRID_COLUMNS) {
     slots.push({
       x: currentX,

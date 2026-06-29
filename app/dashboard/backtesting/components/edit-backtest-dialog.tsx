@@ -160,7 +160,6 @@ export function EditBacktestDialog({
 
   const handleCloseAttempt = (openState: boolean) => {
     if (!openState) {
-      // Check if dirty
       // Note: react-hook-form's isDirty isn't always reliable with complex objects or if fields are touched but value is same
       // But we can use it as a base. 
       // Also check if image count changed or preview changed

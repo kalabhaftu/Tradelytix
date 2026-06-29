@@ -1,6 +1,7 @@
 'use client'
 
-import { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import { useEffect, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { useUserStore } from '@/store/user-store'

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from "next/server";
 import {
   getDxFeedToken,
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
       message: "Sync completed",
     });
   } catch (error) {
-    console.error("Error performing DxFeed sync:", error);
+    logger.error("Error performing DxFeed sync:", error);
     return NextResponse.json(
       { success: false, message: "Failed to perform DxFeed sync" },
       { status: 500 }

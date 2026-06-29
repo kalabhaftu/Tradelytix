@@ -1,5 +1,8 @@
-import type { Prisma, Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import { groupTradesByExecution, type GroupedTrade } from '@/lib/utils'
+
+type Trade = TradeType;
 
 export const TRADE_COUNT_SELECT = {
   id: true,
@@ -23,7 +26,7 @@ export const TRADE_COUNT_SELECT = {
   closePrice: true,
   stopLoss: true,
   takeProfit: true,
-} satisfies Prisma.TradeSelect
+} satisfies Partial<Record<keyof Trade, boolean>>
 
 function incrementCount(map: Map<string, number>, key: string | null | undefined) {
   if (!key) return

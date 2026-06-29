@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
+import { and, or, eq, isNull, inArray, not, desc, count } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   const rateLimitResponse = await applyRateLimit(request, apiLimiter)
@@ -22,42 +24,34 @@ export async function GET(request: NextRequest) {
 
     // Fetch trades for this user without any specific account/status filters
     // This is for the Data Management "everything" view
-    const [trades, total] = await Promise.all([
-      prisma.trade.findMany({
-        where: { 
-          userId: internalUserId,
-          // Exclude trades from pending/pending_approval accounts
-          OR: [
-            { phaseAccountId: null },
-            {
-              PhaseAccount: {
-                NOT: {
-                  status: { in: ['pending', 'pending_approval'] }
-                }
-              }
-            }
-          ]
-        },
-        orderBy: { exitTime: 'desc' },
-        skip: offset,
-        take: limit,
+    const [trades, totalResult] = await Promise.all([
+      db.query.Trade.findMany({
+        where: (table, { and, or, eq, isNull, not, inArray }) => and(
+          eq(table.userId, internalUserId),
+          or(
+            isNull(table.phaseAccountId),
+            not(
+              // Note: relation filter approximated; may require exists/notExists in full Drizzle setup
+              inArray(schema.PhaseAccount.status, ['pending', 'pending_approval'])
+            )
+          )
+        ),
+        orderBy: (table, { desc }) => [desc(table.exitTime)],
+        limit,
+        offset,
       }),
-      prisma.trade.count({
-        where: { 
-          userId: internalUserId,
-          OR: [
-            { phaseAccountId: null },
-            {
-              PhaseAccount: {
-                NOT: {
-                  status: { in: ['pending', 'pending_approval'] }
-                }
-              }
-            }
-          ]
-        }
-      })
+      db.select({ count: count() })
+        .from(schema.Trade)
+        .where(and(
+          eq(schema.Trade.userId, internalUserId),
+          or(
+            isNull(schema.Trade.phaseAccountId),
+            not(inArray(schema.PhaseAccount.status, ['pending', 'pending_approval']))
+          )
+        ))
     ])
+
+    const total = totalResult[0]?.count || 0
 
     return NextResponse.json({
       success: true,

@@ -1,15 +1,11 @@
-/**
- * Journal Daily Note [id] API (v1)
- * PUT    /api/v1/journal/daily/[id] - Update journal entry
- * DELETE /api/v1/journal/daily/[id] - Delete journal entry
- */
-
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { isJournalEmotion } from '@/lib/journal-emotions'
+import { eq } from 'drizzle-orm'
 
 export async function PUT(
   request: NextRequest,
@@ -28,17 +24,14 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid emotion value' }, { status: 400 })
     }
 
-    const existing = await prisma.dailyNote.findUnique({ where: { id } })
+    const existing = await db.query.DailyNote.findFirst({ where: (table, { eq }) => eq(table.id, id) })
     if (!existing) return NextResponse.json({ error: 'Journal not found' }, { status: 404 })
     if (existing.userId !== internalUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
-    const journal = await prisma.dailyNote.update({
-      where: { id },
-      data: {
-        note: note !== undefined ? note : existing.note,
-        emotion: emotion !== undefined ? emotion : existing.emotion,
-      },
-    })
+    const journal = (await db.update(schema.DailyNote).set({
+      note: note !== undefined ? note : existing.note,
+      emotion: emotion !== undefined ? emotion : existing.emotion,
+    }).where(eq(schema.DailyNote.id, id)).returning())[0]
 
     return NextResponse.json({ journal })
   } catch (error: any) {
@@ -61,11 +54,11 @@ export async function DELETE(
     const { internalUserId } = await getResolvedUserIdentity()
     const { id } = await params
 
-    const existing = await prisma.dailyNote.findUnique({ where: { id } })
+    const existing = await db.query.DailyNote.findFirst({ where: (table, { eq }) => eq(table.id, id) })
     if (!existing) return NextResponse.json({ error: 'Journal not found' }, { status: 404 })
     if (existing.userId !== internalUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
-    await prisma.dailyNote.delete({ where: { id } })
+    await db.delete(schema.DailyNote).where(eq(schema.DailyNote.id, id))
     return NextResponse.json({ success: true })
   } catch (error: any) {
     logger.error('DELETE /api/v1/journal/daily/[id]', { error: error?.message }, 'api')

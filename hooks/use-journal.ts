@@ -1,5 +1,8 @@
 import useSWR from 'swr'
-import { Trade } from '@prisma/client'
+import { type InferSelectModel } from 'drizzle-orm'
+import { Trade as schemaTrade } from '@/lib/db/schema'
+
+type Trade = InferSelectModel<typeof schemaTrade>
 import { useData } from '@/context/data-provider'
 import { getMockTradesList } from '@/lib/demo/mock-data'
 import { calculateStatistics } from '@/lib/utils'
@@ -42,7 +45,7 @@ export function useJournal(params: UseJournalParams) {
   // Search
   if (normalizedTradeDate) {
     queryParams.append('tradeDate', normalizedTradeDate)
-  } else if (exactDateMatch) {
+  } else if (exactDateMatch && exactDateMatch[1]) {
     queryParams.append('tradeDate', exactDateMatch[1])
   } else if (normalizedSearch) {
     queryParams.append('search', normalizedSearch)
@@ -110,7 +113,7 @@ export function useJournal(params: UseJournalParams) {
 
     // Filter by tags
     if (selectedTagIds.length > 0) {
-      mockTrades = mockTrades.filter(t => t.tags.some(tag => selectedTagIds.includes(tag)))
+      mockTrades = mockTrades.filter(t => t.tags?.some((tag: string | undefined) => tag && selectedTagIds.includes(tag)))
     }
 
     // Search filter

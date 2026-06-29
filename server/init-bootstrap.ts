@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { cloneDefaultTemplateLayout } from '@/lib/dashboard/default-template-layout'
 import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
@@ -36,9 +36,9 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
       }
     }
 
-    const userLookup = await prisma.user.findUnique({
-      where: { id: identity.internalUserId },
-      select: {
+    const userLookup = await db.query.User.findFirst({
+      where: (table, { eq }) => eq(table.id, identity.internalUserId),
+      columns: {
         id: true,
         email: true,
         auth_user_id: true,
@@ -47,10 +47,12 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
         lastName: true,
         onboardingStatus: true,
         role: true,
+      },
+      with: {
         settings: {
-          select: USER_SETTINGS_SELECT
-        }
-      }
+          columns: USER_SETTINGS_SELECT as any,
+        },
+      },
     })
 
     if (!userLookup) {
@@ -64,19 +66,19 @@ export async function getInitBootstrapData(): Promise<InitBootstrapPayload> {
 
     const internalUserId = userLookup.id
 
-    const accounts = await prisma.account.findMany({
-      where: { userId: internalUserId },
-      orderBy: { createdAt: 'desc' }
+    const accounts = await db.query.Account.findMany({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      orderBy: (table, { desc }) => [desc(table.createdAt)],
     })
 
-    const propFirmAccounts = await prisma.masterAccount.findMany({
-      where: { userId: internalUserId },
-      include: { PhaseAccount: { orderBy: { phaseNumber: 'asc' } } }
+    const propFirmAccounts = await db.query.MasterAccount.findMany({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      with: { PhaseAccount: { orderBy: (table, { asc }) => [asc(table.phaseNumber)] } },
     })
 
-    const allTrades = await prisma.trade.findMany({
-      where: { userId: internalUserId },
-      select: TRADE_COUNT_SELECT,
+    const allTrades = await db.query.Trade.findMany({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      columns: TRADE_COUNT_SELECT as any,
     })
 
     const activeTemplate = await ensureActiveTemplateForUser(internalUserId)

@@ -2,7 +2,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import process from 'process'
 
-import { PrismaClient } from '@prisma/client'
+
 import { config as loadEnvFile } from 'dotenv'
 
 type CleanupCandidate = {

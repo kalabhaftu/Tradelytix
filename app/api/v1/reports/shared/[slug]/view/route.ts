@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
 import { applyRateLimit, publicLimiter } from '@/lib/rate-limiter'
 import { createErrorResponse, createSuccessResponse } from '@/lib/api-response'
 import { logger } from '@/lib/logger'
@@ -22,9 +24,9 @@ export async function POST(request: NextRequest, { params }: Props) {
   const cookieName = `shared-report-viewed-${slug}`
 
   try {
-    const report = await prisma.sharedReport.findUnique({
-      where: { slug },
-      select: { id: true, isPublic: true, expiresAt: true, viewCount: true },
+    const report = await db.query.SharedReport.findFirst({
+      where: (table, { eq }) => eq(table.slug, slug),
+      columns: { id: true, isPublic: true, expiresAt: true, viewCount: true },
     })
 
     if (!report || !report.isPublic || (report.expiresAt && report.expiresAt < new Date())) {
@@ -36,11 +38,7 @@ export async function POST(request: NextRequest, { params }: Props) {
       return createSuccessResponse({ viewCount: report.viewCount, counted: false })
     }
 
-    const updated = await prisma.sharedReport.update({
-      where: { slug },
-      data: { viewCount: { increment: 1 } },
-      select: { viewCount: true },
-    })
+    const updated = (await db.update(schema.SharedReport).set({ viewCount: report.viewCount + 1 }).where(eq(schema.SharedReport.slug, slug)).returning({ viewCount: schema.SharedReport.viewCount }))[0]
 
     const response = createSuccessResponse({ viewCount: updated.viewCount, counted: true })
     response.cookies.set(cookieName, '1', {

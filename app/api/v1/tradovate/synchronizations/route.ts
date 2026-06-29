@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from "next/server";
 import {
   getTradovateSynchronizations,
@@ -25,7 +26,7 @@ export async function GET() {
       data: cleaned,
     });
   } catch (error) {
-    console.error("Error fetching Tradovate synchronizations:", error);
+    logger.error("Error fetching Tradovate synchronizations:", error);
     return NextResponse.json(
       { success: false, message: "Failed to fetch Tradovate synchronizations" },
       { status: 500 }
@@ -59,7 +60,7 @@ export async function PATCH(request: NextRequest) {
       message: "Fee config updated",
     });
   } catch (error) {
-    console.error("Error updating Tradovate fee config:", error);
+    logger.error("Error updating Tradovate fee config:", error);
     return NextResponse.json(
       { success: false, message: "Failed to update fee config" },
       { status: 500 }
@@ -92,7 +93,7 @@ export async function DELETE(request: NextRequest) {
       message: "Synchronization removed",
     });
   } catch (error) {
-    console.error("Error deleting Tradovate synchronization:", error);
+    logger.error("Error deleting Tradovate synchronization:", error);
     return NextResponse.json(
       { success: false, message: "Failed to delete synchronization" },
       { status: 500 }

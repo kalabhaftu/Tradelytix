@@ -369,12 +369,12 @@ export function GoalsPageClient() {
       id: editingGoal.id,
       data: {
         title: editForm.title,
-        description: editForm.description || undefined,
+        ...(editForm.description && { description: editForm.description }),
         metric: editForm.metric,
         targetValue: parseFloat(editForm.targetValue),
         currentValue: parseFloat(editForm.currentValue) || 0,
         period: editForm.period,
-        endDate: editForm.endDate || undefined,
+        ...(editForm.endDate && { endDate: editForm.endDate }),
       },
     })
   }, [editingGoal, editForm, updateMutation])
@@ -391,7 +391,7 @@ export function GoalsPageClient() {
     createMutation.mutate({
       ...form,
       targetValue: parseFloat(form.targetValue),
-      endDate: form.endDate || undefined,
+      ...(form.endDate && { endDate: form.endDate }),
     })
   }, [form, createMutation])
 

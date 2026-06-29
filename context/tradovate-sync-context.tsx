@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react'
 import { useData } from '@/context/data-provider'
 import { toast } from 'sonner'
-import { Synchronization } from '@prisma/client'
+import { type SynchronizationType } from '@/lib/db/schema'
 import { DEFAULT_INCLUDED_FEE_TYPES } from '@/app/dashboard/components/import/tradovate/sync/fee-types'
 
 interface TradovateSyncContextType {
@@ -15,7 +15,7 @@ interface TradovateSyncContextType {
   isAutoSyncing: boolean
   
   // Account management
-  accounts: Synchronization[]
+  accounts: SynchronizationType[]
   loadAccounts: () => Promise<void>
   deleteAccount: (accountId: string) => Promise<void>
   
@@ -34,7 +34,7 @@ const TradovateSyncContext = createContext<TradovateSyncContextType | undefined>
 
 export function TradovateSyncContextProvider({ children }: { children: ReactNode }) {
   const [isAutoSyncing, setIsAutoSyncing] = useState(false)
-  const [accounts, setAccounts] = useState<Synchronization[]>([])
+  const [accounts, setAccounts] = useState<SynchronizationType[]>([])
   const [syncInterval, setSyncInterval] = useState(15) // 15 minutes default
   const [enableAutoSync, setEnableAutoSync] = useState(false)
 
@@ -51,7 +51,7 @@ export function TradovateSyncContextProvider({ children }: { children: ReactNode
 
   // Normalize dates and fee config returned from API
   const normalizeSynchronization = useCallback(
-    (sync: any): Synchronization => ({
+    (sync: any): SynchronizationType => ({
       ...sync,
       lastSyncedAt: sync?.lastSyncedAt ? new Date(sync.lastSyncedAt) : null,
       tokenExpiresAt: sync?.tokenExpiresAt ? new Date(sync.tokenExpiresAt) : null,

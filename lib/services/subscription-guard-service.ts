@@ -5,8 +5,9 @@
  */
 
 import { getUserAccessStatus } from './subscription-service'
-import { prisma } from '@/lib/prisma'
-
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
 export interface SubscriptionGuardResult {
   hasAccess: boolean
   status: string
@@ -22,9 +23,9 @@ export async function checkSubscriptionAccess(
   userId: string
 ): Promise<SubscriptionGuardResult> {
   // Get user role
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true },
+  const user = await db.query.User.findFirst({
+    where: eq(schema.User.id, userId),
+    columns: { role: true },
   })
 
   if (!user) {
@@ -36,7 +37,7 @@ export async function checkSubscriptionAccess(
     }
   }
 
-  const access = await getUserAccessStatus(userId, user.role)
+  const access = await getUserAccessStatus(userId, user.role || undefined)
 
   if (access.hasAccess) {
     return { hasAccess: true, status: access.status }

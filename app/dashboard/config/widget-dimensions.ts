@@ -13,14 +13,8 @@ export interface WidgetDimensions {
    */
   colSpan: number
   
-  /**
-   * Minimum width in pixels
-   */
   minWidth: string
   
-  /**
-   * Fixed height
-   */
   height: string
   
   /**
@@ -146,9 +140,6 @@ export const WIDGET_GROUPS = {
   },
 } as const
 
-/**
- * Standard card padding based on size
- */
 export const CARD_PADDING: Record<WidgetSize, string> = {
   'kpi': 'p-4',
   'tiny': 'p-3',

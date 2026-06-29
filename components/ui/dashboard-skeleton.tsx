@@ -34,14 +34,11 @@ function WidgetSkeleton({ className, style }: { className?: string; style?: Reac
   return (
     <Card className={cn("border-border/24 bg-card/76 overflow-hidden", className)} style={style}>
       <CardContent className="p-4 sm:p-5 flex flex-col gap-4 h-full">
-        {/* Header row */}
         <div className="flex items-center justify-between gap-3 shrink-0">
           <Skeleton className="h-3 w-20 bg-muted/40" />
           <Skeleton className="h-7 w-7 rounded-lg bg-muted/25" />
         </div>
-        {/* Main chart area */}
         <Skeleton className="flex-1 w-full rounded-xl bg-muted/20 min-h-[120px]" />
-        {/* Footer stats */}
         <div className="grid grid-cols-2 gap-3 border-t border-border/12 pt-3 shrink-0">
           <div className="space-y-1.5">
             <Skeleton className="h-3 w-14 bg-muted/25" />
@@ -62,7 +59,6 @@ function CalendarWidgetSkeleton({ className, style }: { className?: string; styl
   return (
     <Card className={cn("border-border/24 bg-card/76 overflow-hidden", className)} style={style}>
       <CardContent className="p-0 flex flex-col h-full">
-        {/* Calendar header */}
         <div className="flex items-center justify-between border-b border-border/14 px-3 py-2.5">
           <div className="flex items-center gap-2">
             <Skeleton className="h-7 w-28 rounded-lg bg-muted/30" />
@@ -74,13 +70,11 @@ function CalendarWidgetSkeleton({ className, style }: { className?: string; styl
             <Skeleton className="h-6 w-6 rounded-lg bg-muted/20" />
           </div>
         </div>
-        {/* Weekday headers */}
         <div className="grid grid-cols-5 gap-1.5 px-3 py-2">
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={`wk-${i}`} className="h-3 w-8 mx-auto bg-muted/20" />
           ))}
         </div>
-        {/* Day grid */}
         <div className="flex-1 grid grid-cols-5 gap-1.5 p-3 pt-0">
           {Array.from({ length: 25 }).map((_, i) => (
             <Skeleton key={`day-${i}`} className="rounded-lg bg-muted/[0.08] min-h-[52px]" />
@@ -96,13 +90,11 @@ function TradeTableSkeleton({ className, style }: { className?: string; style?: 
   return (
     <Card className={cn("border-border/24 bg-card/76 overflow-hidden", className)} style={style}>
       <CardContent className="p-0">
-        {/* Search / filter bar */}
         <div className="flex flex-wrap items-center gap-3 border-b border-border/14 px-4 py-3">
           <Skeleton className="h-9 flex-1 min-w-[180px] rounded-xl bg-muted/30" />
           <Skeleton className="h-9 w-28 rounded-xl bg-muted/25" />
           <Skeleton className="h-9 w-24 rounded-xl bg-muted/25" />
         </div>
-        {/* Table rows */}
         <div className="divide-y divide-border/8">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex items-center gap-4 px-4 py-3">
@@ -137,9 +129,14 @@ function getSkeletonMinHeight(item: TemplateAwareLayoutItem) {
 
 function renderSkeletonForItem(item: TemplateAwareLayoutItem, style?: React.CSSProperties, className?: string) {
   const kind = getSkeletonKind(item.type)
-  if (kind === 'calendar') return <CalendarWidgetSkeleton key={item.i} className={className} style={style} />
-  if (kind === 'recent-trades') return <TradeTableSkeleton key={item.i} className={className} style={style} />
-  return <WidgetSkeleton key={item.i} className={className} style={style} />
+  const props = {
+    key: item.i,
+    ...(className !== undefined && { className }),
+    ...(style !== undefined && { style })
+  }
+  if (kind === 'calendar') return <CalendarWidgetSkeleton {...props} />
+  if (kind === 'recent-trades') return <TradeTableSkeleton {...props} />
+  return <WidgetSkeleton {...props} />
 }
 
 interface TemplateAwareLayoutItem {

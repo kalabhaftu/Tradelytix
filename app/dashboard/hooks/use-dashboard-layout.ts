@@ -102,7 +102,6 @@ export function useDashboardLayout() {
         let foundGap = false
         for (let y = Math.max(0, lowestY - 3); y <= lowestY && !foundGap; y++) {
             for (let x = 0; x <= 12 - grid.w && !foundGap; x++) {
-                // Check if this position is available
                 const isPositionFree = !currentLayoutWidgets.some(widget => {
                     return !(
                         x >= widget.x + widget.w ||

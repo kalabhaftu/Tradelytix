@@ -44,7 +44,6 @@ import { MetricCard } from "./components/metric-card"
 import { TradeRow } from "./components/trade-row"
 import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
 
-// Helpers
 function isFundedPhase(evaluationType: string | undefined, phaseNumber: number | undefined): boolean {
   return isFundedPhaseForEvaluation(evaluationType || '', phaseNumber || 0)
 }
@@ -114,7 +113,6 @@ export default function AccountDetailPage() {
     }
   }, [accountId])
 
-  // Handle errors
   useEffect(() => {
     if (realtimeError) {
       if (realtimeError.includes('404') || realtimeError.includes('not found')) {
@@ -238,7 +236,6 @@ export default function AccountDetailPage() {
     }
   }, [breakEvenThreshold, tradesData])
 
-  // Handlers
   const handleRefresh = async () => {
     hasFetchedDataRef.current = false
     await refetch()

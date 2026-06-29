@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { randomUUID } from 'crypto'
 import { logActivity, getClientIp } from '@/lib/activity-logger'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
@@ -7,6 +8,7 @@ import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData } from '@/lib/trade-core'
 import { z } from 'zod'
 import { logger } from '@/lib/logger'
+import { invalidateTradesCache } from '@/lib/cache/invalidate-trade'
 
 const QuickAddSchema = z.object({
   instrument: z.string().min(1, 'Instrument is required'),
@@ -45,9 +47,9 @@ export async function POST(req: NextRequest) {
 
     let targetAccount = accountNumber
     if (!targetAccount) {
-      const firstAccount = await prisma.account.findFirst({
-        where: { userId: internalUserId },
-        select: { number: true }
+      const firstAccount = await db.query.Account.findFirst({
+        where: (table, { eq }) => eq(table.userId, internalUserId),
+        columns: { number: true }
       })
       targetAccount = firstAccount?.number
     }
@@ -79,15 +81,12 @@ export async function POST(req: NextRequest) {
       userId: internalUserId
     } as any)
 
-    const trade = await prisma.$transaction(async (tx) => {
-      const createdTrade = await tx.trade.create({
-        data: tradePayload as any
-      })
+    const trade = await db.transaction(async (tx) => {
+      const createdTrade = (await tx.insert(schema.Trade).values(tradePayload as any).returning())[0]
 
-      await tx.tradeExecution.createMany({
-        data: buildSyntheticExecutionsFromTrade(tradePayload as any) as any,
-        skipDuplicates: true,
-      })
+      await tx.insert(schema.TradeExecution).values(
+        buildSyntheticExecutionsFromTrade(tradePayload as any) as any
+      )
 
       return createdTrade
     })
@@ -100,6 +99,8 @@ export async function POST(req: NextRequest) {
       metadata: { instrument, accountNumber: targetAccount },
       ipAddress: getClientIp(req),
     })
+
+    await invalidateTradesCache(internalUserId)
 
     return NextResponse.json({ success: true, trade })
   } catch (error) {

@@ -24,7 +24,8 @@ import { useUserStore } from '@/store/user-store'
 import { ExtendedTrade, MarketBias, TradeOutcome } from '@/types/trade-extended'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, PenLine, Route, Newspaper } from 'lucide-react'
-import { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import React, { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'

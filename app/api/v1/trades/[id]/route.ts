@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
+import { eq } from 'drizzle-orm'
+import { invalidateTradesCache } from '@/lib/cache/invalidate-trade'
 
 export async function GET(
   request: NextRequest,
@@ -18,9 +21,9 @@ export async function GET(
     }
     const { id } = await params
 
-    const trade = await prisma.trade.findUnique({
-      where: { id },
-      include: {
+    const trade = await db.query.Trade.findFirst({
+      where: (table, { eq }) => eq(table.id, id),
+      with: {
         executions: true,
       },
     })
@@ -55,14 +58,13 @@ export async function PATCH(
     const { id } = await params
     const body = await request.json()
 
-    const existing = await prisma.trade.findUnique({ where: { id } })
+    const existing = await db.query.Trade.findFirst({ where: (table, { eq }) => eq(table.id, id) })
     if (!existing) return NextResponse.json({ error: 'Trade not found' }, { status: 404 })
     if (existing.userId !== identity.internalUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
-    const updated = await prisma.trade.update({
-      where: { id },
-      data: body
-    })
+    const updated = (await db.update(schema.Trade).set(body).where(eq(schema.Trade.id, id)).returning())[0]
+
+    await invalidateTradesCache(identity.internalUserId)
 
     return NextResponse.json({ success: true, trade: updated })
   } catch (error: any) {
@@ -85,11 +87,14 @@ export async function DELETE(
     }
     const { id } = await params
 
-    const existing = await prisma.trade.findUnique({ where: { id } })
+    const existing = await db.query.Trade.findFirst({ where: (table, { eq }) => eq(table.id, id) })
     if (!existing) return NextResponse.json({ error: 'Trade not found' }, { status: 404 })
     if (existing.userId !== identity.internalUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
-    await prisma.trade.delete({ where: { id } })
+    await db.delete(schema.Trade).where(eq(schema.Trade.id, id))
+    
+    await invalidateTradesCache(identity.internalUserId)
+
     return NextResponse.json({ success: true, message: 'Trade deleted successfully' })
   } catch (error: any) {
     logger.error('DELETE /api/v1/trades/[id] failed', { error: error?.message }, 'api')

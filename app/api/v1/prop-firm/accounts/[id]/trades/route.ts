@@ -1,15 +1,11 @@
-/**
- * Phase Account Trades API
- * POST /api/prop-firm/accounts/[id]/trades - Add a trade to the current active phase
- * GET /api/prop-firm/accounts/[id]/trades - Get all trades for the master account
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq, and, desc } from 'drizzle-orm'
 import { buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData } from '@/lib/trade-core'
 
@@ -55,12 +51,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const tradeData = AddTradeSchema.parse(body)
 
     // Get the master account with its phases
-    const masterAccount = await prisma.masterAccount.findFirst({
-      where: {
-        id: masterAccountId,
-        userId: internalUserId
-      },
-      include: {
+    const masterAccount = await db.query.MasterAccount.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, masterAccountId), eq(table.userId, internalUserId)),
+      with: {
         PhaseAccount: true
       }
     })
@@ -121,15 +114,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       exitTime: tradeData.exitTime ? new Date(tradeData.exitTime) : null
     } as any)
 
-    const trade = await prisma.$transaction(async (tx) => {
-      const createdTrade = await tx.trade.create({
-        data: tradePayload as any
-      })
+    const trade = await db.transaction(async (tx) => {
+      const createdTrade = (await tx.insert(schema.Trade).values(tradePayload as any).returning())[0]
 
-      await tx.tradeExecution.createMany({
-        data: buildSyntheticExecutionsFromTrade(tradePayload as any) as any,
-        skipDuplicates: true,
-      })
+      await tx.insert(schema.TradeExecution).values(buildSyntheticExecutionsFromTrade(tradePayload as any) as any)
 
       return createdTrade
     })
@@ -144,15 +132,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       evaluationResult = await PhaseEvaluationEngine.evaluatePhase(masterAccountId, currentPhase.id)
       
       if (evaluationResult.isFailed) {
-        await prisma.$transaction(async (tx) => {
-          await tx.phaseAccount.update({
-            where: { id: currentPhase.id },
-            data: { status: 'failed', endDate: new Date() }
-          })
-          await tx.masterAccount.update({
-            where: { id: masterAccountId },
-            data: { status: 'failed' }
-          })
+        await db.transaction(async (tx) => {
+          await tx.update(schema.PhaseAccount).set({ status: 'failed', endDate: new Date() }).where(eq(schema.PhaseAccount.id, currentPhase.id))
+          await tx.update(schema.MasterAccount).set({ status: 'failed' }).where(eq(schema.MasterAccount.id, masterAccountId))
         })
         
         // Invalidate cache
@@ -231,18 +213,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const phaseFilter = searchParams.get('phase') || 'current'
 
     // Verify the master account exists and belongs to the user
-    const masterAccount = await prisma.masterAccount.findFirst({
-      where: {
-        id: masterAccountId,
-        userId: internalUserId
-      },
-      include: {
+    const masterAccount = await db.query.MasterAccount.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, masterAccountId), eq(table.userId, internalUserId)),
+      with: {
         PhaseAccount: {
-          include: {
+          with: {
             Trade: {
-              orderBy: {
-                exitTime: 'desc'
-              }
+              orderBy: (table, { desc }) => [desc(table.exitTime)]
             }
           }
         }

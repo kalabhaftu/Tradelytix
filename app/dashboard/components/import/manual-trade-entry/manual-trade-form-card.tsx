@@ -19,7 +19,8 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { Calculator, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react'
-import { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import { generateTradeHash } from '@/lib/utils'
 import { calculatePnL, calculateDuration } from '@/lib/utils/trade-calculations'
 import { useUserStore } from '@/store/user-store'
@@ -96,7 +97,6 @@ const tradeFormSchema = z.object({
   emotionalState: z.string().optional(),
   riskPercent: z.number().optional(),
   
-  // Notes
   comment: z.string().optional(),
 })
 
@@ -282,7 +282,6 @@ export default function ManualTradeFormCard({ accountId, accountNumber: propFirm
       const { saveAndLinkTrades } = await import("@/server/accounts")
       const result = await saveAndLinkTrades(accountId, [completeTrade])
 
-      // Handle duplicate trades case
       if (result.isDuplicate) {
         toast.info("Trade Already Exists", {
           description: 'message' in result ? result.message : "This trade already exists in the account",

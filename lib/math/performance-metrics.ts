@@ -153,7 +153,7 @@ export function calculateRSquared(data: number[]): number {
 
   const sumX = x.reduce((a, b) => a + b, 0)
   const sumY = y.reduce((a, b) => a + b, 0)
-  const sumXY = x.reduce((a, b, i) => a + b * y[i], 0)
+  const sumXY = x.reduce((a, b, i) => a + b * (y[i] ?? 0), 0)
   const sumX2 = x.reduce((a, b) => a + b * b, 0)
   const sumY2 = y.reduce((a, b) => a + b * b, 0)
 
@@ -263,6 +263,7 @@ export function buildDailyReturns(
   for (const t of trades) {
     if (!t.entryDate) continue
     const date = new Date(t.entryDate).toISOString().split('T')[0]
+    if (!date) continue
     dailyMap[date] = (dailyMap[date] || 0) + (t.pnl || 0)
   }
   return Object.values(dailyMap)

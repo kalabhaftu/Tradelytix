@@ -1,9 +1,11 @@
+import logger from '@/lib/logger';
 'use server'
 
-import { User, Trade } from '@prisma/client'
+import { db } from '@/lib/db/client';
+import * as schema from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 // Groups removed - no longer used
 // import { GroupWithAccounts } from './groups'
-import { prisma, safeDbOperation } from '@/lib/prisma'
 import { createClient, getUserId, getUserIdSafe } from './auth'
 import { Account } from '@/context/data-provider'
 import { revalidateTag, unstable_cache } from 'next/cache'
@@ -11,6 +13,9 @@ import { USER_SETTINGS_SELECT, mergeUserSettings } from '@/lib/user-settings'
 
 
 import { getAccountsAction } from './accounts'
+
+import { type InferSelectModel } from 'drizzle-orm'
+type User = InferSelectModel<typeof schema.User>
 
 export async function getUserData(): Promise<{
   userData: User | null;
@@ -20,7 +25,6 @@ export async function getUserData(): Promise<{
   try {
     const userId = await getUserIdSafe()
 
-    // If user is not authenticated, return empty data instead of throwing error
     if (!userId) {
       return {
         userData: null,
@@ -29,41 +33,33 @@ export async function getUserData(): Promise<{
       }
     }
 
-    const locale = 'en' // Default to English since i18n was removed
+    const locale = 'en'
 
     // IMPORTANT: Removed unstable_cache wrapper to prevent "items over 2MB cannot be cached" errors
     // User data includes accounts which can exceed Next.js 2MB cache limit
     // Database queries are already fast with proper indexing
     try {
-      // PERFORMANCE FIX: Removed aggressive timeout wrapper - let Prisma handle connection timeouts naturally
-      // Aggressive timeouts cause premature failures when network is slow
-
-      // PERFORMANCE OPTIMIZATION: Reduce database queries and use parallel fetching
       const [userData, accounts, groups] = await Promise.all([
-        // User data - essential only with error handling
         (async () => {
           try {
-            return await prisma.user.findUnique({
-              where: {
-                auth_user_id: userId
-              },
-              select: {
+            return await db.query.User.findFirst({
+              where: (table, { eq }) => eq(table.auth_user_id, userId),
+              columns: {
                 id: true,
                 email: true,
                 auth_user_id: true,
                 isFirstConnection: true,
                 firstName: true,
                 lastName: true,
-                settings: {
-                  select: USER_SETTINGS_SELECT
-                }
+              },
+              with: {
+                settings: true
               }
             })
           } catch (error) {
             return null
           }
         })(),
-        // Use getAccountsAction for unified account handling (regular + prop firm)
         (async () => {
           try {
             return await getAccountsAction()
@@ -71,7 +67,6 @@ export async function getUserData(): Promise<{
             return []
           }
         })(),
-        // Groups removed - no longer used
         Promise.resolve([])
       ])
 
@@ -96,9 +91,6 @@ export async function getUserData(): Promise<{
   }
 }
 
-// REMOVED: getDashboardLayout - now using DashboardTemplate model
-// Template management is handled in hooks/use-dashboard-templates.ts
-
 export async function updateIsFirstConnectionAction(isFirstConnection: boolean) {
   try {
     const supabase = await createClient()
@@ -109,19 +101,17 @@ export async function updateIsFirstConnectionAction(isFirstConnection: boolean) 
       throw new Error('User not authenticated')
     }
 
-    await safeDbOperation(
-      () => prisma.user.update({
-        where: { auth_user_id: userId },
-        data: { isFirstConnection }
-      }),
-      null
-    )
+    try {
+      await db.update(schema.User).set({ isFirstConnection }).where(eq(schema.User.auth_user_id, userId));
+    } catch (e) {
+      logger.error({ event: 'system_error', error: e }, 'updateIsFirstConnectionAction failed:');
+    }
 
-    revalidateTag(`user-data-${userId}`, 'max')
+    revalidateTag(`user-data-${userId}`)
 
     return { success: true }
   } catch (error) {
-    console.error('updateIsFirstConnectionAction failed:', error)
+    logger.error({ event: 'system_error', error: error }, 'updateIsFirstConnectionAction failed:')
     throw new Error('Failed to update onboarding status')
   }
 }

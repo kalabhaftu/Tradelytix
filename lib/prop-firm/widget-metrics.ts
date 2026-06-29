@@ -136,11 +136,9 @@ export function findFirstBreach(account: any, trades: PropFirmWidgetTrade[], tim
       ? highWaterMark - maxDrawdownLimit
       : accountSize - maxDrawdownLimit
 
-    // Check daily breach
     const dailyDrawdownUsed = Math.max(0, dailyStartBalance - runningBalance)
     const dailyBreached = dailyDrawdownPercent > 0 && dailyDrawdownUsed > dailyLimit
 
-    // Check max breach
     const maxDrawdownUsed = Math.max(0, (maxDrawdownType === 'trailing' ? highWaterMark : accountSize) - runningBalance)
     const maxBreached = maxDrawdownPercent > 0 && maxDrawdownUsed > maxDrawdownLimit
 

@@ -1,13 +1,13 @@
+import logger from '@/lib/logger';
 'use server'
 
-import { prisma } from '@/lib/prisma'
-import { getUserIdSafe } from '@/server/auth'
-import { ImageCompressor } from '@/lib/image-compression'
-import { deletePublicStorageUrls } from '@/server/storage-admin'
+import { db } from '@/lib/db/client';
+import * as schema from '@/lib/db/schema';
+import { eq, inArray, and } from 'drizzle-orm';
+import { getUserIdSafe } from '@/server/auth';
+import { ImageCompressor } from '@/lib/image-compression';
+import { deletePublicStorageUrls } from '@/server/storage-admin';
 
-/**
- * Delete a trade by ID
- */
 export async function deleteTrade(tradeId: string) {
   try {
     const userId = await getUserIdSafe()
@@ -19,13 +19,9 @@ export async function deleteTrade(tradeId: string) {
       }
     }
 
-    // 1. Fetch the trade to get image URLs
-    const trade = await prisma.trade.findUnique({
-      where: {
-        id: tradeId,
-        userId: userId
-      },
-      select: {
+    const trade = await db.query.Trade.findFirst({
+      where: (table, { eq }) => and(eq(table.id, tradeId), eq(table.userId, userId)),
+      columns: {
         imageOne: true,
         imageTwo: true,
         imageThree: true,
@@ -37,7 +33,6 @@ export async function deleteTrade(tradeId: string) {
     })
 
     if (trade) {
-      // 2. Collect all non-null image URLs
       const imageUrls = [
         trade.imageOne,
         trade.imageTwo,
@@ -48,24 +43,17 @@ export async function deleteTrade(tradeId: string) {
         trade.cardPreviewImage
       ].filter((url): url is string => !!url)
 
-      // 3. Delete from storage if any URLs found
       if (imageUrls.length > 0) {
         try {
           await deletePublicStorageUrls(imageUrls)
         } catch (storageError) {
-          console.error('[Delete Trade] Storage deletion failed:', storageError)
+          logger.error({ event: 'system_error', error: storageError }, '[Delete Trade] Storage deletion failed:')
           // Continue with DB deletion even if storage fails
         }
       }
     }
 
-    // 4. Delete the trade from database
-    await prisma.trade.delete({
-      where: {
-        id: tradeId,
-        userId: userId
-      }
-    })
+    await db.delete(schema.Trade).where(and(eq(schema.Trade.id, tradeId), eq(schema.Trade.userId, userId)))
 
     return {
       success: true,
@@ -79,9 +67,6 @@ export async function deleteTrade(tradeId: string) {
   }
 }
 
-/**
- * Update trade image field (Supabase storage URL)
- */
 export async function updateTradeImage(
   tradeIds: string[],
   imageUrl: string | null,
@@ -96,16 +81,7 @@ export async function updateTradeImage(
 
   let processedImage = imageUrl
 
-    // Update all specified trades
-    await prisma.trade.updateMany({
-      where: {
-        id: { in: tradeIds },
-        userId: userId
-      },
-      data: {
-        [fieldName]: processedImage
-      }
-    })
+    await db.update(schema.Trade).set({ [fieldName]: processedImage }).where(and(inArray(schema.Trade.id, tradeIds), eq(schema.Trade.userId, userId)))
 
     return {
       success: true,
@@ -116,9 +92,6 @@ export async function updateTradeImage(
   }
 }
 
-/**
- * Update a trade by ID
- */
 export async function updateTradeAction(tradeId: string, data: any) {
   try {
     const userId = await getUserIdSafe()
@@ -126,20 +99,14 @@ export async function updateTradeAction(tradeId: string, data: any) {
       throw new Error('User not authenticated')
     }
 
-    const updated = await prisma.trade.update({
-      where: {
-        id: tradeId,
-        userId: userId
-      },
-      data: data
-    })
+    const updated = (await db.update(schema.Trade).set(data).where(and(eq(schema.Trade.id, tradeId), eq(schema.Trade.userId, userId))).returning())[0]
 
     return {
       success: true,
       data: JSON.parse(JSON.stringify(updated))
     }
   } catch (error) {
-    console.error('[Update Trade Action] Error:', error)
+    logger.error({ event: 'system_error', error: error }, '[Update Trade Action] Error:')
     throw error
   }
 }

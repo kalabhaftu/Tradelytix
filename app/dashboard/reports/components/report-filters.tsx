@@ -151,7 +151,7 @@ export function ReportFilters({
               </PopoverTrigger>
               <PopoverContent className="w-auto rounded-[24px] border-border/16 p-0 shadow-lg" align="end">
                 <CustomDateRangePicker
-                  selected={dateRange}
+                  {...(dateRange ? { selected: dateRange } : {})}
                   onSelect={(range) => {
                     onDateRangeChange(range)
                     if (range?.from && range?.to) {

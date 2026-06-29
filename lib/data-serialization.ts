@@ -109,12 +109,12 @@ export class DataSerializer {
       if (str[i] === current && count < 255) {
         count++
       } else {
-        compressed += (count > 1 ? count : '') + current
+        compressed += (count > 1 ? count : '') + (current || '')
         current = str[i]
         count = 1
       }
     }
-    compressed += (count > 1 ? count : '') + current
+    compressed += (count > 1 ? count : '') + (current || '')
 
     return compressed
   }
@@ -130,14 +130,14 @@ export class DataSerializer {
       let count = 1
 
       // Check if next character is a number (count)
-      if (compressed[i + 1] && /\d/.test(compressed[i + 1])) {
-        count = parseInt(compressed[i + 1])
+      if (compressed[i + 1] && /\d/.test(compressed[i + 1]!)) {
+        count = parseInt(compressed[i + 1]!)
         i += 2
       } else {
         i += 1
       }
 
-      decompressed += compressed[i].repeat(count)
+      if (compressed[i]) decompressed += compressed[i]!.repeat(count)
       i += 1
     }
 

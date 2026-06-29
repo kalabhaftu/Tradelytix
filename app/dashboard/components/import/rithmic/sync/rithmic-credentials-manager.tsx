@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/select";
 import { useUserStore } from "@/store/user-store";
 import { useRithmicSyncContext } from "@/context/rithmic-sync-context";
+import { logger } from '@/lib/logger';
 
 interface Synchronization {
   accountId: string;
@@ -108,7 +109,7 @@ export function RithmicCredentialsManager({
       const result = await response.json();
       setSynchronizations(result.data || []);
     } catch (error) {
-      console.error("Error fetching synchronizations:", error);
+      logger.error("Error fetching synchronizations:", error);
       toast.error("Failed to load synchronizations");
     } finally {
       setIsLoadingSynchronizations(false);
@@ -130,7 +131,7 @@ export function RithmicCredentialsManager({
       }
 
       try {
-        console.log("Starting sync for credential:", credential.id);
+        logger.info("Starting sync for credential:", credential.id);
         setSyncingId(credential.id);
         const result = await performSyncForCredential(credential.id);
 
@@ -140,7 +141,7 @@ export function RithmicCredentialsManager({
         }
       } catch (error) {
         toast.error("Synchronization failed");
-        console.error("Sync error:", error);
+        logger.error("Sync error:", error);
       } finally {
         setSyncingId(null);
       }
@@ -188,7 +189,7 @@ export function RithmicCredentialsManager({
         updateLastSyncTime(credential.id);
       } catch (error) {
         toast.error("Synchronization failed");
-        console.error("Load more data error:", error);
+        logger.error("Load more data error:", error);
       } finally {
         setSyncingId(null);
       }
@@ -224,7 +225,7 @@ export function RithmicCredentialsManager({
         );
         toast.success("Synchronization connection removed");
       } catch (error) {
-        console.error("Error deleting synchronization:", error);
+        logger.error("Error deleting synchronization:", error);
         toast.error("Failed to delete synchronization");
       } finally {
         setDeletingSyncId(null);

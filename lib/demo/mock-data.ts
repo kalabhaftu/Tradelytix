@@ -424,7 +424,8 @@ export function getMockTradesList() {
     entryTime.setHours(8 + Math.floor(Math.random() * 9), Math.floor(Math.random() * 60), 0, 0)
     const exitTime = new Date(entryTime.getTime() + durationMin * 60 * 1000)
 
-    const basePrice = instrumentPrices[instruments[i % instruments.length]]
+    const instrument = instruments[i % instruments.length] || 'NQ'
+    const basePrice = instrumentPrices[instrument] || 100
     const diffPercent = (pnl / 100000)
     const entryPriceNum = basePrice * (1 + (Math.random() - 0.5) * 0.01)
     const closePriceNum = entryPriceNum * (1 + (sides[Math.floor(Math.random() * 2)] === 'LONG' ? 1 : -1) * diffPercent)

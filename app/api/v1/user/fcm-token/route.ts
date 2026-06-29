@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentity } from '@/server/user-identity'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 
@@ -16,10 +18,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token is required' }, { status: 400 })
     }
 
-    await prisma.user.update({
-      where: { id: internalUserId },
-      data: { fcmToken: token },
-    })
+    await db.update(schema.User).set({ fcmToken: token }).where(eq(schema.User.id, internalUserId))
 
     return NextResponse.json({ success: true, message: 'FCM token updated successfully' })
   } catch (error: any) {

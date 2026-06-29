@@ -1,11 +1,6 @@
-/**
- * Journal Daily Notes API (v1)
- * GET  /api/v1/journal/daily - Fetch journal entry for a date
- * POST /api/v1/journal/daily - Create journal entry
- */
-
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
@@ -57,9 +52,8 @@ export async function POST(request: NextRequest) {
 
     let validAccountId: string | null = null
     if (accountId) {
-      const userAccount = await prisma.account.findFirst({
-        where: { id: accountId, userId: internalUserId },
-        select: { id: true },
+      const userAccount = await db.query.Account.findFirst({
+        where: (table, { eq, and }) => and(eq(table.id, accountId), eq(table.userId, internalUserId)),
       })
       validAccountId = userAccount ? accountId : null
     }
@@ -71,17 +65,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Journal entry already exists for this date' }, { status: 409 })
     }
 
-    const journal = await prisma.dailyNote.create({
-      data: {
-        id: crypto.randomUUID(),
-        updatedAt: new Date(),
-        userId: internalUserId,
-        date: normalizedDate,
-        note: note || '',
-        emotion: emotion || null,
-        accountId: validAccountId,
-      },
-    })
+    const journal = (await db.insert(schema.DailyNote).values({
+      id: crypto.randomUUID(),
+      updatedAt: new Date(),
+      userId: internalUserId,
+      date: normalizedDate,
+      note: note || '',
+      emotion: emotion || null,
+      accountId: validAccountId,
+    }).returning())[0]
 
     return NextResponse.json({ journal }, { status: 201 })
   } catch (error: any) {

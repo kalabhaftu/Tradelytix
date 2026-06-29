@@ -117,7 +117,6 @@ export function RithmicSyncContextProvider({
       setConnectionStatus("Disconnected");
       resetProcessingState();
     }
-    // Clear sync check interval when disconnecting
     if (syncCheckInterval) {
       clearInterval(syncCheckInterval);
       setSyncCheckInterval(null);
@@ -392,14 +391,11 @@ export function RithmicSyncContextProvider({
         ws.close();
       }
 
-      // reset processing state, message history
       resetProcessingState();
       clearMessageHistory();
 
-      // Save selected accounts in context
       setSelectedAccounts(accounts);
 
-      // Initialize account progress
       const initialProgress = accounts.reduce(
         (acc, accountId) => ({
           ...acc,
@@ -434,7 +430,6 @@ export function RithmicSyncContextProvider({
           message: "WebSocket connection established",
         });
 
-        // Send init message immediately after connection
         const message = {
           type: "init",
           token,
@@ -469,9 +464,7 @@ export function RithmicSyncContextProvider({
           status: "WebSocket error occurred",
           message: "WebSocket connection error occurred",
         });
-        // Reset auto sync state on error
         setIsAutoSyncing(false);
-        // Close connection on error
         disconnect();
       };
 
@@ -485,7 +478,6 @@ export function RithmicSyncContextProvider({
           status,
           message: `WebSocket disconnected: ${closeMessage}`,
         });
-        // Reset auto sync state on close
         setIsAutoSyncing(false);
       };
 
@@ -503,7 +495,6 @@ export function RithmicSyncContextProvider({
     ]
   );
 
-  // Extract common protocol logic
   const getProtocols = useCallback(() => {
     const isLocalhost =
       process.env.NEXT_PUBLIC_RITHMIC_API_URL?.includes("localhost");
@@ -517,7 +508,6 @@ export function RithmicSyncContextProvider({
     };
   }, []);
 
-  // Extract WebSocket URL construction
   const getWebSocketUrl = useCallback(
     (baseUrl: string) => {
       const { ws } = getProtocols();
@@ -529,35 +519,25 @@ export function RithmicSyncContextProvider({
     [getProtocols]
   );
 
-  // Run a sync for a credential
   const performSyncForCredential = useCallback(
     async (credentialId: string) => {
-      // If we are already syncing, return
       if (isAutoSyncing) return;
 
-      // Reset processing state, message history
       resetProcessingState();
       clearMessageHistory();
 
       const userId = await getUserId();
-      // Ensure we are not already syncing
-      // Prevent multiple syncs at the same time
       if (!userId || isAutoSyncing) return;
 
-      // Access local storage
       const savedData = getRithmicData(credentialId);
 
-      // If we do not find the credential, return
       if (!savedData) return;
 
-      // Set the auto sync flag so we don't perform multiple syncs at the same time
       setIsAutoSyncing(true);
 
       try {
-        // Authenticate and get accounts
         const { http } = getProtocols();
 
-        // Make fetch request to get accounts
         const response = (await Promise.race([
           fetch(
             `${http}//${process.env.NEXT_PUBLIC_RITHMIC_API_URL}/accounts`,
@@ -640,7 +620,6 @@ export function RithmicSyncContextProvider({
             .replace(/-/g, "");
         }
 
-        // Connect and start syncing
         connect(wsUrl, data.token, accountsToSync, startDate);
         updateLastSyncTime(credentialId);
 
@@ -703,7 +682,6 @@ export function RithmicSyncContextProvider({
     ]
   );
 
-  // Update authenticateAndGetAccounts to return a rate limit response object
   const authenticateAndGetAccounts = useCallback(
     async (credentials: RithmicCredentials) => {
       const { http } = getProtocols();
@@ -754,7 +732,6 @@ export function RithmicSyncContextProvider({
     [getProtocols, getWebSocketUrl]
   );
 
-  // Add calculateStartDate function
   const calculateStartDate = useCallback(
     (selectedAccounts: string[]): string => {
       // Filter trades for selected accounts
@@ -763,7 +740,6 @@ export function RithmicSyncContextProvider({
       );
 
       if (accountTrades.length === 0) {
-        // If no trades found, return date 90 days ago
         const date = new Date();
         date.setDate(date.getDate() - 91);
         const startDate = date.toISOString().slice(0, 10).replace(/-/g, "");
@@ -802,11 +778,8 @@ export function RithmicSyncContextProvider({
     [trades]
   );
 
-  // Auto-sync checking
   const checkAndPerformSyncs = useCallback(async () => {
-    // If we are still loading trades, return
     if (isLoading) return;
-    // If we are already syncing, return
     if (isAutoSyncing) return;
     try {
       // Call API route instead of server action
@@ -839,7 +812,6 @@ export function RithmicSyncContextProvider({
     }
   }, [syncInterval, isAutoSyncing, performSyncForCredential, isLoading]);
 
-  // Auto-sync checking interval
   useEffect(() => {
     const intervalMs = 1 * 60 * 1000; // 1 minute
 
@@ -847,7 +819,6 @@ export function RithmicSyncContextProvider({
       checkAndPerformSyncs();
     }, intervalMs);
 
-    // Cleanup on unmount
     return () => {
       clearInterval(intervalId);
     };

@@ -19,10 +19,6 @@ import { WidgetSize } from '@/app/dashboard/types/dashboard'
 import { useData } from "@/context/data-provider"
 import { classifyOutcome, getBreakEvenThreshold } from "@/lib/metrics/outcome"
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
 interface PnLByInstrumentProps {
   size?: WidgetSize
 }
@@ -39,10 +35,6 @@ interface InstrumentData {
 
 const AnyBarChart = (RechartsPrimitive as any).BarChart as React.ComponentType<any>
 
-// ============================================================================
-// CONSTANTS - Tradezella Premium Styling
-// ============================================================================
-
 const COLORS = {
   profit: 'hsl(var(--chart-profit))',
   loss: 'hsl(var(--chart-loss))',
@@ -55,7 +47,6 @@ const CHART_CONFIG = {
   barRadius: [4, 4, 0, 0] as [number, number, number, number],
   referenceLineOpacity: 0.4
 } as const
-
 
 function getNiceStep(value: number): number {
   if (!isFinite(value) || value <= 0) return 25
@@ -70,18 +61,10 @@ function getNiceStep(value: number): number {
   return 10 * base
 }
 
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
 export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrumentProps) {
   const { statistics } = useData()
   const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
   const { formatValue } = useDashboardDisplay()
-  // ---------------------------------------------------------------------------
-  // DATA HOOKS (PRESERVED - DO NOT MODIFY)
-  // ---------------------------------------------------------------------------
   const { data: chartData = [], isLoading } = useWidgetData('pnlByInstrument')
   const isCompact = size === 'small' || size === 'small-long'
   const normalizedChartData = React.useMemo(() => {
@@ -111,9 +94,7 @@ export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrument
     }
   }, [normalizedChartData, isCompact])
 
-  // ---------------------------------------------------------------------------
   // Y-AXIS DOMAIN CALCULATION (PRESERVED - DO NOT MODIFY)
-  // ---------------------------------------------------------------------------
   const { yDomain, yTicks } = React.useMemo(() => {
     if (!normalizedChartData.length) {
       return {
@@ -173,9 +154,6 @@ export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrument
     )
   }
 
-  // ---------------------------------------------------------------------------
-  // RENDER
-  // ---------------------------------------------------------------------------
   return (
     <WidgetCard title="P/L by Instrument">
       <div className="w-full h-full">
@@ -185,7 +163,6 @@ export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrument
             margin={{ top: 20, right: 20, left: 10, bottom: labelMetrics.bottomMargin }}
             barGap={4}
           >
-            {/* Subtle Grid - Horizontal Only */}
             <CartesianGrid
               strokeDasharray="3 3"
               stroke={COLORS.grid}
@@ -193,7 +170,6 @@ export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrument
               vertical={false}
             />
 
-            {/* X Axis - Instruments */}
             <XAxis
               dataKey="instrument"
               stroke={COLORS.axis}
@@ -210,7 +186,6 @@ export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrument
               allowDuplicatedCategory
             />
 
-            {/* Y Axis - Currency */}
             <YAxis
               tickFormatter={(value) => formatValue(value, { kind: 'money', compact: true })}
               stroke={COLORS.axis}
@@ -222,7 +197,6 @@ export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrument
               ticks={yTicks}
             />
 
-            {/* Zero Reference Line */}
             <ReferenceLine
               y={0}
               stroke={COLORS.axis}
@@ -230,13 +204,11 @@ export default function PnLByInstrument({ size = 'small-long' }: PnLByInstrument
               strokeOpacity={CHART_CONFIG.referenceLineOpacity}
             />
 
-            {/* Tooltip */}
             <RechartsTooltip
               content={<SharedChartTooltip />}
               cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
             />
 
-            {/* Bars with Rounded Tops */}
             <Bar
               dataKey="pnl"
               radius={CHART_CONFIG.barRadius}

@@ -46,6 +46,7 @@ import { useRithmicSyncContext } from '@/context/rithmic-sync-context'
 import { getAllRithmicData } from '@/lib/rithmic-storage'
 import { toast } from 'sonner'
 import { useState } from 'react'
+import { logger } from '@/lib/logger';
 
 const coreNavItems = [
   { id: 'widgets', label: 'Overview', icon: LayoutDashboard, href: '/dashboard' },
@@ -80,7 +81,6 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
     
     const syncPromises: Promise<any>[] = []
     
-    // Tradovate
     if (tradovateSyncContext && tradovateSyncContext.accounts.length > 0) {
       syncPromises.push(
         tradovateSyncContext.performSyncForAllAccounts()
@@ -98,7 +98,6 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
       )
     }
     
-    // Rithmic
     const rithmicCredentials = typeof window !== 'undefined' ? getAllRithmicData() : {}
     const rithmicIds = Object.keys(rithmicCredentials)
     if (rithmicSyncContext && rithmicIds.length > 0) {
@@ -142,7 +141,7 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
         })
       }
     } catch (err) {
-      console.error("Error during manual sync:", err)
+      logger.error("Error during manual sync:", err)
       await refreshTrades()
       toast.error("Manual sync failed to complete")
     } finally {

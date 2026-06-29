@@ -34,6 +34,7 @@ import { PageHeader } from '@/components/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { CustomDateRangePicker } from '@/components/ui/custom-date-range-picker'
+import { DateRange } from 'react-day-picker'
 import { format } from 'date-fns'
 
 interface TradingModel {
@@ -56,7 +57,6 @@ interface TradingModel {
   }
 }
 
-// Dense Strategy Block
 function StrategyBlock({
   model,
   onView,
@@ -88,7 +88,6 @@ function StrategyBlock({
               {model.stats?.tradeCount || 0} Trades logged
             </span>
           </div>
-          {/* Setups */}
           {model.setups && model.setups.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
               {model.setups.map((setup: string, i: number) => (
@@ -184,16 +183,16 @@ function StrategyBlock({
 export default function PlaybookPage() {
   const { statistics, accounts } = useData()
   const [playbookAccountFilter, setPlaybookAccountFilter] = useState<string>('__all__')
-  const [playbookDateRange, setPlaybookDateRange] = useState<{ from: Date | undefined; to: Date | undefined } | undefined>(undefined)
+  const [playbookDateRange, setPlaybookDateRange] = useState<DateRange | undefined>(undefined)
   const activeAccounts = useMemo(() => accounts.filter((account: any) => !account.isArchived), [accounts])
   const playbookAccountNumbers = useMemo(() => {
     if (playbookAccountFilter === '__all__') return []
     return [playbookAccountFilter]
   }, [playbookAccountFilter])
   const tradingModelFilters = useMemo(() => ({
-    accounts: playbookAccountNumbers.length > 0 ? playbookAccountNumbers : undefined,
-    dateFrom: playbookDateRange?.from?.toISOString(),
-    dateTo: playbookDateRange?.to?.toISOString(),
+    ...(playbookAccountNumbers.length > 0 && { accounts: playbookAccountNumbers }),
+    ...(playbookDateRange?.from && { dateFrom: playbookDateRange.from.toISOString() }),
+    ...(playbookDateRange?.to && { dateTo: playbookDateRange.to.toISOString() }),
   }), [playbookAccountNumbers, playbookDateRange])
   const queryClient = useQueryClient()
   const { tradingModels: fetchedModels, isLoading } = useTradingModels(tradingModelFilters)
@@ -346,7 +345,7 @@ export default function PlaybookPage() {
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
                 <CustomDateRangePicker
-                  selected={playbookDateRange}
+                  {...(playbookDateRange ? { selected: playbookDateRange } : {})}
                   onSelect={(range) => {
                     if (range?.from) setPlaybookDateRange({ from: range.from, to: range.to ?? range.from })
                     else setPlaybookDateRange(undefined)
@@ -370,7 +369,6 @@ export default function PlaybookPage() {
           </div>
         </div>
 
-        {/* Models Grid */}
         {isLoading ? (
           <PlaybookCardsSkeleton />
         ) : models.length === 0 ? (
@@ -403,7 +401,6 @@ export default function PlaybookPage() {
         )}
       </motion.div>
 
-      {/* Add/Edit Model Modal */}
       <AddEditModelModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -412,7 +409,6 @@ export default function PlaybookPage() {
         mode={modalMode}
       />
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteModelId} onOpenChange={() => setDeleteModelId(null)}>
         <AlertDialogContent className="bg-background border-border/40">
           <AlertDialogHeader>
@@ -433,7 +429,6 @@ export default function PlaybookPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* View Model Dialog */}
       <AlertDialog open={!!viewModel} onOpenChange={() => setViewModel(null)}>
         <AlertDialogContent className="max-w-2xl bg-background border-border/28">
           <AlertDialogHeader>

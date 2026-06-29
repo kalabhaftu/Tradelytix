@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { nanoid } from 'nanoid'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
@@ -13,9 +14,9 @@ export async function GET(req: NextRequest) {
 
   try {
     const { internalUserId } = await getResolvedUserIdentity()
-    const goals = await prisma.userGoal.findMany({
-      where: { userId: internalUserId },
-      orderBy: { createdAt: 'desc' },
+    const goals = await db.query.UserGoal.findMany({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      orderBy: (table, { desc }) => [desc(table.createdAt)],
     })
     return NextResponse.json({ goals })
   } catch (err: any) {
@@ -45,20 +46,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Target value must be a valid number' }, { status: 400 })
     }
 
-    const goal = await prisma.userGoal.create({
-      data: {
-        id: nanoid(),
-        userId: internalUserId,
-        title,
-        description: description || null,
-        metric,
-        targetValue: numericTargetValue,
-        currentValue: 0,
-        period,
-        startDate: new Date(startDate),
-        endDate: endDate ? new Date(endDate) : null,
-      },
-    })
+    const goal = (await db.insert(schema.UserGoal).values({
+      id: nanoid(),
+      userId: internalUserId,
+      title,
+      description: description || null,
+      metric,
+      targetValue: numericTargetValue,
+      currentValue: 0,
+      period,
+      startDate: new Date(startDate),
+      endDate: endDate ? new Date(endDate) : null,
+    }).returning())[0]
 
     return NextResponse.json({ goal })
   } catch (err: any) {

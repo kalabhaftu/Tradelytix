@@ -1,8 +1,11 @@
+import logger from '@/lib/logger';
 'use server'
 
 import { revalidatePath } from 'next/cache'
 import crypto from 'crypto'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client';
+import * as schema from '@/lib/db/schema';
+import { eq } from 'drizzle-orm'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 
 export async function generateThorToken() {
@@ -13,23 +16,16 @@ export async function generateThorToken() {
       throw new Error('Unauthorized')
     }
 
-    // Generate a secure random token
     const token = crypto.randomBytes(32).toString('hex')
     
-    // Update user with new token
-    await prisma.user.update({
-      where: {
-        id: internalUserId
-      },
-      data: {
-        thorToken: token
-      }
-    })
+    await db.update(schema.User).set({
+      thorToken: token
+    }).where(eq(schema.User.id, internalUserId))
 
     revalidatePath('/dashboard')
     return { token }
   } catch (error) {
-    console.error('Failed to generate Thor token:', error)
+    logger.error({ event: 'system_error', error: error }, 'Failed to generate Thor token:')
     return { error: 'Failed to generate token' }
   }
 }
@@ -42,18 +38,13 @@ export async function getThorToken() {
       throw new Error('Unauthorized')
     }
 
-    const userData = await prisma.user.findUnique({
-      where: {
-        id: internalUserId
-      },
-      select: {
-        thorToken: true
-      }
+    const userData = await db.query.User.findFirst({
+      where: (table, { eq }) => eq(table.id, internalUserId)
     })
 
     return { token: userData?.thorToken }
   } catch (error) {
-    console.error('Failed to get Thor token:', error)
+    logger.error({ event: 'system_error', error: error }, 'Failed to get Thor token:')
     return { error: 'Failed to get token' }
   }
 }

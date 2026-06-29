@@ -92,7 +92,6 @@ const SidebarProvider = React.forwardRef<
       [setOpenProp, open]
     )
 
-    // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {
       return isOverlay
         ? setOpenMobile((open) => !open)
@@ -119,7 +118,6 @@ const SidebarProvider = React.forwardRef<
       }
     }, [isOverlay, openMobile])
 
-    // Adds a keyboard shortcut to toggle the sidebar.
     React.useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
         if (

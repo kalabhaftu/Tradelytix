@@ -256,9 +256,7 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
           />
         </div>
 
-
       </WidgetCard>
-
 
     </div>
   )

@@ -14,7 +14,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Calendar, Loader2 as CircleNotch, Info } from 'lucide-react'
 import { toast } from 'sonner'
-import { Notification } from '@prisma/client'
+import type { NotificationType, NotificationRow as Notification } from '@/lib/db/schema/users';
+
 
 interface AdjustDateDialogProps {
   open: boolean

@@ -5,13 +5,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from 'sonner'
-import { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import { useTradesStore } from '@/store/trades-store'
 import { generateTradeHash } from '@/lib/trade-factory'
+import { logger } from '@/lib/logger';
 
 const formatPnl = (pnl: string | undefined): { pnl: number, error?: string } => {
     if (typeof pnl !== 'string' || pnl.trim() === '') {
-        console.warn('Invalid PNL value:', pnl);
+        logger.warn('Invalid PNL value:', pnl);
         return { pnl: 0, error: 'Invalid PNL value' };
     }
 
@@ -24,7 +26,7 @@ const formatPnl = (pnl: string | undefined): { pnl: number, error?: string } => 
     const numericValue = parseFloat(formattedPnl.replace(/[$,]/g, ''));
 
     if (isNaN(numericValue)) {
-        console.warn('Unable to parse PNL value:', pnl);
+        logger.warn('Unable to parse PNL value:', pnl);
         return { pnl: 0, error: 'Unable to parse PNL value' };
     }
 
@@ -33,7 +35,7 @@ const formatPnl = (pnl: string | undefined): { pnl: number, error?: string } => 
 
 const convertTimeInPosition = (time: string | undefined): number | undefined => {
     if (typeof time !== 'string' || time.trim() === '') {
-        console.warn('Invalid time value:', time);
+        logger.warn('Invalid time value:', time);
         return 0;
     }
     if (/^\d+\.\d+$/.test(time)) {
@@ -124,7 +126,7 @@ export default function TradovateProcessor({ headers, csvData, processedTrades =
                                     const [datePart, timePart] = cellValue.split(' ');
                                     
                                     if (!datePart || !timePart) {
-                                        console.error(`Invalid date format: ${cellValue}`);
+                                        logger.error(`Invalid date format: ${cellValue}`);
                                         item[key] = undefined;
                                         break;
                                     }
@@ -133,7 +135,7 @@ export default function TradovateProcessor({ headers, csvData, processedTrades =
                                     const [hours, minutes, seconds] = timePart.split(':').map(Number);
                                     
                                     if ([year, month, day, hours, minutes, seconds].some(n => isNaN(n))) {
-                                        console.error(`Invalid date components:`, {
+                                        logger.error(`Invalid date components:`, {
                                             year, month, day, hours, minutes, seconds
                                         });
                                         item[key] = undefined;
@@ -143,7 +145,7 @@ export default function TradovateProcessor({ headers, csvData, processedTrades =
                                     const localDate = new Date(year, month - 1, day, hours, minutes, seconds);
                                     
                                     if (isNaN(localDate.getTime())) {
-                                        console.error(`Invalid date created:`, localDate);
+                                        logger.error(`Invalid date created:`, localDate);
                                         item[key] = undefined;
                                         break;
                                     }
@@ -152,7 +154,7 @@ export default function TradovateProcessor({ headers, csvData, processedTrades =
                                     item[key] = utcDate.toISOString().replace('Z', '+00:00');
 
                                 } catch (error) {
-                                    console.error(`Error parsing date: ${cellValue}`, error);
+                                    logger.error(`Error parsing date: ${cellValue}`, error);
                                     item[key] = undefined;
                                 }
                             } else {
@@ -166,7 +168,7 @@ export default function TradovateProcessor({ headers, csvData, processedTrades =
             });
 
             if (!item.entryDate) {
-                console.warn('Missing required entryDate');
+                logger.warn('Missing required entryDate');
                 return;
             }
 

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from "next/server";
 import {
   getRithmicSynchronizations,
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
     const synchronizations = await getRithmicSynchronizations();
     return NextResponse.json({ success: true, data: synchronizations });
   } catch (error) {
-    console.error("Error fetching Rithmic synchronizations:", error);
+    logger.error("Error fetching Rithmic synchronizations:", error);
     return NextResponse.json(
       {
         success: false,
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
       message: "Synchronization updated successfully",
     });
   } catch (error) {
-    console.error("Error setting Rithmic synchronization:", error);
+    logger.error("Error setting Rithmic synchronization:", error);
     return NextResponse.json(
       {
         success: false,
@@ -66,7 +67,7 @@ export async function DELETE(request: NextRequest) {
       message: "Synchronization removed successfully",
     });
   } catch (error) {
-    console.error("Error deleting Rithmic synchronization:", error);
+    logger.error("Error deleting Rithmic synchronization:", error);
     return NextResponse.json(
       {
         success: false,

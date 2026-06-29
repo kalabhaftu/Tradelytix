@@ -15,10 +15,6 @@ import { PropFirmWidgetShell } from './prop-firm-widget-shell'
 import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 import { useTheme } from '@/context/theme-provider'
 
-/* ──────────────────────────────────────────────────────────────────── *
- *  Data helpers
- * ──────────────────────────────────────────────────────────────────── */
-
 function getReferenceValues(account: any, data: any) {
   const accountSize = Number(account.accountSize || 0)
   const phase = account.currentPhase || {}
@@ -69,10 +65,6 @@ function buildChartData(account: any, data: any, refs: ReturnType<typeof getRefe
 
   return points
 }
-
-/* ──────────────────────────────────────────────────────────────────── *
- *  Y-axis: use exact reference values as ticks
- * ──────────────────────────────────────────────────────────────────── */
 
 function getYAxisConfig(chartData: any[], refs: ReturnType<typeof getReferenceValues>) {
   // The Y-axis must show exact meaningful values
@@ -143,10 +135,6 @@ function getYAxisConfig(chartData: any[], refs: ReturnType<typeof getReferenceVa
   }
 }
 
-/* ──────────────────────────────────────────────────────────────────── *
- *  Tooltip: shows all reference values relative to current point
- * ──────────────────────────────────────────────────────────────────── */
-
 function GrowthTooltip({ active, payload, refs }: any) {
   const { formatValue, isPrivacyMode } = useDashboardDisplay()
   const forcedMode = isPrivacyMode ? 'privacy' : 'dollars'
@@ -189,7 +177,6 @@ function GrowthTooltip({ active, payload, refs }: any) {
         )}
         <div className="h-px bg-border/50 my-2" />
 
-        {/* Reference line distances */}
         <div className="flex justify-between gap-4">
           <span className="flex items-center gap-1.5">
             <span className="inline-block w-2 h-[2px] rounded bg-long" />
@@ -218,7 +205,6 @@ function GrowthTooltip({ active, payload, refs }: any) {
           </span>
         </div>
 
-        {/* Starting balance reference */}
         <div className="flex justify-between gap-4">
           <span className="flex items-center gap-1.5">
             <span className="inline-block w-2 h-[2px] rounded bg-muted-foreground" />
@@ -232,10 +218,6 @@ function GrowthTooltip({ active, payload, refs }: any) {
     </div>
   )
 }
-
-/* ──────────────────────────────────────────────────────────────────── *
- *  Main widget
- * ──────────────────────────────────────────────────────────────────── */
 
 export function PropFirmGrowthCurveWidget() {
   const { chartStyle } = useTheme()
@@ -257,7 +239,6 @@ export function PropFirmGrowthCurveWidget() {
 
         return (
           <div className="flex h-full min-h-0 flex-col gap-4">
-            {/* Stats row */}
             <div className="grid gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground sm:grid-cols-4">
               <span>
                 Start{' '}
@@ -285,7 +266,6 @@ export function PropFirmGrowthCurveWidget() {
               </span>
             </div>
 
-            {/* Chart */}
             <div className="min-h-0 flex-1">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
@@ -313,7 +293,6 @@ export function PropFirmGrowthCurveWidget() {
                     minTickGap={14}
                   />
 
-                  {/* Y-axis uses exact reference values as ticks */}
                   <YAxis
                     width={60}
                     domain={yAxisConfig.domain}
@@ -333,7 +312,6 @@ export function PropFirmGrowthCurveWidget() {
                     }
                   />
 
-                  {/* Tooltip: fires on hover anywhere across full chart width */}
                   <Tooltip
                     content={<GrowthTooltip refs={refs} />}
                     cursor={{
@@ -345,7 +323,6 @@ export function PropFirmGrowthCurveWidget() {
                     filterNull={false}
                   />
 
-                  {/* Reference lines — labels pinned to the right edge */}
                   <ReferenceLine
                     y={refs.accountSize}
                     stroke="hsl(var(--muted-foreground))"
@@ -395,7 +372,6 @@ export function PropFirmGrowthCurveWidget() {
                     }}
                   />
 
-                  {/* Balance area — baseValue stretches fill to domain floor for full hover area */}
                   <Area
                     type={curveType}
                     dataKey="balance"

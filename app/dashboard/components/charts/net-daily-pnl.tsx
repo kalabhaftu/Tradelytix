@@ -28,10 +28,6 @@ import {
 import { useData } from "@/context/data-provider"
 import { classifyOutcome, getBreakEvenThreshold } from "@/lib/metrics/outcome"
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
 interface NetDailyPnLProps {
   size?: WidgetSize
 }
@@ -44,10 +40,6 @@ interface ChartDataPoint {
   wins: number
   losses: number
 }
-
-// ============================================================================
-// CONSTANTS - Tradezella Premium Styling
-// ============================================================================
 
 const COLORS = {
   profit: 'hsl(var(--chart-profit))',      // Emerald green
@@ -62,12 +54,6 @@ const CHART_CONFIG = {
   barRadius: [4, 4, 0, 0] as [number, number, number, number],
   referenceLineOpacity: 0.4
 } as const
-
-
-
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
 
 function getNiceStep(value: number): number {
   if (!isFinite(value) || value <= 0) return 25
@@ -93,10 +79,6 @@ function formatAxisValue(value: number): string {
   return `${value < 0 ? '-' : ''}$${formatNumber(absValue, 0)}`
 }
 
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
 export default function NetDailyPnL({ size = 'small-long' }: NetDailyPnLProps) {
   const { statistics } = useData()
   const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
@@ -112,9 +94,6 @@ export default function NetDailyPnL({ size = 'small-long' }: NetDailyPnLProps) {
     [rawChartData, transformValue]
   )
 
-  // ---------------------------------------------------------------------------
-  // Y-AXIS DOMAIN CALCULATION (PRESERVED - DO NOT MODIFY)
-  // ---------------------------------------------------------------------------
   const { yDomain, yTicks } = React.useMemo(() => {
     if (!chartData.length) {
       return {

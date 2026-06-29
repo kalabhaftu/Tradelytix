@@ -59,8 +59,10 @@ export function useReportStats(
       return result as ReportStatsResponse
     },
     enabled,
-    initialData: shouldUseInitialData ? options?.initialData : undefined,
-    placeholderData: shouldUseInitialData ? options?.initialData : undefined,
+    ...(shouldUseInitialData && options?.initialData !== undefined && { 
+      initialData: options.initialData,
+      placeholderData: options.initialData 
+    }),
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
   })

@@ -5,7 +5,8 @@ import { Spinner } from '@/components/ui/spinner'
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useUserStore } from '@/store/user-store'
-import { Trade } from '@prisma/client'
+import type { TradeType as Trade } from '@/lib/db/schema';
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"

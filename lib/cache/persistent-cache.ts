@@ -26,7 +26,7 @@ export function checkCacheVersion(): boolean {
     }
     
     return true
-  } catch (error) {
+  } catch {
     return true
   }
 }
@@ -36,8 +36,7 @@ export function updateCacheVersion(): void {
   
   try {
     localStorage.setItem(CACHE_VERSION_KEY, CURRENT_CACHE_VERSION)
-    } catch (error) {
-    // Ignore version update errors
+    } catch {
   }
 }
 
@@ -74,15 +73,13 @@ function getAllCacheKeys(excludeKeys: string[] = []): string[] {
   const keys: string[] = []
   
   try {
-    // Get all localStorage keys
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
       if (key && !excludeKeys.includes(key)) {
         keys.push(key)
       }
     }
-  } catch (error) {
-    // Ignore errors getting cache keys
+  } catch {
   }
   
   return keys
@@ -99,10 +96,8 @@ export function clearLocalStorageCache(keysToKeep: string[] = ['theme', 'consent
   
   try {
     for (const key of allKeys) {
-      // Skip keys we want to keep
       if (keysToKeep.includes(key)) continue
-      
-      // Check if it's a cache-related key
+
       const isCacheKey = LOCAL_STORAGE_KEYS.some(item => {
         if (item.pattern) {
           return item.pattern.test(key)
@@ -115,8 +110,7 @@ export function clearLocalStorageCache(keysToKeep: string[] = ['theme', 'consent
         clearedCount++
       }
     }
-  } catch (error) {
-    // Ignore localStorage clearing errors
+  } catch {
   }
   
   return clearedCount
@@ -132,7 +126,7 @@ export function clearSessionStorage(): number {
     const length = sessionStorage.length
     sessionStorage.clear()
     return length
-  } catch (error) {
+  } catch {
     return 0
   }
 }
@@ -153,8 +147,7 @@ export async function clearServiceWorkerCaches(): Promise<number> {
         clearedCount++
       })
     )
-  } catch (error) {
-    // Ignore Service Worker cache errors
+  } catch {
   }
   
   return clearedCount
@@ -177,8 +170,7 @@ export async function clearIndexedDB(): Promise<number> {
         clearedCount++
       }
     }
-  } catch (error) {
-    // Ignore IndexedDB clearing errors
+  } catch {
   }
   
   return clearedCount
@@ -191,14 +183,11 @@ export function clearNextJSCache(): void {
   if (typeof window === 'undefined') return
   
   try {
-    // Force reload to clear Next.js internal caches
-    // This is a soft reload that preserves user state but clears router cache
     if ('__NEXT_DATA__' in window) {
       // @ts-ignore
       delete window.__NEXT_DATA__
     }
-  } catch (error) {
-    // Ignore Next.js cache clearing errors
+  } catch {
   }
 }
 
@@ -227,16 +216,12 @@ export async function clearAllCaches(options: {
   if (keepTheme) keysToKeep.push('theme')
   if (keepConsent) keysToKeep.push('consent-banner-dismissed')
   
-  // Clear caches
   const localStorageCleared = clearLocalStorageCache(keysToKeep)
   const sessionStorageCleared = clearSessionStorage()
   const serviceWorkerCleared = clearServiceWorker ? await clearServiceWorkerCaches() : 0
   const indexedDBCleared = shouldClearIndexedDB ? await clearIndexedDB() : 0
-  
-  // Clear Next.js cache
+
   clearNextJSCache()
-  
-  // Update cache version
   updateCacheVersion()
   
   const results = {
@@ -288,8 +273,7 @@ export function clearAccountCaches(): number {
       localStorage.removeItem(key)
       clearedCount++
     }
-    
-    // Also clear dashboard layouts (they contain account-specific data)
+
     const allKeys = getAllCacheKeys()
     for (const key of allKeys) {
       if (key.startsWith('dashboard-layout-')) {
@@ -297,8 +281,7 @@ export function clearAccountCaches(): number {
         clearedCount++
       }
     }
-  } catch (error) {
-    // Ignore account cache clearing errors
+  } catch {
   }
   
   return clearedCount
@@ -327,7 +310,6 @@ export function getCacheStats(): {
   let sessionStorageKeys = 0
   
   try {
-    // Calculate localStorage size
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
       if (key) {
@@ -338,8 +320,7 @@ export function getCacheStats(): {
     }
     
     sessionStorageKeys = sessionStorage.length
-  } catch (error) {
-    // Ignore cache stats errors
+  } catch {
   }
   
   return {

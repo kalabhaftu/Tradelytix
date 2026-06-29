@@ -5,8 +5,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
-import { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import { getTickDetails, type TickDetails } from '@/server/tick-details'
+import { logger } from '@/lib/logger';
 
 interface ContractSpec {
   tickSize: number;
@@ -60,7 +62,7 @@ function parseDate(dateString: string): Date {
     return parsedDate
   }
 
-  console.warn(`Unable to parse date: ${dateString}`)
+  logger.warn(`Unable to parse date: ${dateString}`)
   return new Date()
 }
 
@@ -101,7 +103,7 @@ export default function RithmicOrderProcessor({ csvData, headers, processedTrade
 
   const parsePrice = (priceString: string): number => {
     if (!priceString || typeof priceString !== 'string') {
-      console.warn(`Invalid price string: ${priceString}`)
+      logger.warn(`Invalid price string: ${priceString}`)
       return 0
     }
     
@@ -158,7 +160,7 @@ export default function RithmicOrderProcessor({ csvData, headers, processedTrade
 
       sortedAccountOrders.forEach((row) => {
         if (row.length !== cleanHeaders.length) {
-          console.warn('Row length mismatch:', row);
+          logger.warn('Row length mismatch:', row);
           return;
         }
 
@@ -171,7 +173,7 @@ export default function RithmicOrderProcessor({ csvData, headers, processedTrade
         const missingFields = requiredFields.filter(field => !order[field]);
         
         if (missingFields.length > 0) {
-          console.warn(`Missing required fields: ${missingFields.join(', ')}`, order);
+          logger.warn(`Missing required fields: ${missingFields.join(', ')}`, order);
           return;
         }
 

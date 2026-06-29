@@ -1,6 +1,7 @@
 'use client'
 
-import { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import { useEffect, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { useUserStore } from '@/store/user-store'
@@ -56,7 +57,6 @@ const ExnessProcessor = ({
         const entryPrice = parseFloat(row[headers.indexOf('opening_price')]) || 0
         const closePrice = parseFloat(row[headers.indexOf('closing_price')]) || 0
         
-        // Handle commission, swap and profit possibly missing the _usd suffix
         const commissionIdx = headers.indexOf('commission_usd') !== -1 ? headers.indexOf('commission_usd') : headers.indexOf('commission')
         const swapIdx = headers.indexOf('swap_usd') !== -1 ? headers.indexOf('swap_usd') : headers.indexOf('swap')
         const profitIdx = headers.indexOf('profit_usd') !== -1 ? headers.indexOf('profit_usd') : headers.indexOf('profit')
@@ -65,7 +65,6 @@ const ExnessProcessor = ({
         const swap = swapIdx !== -1 ? parseFloat(row[swapIdx]) || 0 : 0
         const pnl = profitIdx !== -1 ? parseFloat(row[profitIdx]) || 0 : 0
         
-        // Handle stop loss and take profit (can be empty)
         const stopLossRaw = row[headers.indexOf('stop_loss')]
         const takeProfitRaw = row[headers.indexOf('take_profit')]
         const stopLoss = stopLossRaw && parseFloat(stopLossRaw) !== 0 ? stopLossRaw : null

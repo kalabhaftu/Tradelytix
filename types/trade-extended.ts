@@ -1,4 +1,7 @@
-import { Trade } from '@prisma/client'
+import { type InferSelectModel } from 'drizzle-orm'
+import { Trade as schemaTrade } from '@/lib/db/schema'
+
+export type Trade = InferSelectModel<typeof schemaTrade>
 
 export interface ExtendedTrade extends Omit<Trade, 'chartLinks'> {
     tags: string[] | any; // Handling the array/string ambiguity from the audit report

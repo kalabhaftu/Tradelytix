@@ -8,11 +8,11 @@ interface AccountProgress {
   daysProcessed: number
   totalDays: number
   isComplete: boolean
-  error?: string
-  currentDate?: string
-  processedDates?: string[]
-  currentDayNumber?: number
-  lastProcessedDate?: string
+  error?: string | undefined
+  currentDate?: string | undefined
+  processedDates?: string[] | undefined
+  currentDayNumber?: number | undefined
+  lastProcessedDate?: string | undefined
   current: number
   total: number
 }
@@ -91,7 +91,7 @@ export const useRithmicSyncStore = create<RithmicSyncState>()(
           [accountId]: {
             ...(state.accountsProgress[accountId] ?? {}),
             ...progress
-          }
+          } as AccountProgress
         }
       })),
       setCurrentAccount: (accountId) => set({ currentAccount: accountId }),

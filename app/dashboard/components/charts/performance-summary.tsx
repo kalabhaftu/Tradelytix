@@ -46,7 +46,6 @@ export default function PerformanceSummaryWidget() {
       ? ((statistics.averageWin * statistics.nbWin) - (Math.abs(statistics.averageLoss) * statistics.nbLoss)) / totalTrades
       : 0
 
-    // Calculate max drawdown and avg drawdown from equity curve data
     let maxDrawdown = 0
     let peak = 0
     const drawdowns: number[] = []

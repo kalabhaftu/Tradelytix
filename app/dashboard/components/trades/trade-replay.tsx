@@ -212,7 +212,6 @@ export default function TradeReplay({ trade, onClose }: TradeReplayProps) {
         }
     }, [trade.id, trade.instrument, trade.entryDate, trade.closeDate, isLong, initChart])
 
-
     return (
         <div className="w-full h-full relative">
             <div ref={chartContainerRef} className="absolute inset-0 w-full h-full" />

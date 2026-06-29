@@ -34,7 +34,7 @@ import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { getTradeNetPnl } from '@/lib/metrics/pnl'
 import { getWeeklyReview, saveWeeklyReview } from "@/server/weekly-review"
 import { Calendar, BarChart3, CheckCircle2, Loader2, Clock, Image as ImageIcon, Percent, Activity, Target, Trash2, TrendingDown, TrendingUp, Upload, XCircle, Coins, ScrollText, AreaChart as AreaChartIcon, FileText, Sun, Moon, Boxes, Compass } from "lucide-react"
-import { type Trade } from '@prisma/client'
+
 import imageCompression from 'browser-image-compression'
 import { endOfWeek, format, parseISO, startOfWeek } from "date-fns"
 import { enUS } from 'date-fns/locale'
@@ -148,7 +148,6 @@ const WEEKLY_REVIEW_NOTES_TEMPLATE = JSON.stringify({
   },
 })
 
-// Metric Card Component
 function MetricCard({
   icon: Icon,
   label,
@@ -221,7 +220,6 @@ export function WeeklyModal({
   // Track the latest reviewData to avoid stale values in rapid changes
   const reviewDataRef = useRef<any>(null)
 
-  // Keep ref in sync with state
   useEffect(() => {
     reviewDataRef.current = reviewData
   }, [reviewData])
@@ -239,7 +237,6 @@ export function WeeklyModal({
     upsert: true
   })
 
-  // Load review data when modal opens
   useEffect(() => {
     // Validate selectedDate before opening
     if (isOpen && selectedDate && selectedDate instanceof Date && !isNaN(selectedDate.getTime())) {
@@ -256,7 +253,6 @@ export function WeeklyModal({
       }
       loadReview()
     } else if (isOpen && (!selectedDate || !(selectedDate instanceof Date) || isNaN(selectedDate.getTime()))) {
-      // If modal is open but date is invalid, close it
       onOpenChange(false)
     }
   }, [isOpen, selectedDate, onOpenChange])
@@ -274,7 +270,6 @@ export function WeeklyModal({
     const weekStartStr = format(weekStart, 'yyyy-MM-dd')
     const weekEndStr = format(weekEnd, 'yyyy-MM-dd')
 
-    // Collect all trades for the week using string comparison
     for (const [dateString, dayData] of Object.entries(calendarData)) {
       // Compare date strings directly to avoid timezone parsing issues
       if (dateString >= weekStartStr && dateString <= weekEndStr && dayData.trades) {
@@ -285,7 +280,6 @@ export function WeeklyModal({
     // CRITICAL: Group trades to show correct execution count
     const groupedTrades = groupTradesByExecution(trades as Trade[]) as GroupedTrade[]
 
-    // Calculate long and short numbers from grouped trades
     const longNumber = groupedTrades.filter(trade => (trade as any).side?.toLowerCase() === 'long' || (trade as any).side?.toUpperCase() === 'BUY').length
     const shortNumber = groupedTrades.filter(trade => (trade as any).side?.toLowerCase() === 'short' || (trade as any).side?.toUpperCase() === 'SELL').length
 
@@ -296,7 +290,6 @@ export function WeeklyModal({
       .filter(t => classifyOutcome(getTradeNetPnl(t), breakEvenThreshold) === 'loss').length
     const winRate = (winningTrades + losingTrades) > 0 ? (winningTrades / (winningTrades + losingTrades)) * 100 : 0
 
-    // Calculate average win/loss
     const avgWin = winningTrades > 0
       ? groupedTrades
           .filter(t => classifyOutcome(getTradeNetPnl(t), breakEvenThreshold) === 'win')
@@ -324,7 +317,6 @@ export function WeeklyModal({
     }
   }, [selectedDate, calendarData, breakEvenThreshold])
 
-  // Calculate derived stats
   const stats = useMemo(() => {
     if (weeklyData.trades.length === 0) return null
 
@@ -418,7 +410,6 @@ export function WeeklyModal({
     })
   }, [selectedDate, calendarData])
 
-  // Handle Image Upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -472,7 +463,6 @@ export function WeeklyModal({
     toast.info("Image removed")
   }
 
-  // Handle Image Replacement
   const handleReplaceImage = () => {
     // Clear current preview
     if (imagePreview) {
@@ -532,7 +522,6 @@ export function WeeklyModal({
         return
       }
 
-      // Check for unsaved changes by comparing current state with last saved baseline
       // We only care about user-editable fields
       const current = reviewData
       const saved = lastSavedReviewData.current || {}
@@ -925,7 +914,6 @@ export function WeeklyModal({
                                   }
 
                                   // Merge: use server data as base, but preserve local changes for non-saved fields
-                                  // Check if property exists in prev (not just truthy) to preserve falsy values
                                   return {
                                     ...savedData,
                                     expectation: savedExpectation, // Always use the saved value

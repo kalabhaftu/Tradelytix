@@ -1,28 +1,6 @@
-/**
- * TradingView Webhook Import
- *
- * Receives trade close alerts from TradingView and creates trades automatically.
- * Users get a unique webhook URL from Settings → Import → TradingView Webhook.
- *
- * TradingView alert message format (JSON string in alert body):
- * {
- *   "token": "<user_webhook_token>",
- *   "symbol": "EURUSD",
- *   "side": "BUY",
- *   "entry_price": 1.0850,
- *   "close_price": 1.0920,
- *   "quantity": 0.1,
- *   "pnl": 70.00,
- *   "entry_time": "2024-01-15T09:30:00Z",
- *   "close_time": "2024-01-15T14:45:00Z",
- *   "stop_loss": 1.0800,
- *   "take_profit": 1.0950,
- *   "comment": "EMA crossover strategy"
- * }
- */
-
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { nanoid } from 'nanoid'
 import { z } from 'zod'
 import { applyRateLimit, webhookLimiter } from '@/lib/rate-limiter'
@@ -114,19 +92,22 @@ export async function POST(req: NextRequest) {
       return createErrorResponse('Valid webhook token is required in query parameter or request body', 400, undefined, 'TOKEN_REQUIRED')
     }
 
-    const userSettings = await prisma.userSettings.findFirst({
-      where: { webhookToken: token.trim() },
-      select: { userId: true },
+    const userSettings = await db.query.UserSettings.findFirst({
+      where: (table, { eq }) => eq(table.webhookToken, token.trim()),
+      columns: { userId: true },
     }).catch(() => null)
 
     if (!userSettings) {
       return createErrorResponse('Invalid or expired webhook token', 401, undefined, 'INVALID_WEBHOOK_TOKEN')
     }
 
-    const defaultAccount = await prisma.account.findFirst({
-      where: { userId: userSettings.userId, isArchived: false },
-      orderBy: { createdAt: 'asc' },
-      select: { id: true, number: true },
+    const defaultAccount = await db.query.Account.findFirst({
+      where: (table, { eq, and }) => and(
+        eq(table.userId, userSettings.userId),
+        eq(table.isArchived, false)
+      ),
+      orderBy: (table, { asc }) => [asc(table.createdAt)],
+      columns: { id: true, number: true },
     })
 
     if (!defaultAccount) {
@@ -139,34 +120,32 @@ export async function POST(req: NextRequest) {
     const closeIso = closeDate.toISOString()
     const tradeIdentityKey = `tv-${symbol}-${entryIso}-${tradeId}`
 
-    await prisma.trade.create({
-      data: {
-        id: tradeId,
-        userId: userSettings.userId,
-        accountId: defaultAccount.id,
-        accountNumber: defaultAccount.number,
-        instrument: symbol,
-        symbol,
-        side: payload.side,
-        entryPrice: String(payload.entry_price),
-        closePrice: String(payload.close_price),
-        entryPriceValue: payload.entry_price,
-        closePriceValue: payload.close_price,
-        quantity: payload.quantity,
-        pnl: payload.pnl,
-        entryDate: entryIso,
-        closeDate: closeIso,
-        entryTime: entryDate,
-        exitTime: closeDate,
-        stopLoss: payload.stop_loss ? String(payload.stop_loss) : null,
-        stopLossValue: payload.stop_loss ?? null,
-        takeProfit: payload.take_profit ? String(payload.take_profit) : null,
-        takeProfitValue: payload.take_profit ?? null,
-        comment: payload.comment || 'Imported via TradingView webhook',
-        tradeIdentityKey,
-        timeInPosition: Math.max(0, Math.floor((closeDate.getTime() - entryDate.getTime()) / 1000)),
-      },
-    })
+    await (db.insert(schema.Trade).values({
+      id: tradeId,
+      userId: userSettings.userId,
+      accountId: defaultAccount.id,
+      accountNumber: defaultAccount.number,
+      instrument: symbol,
+      symbol,
+      side: payload.side,
+      entryPrice: String(payload.entry_price),
+      closePrice: String(payload.close_price),
+      entryPriceValue: payload.entry_price,
+      closePriceValue: payload.close_price,
+      quantity: payload.quantity,
+      pnl: payload.pnl,
+      entryDate: entryIso,
+      closeDate: closeIso,
+      entryTime: entryDate,
+      exitTime: closeDate,
+      stopLoss: payload.stop_loss ? String(payload.stop_loss) : null,
+      stopLossValue: payload.stop_loss ?? null,
+      takeProfit: payload.take_profit ? String(payload.take_profit) : null,
+      takeProfitValue: payload.take_profit ?? null,
+      comment: payload.comment || 'Imported via TradingView webhook',
+      tradeIdentityKey,
+      timeInPosition: Math.max(0, Math.floor((closeDate.getTime() - entryDate.getTime()) / 1000)),
+    }).returning())[0]
 
     return createSuccessResponse({ tradeId }, `Trade imported: ${symbol} ${payload.side}`)
   } catch (err: any) {

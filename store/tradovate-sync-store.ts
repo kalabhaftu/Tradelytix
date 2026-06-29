@@ -19,12 +19,12 @@ type TradovateEnvironment = 'demo' | 'live'
 
 interface TradovateOAuthState {
   isAuthenticated: boolean
-  accessToken?: string
-  refreshToken?: string
-  expiresAt?: string
-  accounts?: TradovateAccount[]
-  lastSync?: string
-  oauthState?: string // For OAuth flow security
+  accessToken?: string | undefined
+  refreshToken?: string | undefined
+  expiresAt?: string | undefined
+  accounts?: TradovateAccount[] | undefined
+  lastSync?: string | undefined
+  oauthState?: string | undefined // For OAuth flow security
   environment: TradovateEnvironment // Add environment selection
 }
 
@@ -108,8 +108,7 @@ export const useTradovateSyncStore = create<TradovateSyncStore>()(
       isTokenExpired: () => {
         const state = get()
         if (!state.expiresAt) return true
-        // Add 5-minute buffer to refresh before actual expiration
-        const bufferTime = 5 * 60 * 1000 // 5 minutes in milliseconds
+        const bufferTime = 5 * 60 * 1000
         return Date.now() > (new Date(state.expiresAt).getTime() - bufferTime)
       },
 

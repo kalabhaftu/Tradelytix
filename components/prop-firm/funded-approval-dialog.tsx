@@ -30,13 +30,14 @@ import {
   handleFundedApprovalAction,
   handleFundedDeclineAction
 } from "@/server/notifications"
-import { Notification } from '@prisma/client'
+import type { NotificationRow } from '@/lib/db/schema/users';
+
 import { clearAccountsCache } from '@/hooks/use-accounts'
 
 interface FundedApprovalDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  notification: Notification | null
+  notification: NotificationRow | null
   onComplete: () => void
 }
 
@@ -107,7 +108,6 @@ export function FundedApprovalDialog({
         duration: 5000
       })
 
-      // Clear all caches to force fresh data
       clearAccountsCache()
 
       // Clear localStorage caches that might contain stale data
@@ -120,7 +120,6 @@ export function FundedApprovalDialog({
       resetState()
       onComplete()
 
-      // Force full page refresh to ensure clean state
       router.refresh()
 
     } catch (error) {

@@ -17,6 +17,7 @@ import Image from 'next/image'
 import { useUserStore } from '@/store/user-store'
 import { setRithmicSynchronization } from './actions'
 import { useRithmicSyncContext } from '@/context/rithmic-sync-context'
+import { logger } from '@/lib/logger';
 
 interface RithmicCredentials {
   username: string
@@ -71,7 +72,7 @@ export function RithmicSyncConnection({ setIsOpen }: RithmicSyncConnectionProps)
         throw new Error(data.message)
       }
     } catch (error) {
-      console.error('Failed to fetch server configurations:', error)
+      logger.error('Failed to fetch server configurations:', error)
     }
   }, [])
   
@@ -107,7 +108,7 @@ export function RithmicSyncConnection({ setIsOpen }: RithmicSyncConnectionProps)
     setIsLoading(true)
 
     if (isConnected) {
-      console.log('Disconnecting existing WebSocket connection before new connection attempt')
+      logger.info('Disconnecting existing WebSocket connection before new connection attempt')
       disconnect()
     }
 
@@ -136,7 +137,7 @@ export function RithmicSyncConnection({ setIsOpen }: RithmicSyncConnectionProps)
       })
     } catch (error: unknown) {
       if (!(error instanceof Error && error.message.includes('Rate limit exceeded'))) {
-        console.error('Connection error:', error)
+        logger.error('Connection error:', error)
       }
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -353,7 +354,7 @@ export function RithmicSyncConnection({ setIsOpen }: RithmicSyncConnectionProps)
 
   useEffect(() => {
     if (isConnected && selectedAccounts.length > 0) {
-      console.log('Active connection detected, resuming processing view')
+      logger.info('Active connection detected, resuming processing view')
       setStep('processing')
     }
   }, [isConnected, selectedAccounts, setStep])
@@ -376,7 +377,7 @@ export function RithmicSyncConnection({ setIsOpen }: RithmicSyncConnectionProps)
         tokenExpiresAt: null
       })
     } catch (error) {
-      console.error('Failed to save synchronization data:', error)
+      logger.error('Failed to save synchronization data:', error)
       toast.error("Failed to save synchronization data", {
         description: "The connection succeeded, but synchronization metadata could not be saved to the database.",
       })
@@ -384,7 +385,7 @@ export function RithmicSyncConnection({ setIsOpen }: RithmicSyncConnectionProps)
 
     const accountsToSync = allAccounts ? availableAccounts.map(acc => acc.account_id) : selectedAccounts
     const startDate = calculateStartDate(accountsToSync)
-    console.log('Connecting to WebSocket:', wsUrl)
+    logger.info('Connecting to WebSocket:', wsUrl)
     connect(wsUrl, token, accountsToSync, startDate)
   }, [
     token,

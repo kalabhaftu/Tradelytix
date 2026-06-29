@@ -1,6 +1,7 @@
 "use server"
 
-import { prisma } from "@/lib/prisma"
+import { db } from "@/lib/db/client"
+import * as schema from "@/lib/db/schema"
 import { createClient } from "@/server/auth"
 import { revalidatePath } from "next/cache"
 
@@ -14,25 +15,20 @@ export async function ensureAccountAndAssignGroup(
     return { success: false, error: "User not found" }
   }
   try {
-    // Check if account exists
-    let account = await prisma.account.findUnique({
-      where: {
-        number_userId: {
-          number: accountNumber,
-          userId: user.id,
-        },
-      },
+    let account = await db.query.Account.findFirst({
+      where: (table, { and, eq }) => and(
+        eq(table.number, accountNumber),
+        eq(table.userId, user.id)
+      ),
     })
 
     // Create if it doesn't exist
     if (!account) {
-      account = await prisma.account.create({
-        data: {
-          id: crypto.randomUUID(),
-          number: accountNumber,
-          userId: user.id,
-        },
-      })
+      account = (await db.insert(schema.Account).values({
+        id: crypto.randomUUID(),
+        number: accountNumber,
+        userId: user.id,
+      }).returning())[0]
     }
 
     // Groups removed - no longer used
@@ -51,13 +47,8 @@ export async function getAccounts() {
     return []
   }
   try {
-    const accounts = await prisma.account.findMany({
-      where: { userId: user.id },
-      select: {
-        id: true,
-        number: true,
-        // groupId removed - no longer used
-      },
+    const accounts = await db.query.Account.findMany({
+      where: (table, { eq }) => eq(table.userId, user.id),
     })
     return accounts
   } catch (error) {

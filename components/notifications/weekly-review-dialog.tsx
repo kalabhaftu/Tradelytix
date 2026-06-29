@@ -60,7 +60,7 @@ interface WeeklyAIReview {
 interface WeeklyReviewDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  reviewId?: string
+  reviewId?: string | undefined
 }
 
 const gradeColors: Record<string, string> = {

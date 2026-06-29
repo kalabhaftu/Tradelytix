@@ -56,7 +56,6 @@ export function LinkedAccounts({ plain = false }: { plain?: boolean }) {
     const linked = urlParams.get('linked')
     if (linked) {
       toast.success("Account linked successfully")
-      // Clean up the URL
       const newUrl = new URL(window.location.href)
       newUrl.searchParams.delete('linked')
       window.history.replaceState({}, '', newUrl.toString())
@@ -103,7 +102,7 @@ export function LinkedAccounts({ plain = false }: { plain?: boolean }) {
     try {
       await unlinkIdentity(identity)
       toast.success("Account unlinked successfully")
-      await loadIdentities() // Reload the list
+      await loadIdentities()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to unlink account")
     }
@@ -179,7 +178,6 @@ export function LinkedAccounts({ plain = false }: { plain?: boolean }) {
 
   const content = (
     <div className="space-y-6">
-      {/* Current Linked Accounts */}
       {identities.length > 0 && (
         <div>
           <h4 className="text-sm font-medium mb-3">Primary Account</h4>
@@ -243,7 +241,6 @@ export function LinkedAccounts({ plain = false }: { plain?: boolean }) {
 
       <Separator />
 
-      {/* Link New Accounts */}
       <div>
         <h4 className="text-sm font-medium mb-3">Link New Account</h4>
         <p className="text-sm text-muted-foreground mb-4">

@@ -67,7 +67,6 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
   const hasLoadedRef = useRef(false)
   const isLoadingRef = useRef(false)
 
-  // Load templates
   const loadTemplates = useCallback(async () => {
     if (isDemoMode) {
       const fallback = buildFallbackTemplate()
@@ -77,7 +76,6 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
       return
     }
 
-    // Prevent duplicate loads
     if (hasLoadedRef.current || isLoadingRef.current) {
       return
     }
@@ -107,7 +105,6 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
         const allTemplates = await getUserTemplates()
         const active = await getActiveTemplate()
 
-        // If we got templates, use them immediately
         if (allTemplates.length > 0 && active) {
           return {
             templates: allTemplates,
@@ -118,7 +115,6 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
         // No templates yet - create default for new users
         await ensureDefaultTemplate()
 
-        // Reload after creating default
         const newTemplates = await getUserTemplates()
         const newActive = await getActiveTemplate()
 
@@ -145,10 +141,8 @@ export function TemplateProvider({ children, initialActiveTemplate = null }: Tem
         setActiveTemplate(buildFallbackTemplate())
       }
     } catch (error) {
-      // Failed to load templates
       setTimeout(() => toast.error('Failed to load templates'), 0)
 
-      // Use fallback on error
       setActiveTemplate(buildFallbackTemplate())
 
       hasLoadedRef.current = false // Allow retry on error

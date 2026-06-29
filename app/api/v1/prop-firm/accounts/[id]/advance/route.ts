@@ -3,9 +3,11 @@ import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { revalidateTag } from 'next/cache'
 import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
+import { eq, and, ne } from 'drizzle-orm'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -37,14 +39,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const body = await request.json()
     const { nextPhaseId } = AdvanceSchema.parse(body)
 
-    const masterAccount = await prisma.masterAccount.findFirst({
-      where: {
-        id: masterAccountId,
-        userId: internalUserId,
-        status: { not: 'failed' },
-      },
-      include: {
-        PhaseAccount: { orderBy: { phaseNumber: 'asc' } },
+    const masterAccount = await db.query.MasterAccount.findFirst({
+      where: (table, { eq, and }) =>
+        and(
+          eq(table.id, masterAccountId),
+          eq(table.userId, internalUserId),
+          ne(table.status, 'failed')
+        ),
+      with: {
+        PhaseAccount: {
+          orderBy: (phaseAccount, { asc }) => [asc(phaseAccount.phaseNumber)],
+        },
       },
     })
 
@@ -81,33 +86,42 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-      await tx.phaseAccount.update({
-        where: { id: currentPhase.id },
-        data: {
+    const result = await db.transaction(async (tx) => {
+      await tx
+        .update(schema.PhaseAccount)
+        .set({
           status: 'passed',
           endDate: new Date(),
-        },
-      })
+        })
+        .where(eq(schema.PhaseAccount.id, currentPhase.id))
 
-      const updatedNextPhase = await tx.phaseAccount.update({
-        where: { id: nextPhase.id },
-        data: {
-          status: 'active',
-          phaseId: nextPhaseId,
-          startDate: new Date(),
-        },
-      })
+      const updatedNextPhase = (
+        await tx
+          .update(schema.PhaseAccount)
+          .set({
+            status: 'active',
+            phaseId: nextPhaseId,
+            startDate: new Date(),
+          })
+          .where(eq(schema.PhaseAccount.id, nextPhase.id))
+          .returning()
+      )[0]
 
-      const isTransitioningToFunded = isFundedPhase(masterAccount.evaluationType, nextPhaseNumber)
+      const isTransitioningToFunded = isFundedPhase(
+        masterAccount.evaluationType,
+        nextPhaseNumber
+      )
 
-      const updatedMasterAccount = await tx.masterAccount.update({
-        where: { id: masterAccountId },
-        data: {
-          currentPhase: nextPhaseNumber,
-          ...(isTransitioningToFunded && { status: 'funded' }),
-        },
-      })
+      const updatedMasterAccount = (
+        await tx
+          .update(schema.MasterAccount)
+          .set({
+            currentPhase: nextPhaseNumber,
+            ...(isTransitioningToFunded && { status: 'funded' }),
+          })
+          .where(eq(schema.MasterAccount.id, masterAccountId))
+          .returning()
+      )[0]
 
       return {
         masterAccount: updatedMasterAccount,

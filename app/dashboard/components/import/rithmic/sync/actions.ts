@@ -1,36 +1,30 @@
 'use server'
-import { prisma } from "@/lib/prisma"
+import { db } from "@/lib/db/client"
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentity } from "@/server/user-identity"
-import { Synchronization } from "@prisma/client"
+import { and, eq } from 'drizzle-orm'
 
 export async function getRithmicSynchronizations() {
   const { internalUserId } = await getResolvedUserIdentity()
-  const synchronizations = await prisma.synchronization.findMany({
-    where: { userId: internalUserId, service: "rithmic" },
+  const synchronizations = await db.query.Synchronization.findMany({
+    where: (table, { eq, and }) => and(eq(table.userId, internalUserId), eq(table.service, "rithmic")),
   })
   return synchronizations
 }
 
-export async function setRithmicSynchronization(synchronization: Partial<Synchronization>) {
+export async function setRithmicSynchronization(synchronization: any) {
   const { internalUserId } = await getResolvedUserIdentity()
-  await prisma.synchronization.upsert({
-    where: { 
-      userId_service_accountId: {
-        userId: internalUserId,
-        service: synchronization.service || 'rithmic',
-        accountId: synchronization.accountId || ''
-      }
-    },
-    update: {
+  await db.insert(schema.Synchronization).values({
+    ...synchronization,
+    service: synchronization.service || 'rithmic',
+    accountId: synchronization.accountId || '',
+    lastSyncedAt: synchronization.lastSyncedAt || new Date(),
+    userId: internalUserId,
+    includedFeeTypes: undefined,
+  }).onConflictDoUpdate({
+    target: [schema.Synchronization.userId, schema.Synchronization.service, schema.Synchronization.accountId],
+    set: {
       ...synchronization,
-      userId: internalUserId,
-      includedFeeTypes: undefined,
-    },
-    create: {
-      ...synchronization,
-      service: synchronization.service || 'rithmic',
-      accountId: synchronization.accountId || '',
-      lastSyncedAt: synchronization.lastSyncedAt || new Date(),
       userId: internalUserId,
       includedFeeTypes: undefined,
     },
@@ -40,11 +34,7 @@ export async function setRithmicSynchronization(synchronization: Partial<Synchro
 export async function removeRithmicSynchronization(accountId: string) {
   const { internalUserId } = await getResolvedUserIdentity()
 
-  await prisma.synchronization.deleteMany({
-    where: {
-      userId: internalUserId,
-      service: "rithmic",
-      accountId,
-    },
-  })
+  await db.delete(schema.Synchronization).where(
+    and(eq(schema.Synchronization.userId, internalUserId), eq(schema.Synchronization.service, "rithmic"), eq(schema.Synchronization.accountId, accountId))
+  )
 }

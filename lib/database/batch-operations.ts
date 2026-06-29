@@ -5,10 +5,15 @@
  * Reduces database round trips and improves performance
  */
 
-import { prisma } from '@/lib/prisma'
-import { Trade, Account, Prisma } from '@prisma/client'
+import { db } from '@/lib/db/client'
+import { Trade, TradeExecution, Account } from '@/lib/db/schema'
+import { inArray, gte, lte, and, eq, sql, gt, lt, count, sum, avg } from 'drizzle-orm'
+import type { TradeType } from '@/lib/db/schema/trades';
+import type { AccountType } from '@/lib/db/schema/accounts';
+
 import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData } from '@/lib/trade-core'
 import { deletePublicStorageUrls } from '@/server/storage-admin'
+import logger from '@/lib/logger';
 
 /**
  * Batch create trades with transaction
@@ -28,17 +33,13 @@ export async function batchCreateTrades(
       })
     )
     // Use createMany for bulk insert (much faster)
-    const result = await prisma.trade.createMany({
-      data: preparedTrades as any,
-      skipDuplicates: true, // Skip trades that already exist
-    })
+    await db.insert(Trade).values(preparedTrades as any).onConflictDoNothing()
 
-    await prisma.tradeExecution.createMany({
-      data: preparedTrades.flatMap((trade: any) => buildSyntheticExecutionsFromTrade(trade)) as any,
-      skipDuplicates: true,
-    })
+    await db.insert(TradeExecution).values(
+      preparedTrades.flatMap((trade: any) => buildSyntheticExecutionsFromTrade(trade)) as any
+    ).onConflictDoNothing()
     
-    count = result.count
+    count = preparedTrades.length
   } catch (error) {
     errors.push(error)
   }
@@ -57,14 +58,11 @@ export async function batchUpdateTrades(
 
   try {
     // Use transaction for atomic updates
-    await prisma.$transaction(
-      updates.map(({ id, data }) =>
-        prisma.trade.update({
-          where: { id },
-          data,
-        })
-      )
-    )
+    await db.transaction(async (tx) => {
+      for (const { id, data } of updates) {
+        await tx.update(Trade).set(data).where(eq(Trade.id, id))
+      }
+    })
     
     count = updates.length
   } catch (error) {
@@ -86,21 +84,17 @@ export async function batchDeleteTrades(
 
   try {
     // 1. Fetch image URLs for these trades
-    const tradesWithImages = await prisma.trade.findMany({
-      where: {
-        id: { in: tradeIds },
-        userId: userId
-      },
-      select: {
-        imageOne: true,
-        imageTwo: true,
-        imageThree: true,
-        imageFour: true,
-        imageFive: true,
-        imageSix: true,
-        cardPreviewImage: true
-      }
+    const tradesWithImages = await db.select({
+      imageOne: Trade.imageOne,
+      imageTwo: Trade.imageTwo,
+      imageThree: Trade.imageThree,
+      imageFour: Trade.imageFour,
+      imageFive: Trade.imageFive,
+      imageSix: Trade.imageSix,
+      cardPreviewImage: Trade.cardPreviewImage
     })
+      .from(Trade)
+      .where(and(inArray(Trade.id, tradeIds), eq(Trade.userId, userId)))
 
     const imageUrls = tradesWithImages.flatMap(trade => [
       trade.imageOne,
@@ -117,21 +111,17 @@ export async function batchDeleteTrades(
       try {
         await deletePublicStorageUrls(imageUrls)
       } catch (error) {
-        console.error('[Batch Delete Trades] Storage deletion failed:', error)
+        logger.error('[Batch Delete Trades] Storage deletion failed:', error)
       }
     }
 
-    // 3. Use deleteMany for bulk delete with user filtering for security
-    const result = await prisma.trade.deleteMany({
-      where: {
-        id: {
-          in: tradeIds,
-        },
-        userId: userId, // CRITICAL: Ensure user can only delete their own trades
-      },
-    })
+    // 3. Use delete for bulk delete with user filtering for security
+    await db.delete(Trade).where(and(
+      inArray(Trade.id, tradeIds),
+      eq(Trade.userId, userId) // CRITICAL: Ensure user can only delete their own trades
+    ))
     
-    count = result.count
+    count = tradeIds.length
   } catch (error) {
     errors.push(error)
   }
@@ -145,17 +135,14 @@ export async function batchDeleteTrades(
 export async function fetchAccountsInParallel(
   userId: string,
   accountIds: string[]
-): Promise<Account[]> {
+): Promise<AccountType[]> {
   try {
-    // Fetch all accounts in a single query
-    const accounts = await prisma.account.findMany({
-      where: {
-        userId,
-        id: {
-          in: accountIds,
-        },
-      },
-    })
+    const accounts = await db.select()
+      .from(Account)
+      .where(and(
+        eq(Account.userId, userId),
+        inArray(Account.id, accountIds)
+      ))
     
     return accounts
   } catch (error) {
@@ -174,35 +161,21 @@ export async function fetchTradesWithRelations(
     startDate?: Date
     endDate?: Date
   }
-): Promise<Trade[]> {
+): Promise<TradeType[]> {
   try {
     const { limit = 1000, accountIds, startDate, endDate } = options || {}
 
-    const trades = await prisma.trade.findMany({
-      where: {
-        userId,
-        ...(accountIds && accountIds.length > 0 && {
-          accountId: {
-            in: accountIds,
-          },
-        }),
-        ...(startDate && {
-          entryTime: {
-            gte: startDate,
-          },
-        }),
-        ...(endDate && {
-          entryTime: {
-            lte: endDate,
-          },
-        }),
+    const trades = await db.query.Trade.findMany({
+      where: (trade, { eq, and, inArray, gte, lte }) => {
+        const conditions = [eq(trade.userId, userId)]
+        if (accountIds && accountIds.length > 0) conditions.push(inArray(trade.accountId, accountIds))
+        if (startDate) conditions.push(gte(trade.entryTime, startDate))
+        if (endDate) conditions.push(lte(trade.entryTime, endDate))
+        return and(...conditions)
       },
-      orderBy: {
-        entryTime: 'desc',
-      },
-      take: limit,
-      // Eagerly load relations to avoid N+1 queries
-      include: {
+      orderBy: (trade, { desc }) => [desc(trade.entryTime)],
+      limit: limit,
+      with: {
         Account: true,
         PhaseAccount: true,
       },
@@ -225,24 +198,19 @@ export async function batchUpsertTrades(
   let updated = 0
 
   try {
-    // Use transaction for atomic upserts
-    const results = await prisma.$transaction(
-      trades.map((trade) =>
-        {
-          const preparedTrade = buildTradePersistenceData({
-            id: trade.id || crypto.randomUUID(),
-            ...trade,
+    const results = await db.transaction(async (tx) => {
+      return await Promise.all(trades.map(async (trade) => {
+        const preparedTrade = buildTradePersistenceData({
+          id: trade.id || crypto.randomUUID(),
+          ...trade,
+        })
+        return await tx.insert(Trade).values(preparedTrade as any)
+          .onConflictDoUpdate({
+            target: Trade.id,
+            set: preparedTrade as any
           })
-          return prisma.trade.upsert({
-            where: {
-              id: preparedTrade.id || `temp-${preparedTrade.entryId || Math.random().toString(36)}`,
-            },
-            create: preparedTrade as any,
-            update: preparedTrade as any,
-          })
-        }
-      )
-    )
+      }))
+    })
     
     // Count creates vs updates (this is approximate)
     created = results.length
@@ -261,58 +229,43 @@ export async function fetchDashboardStats(
   accountIds?: string[]
 ) {
   try {
-    // Single aggregation query for all stats
-    const stats = await prisma.trade.aggregate({
-      where: {
-        userId,
-        ...(accountIds && accountIds.length > 0 && {
-          accountId: {
-            in: accountIds,
-          },
-        }),
-      },
-      _count: {
-        id: true,
-      },
-      _sum: {
-        pnl: true,
-        commission: true,
-      },
-      _avg: {
-        pnl: true,
-      },
-    })
+    const statsResult = await db.select({
+      countId: count(Trade.id),
+      sumPnl: sum(Trade.pnl),
+      sumCommission: sum(Trade.commission),
+      avgPnl: avg(Trade.pnl),
+    }).from(Trade).where(and(
+      eq(Trade.userId, userId),
+      accountIds && accountIds.length > 0 ? inArray(Trade.accountId, accountIds) : undefined
+    ))
 
-    // Get win/loss counts in parallel
-    const [winCount, lossCount] = await Promise.all([
-      prisma.trade.count({
-        where: {
-          userId,
-          pnl: { gt: 0 },
-          ...(accountIds && accountIds.length > 0 && {
-            accountId: { in: accountIds },
-          }),
-        },
-      }),
-      prisma.trade.count({
-        where: {
-          userId,
-          pnl: { lt: 0 },
-          ...(accountIds && accountIds.length > 0 && {
-            accountId: { in: accountIds },
-          }),
-        },
-      }),
+    const stats = statsResult[0]
+
+    const [winCountResult, lossCountResult] = await Promise.all([
+      db.select({ count: count() }).from(Trade).where(and(
+        eq(Trade.userId, userId),
+        gt(Trade.pnl, 0),
+        accountIds && accountIds.length > 0 ? inArray(Trade.accountId, accountIds) : undefined
+      )),
+      db.select({ count: count() }).from(Trade).where(and(
+        eq(Trade.userId, userId),
+        lt(Trade.pnl, 0),
+        accountIds && accountIds.length > 0 ? inArray(Trade.accountId, accountIds) : undefined
+      )),
     ])
 
+    const winCount = winCountResult[0]?.count ?? 0
+    const lossCount = lossCountResult[0]?.count ?? 0
+    const totalTrades = stats?.countId ?? 0
+
     return {
-      totalTrades: stats._count.id,
-      totalPnl: stats._sum.pnl || 0,
-      totalCommission: stats._sum.commission || 0,
-      avgPnl: stats._avg.pnl || 0,
+      totalTrades: totalTrades,
+      totalPnl: Number(stats?.sumPnl) || 0,
+      totalCommission: Number(stats?.sumCommission) || 0,
+      avgPnl: Number(stats?.avgPnl) || 0,
       winCount,
       lossCount,
-      winRate: stats._count.id > 0 ? (winCount / stats._count.id) * 100 : 0,
+      winRate: totalTrades > 0 ? (winCount / totalTrades) * 100 : 0,
     }
   } catch (error) {
     return null

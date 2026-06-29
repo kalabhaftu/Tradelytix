@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { checkAIAccess } from '@/lib/services/ai-guard-service'
 import { createOpenAI } from '@ai-sdk/openai'
 import { streamText } from 'ai'
 import { subDays } from 'date-fns'
+import { eq, and, or, inArray, desc, asc } from 'drizzle-orm'
 
 export const maxDuration = 60
 
@@ -83,26 +85,21 @@ async function resolveDataContext(userId: string, chat: any) {
   let rawNumbers: string[] = []
 
   if (accounts && accounts.length > 0) {
-    const userAccounts = await prisma.account.findMany({
-      where: {
-        userId,
-        OR: [
-          { id: { in: accounts } },
-          { number: { in: accounts } }
-        ]
-      },
-      select: { id: true, number: true }
+    const userAccounts = await db.query.Account.findMany({
+      where: (table, { or, inArray }) => or(
+        inArray(table.id, accounts),
+        inArray(table.number, accounts)
+      ),
+      columns: { id: true, number: true }
     })
 
-    const userPhaseAccounts = await prisma.phaseAccount.findMany({
-      where: {
-        MasterAccount: { userId },
-        OR: [
-          { id: { in: accounts } },
-          { phaseId: { in: accounts } }
-        ]
-      },
-      select: { id: true, phaseId: true }
+    const userPhaseAccounts = await db.query.PhaseAccount.findMany({
+      where: (table, { or, inArray }) => or(
+        inArray(table.id, accounts),
+        inArray(table.phaseId, accounts)
+      ),
+      with: { MasterAccount: true },
+      columns: { id: true, phaseId: true }
     })
 
     resolvedAccountIds = userAccounts.map(a => a.id)
@@ -116,89 +113,89 @@ async function resolveDataContext(userId: string, chat: any) {
   }
 
   // 1. Fetch Trades
-  const tradesWhere: any = {
-    userId,
-    entryDate: {
-      gte: fromStr,
-      lte: toStr
+  const tradesWhere = (table: any, { and, or, inArray, gte, lte }: any) => {
+    const base = and(
+      eq(table.userId, userId),
+      gte(table.entryDate, fromStr),
+      lte(table.entryDate, toStr)
+    )
+    if (accounts && accounts.length > 0) {
+      return or(
+        base,
+        or(
+          inArray(table.accountId, resolvedAccountIds),
+          inArray(table.phaseAccountId, resolvedPhaseAccountIds),
+          and(
+            eq(table.accountId, null),
+            eq(table.phaseAccountId, null),
+            inArray(table.accountNumber, [...resolvedAccountNumbers, ...resolvedPhaseIds, ...rawNumbers])
+          )
+        )
+      )
     }
+    return base
   }
 
-  if (accounts && accounts.length > 0) {
-    tradesWhere.OR = [
-      { accountId: { in: resolvedAccountIds } },
-      { phaseAccountId: { in: resolvedPhaseAccountIds } },
-      {
-        AND: [
-          { accountId: null },
-          { phaseAccountId: null },
-          { accountNumber: { in: [...resolvedAccountNumbers, ...resolvedPhaseIds, ...rawNumbers] } }
-        ]
-      }
-    ]
-  }
-
-  const tradesPromise = prisma.trade.findMany({
+  const tradesPromise = db.query.Trade.findMany({
     where: tradesWhere,
-    orderBy: { entryDate: 'asc' },
-    include: { TradingModel: true }
+    orderBy: (table, { asc }) => [asc(table.entryDate)],
+    with: { TradingModel: true }
   })
 
   // 2. Fetch Daily Journal Notes
-  const journalsWhere: any = {
-    userId,
-    date: {
-      gte: fromDate,
-      lte: toDate
+  const journalsWhere = (table: any, { and, or, inArray, gte, lte }: any) => {
+    const base = and(
+      eq(table.userId, userId),
+      gte(table.date, fromDate),
+      lte(table.date, toDate)
+    )
+    if (accounts && accounts.length > 0) {
+      return or(
+        base,
+        or(
+          inArray(table.accountId, resolvedAccountIds),
+          { Account: { number: { in: [...resolvedAccountNumbers, ...rawNumbers] } } }
+        )
+      )
     }
+    return base
   }
 
-  if (accounts && accounts.length > 0) {
-    journalsWhere.OR = [
-      { accountId: { in: resolvedAccountIds } },
-      { Account: { number: { in: [...resolvedAccountNumbers, ...rawNumbers] } } }
-    ]
-  }
-
-  const journalsPromise = prisma.dailyNote.findMany({
+  const journalsPromise = db.query.DailyNote.findMany({
     where: journalsWhere,
-    orderBy: { date: 'asc' }
+    orderBy: (table, { asc }) => [asc(table.date)]
   })
 
   // 3. Fetch Weekly Performance Reviews
-  const weeklyReviewsPromise = prisma.weeklyReview.findMany({
-    where: {
-      userId,
-      startDate: {
-        gte: fromDate,
-        lte: toDate
-      }
-    },
-    orderBy: { startDate: 'asc' }
+  const weeklyReviewsPromise = db.query.WeeklyReview.findMany({
+    where: (table, { and, gte, lte }) => and(
+      eq(table.userId, userId),
+      gte(table.startDate, fromDate),
+      lte(table.startDate, toDate)
+    ),
+    orderBy: (table, { asc }) => [asc(table.startDate)]
   })
 
   // 4. Fetch AI Performance Reports
-  const aiReviewsPromise = prisma.weeklyAIReview.findMany({
-    where: {
-      userId,
-      weekStart: {
-        gte: fromDate,
-        lte: toDate
-      }
-    },
-    orderBy: { weekStart: 'asc' }
+  const aiReviewsPromise = db.query.WeeklyAIReview.findMany({
+    where: (table, { and, gte, lte }) => and(
+      eq(table.userId, userId),
+      gte(table.weekStart, fromDate),
+      lte(table.weekStart, toDate)
+    ),
+    orderBy: (table, { asc }) => [asc(table.weekStart)]
   })
 
   // 5. Fetch Accounts/Metrics
-  const accountsPromise = prisma.masterAccount.findMany({
-    where: {
-      userId,
-      isArchived: false,
-      ...(accounts && accounts.length > 0 ? { id: { in: accounts } } : {})
-    },
-    include: {
+  const accountsPromise = db.query.MasterAccount.findMany({
+    where: (table, { and, eq, inArray }) => and(
+      eq(table.userId, userId),
+      eq(table.isArchived, false),
+      ...(accounts && accounts.length > 0 ? [inArray(table.id, accounts)] : [])
+    ),
+    with: {
       PhaseAccount: {
-        where: { status: 'active' }
+        where: (p: any, { eq }: any) => eq(p.status, 'active')
       }
     }
   })
@@ -270,17 +267,14 @@ async function resolveDataContext(userId: string, chat: any) {
   }
 
   // Also include standard accounts if applicable
-  const standardAccountsList = await prisma.account.findMany({
-    where: {
-      userId,
-      isArchived: false,
-      ...(accounts && accounts.length > 0 ? {
-        OR: [
-          { id: { in: accounts } },
-          { number: { in: accounts } }
-        ]
-      } : {})
-    }
+  const standardAccountsWhere = (table: any, { and, eq, or, inArray }: any) => and(
+    eq(table.userId, userId),
+    eq(table.isArchived, false),
+    ...(accounts && accounts.length > 0 ? [or(inArray(table.id, accounts), inArray(table.number, accounts))] : [])
+  )
+
+  const standardAccountsList = await db.query.Account.findMany({
+    where: standardAccountsWhere
   })
 
   if (standardAccountsList.length > 0) {
@@ -310,25 +304,23 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '50', 10)
     const skip = (page - 1) * limit
 
-    const chat = await prisma.aIChat.findFirst({
-      where: {
-        id: chatId,
-        userId,
-        isDeleted: false,
-      },
+    const chat = await db.query.AiChat.findFirst({
+      where: (table, { and, eq }) => and(
+        eq(table.id, chatId),
+        eq(table.userId, userId),
+        eq(table.isDeleted, false)
+      ),
     })
 
     if (!chat) {
       return NextResponse.json({ error: 'Chat not found' }, { status: 404 })
     }
 
-    const messages = await prisma.aIChatMessage.findMany({
-      where: {
-        chatId,
-      },
-      orderBy: { createdAt: 'asc' },
-      skip,
-      take: limit,
+    const messages = await db.query.AiChatMessage.findMany({
+      where: (table, { eq }) => eq(table.chatId, chatId),
+      orderBy: (table, { asc }) => [asc(table.createdAt)],
+      limit,
+      offset: skip,
     })
 
     return NextResponse.json({ success: true, data: messages })
@@ -350,12 +342,12 @@ export async function POST(
   const { chatId } = await params
 
   try {
-    const chat = await prisma.aIChat.findFirst({
-      where: {
-        id: chatId,
-        userId,
-        isDeleted: false,
-      },
+    const chat = await db.query.AiChat.findFirst({
+      where: (table, { and, eq }) => and(
+        eq(table.id, chatId),
+        eq(table.userId, userId),
+        eq(table.isDeleted, false)
+      ),
     })
 
     if (!chat) {
@@ -391,19 +383,17 @@ export async function POST(
     }
 
     // Save user's message
-    await prisma.aIChatMessage.create({
-      data: {
-        chatId,
-        role: 'user',
-        content: prompt,
-      },
+    await db.insert(schema.AiChatMessage).values({
+      chatId,
+      role: 'user',
+      content: prompt,
     })
 
     // 2. Fetch Chat History
-    const history = await prisma.aIChatMessage.findMany({
-      where: { chatId },
-      orderBy: { createdAt: 'asc' },
-      take: 12, // Last 12 messages for conversation context
+    const history = await db.query.AiChatMessage.findMany({
+      where: (table, { eq }) => eq(table.chatId, chatId),
+      orderBy: (table, { asc }) => [asc(table.createdAt)],
+      limit: 12,
     })
 
     // 3. Resolve Data Context
@@ -472,30 +462,23 @@ ${dataContext}`
         const completionCost = (completionTokens / 1000000) * 10.00
         const estimatedCost = promptCost + completionCost
         
-        await prisma.$transaction([
-          prisma.aIChatMessage.create({
-            data: {
-              chatId,
-              role: 'assistant',
-              content: event.text,
-            },
-          }),
-          prisma.aIChatUsageLog.create({
-            data: {
-              userId,
-              chatId,
-              promptTokens,
-              completionTokens,
-              totalTokens,
-              estimatedCost,
-              responseTimeMs: Date.now() - startTime,
-            },
-          }),
-          prisma.aIChat.update({
-            where: { id: chatId },
-            data: { updatedAt: new Date() },
-          }),
-        ])
+        await db.transaction(async (tx) => {
+          await tx.insert(schema.AiChatMessage).values({
+            chatId,
+            role: 'assistant',
+            content: event.text,
+          })
+          await tx.insert(schema.AiChatUsageLog).values({
+            userId,
+            chatId,
+            promptTokens,
+            completionTokens,
+            totalTokens,
+            estimatedCost,
+            responseTimeMs: Date.now() - startTime,
+          })
+          await tx.update(schema.AiChat).set({ updatedAt: new Date() }).where(eq(schema.AiChat.id, chatId))
+        })
       },
     })
 

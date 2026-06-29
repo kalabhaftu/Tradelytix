@@ -1,3 +1,4 @@
+import logger from '@/lib/logger';
 /**
  * Safe Fetch Wrapper with Error Handling
  * Provides automatic timeout, retry, and structured error responses
@@ -96,7 +97,7 @@ function getRetryDelay(attempt: number): number {
  * ```typescript
  * const { data, error } = await fetchWithError<User[]>('/api/users')
  * if (error) {
- *   console.error('Failed to fetch:', error.message)
+ *   logger.error('Failed to fetch:', error.message)
  *   return
  * }
  * // data is User[]

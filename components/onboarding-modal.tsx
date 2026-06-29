@@ -3,7 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { useData } from '@/context/data-provider'
-import { logger } from '@/lib/logger'
+import logger from "@/lib/logger"
 
 export default function OnboardingModal() {
   const { isFirstConnection, changeIsFirstConnection } = useData()

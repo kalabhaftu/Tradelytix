@@ -154,7 +154,7 @@ export class ServerImageProcessor {
       sizes.map(async ({ width, height, suffix }) => {
         const result = await this.processImage(imageBuffer, {
           width,
-          height,
+          ...(height !== undefined && { height }),
           format: 'webp',
           quality: 85,
           optimizeForWeb: true,
@@ -344,7 +344,7 @@ export class ServerImageProcessor {
         size: imageBuffer.length,
         channels: metadata.channels || 0,
         hasAlpha: metadata.hasAlpha || false,
-        density: metadata.density,
+        ...(metadata.density !== undefined && { density: metadata.density }),
       }
     } catch (error) {
       throw new Error(`Failed to get image info: ${error instanceof Error ? error.message : 'Unknown error'}`)

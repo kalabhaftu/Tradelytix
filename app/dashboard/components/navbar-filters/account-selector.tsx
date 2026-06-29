@@ -146,7 +146,6 @@ export function AccountSelector({ onSave }: AccountSelectorProps) {
     const filtered: Record<string, any> = {}
 
     Object.entries(groupedAccountsByName).forEach(([accountName, accountData]) => {
-      // Check if account name matches
       if (accountName.toLowerCase().includes(query)) {
         filtered[accountName] = accountData
         return
@@ -263,7 +262,7 @@ export function AccountSelector({ onSave }: AccountSelectorProps) {
       })
 
       setAccountNumbers(accountNumbersToSave)
-      refreshTrades().catch(() => {})
+      refreshTrades().catch((e) => { console.error('Failed to refresh trades', e) })
       toast.success(`${selectedAccounts.size} account(s) selected`)
       onSave?.()
     } catch {
@@ -310,7 +309,7 @@ export function AccountSelector({ onSave }: AccountSelectorProps) {
     try {
       await updateSettings({ selectedAccounts: [], selectedPhaseAccountIds: [] })
       setAccountNumbers([])
-      refreshTrades().catch(() => {})
+      refreshTrades().catch((e) => { console.error('Failed to refresh trades', e) })
       toast.success("Selection cleared")
       onSave?.()
     } catch {

@@ -1,4 +1,5 @@
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import { ActivityLog } from '@/lib/db/schema'
 
 interface LogActivityParams {
   userId: string
@@ -15,17 +16,16 @@ interface LogActivityParams {
  * Silently catches errors to never break the primary operation.
  */
 export function logActivity(params: LogActivityParams): void {
-  prisma.activityLog
-    .create({
-      data: {
-        userId: params.userId,
-        action: params.action,
-        entity: params.entity,
-        entityId: params.entityId ?? null,
-        metadata: params.metadata ?? undefined,
-        ipAddress: params.ipAddress ?? null,
-      },
+  db.insert(ActivityLog)
+    .values({
+      userId: params.userId,
+      action: params.action,
+      entity: params.entity,
+      entityId: params.entityId ?? null,
+      metadata: params.metadata ?? undefined,
+      ipAddress: params.ipAddress ?? null,
     })
+    .execute()
     .catch(() => {
       // Silently swallow — logging must never break the primary operation
     })

@@ -52,7 +52,8 @@ import { useData } from '@/context/data-provider'
 import { useModalStateStore } from '@/store/modal-state-store'
 import { TradeEditPanel } from '@/app/dashboard/components/tables/trade-edit-panel'
 import { TradeDetailPanel } from '@/app/dashboard/components/tables/trade-detail-panel'
-import { Trade } from '@prisma/client'
+import type { TradeType as Trade } from '@/lib/db/schema';
+
 import { groupTradesByExecution, formatCurrency } from '@/lib/utils'
 import Fuse from 'fuse.js'
 import { getAssetSearchTerms } from '@/lib/constants/asset-aliases'
@@ -69,7 +70,6 @@ import { classifyOutcome } from '@/lib/metrics/outcome'
 
 const ITEMS_PER_PAGE = 21
 
-// Stats Component
 function JournalStats({ statistics }: { statistics: any }) {
   if (!statistics) return null
 
@@ -154,7 +154,6 @@ function JournalStats({ statistics }: { statistics: any }) {
   )
 }
 
-// Empty State
 function EmptyState({
   hasFilters,
   searchTerm,
@@ -196,7 +195,6 @@ export function JournalClient() {
   const { tags } = useTags()
   const searchInputRef = useRef<HTMLInputElement>(null)
 
-  // State
   const [searchTerm, setSearchTerm] = useState('')
   const [tradeDateFilter, setTradeDateFilter] = useState('')
   const [filterBy, setFilterBy] = useState<'all' | 'wins' | 'losses' | 'breakeven' | 'buys' | 'sells'>('all')
@@ -209,7 +207,6 @@ export function JournalClient() {
   const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid')
   const [notePanelDate, setNotePanelDate] = useState<Date | null>(null)
 
-  // URL State
   const view = searchParams.get('view')
   const tradeIdParam = searchParams.get('tradeId')
   const dateParam = searchParams.get('date')
@@ -244,7 +241,6 @@ export function JournalClient() {
     setViewMode('grid')
   }, [dateParam])
 
-  // Handlers
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true)
     try {
@@ -309,7 +305,6 @@ export function JournalClient() {
 
   const hasFilters = filterBy !== 'all' || selectedTagIds.length > 0
 
-  // Show loading skeleton
   if (isLoading && paginatedTrades.length === 0) {
     return <JournalPageSkeleton />
   }
@@ -341,7 +336,6 @@ export function JournalClient() {
 
   return (
     <div className="w-full max-w-full py-6 px-4 sm:px-6 space-y-6">
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -366,7 +360,6 @@ export function JournalClient() {
         />
       </motion.div>
 
-      {/* View Toggle */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -395,7 +388,6 @@ export function JournalClient() {
         </Button>
       </motion.div>
 
-      {/* Stats */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -404,7 +396,6 @@ export function JournalClient() {
         {statistics && <JournalStats statistics={statistics} />}
       </motion.div>
 
-      {/* Filters */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -540,7 +531,6 @@ export function JournalClient() {
         </DropdownMenu>
       </motion.div>
 
-      {/* Active tag filters display */}
       {selectedTagIds.length > 0 && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
@@ -566,7 +556,6 @@ export function JournalClient() {
         </motion.div>
       )}
 
-      {/* Content */}
       <AnimatePresence mode="wait">
         {paginatedTrades.length === 0 && !isLoading ? (
           <motion.div
@@ -607,8 +596,7 @@ export function JournalClient() {
               />
             ) : (
               <>
-                {/* Trade cards grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginatedTrades.map((trade, index) => (
                 <motion.div
                   key={(trade as any).id}
@@ -627,7 +615,6 @@ export function JournalClient() {
               ))}
             </div>
 
-            {/* Pagination controls */}
             {totalPages > 1 && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -695,8 +682,6 @@ export function JournalClient() {
 
       {/* Panels are now rendered above as early returns */}
 
-
-
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent className="z-[10002]">
           <AlertDialogHeader>
@@ -725,23 +710,22 @@ export function JournalClient() {
 
       {/* AIAnalysisDialog removed - redirected to AI Assistant workspace */}
 
-      {/* Daily Note Panel */}
       {notePanelDate && (
         <DailyNotePanel
           date={notePanelDate}
           onClose={() => setNotePanelDate(null)}
-          dailyStats={(() => {
+          {...((() => {
             const dateStr = format(notePanelDate, 'yyyy-MM-dd')
             const dayTrades = (formattedTrades || []).filter((t: any) => {
               if (!t.entryDate) return false
               return t.entryDate.toString().split('T')[0] === dateStr
             })
-            if (dayTrades.length === 0) return undefined
+            if (dayTrades.length === 0) return {}
             const pnl = dayTrades.reduce((sum: number, t: any) => sum + getTradeNetPnl(t), 0)
             const wins = dayTrades.filter((t: any) => classifyOutcome(getTradeNetPnl(t), activeBreakEvenThreshold) === 'win').length
             const losses = dayTrades.filter((t: any) => classifyOutcome(getTradeNetPnl(t), activeBreakEvenThreshold) === 'loss').length
-            return { pnl, trades: dayTrades.length, wins, losses }
-          })()}
+            return { dailyStats: { pnl, trades: dayTrades.length, wins, losses } }
+          })())}
         />
       )}
     </div>

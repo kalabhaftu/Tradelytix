@@ -3,7 +3,9 @@
  * Centralized statistics calculation with caching for optimal performance
  */
 
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import { Trade, Account, LiveAccountTransaction } from '@/lib/db/schema'
+import { eq, and, inArray, gte, lte, asc } from 'drizzle-orm'
 import { unstable_cache } from 'next/cache'
 import { calculateAccountBalances } from '@/lib/utils/balance-calculator'
 import { groupTradesByExecution } from '@/lib/utils'
@@ -16,10 +18,6 @@ import {
 import { calculateWinRate, classifyOutcome, DEFAULT_BREAK_EVEN_THRESHOLD, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { getTradeNetPnl } from '@/lib/metrics/pnl'
 import { getRuntimeBreakEvenThreshold } from '@/server/user-settings'
-
-// ===========================================
-// TYPES
-// ===========================================
 
 export interface TradeStatistics {
   totalTrades: number
@@ -63,10 +61,6 @@ export interface CalculateStatisticsOptions {
   dateTo?: Date
   forceRefresh?: boolean
 }
-
-// ===========================================
-// CORE CALCULATION FUNCTIONS
-// ===========================================
 
 /**
  * Calculate streaks from grouped trades
@@ -129,7 +123,9 @@ function calculateStreaks(
   let tempDayStreak = 0
 
   for (let i = 0; i < sortedDays.length; i++) {
-    const dayTrades = tradesByDay[sortedDays[i]]
+    const currentDay = sortedDays[i]
+    if (!currentDay) continue
+    const dayTrades = tradesByDay[currentDay]
     const dayPnl = dayTrades.reduce(
       (sum: number, t: any) => sum + getTradeNetPnl(t),
       0
@@ -178,68 +174,60 @@ async function calculateStatisticsCore(
 ): Promise<TradeStatistics> {
   const { userId, accountNumbers, dateFrom, dateTo } = options
 
-  // Build where clause
-  const whereClause: any = { userId }
+  const conditions = [eq(Trade.userId, userId)]
 
   if (accountNumbers && accountNumbers.length > 0) {
-    whereClause.accountNumber = { in: accountNumbers }
+    conditions.push(inArray(Trade.accountNumber, accountNumbers))
   }
 
   if (dateFrom || dateTo) {
-    whereClause.createdAt = {}
-    if (dateFrom) whereClause.createdAt.gte = dateFrom
-    if (dateTo) whereClause.createdAt.lte = dateTo
+    if (dateFrom) conditions.push(gte(Trade.createdAt, dateFrom))
+    if (dateTo) conditions.push(lte(Trade.createdAt, dateTo))
   }
 
-  // Fetch required data in parallel
   const [accounts, trades, transactions, breakEvenThreshold] = await Promise.all([
-    prisma.account.findMany({
-      where: {
-        userId,
-        isArchived: false,
-        ...(accountNumbers?.length ? { number: { in: accountNumbers } } : {})
-      },
-      select: {
-        id: true,
-        number: true,
-        startingBalance: true
-      }
-    }),
-    prisma.trade.findMany({
-      where: whereClause,
-      select: {
-        id: true,
-        entryId: true,
-        entryDate: true,
-        instrument: true,
-        side: true,
-        pnl: true,
-        commission: true,
-        createdAt: true,
-        accountNumber: true,
-        quantity: true,
-        timeInPosition: true,
-        closeDate: true,
-        closePrice: true,
-        exitTime: true,
-        groupId: true
-      },
-      orderBy: { createdAt: 'asc' }
-    }),
-    prisma.liveAccountTransaction.findMany({
-      where: { userId },
-      select: {
-        accountId: true,
-        amount: true
-      }
-    }),
+    db.select({
+      id: Account.id,
+      number: Account.number,
+      startingBalance: Account.startingBalance
+    })
+      .from(Account)
+      .where(and(
+        eq(Account.userId, userId),
+        eq(Account.isArchived, false),
+        accountNumbers?.length ? inArray(Account.number, accountNumbers) : undefined
+      )),
+    db.select({
+      id: Trade.id,
+      entryId: Trade.entryId,
+      entryDate: Trade.entryDate,
+      instrument: Trade.instrument,
+      side: Trade.side,
+      pnl: Trade.pnl,
+      commission: Trade.commission,
+      createdAt: Trade.createdAt,
+      accountNumber: Trade.accountNumber,
+      quantity: Trade.quantity,
+      timeInPosition: Trade.timeInPosition,
+      closeDate: Trade.closeDate,
+      closePrice: Trade.closePrice,
+      exitTime: Trade.exitTime,
+      groupId: Trade.groupId
+    })
+      .from(Trade)
+      .where(and(...conditions))
+      .orderBy(asc(Trade.createdAt)),
+    db.select({
+      accountId: LiveAccountTransaction.accountId,
+      amount: LiveAccountTransaction.amount
+    })
+      .from(LiveAccountTransaction)
+      .where(eq(LiveAccountTransaction.userId, userId)),
     getRuntimeBreakEvenThreshold(userId),
   ])
 
-  // Group trades by execution for accurate counting
   const groupedTrades = groupTradesByExecution(trades as any[]) as any[]
 
-  // Calculate win/loss counts
   const wins = groupedTrades.filter(
     t => classifyOutcome(getTradeNetPnl(t), breakEvenThreshold) === 'win'
   )
@@ -251,13 +239,11 @@ async function calculateStatisticsCore(
   const winningTrades = wins.length
   const losingTrades = losses.length
 
-  // Calculate rates
   const winRate = Math.round(calculateWinRate(winningTrades, losingTrades) * 10) / 10
   const lossRate = groupedTrades.length > 0
     ? Math.round((losingTrades / groupedTrades.length) * 1000) / 10
     : 0
 
-  // Calculate P&L metrics
   const grossProfits = wins.reduce((sum: number, t: any) => {
     return sum + getTradeNetPnl(t)
   }, 0)
@@ -275,12 +261,10 @@ async function calculateStatisticsCore(
 
   const profitFactor = calculateProfitFactor(grossProfits, grossLosses)
 
-  // Calculate averages
   const avgWin = winningTrades > 0 ? grossProfits / winningTrades : 0
   const avgLoss = losingTrades > 0 ? grossLosses / losingTrades : 0
   const riskRewardRatio = avgLoss > 0 ? avgWin / avgLoss : 0
 
-  // Find biggest win/loss
   const biggestWin = Math.max(
     0,
     ...groupedTrades.map(t => getTradeNetPnl(t))
@@ -289,10 +273,8 @@ async function calculateStatisticsCore(
     Math.min(0, ...groupedTrades.map(t => getTradeNetPnl(t)))
   )
 
-  // Calculate streaks
   const streaks = calculateStreaks(groupedTrades, breakEvenThreshold)
 
-  // Calculate position time
   const totalPositionTime = groupedTrades.reduce(
     (sum, t) => sum + (t.timeInPosition || 0),
     0
@@ -301,7 +283,6 @@ async function calculateStatisticsCore(
     groupedTrades.length > 0 ? totalPositionTime / groupedTrades.length : 0
   )
 
-  // Calculate equity
   const accountEquities = calculateAccountBalances(
     accounts as any[],
     trades as any[],
@@ -313,7 +294,6 @@ async function calculateStatisticsCore(
     0
   )
 
-  // Generate chart data (last 30 days)
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
   const recentTrades = groupedTrades.filter(
     t => new Date(t.createdAt) >= thirtyDaysAgo
@@ -321,7 +301,7 @@ async function calculateStatisticsCore(
 
   const dailyPnL = new Map<string, number>()
   recentTrades.forEach(trade => {
-    const date = new Date(trade.createdAt).toISOString().split('T')[0]
+    const date = new Date(trade.createdAt).toISOString().split('T')[0] || ''
     const netPnl = getTradeNetPnl(trade)
     dailyPnL.set(date, (dailyPnL.get(date) || 0) + netPnl)
   })
@@ -356,10 +336,6 @@ async function calculateStatisticsCore(
     lastUpdated: new Date().toISOString()
   }
 }
-
-// ===========================================
-// CACHED EXPORTS
-// ===========================================
 
 /**
  * Get cached statistics for a user

@@ -1,12 +1,6 @@
-/**
- * Weekly AI Performance Review API (v1)
- *
- * POST /api/v1/weekly-review — Generate weekly AI review (idempotent)
- * GET  /api/v1/weekly-review — Fetch review history
- */
-
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
@@ -14,6 +8,7 @@ import { cleanContent } from '@/lib/utils'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns'
 import { getRuntimeBreakEvenThreshold } from '@/server/user-settings'
+import { eq, and, ne, desc } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   const rateLimitRes = await applyRateLimit(request, apiLimiter)
@@ -27,41 +22,35 @@ export async function GET(request: NextRequest) {
     const reviewId = params.get('reviewId')
 
     if (reviewId) {
-      const requestedReview = await prisma.weeklyAIReview.findFirst({
-        where: {
-          id: reviewId,
-          userId: internalUserId,
-        },
+      const requestedReview = await db.query.WeeklyAIReview.findFirst({
+        where: (table, { eq, and }) => and(eq(table.id, reviewId), eq(table.userId, internalUserId)),
       })
 
       if (!requestedReview) {
         return NextResponse.json({ success: true, data: [] })
       }
 
-      const siblingReviews = await prisma.weeklyAIReview.findMany({
-        where: {
-          userId: internalUserId,
-          NOT: { id: reviewId },
-        },
-        orderBy: { weekStart: 'desc' },
-        take: Math.max(0, limit - 1),
+      const siblingReviews = await db.query.WeeklyAIReview.findMany({
+        where: (table, { eq }) => and(eq(table.userId, internalUserId), ne(table.id, reviewId)),
+        orderBy: (table, { desc }) => [desc(table.weekStart)],
+        limit: Math.max(0, limit - 1),
       })
 
       return NextResponse.json({ success: true, data: [requestedReview, ...siblingReviews] })
     }
 
     if (latest) {
-      const review = await prisma.weeklyAIReview.findFirst({
-        where: { userId: internalUserId },
-        orderBy: { createdAt: 'desc' },
+      const review = await db.query.WeeklyAIReview.findFirst({
+        where: (table, { eq }) => eq(table.userId, internalUserId),
+        orderBy: (table, { desc }) => [desc(table.createdAt)],
       })
       return NextResponse.json({ success: true, data: review })
     }
 
-    const reviews = await prisma.weeklyAIReview.findMany({
-      where: { userId: internalUserId },
-      orderBy: { weekStart: 'desc' },
-      take: limit,
+    const reviews = await db.query.WeeklyAIReview.findMany({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      orderBy: (table, { desc }) => [desc(table.weekStart)],
+      limit,
     })
 
     return NextResponse.json({ success: true, data: reviews })
@@ -110,13 +99,8 @@ export async function POST(request: NextRequest) {
     lastWeekEnd.setHours(23, 59, 59, 999)
 
     // Idempotent: return existing review if already generated
-    const existing = await prisma.weeklyAIReview.findUnique({
-      where: {
-        userId_weekStart: {
-          userId: internalUserId,
-          weekStart: lastWeekStart,
-        }
-      }
+    const existing = await db.query.WeeklyAIReview.findFirst({
+      where: (table, { eq, and }) => and(eq(table.userId, internalUserId), eq(table.weekStart, lastWeekStart)),
     })
 
     if (existing) {
@@ -124,33 +108,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch last week's trades
-    const trades = await prisma.trade.findMany({
-      where: {
-        userId: internalUserId,
-        entryDate: {
-          gte: format(lastWeekStart, 'yyyy-MM-dd'),
-          lte: format(lastWeekEnd, 'yyyy-MM-dd') + 'T23:59:59.999Z',
-        },
-      },
-      orderBy: { entryDate: 'asc' },
-      select: {
-        id: true,
-        instrument: true,
-        side: true,
-        pnl: true,
-        commission: true,
-        entryDate: true,
-        closeDate: true,
-        quantity: true,
-        entryPrice: true,
-        closePrice: true,
-        comment: true,
-        TradingModel: { select: { name: true } },
-        marketBias: true,
-        newsDay: true,
-        entryTime: true,
-        exitTime: true,
-      },
+    const trades = await db.query.Trade.findMany({
+      where: (table, { eq, and, gte, lte }) => and(
+        eq(table.userId, internalUserId),
+        gte(table.entryDate, format(lastWeekStart, 'yyyy-MM-dd')),
+        lte(table.entryDate, format(lastWeekEnd, 'yyyy-MM-dd') + 'T23:59:59.999Z')
+      ),
+      orderBy: (table, { asc }) => [asc(table.entryDate)],
+      with: { TradingModel: true },
     })
 
     // No trades last week → don't create a review
@@ -352,30 +317,26 @@ RULES:
     }
 
     // Store in DB
-    const review = await prisma.weeklyAIReview.create({
-      data: {
-        userId: internalUserId,
-        weekStart: lastWeekStart,
-        weekEnd: lastWeekEnd,
-        summary: aiResult.weekSummary || '',
-        highlights: aiResult.highlights || [],
-        lowlights: aiResult.lowlights || [],
-        stats: keyStats,
-        grade: aiResult.grade || '',
-        focusNextWeek: aiResult.focusNextWeek || null,
-      },
-    })
+    const review = (await db.insert(schema.WeeklyAIReview).values({
+      userId: internalUserId,
+      weekStart: lastWeekStart,
+      weekEnd: lastWeekEnd,
+      summary: aiResult.weekSummary || '',
+      highlights: aiResult.highlights || [],
+      lowlights: aiResult.lowlights || [],
+      stats: keyStats,
+      grade: aiResult.grade || '',
+      focusNextWeek: aiResult.focusNextWeek || null,
+    }).returning())[0]
 
     // Create notification
-    await prisma.notification.create({
-      data: {
-        userId: internalUserId,
-        type: 'WEEKLY_PERFORMANCE',
-        title: `Weekly Report: ${format(lastWeekStart, 'MMM d')} – ${format(lastWeekEnd, 'MMM d')} | Grade: ${aiResult.grade || '?'}`,
-        message: (aiResult.weekSummary || '').slice(0, 500),
-        data: { reviewId: review.id },
-        actionRequired: false,
-      },
+    await db.insert(schema.Notification).values({
+      userId: internalUserId,
+      type: 'WEEKLY_PERFORMANCE',
+      title: `Weekly Report: ${format(lastWeekStart, 'MMM d')} – ${format(lastWeekEnd, 'MMM d')} | Grade: ${aiResult.grade || '?'}`,
+      message: (aiResult.weekSummary || '').slice(0, 500),
+      data: { reviewId: review.id },
+      actionRequired: false,
     })
 
     logger.info('POST /api/v1/weekly-review', { latencyMs: Date.now() - start, grade: aiResult.grade }, 'api')
@@ -386,10 +347,10 @@ RULES:
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     // Unique constraint = already exists (race condition)
-    if (error.code === 'P2002') {
-      const existing = await prisma.weeklyAIReview.findFirst({
-        where: { userId: (error as any)._userId },
-        orderBy: { createdAt: 'desc' },
+    if (error.code === '23505') {
+      const existing = await db.query.WeeklyAIReview.findFirst({
+        where: (table, { eq }) => eq(table.userId, (error as any)._userId),
+        orderBy: (table, { desc }) => [desc(table.createdAt)],
       })
       return NextResponse.json({ success: true, data: existing, cached: true })
     }

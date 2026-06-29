@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import { sql } from 'drizzle-orm'
 
 /**
  * Lightweight health-check that touches the database to prevent Supabase
@@ -9,7 +10,7 @@ import { prisma } from '@/lib/prisma'
  */
 export async function GET() {
   try {
-    await prisma.$queryRaw`SELECT 1`
+    await db.execute(sql`SELECT 1`)
 
     return NextResponse.json(
       { status: 'ok', timestamp: new Date().toISOString() },

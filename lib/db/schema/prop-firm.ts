@@ -1,0 +1,48 @@
+import { relations } from 'drizzle-orm';
+import { pgTable, uuid, text, integer, boolean, timestamp, jsonb, doublePrecision, json } from 'drizzle-orm/pg-core';
+import { BreachTypeEnum } from './enums';
+import { Account, LiveAccountTransaction, MasterAccount, Payout, PhaseAccount } from './accounts';
+
+export const BreachRecord = pgTable('breach_record', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  phaseAccountId: text('phaseAccountId').notNull(),
+  breachType: BreachTypeEnum('breachType').notNull(),
+  breachAmount: doublePrecision('breachAmount').notNull(),
+  breachTime: timestamp('breachTime', { withTimezone: true, mode: 'date' }).defaultNow(),
+  currentEquity: doublePrecision('currentEquity').notNull(),
+  accountSize: doublePrecision('accountSize').notNull(),
+  dailyStartBalance: doublePrecision('daily_start_balance'),
+  highWaterMark: doublePrecision('high_water_mark'),
+  tradeId: text('trade_id'),
+  notes: text('notes'),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+});
+
+export type BreachRecordType = typeof BreachRecord.$inferSelect;
+export type NewBreachRecord = typeof BreachRecord.$inferInsert;
+
+export const DailyAnchor = pgTable('daily_anchor', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  phaseAccountId: text('phaseAccountId').notNull(),
+  date: timestamp('date', { withTimezone: true, mode: 'date' }).notNull(),
+  anchorEquity: doublePrecision('anchorEquity').notNull(),
+  computedAt: timestamp('computedAt', { withTimezone: true, mode: 'date' }).defaultNow(),
+});
+
+export type DailyAnchorType = typeof DailyAnchor.$inferSelect;
+export type NewDailyAnchor = typeof DailyAnchor.$inferInsert;
+
+export const BreachRecordRelations = relations(BreachRecord, ({ one, many }) => ({
+  PhaseAccount: one(PhaseAccount, {
+    fields: [BreachRecord.phaseAccountId],
+    references: [PhaseAccount.id]
+  }),
+}));
+
+export const DailyAnchorRelations = relations(DailyAnchor, ({ one, many }) => ({
+  PhaseAccount: one(PhaseAccount, {
+    fields: [DailyAnchor.phaseAccountId],
+    references: [PhaseAccount.id]
+  }),
+}));
+

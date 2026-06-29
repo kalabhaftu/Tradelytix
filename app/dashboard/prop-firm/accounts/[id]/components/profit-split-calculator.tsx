@@ -49,7 +49,7 @@ export function ProfitSplitCalculator({ currentPnL, accountSize }: ProfitSplitCa
             min={50}
             max={95}
             step={5}
-            onValueChange={([v]) => setTraderSplitPct(v)}
+            onValueChange={([v]) => { if (v !== undefined) setTraderSplitPct(v) }}
             className="w-full"
           />
           <div className="flex justify-between text-[9px] text-muted-foreground/40 font-bold">

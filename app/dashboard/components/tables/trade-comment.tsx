@@ -42,7 +42,6 @@ export function TradeComment({ tradeIds, comment: initialComment, onCommentChang
       // Update all trades in the list
       await updateTrades(tradeIds, { comment: newComment })
 
-
       setShowSuccess(true)
       setTimeout(() => {
         setShowSuccess(false)

@@ -60,6 +60,7 @@ export function useAutoScroll(isEnabled: boolean) {
       e.preventDefault()
 
       const touch = e.touches[0]
+      if (!touch) return
       const touchY = touch.clientY
       lastTouchY = touchY
       const windowHeight = window.innerHeight

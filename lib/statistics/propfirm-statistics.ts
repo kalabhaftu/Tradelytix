@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 import {
   calculatePropFirmPhaseMetrics,
   derivePropFirmLifecycleStatus,
@@ -112,52 +112,22 @@ function normalizeProgress(current: number, target: number) {
 }
 
 export async function fetchPropFirmReportMasters(userId: string): Promise<MasterWithRelations[]> {
-  return prisma.masterAccount.findMany({
-    where: {
-      userId,
-      isArchived: false,
-    },
-    select: {
-      id: true,
-      userId: true,
-      accountName: true,
-      propFirmName: true,
-      accountSize: true,
-      evaluationType: true,
-      currentPhase: true,
-      createdAt: true,
-      status: true,
-      isArchived: true,
+  return db.query.MasterAccount.findMany({
+    where: (ma, { eq, and }) => and(eq(ma.userId, userId), eq(ma.isArchived, false)),
+    orderBy: (ma, { desc }) => [desc(ma.createdAt)],
+    with: {
       Payout: {
-        select: {
+        columns: {
           id: true,
           amount: true,
           status: true,
         },
       },
       PhaseAccount: {
-        orderBy: {
-          phaseNumber: 'asc',
-        },
-        select: {
-          id: true,
-          masterAccountId: true,
-          phaseNumber: true,
-          phaseId: true,
-          status: true,
-          profitTargetPercent: true,
-          dailyDrawdownPercent: true,
-          maxDrawdownPercent: true,
-          maxDrawdownType: true,
-          minTradingDays: true,
-          timeLimitDays: true,
-          consistencyRulePercent: true,
-          profitSplitPercent: true,
-          payoutCycleDays: true,
-          startDate: true,
-          endDate: true,
+        orderBy: (pa, { asc }) => [asc(pa.phaseNumber)],
+        with: {
           Trade: {
-            select: {
+            columns: {
               id: true,
               phaseAccountId: true,
               entryId: true,
@@ -176,28 +146,53 @@ export async function fetchPropFirmReportMasters(userId: string): Promise<Master
               closePrice: true,
               accountNumber: true,
             },
-            orderBy: {
-              exitTime: 'asc',
-            },
+            orderBy: (t, { asc }) => [asc(t.exitTime)],
           },
           Payout: {
-            select: {
+            columns: {
               id: true,
               amount: true,
               status: true,
             },
           },
           BreachRecord: {
-            select: {
+            columns: {
               id: true,
             },
           },
         },
+        columns: {
+          id: true,
+          masterAccountId: true,
+          phaseNumber: true,
+          phaseId: true,
+          status: true,
+          profitTargetPercent: true,
+          dailyDrawdownPercent: true,
+          maxDrawdownPercent: true,
+          maxDrawdownType: true,
+          minTradingDays: true,
+          timeLimitDays: true,
+          consistencyRulePercent: true,
+          profitSplitPercent: true,
+          payoutCycleDays: true,
+          startDate: true,
+          endDate: true,
+        },
       },
     },
-    orderBy: {
-      createdAt: 'desc',
-    },
+    columns: {
+      id: true,
+      userId: true,
+      accountName: true,
+      propFirmName: true,
+      accountSize: true,
+      evaluationType: true,
+      currentPhase: true,
+      createdAt: true,
+      status: true,
+      isArchived: true,
+    }
   }) as Promise<MasterWithRelations[]>
 }
 

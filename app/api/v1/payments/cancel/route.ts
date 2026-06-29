@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
 import { logger } from '@/lib/logger'
 import { revalidateTag } from 'next/cache'
 
@@ -15,8 +17,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    const subscription = await prisma.subscription.findUnique({
-      where: { userId: identity.internalUserId },
+    const subscription = await db.query.Subscription.findFirst({
+      where: (table, { eq }) => eq(table.userId, identity.internalUserId),
     })
 
     if (!subscription) {
@@ -27,13 +29,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'Subscription already cancelled' })
     }
 
-    await prisma.subscription.update({
-      where: { id: subscription.id },
-      data: {
-        status: 'cancelled',
-        cancelledAt: new Date(),
-      },
-    })
+    await (await db.update(schema.Subscription).set({
+      status: 'cancelled',
+      cancelledAt: new Date(),
+    }).where(eq(schema.Subscription.id, subscription.id)).returning())[0]
 
     revalidateTag(`notifications-${identity.internalUserId}`, 'max')
     revalidateTag(`accounts-${identity.internalUserId}`, 'max')

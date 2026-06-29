@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 
@@ -20,12 +20,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const internalUserId = identity.internalUserId
     const { id: accountId } = await params
 
-    const account = await prisma.account.findFirst({
-      where: {
-        id: accountId,
-        userId: internalUserId,
-      },
-      select: {
+    const account = await db.query.Account.findFirst({
+      where: (table, { eq, and }) => and(
+        eq(table.id, accountId),
+        eq(table.userId, internalUserId)
+      ),
+      columns: {
         id: true,
         number: true
       }
@@ -38,11 +38,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    const trades = await prisma.trade.findMany({
-      where: {
-        accountId: account.id,
-      },
-      select: {
+    const trades = await db.query.Trade.findMany({
+      where: (table, { eq }) => eq(table.accountId, account.id),
+      columns: {
         id: true,
         pnl: true,
         commission: true,
@@ -55,9 +53,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         closePrice: true,
         createdAt: true,
       },
-      orderBy: {
-        entryDate: 'desc'
-      }
+      orderBy: (table, { desc }) => [desc(table.entryDate)]
     })
 
     return NextResponse.json({

@@ -4,10 +4,7 @@
  */
 
 import { CACHE_DURATION_SHORT, MAX_CACHE_ITEMS } from '@/lib/constants'
-
-// ===========================================
-// TYPES
-// ===========================================
+import logger from "@/lib/logger";
 
 interface CacheEntry<T> {
   data: T
@@ -18,10 +15,6 @@ interface CacheEntry<T> {
 
 type CacheInvalidationCallback = (tags: string[]) => void
 
-// ===========================================
-// CACHE MANAGER CLASS
-// ===========================================
-
 class CacheManagerClass {
   private static instance: CacheManagerClass | null = null
   
@@ -30,7 +23,6 @@ class CacheManagerClass {
   private cleanupInterval: NodeJS.Timeout | null = null
 
   private constructor() {
-    // Set up periodic cleanup
     if (typeof window !== 'undefined') {
       this.cleanupInterval = setInterval(() => this.cleanup(), 60000) // Every minute
     }
@@ -60,7 +52,6 @@ class CacheManagerClass {
       return null
     }
 
-    // Check if expired
     if (!options?.ignoreExpiry && Date.now() > entry.expiresAt) {
       this.cache.delete(key)
       return null
@@ -111,7 +102,6 @@ class CacheManagerClass {
     const { ttl = CACHE_DURATION_SHORT, tags = [] } = options
     const now = Date.now()
 
-    // Enforce max items limit
     if (this.cache.size >= MAX_CACHE_ITEMS) {
       this.evictOldest()
     }
@@ -150,7 +140,6 @@ class CacheManagerClass {
       this.cache.delete(key)
     }
 
-    // Notify subscribers
     this.notifyInvalidation(tags)
   }
 
@@ -175,7 +164,6 @@ class CacheManagerClass {
       this.cache.delete(key)
     }
 
-    // Notify subscribers
     if (affectedTags.size > 0) {
       this.notifyInvalidation(Array.from(affectedTags))
     }
@@ -192,12 +180,11 @@ class CacheManagerClass {
 
     this.cache.clear()
     
-    // Also clear localStorage caches
     if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem('accounts-store')
         localStorage.removeItem('equity-chart-store')
-      } catch (error) {
+      } catch {
         // Ignore localStorage errors
       }
     }
@@ -224,7 +211,7 @@ class CacheManagerClass {
       try {
         callback(tags)
       } catch (error) {
-        console.error('Error in cache invalidation callback:', error)
+        logger.error('Error in cache invalidation callback:', error)
       }
     }
   }
@@ -300,11 +287,6 @@ class CacheManagerClass {
   }
 }
 
-// ===========================================
-// EXPORTS
-// ===========================================
-
-/** Singleton instance */
 export const CacheManager = CacheManagerClass.getInstance()
 
 /**
@@ -355,35 +337,20 @@ export function useCacheInvalidation(
     callbackRef.current = callback
   }, [callback])
 
-  // Update ref whenever tags changes
   useEffect(() => {
     tagsRef.current = tags
   }, [tags])
 
-  // Extract tags join to a variable to avoid complex expression in dependency array
   const tagsKey = tags?.join(',') ?? ''
-  
-  // Memoize tags array based on key to prevent unnecessary effect re-runs
-  // Create a stable array reference that only changes when content changes
-  // Only depend on tagsKey since it's derived from tags - if tags content changes, tagsKey changes
-  // Use tagsRef.current to avoid ESLint warning while maintaining correct behavior
+
   const memoizedTags = useMemo(() => {
-    // Return a new array reference only when tagsKey changes
-    // Use tagsRef.current to get the latest tags value without including it in deps
-    // tagsKey is used as a control dependency to trigger re-computation when content changes
     const currentTags = tagsRef.current
     return currentTags ? [...currentTags] : currentTags
-    // tagsKey is intentionally included as the only dependency - it's derived from tags,
-    // so it captures content changes. We use tagsRef.current to access tags without
-    // needing it in the dependency array, avoiding redundant dependencies.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tagsKey])
-  
+
   useEffect(() => {
     const unsubscribe = CacheManager.onInvalidation((invalidatedTags) => {
-      // If specific tags provided, only trigger if they match
-      // Use tagsRef.current to access tags without including it in dependency array
-      // This prevents unnecessary re-subscriptions when tags array reference changes but content is the same
       const currentTags = tagsRef.current
       if (currentTags) {
         const hasMatch = invalidatedTags.some(tag => currentTags.includes(tag))
@@ -396,9 +363,6 @@ export function useCacheInvalidation(
     })
 
     return unsubscribe
-    // Only depend on tagsKey to avoid circular dependency with memoizedTags
-    // tagsKey changes when tags content changes, which is when we need to re-subscribe
-    // We use tagsRef.current inside the effect to access tags without including it in deps
   }, [tagsKey])
 }
 

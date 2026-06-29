@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+
 import { config as loadEnvFile } from 'dotenv'
 import path from 'path'
 import { DEFAULT_TEMPLATE_LAYOUT } from '../lib/dashboard/default-template-layout'

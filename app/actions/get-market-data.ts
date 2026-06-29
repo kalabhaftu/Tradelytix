@@ -5,6 +5,7 @@ import { YAHOO_FINANCE_SYMBOL_MAP, FOREX_PAIRS } from '@/lib/constants'
 import { YahooFinanceQuote } from '@/types/yahoo-finance'
 import { getUserId } from '@/server/auth'
 import { getCached, setCached, CachePrefix, CacheTTL } from '@/lib/cache/unified-cache'
+import { logger } from '@/lib/logger';
 
 const yahooFinance = new YahooFinance()
 
@@ -81,9 +82,8 @@ export async function getMarketData(
         symbol = symbol.replace(/[a-z]+$/, '');
     }
 
-    // Handle dot/underscore suffixes (e.g. NAS100.x, US30_pro)
     if (symbol.includes('.') || symbol.includes('_')) {
-        symbol = symbol.split(/[._]/)[0];
+        symbol = symbol.split(/[._]/)[0] ?? symbol;
     }
 
     symbol = symbol.toUpperCase();
@@ -103,9 +103,9 @@ export async function getMarketData(
             try {
                 await getUserId()
             } catch (dbError: any) {
-                console.error(`[DB_CHECK_FAILED] ${dbError.message}`);
+                logger.error(`[DB_CHECK_FAILED] ${dbError.message}`);
                 if (dbError.message?.includes('P1001') || dbError.message?.includes('Can\'t reach database')) {
-                    console.warn('Proceeding with market data fetch despite potential DB connection issue...');
+                    logger.warn('Proceeding with market data fetch despite potential DB connection issue...');
                 } else {
                     throw dbError;
                 }
@@ -115,15 +115,13 @@ export async function getMarketData(
             let querySymbol = symbol.toUpperCase()
 
             if (YAHOO_FINANCE_SYMBOL_MAP[querySymbol]) {
-                querySymbol = YAHOO_FINANCE_SYMBOL_MAP[querySymbol]
+                querySymbol = YAHOO_FINANCE_SYMBOL_MAP[querySymbol] ?? querySymbol
             }
 
-            // Forex
             if (querySymbol.length === 6 && FOREX_PAIRS.includes(querySymbol)) {
                 querySymbol = `${querySymbol}=X`
             }
 
-            // Crypto
             if (querySymbol.endsWith('USDT')) querySymbol = `${querySymbol.replace('USDT', '-USD')}`
             else if (querySymbol === 'BTC') querySymbol = 'BTC-USD'
             else if (querySymbol === 'ETH') querySymbol = 'ETH-USD'
@@ -159,7 +157,7 @@ export async function getMarketData(
                     return { data: cachedData }
                 }
             } catch (cacheError) {
-                console.warn('Cache lookup failed:', cacheError)
+                logger.warn('Cache lookup failed:', cacheError)
             }
 
             let lastError = ''
@@ -182,7 +180,7 @@ export async function getMarketData(
                     } catch (libError: any) {
                         // If rate limited by lib, try manual fetch with spoofed headers
                         if (libError.message?.toLowerCase().includes('429') || libError.message?.toLowerCase().includes('too many requests')) {
-                            console.warn(`[LIB_RATE_LIMIT] Switching to manual fetch for ${querySymbol} at ${queryInterval}...`);
+                            logger.warn(`[LIB_RATE_LIMIT] Switching to manual fetch for ${querySymbol} at ${queryInterval}...`);
                             result = await fetchMarketDataManual(querySymbol, queryOptions);
                         } else {
                             throw libError;
@@ -220,12 +218,12 @@ export async function getMarketData(
                         }
                     }
 
-                    console.warn(`[FETCH_EMPTY] ${queryInterval} on ${querySymbol}`)
+                    logger.warn(`[FETCH_EMPTY] ${queryInterval} on ${querySymbol}`)
                 } catch (e: any) {
-                    console.error(`[FETCH_ERROR] ${queryInterval} for ${querySymbol}:`, e.message)
+                    logger.error(`[FETCH_ERROR] ${queryInterval} for ${querySymbol}:`, e.message)
 
                     if (e.message.includes('Too Many Requests') || e.message.includes('429')) {
-                        console.warn(`[RATE_LIMIT] Yahoo is throttling both lib and manual. Cooling down for 3s...`)
+                        logger.warn(`[RATE_LIMIT] Yahoo is throttling both lib and manual. Cooling down for 3s...`)
                         await new Promise(resolve => setTimeout(resolve, 3000))
                         lastError = 'Rate Limit Exceeded. Waiting for fallback...'
                         continue
@@ -240,7 +238,7 @@ export async function getMarketData(
             return { data: [], error: lastError || 'No market data found' }
 
         } catch (e: any) {
-            console.error('Yahoo Finance API Error:', e)
+            logger.error('Yahoo Finance API Error:', e)
             return { data: [], error: e.message || 'Failed to fetch market data' }
         } finally {
             // Clean up in-flight request after completion

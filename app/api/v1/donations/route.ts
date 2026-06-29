@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 import { applyRateLimit, publicLimiter } from '@/lib/rate-limiter'
 
 export async function GET(req: NextRequest) {
@@ -7,10 +7,10 @@ export async function GET(req: NextRequest) {
   if (rl) return rl
 
   try {
-    const addresses = await prisma.donationAddress.findMany({
-      where: { isActive: true },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-      select: { token: true, network: true, address: true },
+    const addresses = await db.query.DonationAddress.findMany({
+      where: (table, { eq }) => eq(table.isActive, true),
+      orderBy: (table, { asc }) => [asc(table.sortOrder), asc(table.createdAt)],
+      columns: { token: true, network: true, address: true },
     })
 
     return NextResponse.json({ success: true, data: addresses })

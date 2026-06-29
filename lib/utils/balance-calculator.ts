@@ -9,7 +9,9 @@
  * Issue fixed: Inconsistent balance calculations across components
  */
 
-import { Trade, Account } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+import type { AccountType } from '@/lib/db/schema/accounts';
+
 import {
   getBalanceByMode,
   getTradeFees,
@@ -71,8 +73,8 @@ export interface DailyBalancePoint {
  * @returns Current account balance
  */
 export function calculateAccountBalance(
-  account: Account | any,
-  trades: (Trade | any)[],
+  account: AccountType | any,
+  trades: (TradeType | any)[],
   transactions: any[] = [], // Add transactions parameter
   options: BalanceCalculationOptions = {}
 ): number {
@@ -81,14 +83,12 @@ export function calculateAccountBalance(
     includePayouts = true
   } = options
 
-  // Start with account's starting balance
-  // Ensure we get a valid number (handle undefined, null, NaN)
   let balance = Number(account.startingBalance) || 0
 
   // Filter trades based on account type
   // For prop firm accounts: match by phase ID (UUID) since trades use phaseAccountId
   // For regular accounts: match by account number
-  let relevantTrades: (Trade | any)[]
+  let relevantTrades: (TradeType | any)[]
 
   if (account.accountType === 'prop-firm') {
     // Prop firm accounts use phase ID (UUID) for linking trades
@@ -107,7 +107,6 @@ export function calculateAccountBalance(
   // including trade P&L, so we don't exclude them here
   // The excludeFailedAccounts option is used elsewhere for total calculations
 
-  // Calculate cumulative PnL (net of commissions)
   const cumulativePnL = relevantTrades.reduce((sum, trade) => {
     return sum + getTradeNetPnl(trade)
   }, 0)
@@ -142,8 +141,8 @@ export function calculateAccountBalance(
  * @returns Map of account number to balance
  */
 export function calculateAccountBalances(
-  accounts: (Account | any)[],
-  allTrades: (Trade | any)[],
+  accounts: (AccountType | any)[],
+  allTrades: (TradeType | any)[],
   allTransactions: any[] = [], // Add transactions parameter
   options: BalanceCalculationOptions = {}
 ): Map<string, number> {
@@ -197,17 +196,12 @@ export function calculateAccountBalances(
     let accountTrades: any[] = []
 
     if (account.accountType === 'prop-firm') {
-      // For prop firm accounts: always use only the current phase's trades for balance
-      // Even for failed accounts, show the balance of the failed phase (what caused the failure)
-      // Trade count is aggregated elsewhere, but balance should reflect the failed phase's state
-      accountTrades = tradesByPhaseId.get(account.id) || []
+    accountTrades = tradesByPhaseId.get(account.id) || []
 
-      // Fallback to account number for backwards compatibility
       if (accountTrades.length === 0 && account.number) {
         accountTrades = tradesByAccountNumber.get(account.number) || []
       }
     } else {
-      // For regular accounts, use account number
       accountTrades = tradesByAccountNumber.get(account.number) || []
     }
 
@@ -228,8 +222,8 @@ export function calculateAccountBalances(
  * @returns Total equity
  */
 export function calculateTotalEquity(
-  accounts: (Account | any)[],
-  allTrades: (Trade | any)[],
+  accounts: (AccountType | any)[],
+  allTrades: (TradeType | any)[],
   allTransactions: any[] = [],
   options: BalanceCalculationOptions = {}
 ): number {
@@ -259,7 +253,7 @@ export function calculateTotalEquity(
  * @returns Total starting balance (deduplicated for prop firms)
  */
 export function calculateTotalStartingBalance(
-  accounts: (Account | any)[]
+  accounts: (AccountType | any)[]
 ): number {
   // Group accounts by master account ID to prevent double-counting
   const masterAccountBalances = new Map<string, { balance: number, isActive: boolean, isFunded: boolean, status: string }>()
@@ -295,14 +289,12 @@ export function calculateTotalStartingBalance(
       }
       // Otherwise, keep the existing one (don't double-count)
     } else {
-      // New master account - add it
-      masterAccountBalances.set(masterKey, { balance, isActive, isFunded, status })
+    masterAccountBalances.set(masterKey, { balance, isActive, isFunded, status })
     }
   })
 
   const total = Array.from(masterAccountBalances.values()).reduce((sum, { balance }) => sum + balance, 0)
 
-  // Sum up balances from unique master accounts only
   return total
 }
 
@@ -318,8 +310,8 @@ export function calculateTotalStartingBalance(
  * @returns Complete balance information
  */
 export function calculateBalanceInfo(
-  accounts: (Account | any)[],
-  trades: (Trade | any)[],
+  accounts: (AccountType | any)[],
+  trades: (TradeType | any)[],
   transactions: any[] = [],
   options: BalanceCalculationOptions = {}
 ): BalanceResult {
@@ -383,8 +375,8 @@ export function calculateBalanceInfo(
  * @returns Array of daily balance points for charting
  */
 export function calculateBalanceHistory(
-  accounts: (Account | any)[],
-  trades: (Trade | any)[],
+  accounts: (AccountType | any)[],
+  trades: (TradeType | any)[],
   calendarData: Record<string, { pnl: number, trades?: any[] }>
 ): DailyBalancePoint[] {
   const startingBalance = calculateTotalStartingBalance(accounts)
@@ -397,14 +389,14 @@ export function calculateBalanceHistory(
 
   return sortedDates.map(date => {
     const dayData = calendarData[date]
-    const dailyPnL = dayData.pnl || 0
+    const dailyPnL = dayData?.pnl || 0
 
     runningBalance += dailyPnL
     const change = runningBalance - previousBalance
     const changePercent = previousBalance !== 0 ? (change / Math.abs(previousBalance)) * 100 : 0
 
     // Count wins/losses from day's trades
-    const dayTrades = dayData.trades || []
+    const dayTrades = dayData?.trades || []
     const wins = dayTrades.filter(t => {
       const netPnL = getTradeNetPnl(t)
       return netPnL > 0

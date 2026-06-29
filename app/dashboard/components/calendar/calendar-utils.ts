@@ -1,5 +1,6 @@
 
-import { Trade } from "@prisma/client"
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import { calculateWinRate, classifyOutcome, DEFAULT_BREAK_EVEN_THRESHOLD, getBreakEvenThreshold } from "@/lib/metrics/outcome"
 import { getTradeNetPnl } from "@/lib/metrics/pnl"
 import { calculateTradeRMultiple } from "@/lib/math/performance-metrics"
@@ -18,9 +19,6 @@ export function calculateRMultiple(trade: Trade): number {
     return calculateTradeRMultiple(trade as any)
 }
 
-/**
- * Aggregates stats for a day's worth of trades.
- */
 export function calculateDailyStats(
     trades: Trade[],
     thresholdInput: number = DEFAULT_BREAK_EVEN_THRESHOLD

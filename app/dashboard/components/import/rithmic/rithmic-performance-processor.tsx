@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
 
 const newMappings: { [key: string]: string } = {
     "AccountNumber": "accountNumber",

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq, and } from 'drizzle-orm'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
@@ -15,23 +17,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id } = await params
     const body = await req.json()
 
-    const goal = await prisma.userGoal.findFirst({
-      where: { id, userId: internalUserId },
+    const goal = await db.query.UserGoal.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, id), eq(table.userId, internalUserId)),
     })
     if (!goal) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-    const updated = await prisma.userGoal.update({
-      where: { id },
-      data: {
-        ...(body.currentValue !== undefined && { currentValue: Number(body.currentValue) }),
-        ...(body.isCompleted !== undefined && {
-          isCompleted: Boolean(body.isCompleted),
-          completedAt: body.isCompleted ? new Date() : null,
-        }),
-        ...(body.title && { title: body.title }),
-        ...(body.targetValue !== undefined && { targetValue: Number(body.targetValue) }),
-      },
-    })
+    const updated = (await db.update(schema.UserGoal).set({
+      ...(body.currentValue !== undefined && { currentValue: Number(body.currentValue) }),
+      ...(body.isCompleted !== undefined && {
+        isCompleted: Boolean(body.isCompleted),
+        completedAt: body.isCompleted ? new Date() : null,
+      }),
+      ...(body.title && { title: body.title }),
+      ...(body.targetValue !== undefined && { targetValue: Number(body.targetValue) }),
+    }).where(eq(schema.UserGoal.id, id)).returning())[0]
     return NextResponse.json({ goal: updated })
   } catch (err) {
     logger.error('Failed to update goal', err, 'Goals PATCH')
@@ -50,11 +49,11 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const { internalUserId } = await getResolvedUserIdentity()
     const { id } = await params
-    const goal = await prisma.userGoal.findFirst({
-      where: { id, userId: internalUserId },
+    const goal = await db.query.UserGoal.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, id), eq(table.userId, internalUserId)),
     })
     if (!goal) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    await prisma.userGoal.delete({ where: { id } })
+    await db.delete(schema.UserGoal).where(eq(schema.UserGoal.id, id))
     return NextResponse.json({ success: true })
   } catch (err) {
     logger.error('Failed to delete goal', err, 'Goals DELETE')

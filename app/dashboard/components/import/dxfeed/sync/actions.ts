@@ -1,9 +1,11 @@
+import { logger } from '@/lib/logger';
 'use server'
 
 import { saveTradesAction } from '@/server/database'
-import { Trade } from '@prisma/client'
 import { generateDeterministicTradeId } from '@/lib/trade-id-utils'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq, and } from 'drizzle-orm'
 import { formatTimestamp } from '@/lib/date-utils'
 import { createTradeWithDefaults } from '@/lib/trade-factory'
 import { getResolvedUserIdentity } from '@/server/user-identity'
@@ -32,16 +34,16 @@ const DXFEED_HISTORY_LOOKBACK_DAYS = Math.max(
 
 const logger = {
   debug: (message: string, data?: any) => {
-    if (IS_DEV) console.log(`[DXFEED-DEBUG] ${message}`, data ?? '')
+    if (IS_DEV) logger.info(`[DXFEED-DEBUG] ${message}`, data ?? '')
   },
   info: (message: string) => {
-    console.log(`[DXFEED] ${message}`)
+    logger.info(`[DXFEED] ${message}`)
   },
   warn: (message: string) => {
-    console.warn(`[DXFEED] ${message}`)
+    logger.warn(`[DXFEED] ${message}`)
   },
   error: (message: string, error?: unknown) => {
-    console.error(`[DXFEED] ${message}`, error instanceof Error ? error.message : '')
+    logger.error(`[DXFEED] ${message}`, error instanceof Error ? error.message : '')
   },
 }
 
@@ -253,8 +255,8 @@ function buildTradesFromDxFeedReport(
   reportTrades: DxFeedReportTrade[],
   accountLabel: string,
   userId: string,
-): Trade[] {
-  const trades: Trade[] = []
+): any[] {
+  const trades: any[] = []
 
   for (const rt of reportTrades) {
     try {
@@ -362,7 +364,7 @@ export async function getDxFeedTrades(
 
     logger.info(`Found ${accounts.length} accounts, fetching trades...`)
 
-    const allTrades: Trade[] = []
+    const allTrades: any[] = []
 
     for (const account of accounts) {
       const accountLabel = account.accountHeader || account.accountReference || account.accountId.toString()
@@ -445,29 +447,23 @@ export async function getDxFeedTrades(
 }
 
 async function updateLastSyncedAt(userId: string, storedTokenJson: string) {
-  await prisma.synchronization.updateMany({
-    where: {
-      userId,
-      service: 'dxfeed',
-      token: storedTokenJson,
-    },
-    data: {
-      lastSyncedAt: new Date(),
-    },
-  })
+  await db.update(schema.Synchronization)
+    .set({ lastSyncedAt: new Date() })
+    .where(and(
+      eq(schema.Synchronization.userId, userId),
+      eq(schema.Synchronization.service, 'dxfeed'),
+      eq(schema.Synchronization.token, storedTokenJson),
+    ))
 }
 
 async function updateStoredCredentials(userId: string, oldTokenJson: string, newTokenJson: string) {
-  await prisma.synchronization.updateMany({
-    where: {
-      userId,
-      service: 'dxfeed',
-      token: oldTokenJson,
-    },
-    data: {
-      token: newTokenJson,
-    },
-  })
+  await db.update(schema.Synchronization)
+    .set({ token: newTokenJson })
+    .where(and(
+      eq(schema.Synchronization.userId, userId),
+      eq(schema.Synchronization.service, 'dxfeed'),
+      eq(schema.Synchronization.token, oldTokenJson),
+    ))
 }
 
 export async function storeDxFeedToken(
@@ -480,29 +476,27 @@ export async function storeDxFeedToken(
       return { error: 'User not authenticated' }
     }
 
-    await prisma.synchronization.upsert({
-      where: {
-        userId_service_accountId: {
-          userId: internalUserId,
-          service: 'dxfeed',
-          accountId,
-        },
-      },
-      update: {
-        token: tokenJson,
-        lastSyncedAt: new Date(),
-        updatedAt: new Date(),
-        includedFeeTypes: undefined,
-      },
-      create: {
+    const existing = await db.query.Synchronization.findFirst({
+      where: (table, { eq, and }) => and(
+        eq(table.userId, internalUserId),
+        eq(table.service, 'dxfeed'),
+        eq(table.accountId, accountId),
+      ),
+    })
+
+    if (existing) {
+      await db.update(schema.Synchronization)
+        .set({ token: tokenJson, lastSyncedAt: new Date(), updatedAt: new Date() })
+        .where(eq(schema.Synchronization.id, existing.id))
+    } else {
+      await db.insert(schema.Synchronization).values({
         userId: internalUserId,
         service: 'dxfeed',
         accountId,
         token: tokenJson,
         lastSyncedAt: new Date(),
-        includedFeeTypes: undefined,
-      },
-    })
+      })
+    }
 
     return { success: true }
   } catch (error) {
@@ -518,14 +512,12 @@ export async function getDxFeedToken(accountId: string = 'default') {
       return { error: 'User not authenticated' }
     }
 
-    const syncData = await prisma.synchronization.findUnique({
-      where: {
-        userId_service_accountId: {
-          userId: internalUserId,
-          service: 'dxfeed',
-          accountId,
-        },
-      },
+    const syncData = await db.query.Synchronization.findFirst({
+      where: (table, { eq, and }) => and(
+        eq(table.userId, internalUserId),
+        eq(table.service, 'dxfeed'),
+        eq(table.accountId, accountId),
+      ),
     })
 
     if (!syncData?.token) {
@@ -549,18 +541,15 @@ export async function removeDxFeedToken(accountId?: string) {
       return { error: 'User not authenticated' }
     }
 
-    const whereClause: any = {
-      userId: internalUserId,
-      service: 'dxfeed',
-    }
-
+    const conditions = [
+      eq(schema.Synchronization.userId, internalUserId),
+      eq(schema.Synchronization.service, 'dxfeed'),
+    ]
     if (accountId) {
-      whereClause.accountId = accountId
+      conditions.push(eq(schema.Synchronization.accountId, accountId))
     }
 
-    await prisma.synchronization.deleteMany({
-      where: whereClause,
-    })
+    await db.delete(schema.Synchronization).where(and(...conditions))
 
     return { success: true }
   } catch (error) {
@@ -576,14 +565,12 @@ export async function getDxFeedSynchronizations() {
       return { error: 'User not authenticated' }
     }
 
-    const synchronizations = await prisma.synchronization.findMany({
-      where: {
-        userId: internalUserId,
-        service: 'dxfeed',
-      },
-      orderBy: {
-        lastSyncedAt: 'desc',
-      },
+    const synchronizations = await db.query.Synchronization.findMany({
+      where: (table, { eq, and }) => and(
+        eq(table.userId, internalUserId),
+        eq(table.service, 'dxfeed'),
+      ),
+      orderBy: (table, { desc }) => [desc(table.lastSyncedAt)],
     })
 
     return { synchronizations }
@@ -608,16 +595,13 @@ export async function updateDxFeedDailySyncTimeAction(
       syncDateTime = new Date(utcTimeString)
     }
 
-    await prisma.synchronization.updateMany({
-      where: {
-        userId: internalUserId,
-        service: 'dxfeed',
-        accountId,
-      },
-      data: {
-        dailySyncTime: syncDateTime,
-      },
-    })
+    await db.update(schema.Synchronization)
+      .set({ dailySyncTime: syncDateTime })
+      .where(and(
+        eq(schema.Synchronization.userId, internalUserId),
+        eq(schema.Synchronization.service, 'dxfeed'),
+        eq(schema.Synchronization.accountId, accountId),
+      ))
 
     return { success: true }
   } catch (error) {

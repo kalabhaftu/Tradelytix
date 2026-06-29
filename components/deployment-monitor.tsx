@@ -40,15 +40,12 @@ export function DeploymentMonitor({
   autoRefreshDelay = 3000,
   enabled = process.env.NODE_ENV === 'production',
 }: DeploymentMonitorProps = {}) {
-  // Set up deployment checking
   useDeploymentCheck({
     checkInterval,
     enabled,
     autoRefresh,
     autoRefreshDelay,
-    onNewDeployment: () => {
-      // Deployment detected
-    },
+    onNewDeployment: () => {},
   })
 
   // Set up global error handlers for Server Actions
@@ -58,7 +55,6 @@ export function DeploymentMonitor({
     }
   }, [enabled])
 
-  // This component doesn't render anything
   return null
 }
 

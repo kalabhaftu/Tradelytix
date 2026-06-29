@@ -1,5 +1,6 @@
-import { Prisma } from '@prisma/client'
-import type { User, UserSettings } from '@prisma/client'
+
+import type { UserType, UserSettingsType, NewUserSettings } from '@/lib/db/schema/users';
+
 
 export const DEFAULT_AI_SETTINGS = {
   autoGenerateInsights: false,
@@ -18,11 +19,9 @@ export const USER_SETTINGS_SELECT = {
   widgetStyle: true,
   chartStyle: true,
   autoAdjustAccountDate: true,
-} satisfies Prisma.UserSettingsSelect
+} as const
 
-export type UserSettingsShape = Prisma.UserSettingsGetPayload<{
-  select: typeof USER_SETTINGS_SELECT
-}>
+export type UserSettingsShape = Pick<UserSettingsType, typeof USER_SETTINGS_FIELDS[number]>
 
 export const USER_SETTINGS_FIELDS = [
   'timezone',
@@ -110,12 +109,12 @@ export function extractUserSettingsData(
   }
 }
 
-function toNullableJsonInput(value: unknown): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
+function toNullableJsonInput(value: unknown): unknown {
   if (value === null || value === undefined) {
-    return Prisma.JsonNull
+    return null
   }
 
-  return normalizeAiSettings(value) as Prisma.InputJsonValue
+  return normalizeAiSettings(value)
 }
 
 export function extractUserSettingsWriteData(
@@ -140,8 +139,8 @@ export function extractUserSettingsWriteData(
 
 export function buildUserSettingsUpdateData(
   source: Partial<UserSettingsShape>
-): Prisma.UserSettingsUpdateInput {
-  const update: Prisma.UserSettingsUpdateInput = {}
+): Partial<NewUserSettings> {
+  const update: Partial<NewUserSettings> = {}
 
   if ('timezone' in source && source.timezone !== undefined) update.timezone = source.timezone
   if ('theme' in source && source.theme !== undefined) update.theme = source.theme
@@ -192,11 +191,10 @@ export function pickSettingsPatch(source: Record<string, unknown>) {
   return patch
 }
 
-export function settingsCreateFromUser(user: { id: string } & Partial<UserSettingsShape>): Prisma.UserSettingsCreateInput {
+export function settingsCreateFromUser(user: { id: string } & Partial<UserSettingsShape>): NewUserSettings {
   return {
     ...extractUserSettingsWriteData(user),
-    User: {
-      connect: { id: user.id },
-    },
+    userId: user.id,
+    updatedAt: new Date(),
   }
 }

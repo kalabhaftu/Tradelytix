@@ -1,7 +1,9 @@
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { generateTradeHash } from '@/lib/utils'
 import { PhaseEvaluationEngine } from '@/lib/prop-firm/phase-evaluation-engine'
 import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData } from '@/lib/trade-core'
+import { eq } from 'drizzle-orm'
 
 const TRADE_IMPORT_CHUNK_SIZE = 250
 
@@ -15,27 +17,27 @@ interface TradeImportJobState {
   index: number
   imported: number
   skipped: number
-  accountType?: 'prop-firm' | 'live'
-  accountName?: string
-  propFirmName?: string
-  evaluationType?: string
-  phaseNumber?: number
-  phaseAccountId?: string
-  regularAccountId?: string
-  accountNumber?: string
-  masterAccountId?: string
+  accountType?: 'prop-firm' | 'live' | undefined
+  accountName?: string | undefined
+  propFirmName?: string | undefined
+  evaluationType?: string | undefined
+  phaseNumber?: number | undefined
+  phaseAccountId?: string | undefined
+  regularAccountId?: string | undefined
+  accountNumber?: string | undefined
+  masterAccountId?: string | undefined
   evaluation?: {
     isFailed: boolean
-    isPassed?: boolean
-    canAdvance?: boolean
-    status?: string
-    message?: string
-    currentPhaseNumber?: number
-    profitTargetProgress?: number
-    currentPnL?: number
-    evaluationType?: string
-    propFirmName?: string
-  }
+    isPassed?: boolean | undefined
+    canAdvance?: boolean | undefined
+    status?: string | undefined
+    message?: string | undefined
+    currentPhaseNumber?: number | undefined
+    profitTargetProgress?: number | undefined
+    currentPnL?: number | undefined
+    evaluationType?: string | undefined
+    propFirmName?: string | undefined
+  } | undefined
 }
 
 const DEFAULT_TRADE_IMPORT_STATE: TradeImportJobState = {
@@ -204,7 +206,6 @@ export async function createTradeImportJob(params: {
   accountId: string
   trades: any[]
 }) {
-  const model = (prisma as any).importJob
   const payload: TradeImportPayload = {
     accountId: params.accountId,
     trades: params.trades || [],
@@ -212,32 +213,30 @@ export async function createTradeImportJob(params: {
 
   const payloadBytes = Buffer.from(JSON.stringify(payload), 'utf-8')
 
-  const job = await model.create({
-    data: {
-      userId: params.internalUserId,
-      status: 'queued',
-      stage: 'queued',
-      progress: 0,
-      totalItems: payload.trades.length,
-      processedItems: 0,
-      importedCount: 0,
-      skippedCount: 0,
-      fileName: 'trade-import.json',
-      fileSize: payloadBytes.byteLength,
-      fileData: payloadBytes,
-      state: DEFAULT_TRADE_IMPORT_STATE,
-      cancelRequested: false,
-    }
-  })
+  const job = (await db.insert(schema.ImportJob).values({
+    userId: params.internalUserId,
+    status: 'queued',
+    stage: 'queued',
+    progress: 0,
+    totalItems: payload.trades.length,
+    processedItems: 0,
+    importedCount: 0,
+    skippedCount: 0,
+    fileName: 'trade-import.json',
+    fileSize: payloadBytes.byteLength,
+    fileData: payloadBytes,
+    state: DEFAULT_TRADE_IMPORT_STATE,
+    cancelRequested: false,
+    updatedAt: new Date()
+  }).returning().then(r => r[0]))
 
   return serializeTradeImportJob(job)
 }
 
 export async function getTradeImportJobForUser(jobId: string, internalUserId: string) {
-  const model = (prisma as any).importJob
-  const job = await model.findFirst({
-    where: { id: jobId, userId: internalUserId },
-    select: {
+  const job = await db.query.ImportJob.findFirst({
+    where: (table, { eq }) => eq(table.id, jobId) && eq(table.userId, internalUserId),
+    columns: {
       id: true,
       status: true,
       stage: true,
@@ -260,8 +259,7 @@ export async function getTradeImportJobForUser(jobId: string, internalUserId: st
 }
 
 export async function cancelTradeImportJob(jobId: string, internalUserId: string) {
-  const model = (prisma as any).importJob
-  const current = await model.findFirst({ where: { id: jobId, userId: internalUserId } })
+  const current = await db.query.ImportJob.findFirst({ where: (table, { eq }) => eq(table.id, jobId) && eq(table.userId, internalUserId) })
 
   if (!current) {
     return { error: 'Import job not found', status: 404 as const }
@@ -271,29 +269,24 @@ export async function cancelTradeImportJob(jobId: string, internalUserId: string
     return { job: serializeTradeImportJob(current), status: 200 as const }
   }
 
-  const updated = await model.update({
-    where: { id: current.id },
-    data: current.status === 'queued'
-      ? {
-          cancelRequested: true,
-          status: 'cancelled',
-          stage: 'cancelled',
-          completedAt: new Date(),
-        }
-      : {
-          cancelRequested: true,
-        }
-  })
+  const updated = (await db.update(schema.ImportJob).set(current.status === 'queued'
+    ? {
+        cancelRequested: true,
+        status: 'cancelled',
+        stage: 'cancelled',
+        completedAt: new Date(),
+      }
+    : {
+        cancelRequested: true,
+      }).where(eq(schema.ImportJob.id, current.id)).returning())[0]
 
   return { job: serializeTradeImportJob(updated), status: 200 as const }
 }
 
 export async function processTradeImportJobChunk(jobId: string, internalUserId: string) {
-  const model = (prisma as any).importJob
-
-  const job = await model.findFirst({
-    where: { id: jobId, userId: internalUserId },
-    select: {
+  const job = await db.query.ImportJob.findFirst({
+    where: (table, { eq }) => eq(table.id, jobId) && eq(table.userId, internalUserId),
+    columns: {
       id: true,
       userId: true,
       status: true,
@@ -323,10 +316,7 @@ export async function processTradeImportJobChunk(jobId: string, internalUserId: 
   }
 
   if (job.cancelRequested) {
-    const cancelled = await model.update({
-      where: { id: job.id },
-      data: { status: 'cancelled', stage: 'cancelled', completedAt: new Date() }
-    })
+    const cancelled = (await db.update(schema.ImportJob).set({ status: 'cancelled', stage: 'cancelled', completedAt: new Date() }).where(eq(schema.ImportJob.id, job.id)).returning())[0]
     return { job: serializeTradeImportJob(cancelled), done: true, status: 200 as const }
   }
 
@@ -335,26 +325,20 @@ export async function processTradeImportJobChunk(jobId: string, internalUserId: 
     let state = parseTradeImportState(job.state)
 
     if (job.status === 'queued') {
-      await model.update({
-        where: { id: job.id },
-        data: {
-          status: 'processing',
-          stage: 'preparing',
-          startedAt: new Date(),
-          progress: 1,
-        }
-      })
+      await db.update(schema.ImportJob).set({
+        status: 'processing',
+        stage: 'preparing',
+        startedAt: new Date(),
+        progress: 1,
+      }).where(eq(schema.ImportJob.id, job.id))
     }
 
     if (!state.accountType) {
-      const phaseAccount = await prisma.phaseAccount.findFirst({
-        where: {
-          id: payload.accountId,
-          MasterAccount: { userId: internalUserId }
-        },
-        include: {
+      const phaseAccount = await db.query.PhaseAccount.findFirst({
+        where: (table, { eq }) => eq(table.id, payload.accountId),
+        with: {
           MasterAccount: {
-            select: {
+            columns: {
               id: true,
               accountName: true,
               propFirmName: true,
@@ -379,9 +363,9 @@ export async function processTradeImportJobChunk(jobId: string, internalUserId: 
         state.phaseNumber = phaseAccount.phaseNumber
         state.masterAccountId = phaseAccount.MasterAccount.id
       } else {
-        const account = await prisma.account.findFirst({
-          where: { id: payload.accountId, userId: internalUserId },
-          select: { id: true, number: true, name: true }
+        const account = await db.query.Account.findFirst({
+          where: (table, { eq }) => eq(table.id, payload.accountId) && eq(table.userId, internalUserId),
+          columns: { id: true, number: true, name: true }
         })
 
         if (!account) {
@@ -410,18 +394,12 @@ export async function processTradeImportJobChunk(jobId: string, internalUserId: 
 
     let inserted = 0
     if (preparedRows.length > 0) {
-      const createManyResult = await prisma.trade.createMany({
-        data: preparedRows,
-        skipDuplicates: true,
-      })
-      inserted = createManyResult.count
+      const createManyResult = await db.insert(schema.Trade).values(preparedRows).onConflictDoNothing()
+      inserted = (createManyResult as any).rowCount || (createManyResult as any).count || preparedRows.length
 
       const executionRows = preparedRows.flatMap((trade: any) => buildSyntheticExecutionsFromTrade(trade))
       if (executionRows.length > 0) {
-        await prisma.tradeExecution.createMany({
-          data: executionRows as any,
-          skipDuplicates: true,
-        })
+        await db.insert(schema.TradeExecution).values(executionRows as any).onConflictDoNothing()
       }
     }
 
@@ -461,48 +439,39 @@ export async function processTradeImportJobChunk(jobId: string, internalUserId: 
         }
       }
 
-      const completed = await model.update({
-        where: { id: job.id },
-        data: {
-          status: 'completed',
-          stage: 'completed',
-          progress: 100,
-          processedItems: totalItems,
-          importedCount: state.imported,
-          skippedCount: state.skipped,
-          state,
-          completedAt: new Date(),
-        }
-      })
+      const completed = (await db.update(schema.ImportJob).set({
+        status: 'completed',
+        stage: 'completed',
+        progress: 100,
+        processedItems: totalItems,
+        importedCount: state.imported,
+        skippedCount: state.skipped,
+        state,
+        completedAt: new Date(),
+      }).where(eq(schema.ImportJob.id, job.id)).returning())[0]
 
       return { job: serializeTradeImportJob(completed), done: true, status: 200 as const }
     }
 
     const processedItems = state.index
-    const processing = await model.update({
-      where: { id: job.id },
-      data: {
-        status: 'processing',
-        stage: 'trades-import',
-        progress: computeProgress(totalItems, processedItems),
-        processedItems,
-        importedCount: state.imported,
-        skippedCount: state.skipped,
-        state,
-      }
-    })
+    const processing = (await db.update(schema.ImportJob).set({
+      status: 'processing',
+      stage: 'trades-import',
+      progress: computeProgress(totalItems, processedItems),
+      processedItems,
+      importedCount: state.imported,
+      skippedCount: state.skipped,
+      state,
+    }).where(eq(schema.ImportJob.id, job.id)).returning())[0]
 
     return { job: serializeTradeImportJob(processing), done: false, status: 200 as const }
   } catch (error) {
-    const failed = await model.update({
-      where: { id: job.id },
-      data: {
-        status: 'failed',
-        stage: 'failed',
-        error: error instanceof Error ? error.message.slice(0, 2000) : 'Trade import failed',
-        completedAt: new Date(),
-      }
-    })
+    const failed = (await db.update(schema.ImportJob).set({
+      status: 'failed',
+      stage: 'failed',
+      error: error instanceof Error ? error.message.slice(0, 2000) : 'Trade import failed',
+      completedAt: new Date(),
+    }).where(eq(schema.ImportJob.id, job.id)).returning())[0]
 
     return { job: serializeTradeImportJob(failed), done: true, status: 200 as const }
   }

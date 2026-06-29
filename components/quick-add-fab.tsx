@@ -76,7 +76,6 @@ export function QuickAddFAB({ className }: QuickAddFABProps) {
                 toast.success('Trade added successfully')
                 setFormData({ instrument: '', side: 'long', pnl: '' })
                 closeQuickAdd()
-                // Reload page to refresh data
                 window.location.reload()
             } else {
                 throw new Error('Failed to add trade')

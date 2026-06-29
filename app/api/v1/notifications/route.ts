@@ -1,16 +1,10 @@
-/**
- * Notifications API (v1)
- * GET    /api/v1/notifications - Get all notifications
- * POST   /api/v1/notifications - Create notification (internal use)
- * PATCH  /api/v1/notifications - Mark all as read
- * DELETE /api/v1/notifications - Clear all notifications
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentity } from '@/server/user-identity'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
+import { eq, and, desc, count } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   const rateLimitRes = await applyRateLimit(request, apiLimiter)
@@ -22,20 +16,24 @@ export async function GET(request: NextRequest) {
     const unreadOnly = searchParams.get('unreadOnly') === 'true'
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
 
-    const notifications = await prisma.notification.findMany({
-      where: {
-        userId: internalUserId,
-        ...(unreadOnly ? { isRead: false } : {}),
-      },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
+    const notifications = await db.query.Notification.findMany({
+      where: (table, { eq, and }) => unreadOnly
+        ? and(eq(table.userId, internalUserId), eq(table.isRead, false))
+        : eq(table.userId, internalUserId),
+      orderBy: (table, { desc }) => [desc(table.createdAt)],
+      limit,
     })
 
-    const unreadCount = unreadOnly
-      ? notifications.length
-      : await prisma.notification.count({
-          where: { userId: internalUserId, isRead: false },
-        })
+    let unreadCount: number
+    if (unreadOnly) {
+      unreadCount = notifications.length
+    } else {
+      const result = await db
+        .select({ count: count() })
+        .from(schema.Notification)
+        .where(and(eq(schema.Notification.userId, internalUserId), eq(schema.Notification.isRead, false)))
+      unreadCount = result[0]?.count || 0
+    }
 
     return NextResponse.json({ success: true, data: { notifications, unreadCount } })
   } catch (error: any) {
@@ -60,22 +58,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: type, title, message' }, { status: 400 })
     }
 
-    const notification = await prisma.notification.create({
-      data: {
-        userId: internalUserId,
-        type,
-        title: String(title).slice(0, 200),
-        message: String(message).slice(0, 1000),
-        priority: priority || 'MEDIUM',
-        ...(data ? { data } : {}),
-      },
-    })
+    const notification = (await db.insert(schema.Notification).values({
+      userId: internalUserId,
+      type,
+      title: String(title).slice(0, 200),
+      message: String(message).slice(0, 1000),
+      priority: priority || 'MEDIUM',
+      ...(data ? { data } : {}),
+    }).returning())[0]
 
-    // Dispatch FCM Push Notification asynchronously if token exists
     try {
-      const user = await prisma.user.findUnique({
-        where: { id: internalUserId },
-        select: { fcmToken: true },
+      const user = await db.query.User.findFirst({
+        where: (table, { eq }) => eq(table.id, internalUserId),
+        columns: { fcmToken: true },
       })
       if (user?.fcmToken) {
         const { messaging } = await import('@/lib/firebase-admin')
@@ -117,10 +112,9 @@ export async function PATCH(request: NextRequest) {
   try {
     const { internalUserId } = await getResolvedUserIdentity()
 
-    await prisma.notification.updateMany({
-      where: { userId: internalUserId, isRead: false },
-      data: { isRead: true },
-    })
+    await db.update(schema.Notification)
+      .set({ isRead: true })
+      .where(and(eq(schema.Notification.userId, internalUserId), eq(schema.Notification.isRead, false)))
 
     return NextResponse.json({ success: true, message: 'All notifications marked as read' })
   } catch (error: any) {
@@ -139,9 +133,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const { internalUserId } = await getResolvedUserIdentity()
 
-    await prisma.notification.deleteMany({
-      where: { userId: internalUserId },
-    })
+    await db.delete(schema.Notification).where(eq(schema.Notification.userId, internalUserId))
 
     return NextResponse.json({ success: true, message: 'All notifications cleared' })
   } catch (error: any) {

@@ -76,7 +76,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { AccountsPageSkeleton } from "./components/accounts-page-skeleton"
 import { PageHeader } from "@/components/ui/page-header"
 
-// Types
 interface Account {
   id: string
   name?: string
@@ -164,7 +163,6 @@ export default function AccountsPage() {
   const searchInputRef = useRef<HTMLInputElement>(null)
   const userStore = useUserStore(state => state.user)
 
-  // State
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [filterType, setFilterType] = useState<FilterType>('all')
@@ -206,7 +204,6 @@ export default function AccountsPage() {
     }
   })
 
-  // Leaderboard
   const [showLeaderboard, setShowLeaderboard] = useState(false)
 
   // Dialog states
@@ -246,7 +243,6 @@ export default function AccountsPage() {
     }
   }, [])
 
-  // Stats
   const accountStats = useMemo(() => {
     const totalEquity = serverAccounts.reduce((sum, account) => sum + (account.calculatedEquity || account.startingBalance || 0), 0)
     const pnl = serverAccounts.reduce((sum, acc) => sum + (acc.pnl || 0), 0)
@@ -263,7 +259,6 @@ export default function AccountsPage() {
     }
   }, [serverAccounts, pagination])
 
-  // Handlers
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true)
     try {

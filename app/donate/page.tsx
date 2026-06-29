@@ -24,7 +24,9 @@ export default function DonatePage() {
     fetch('/api/v1/donations')
       .then(r => r.json())
       .then(data => { if (data.success) setAddresses(data.data) })
-      .catch(() => {})
+      .catch((e) => {
+        console.error('Failed to copy crypto address', e)
+      })
       .finally(() => setLoading(false))
   }, [])
 

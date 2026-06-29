@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -24,22 +24,20 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { id: masterAccountId } = await params
 
-    const masterAccount = await prisma.masterAccount.findFirst({
-      where: {
-        id: masterAccountId,
-        userId: internalUserId,
-      },
-      include: {
+    const masterAccount = await db.query.MasterAccount.findFirst({
+      where: (table, { eq, and }) =>
+        and(eq(table.id, masterAccountId), eq(table.userId, internalUserId)),
+      with: {
         PhaseAccount: {
-          orderBy: { phaseNumber: 'asc' },
-          include: {
+          orderBy: (table, { asc }) => [asc(table.phaseNumber)],
+          with: {
             BreachRecord: {
-              orderBy: { breachTime: 'desc' },
+              orderBy: (table, { desc }) => [desc(table.breachTime)],
             },
           },
         },
         Payout: {
-          orderBy: { requestDate: 'desc' },
+          orderBy: (table, { desc }) => [desc(table.requestDate)],
         },
       },
     })

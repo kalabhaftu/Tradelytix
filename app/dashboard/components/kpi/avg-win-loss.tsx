@@ -20,7 +20,6 @@ const AvgWinLoss = React.memo(function AvgWinLoss({ size }: AvgWinLossProps) {
   const { avgWin, avgLoss, riskRewardRatio } = useTradeStatistics()
   const { formatValue, isPrivacyMode } = useDashboardDisplay()
 
-  // Calculate the percentage for the progress bar
   const total = avgWin + avgLoss
   const winPercentage = isPrivacyMode ? 50 : (total > 0 ? (avgWin / total) * 100 : 50)
 

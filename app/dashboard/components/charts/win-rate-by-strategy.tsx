@@ -22,10 +22,6 @@ import { WidgetCard, ChartTooltip as SharedChartTooltip } from '../widget-card'
 import { useWidgetData } from "@/hooks/use-widget-data"
 import { WidgetSize } from '@/app/dashboard/types/dashboard'
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
 interface WinRateByStrategyProps {
   size?: WidgetSize
 }
@@ -42,10 +38,6 @@ interface StrategyWinRate {
 
 const AnyBarChart = (RechartsPrimitive as any).BarChart as React.ComponentType<any>
 
-// ============================================================================
-// CONSTANTS - Tradezella Premium Styling
-// ============================================================================
-
 const COLORS = {
   profit: 'hsl(var(--chart-profit))',
   loss: 'hsl(var(--chart-loss))',
@@ -60,16 +52,7 @@ const CHART_CONFIG = {
   referenceLineOpacity: 0.6
 } as const
 
-
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
 export default function WinRateByStrategy({ size = 'small-long' }: WinRateByStrategyProps) {
-  // ---------------------------------------------------------------------------
-  // DATA HOOKS (PRESERVED - DO NOT MODIFY)
-  // ---------------------------------------------------------------------------
   const { data: chartData = [], isLoading } = useWidgetData('winRateByStrategy')
 
   if (isLoading) {
@@ -92,21 +75,12 @@ export default function WinRateByStrategy({ size = 'small-long' }: WinRateByStra
     )
   }
 
-  // ---------------------------------------------------------------------------
-  // COMPUTED VALUES
-  // ---------------------------------------------------------------------------
   const avgWinRate = chartData.length > 0
     ? chartData.reduce((sum: number, item: any) => sum + item.winRate, 0) / chartData.length
     : 0
 
-  // ---------------------------------------------------------------------------
-  // SIZE-RESPONSIVE VALUES
-  // ---------------------------------------------------------------------------
   const isCompact = size === 'small' || size === 'small-long'
 
-  // ---------------------------------------------------------------------------
-  // RENDER
-  // ---------------------------------------------------------------------------
   return (
     <WidgetCard title="Win Rate by Strategy">
       <div className="w-full h-full">
@@ -117,7 +91,6 @@ export default function WinRateByStrategy({ size = 'small-long' }: WinRateByStra
               margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
               barGap={4}
             >
-              {/* Subtle Grid */}
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke={COLORS.grid}
@@ -125,7 +98,6 @@ export default function WinRateByStrategy({ size = 'small-long' }: WinRateByStra
                 horizontal={false}
               />
 
-              {/* X Axis - Win Rate Percentage */}
               <XAxis
                 type="number"
                 domain={[0, 100]}
@@ -136,7 +108,6 @@ export default function WinRateByStrategy({ size = 'small-long' }: WinRateByStra
                 axisLine={false}
               />
 
-              {/* Y Axis - Strategy Names */}
               <YAxis
                 type="category"
                 dataKey="strategy"
@@ -148,7 +119,6 @@ export default function WinRateByStrategy({ size = 'small-long' }: WinRateByStra
                 tickFormatter={(value) => value.length > 12 ? value.substring(0, 10) + '...' : value}
               />
 
-              {/* 50% Reference Line */}
               <ReferenceLine
                 x={50}
                 stroke={COLORS.reference}
@@ -162,13 +132,11 @@ export default function WinRateByStrategy({ size = 'small-long' }: WinRateByStra
                 }}
               />
 
-              {/* Tooltip */}
               <RechartsTooltip
                 content={<SharedChartTooltip />}
                 cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
               />
 
-              {/* Bars with Rounded Ends */}
               <Bar
                 dataKey="winRate"
                 radius={CHART_CONFIG.barRadius}

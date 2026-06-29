@@ -1,29 +1,27 @@
 'use server'
 
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getUserId } from '@/server/auth'
-import { WeeklyExpectation } from '@prisma/client'
 import { randomUUID } from 'crypto'
+import { and, eq } from 'drizzle-orm'
 
 export async function getWeeklyReview(startDate: Date) {
   const userId = await getUserId()
   if (!userId) return null
 
   try {
-    // Normalize date to Monday
     const date = new Date(startDate)
     date.setHours(0, 0, 0, 0)
     const day = date.getDay()
-    const diff = date.getDate() - day + (day === 0 ? -6 : 1) // Adjust when day is Sunday
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1)
     const monday = new Date(date.setDate(diff))
     
-    const review = await prisma.weeklyReview.findUnique({
-      where: {
-        userId_startDate: {
-          userId,
-          startDate: monday
-        }
-      }
+    const review = await db.query.WeeklyReview.findFirst({
+      where: (table, { eq, and }) => and(
+        eq(table.userId, userId),
+        eq(table.startDate, monday)
+      )
     })
     
     return review
@@ -36,8 +34,8 @@ export async function saveWeeklyReview(data: {
   startDate: Date
   endDate: Date
   calendarImage?: string
-  expectation?: WeeklyExpectation
-  actualOutcome?: WeeklyExpectation
+  expectation?: any
+  actualOutcome?: any
   isCorrect?: boolean
   notes?: string
 }) {
@@ -45,35 +43,33 @@ export async function saveWeeklyReview(data: {
   if (!userId) throw new Error('Unauthorized')
 
   try {
-    // Normalize date to Monday
     const date = new Date(data.startDate)
     date.setHours(0, 0, 0, 0)
     const day = date.getDay()
     const diff = date.getDate() - day + (day === 0 ? -6 : 1)
     const monday = new Date(date.setDate(diff))
     
-    const review = await prisma.weeklyReview.upsert({
-      where: {
-        userId_startDate: {
-          userId,
-          startDate: monday
-        }
-      },
-      update: {
-        ...data,
-        startDate: monday // Ensure consistency
-      },
-      create: {
-        id: randomUUID(),
-        userId,
-        ...data,
-        startDate: monday
-      }
+    const existing = await db.query.WeeklyReview.findFirst({
+      where: (table, { eq, and }) => and(
+        eq(table.userId, userId),
+        eq(table.startDate, monday)
+      )
     })
+
+    let review
+    if (existing) {
+      review = (await db.update(schema.WeeklyReview)
+        .set({ ...data, startDate: monday })
+        .where(and(eq(schema.WeeklyReview.userId, userId), eq(schema.WeeklyReview.startDate, monday)))
+        .returning())[0]
+    } else {
+      review = (await db.insert(schema.WeeklyReview)
+        .values({ id: randomUUID(), userId, ...data, startDate: monday, updatedAt: new Date() })
+        .returning())[0]
+    }
     
     return { success: true, data: review }
   } catch (error) {
     return { success: false, error: 'Failed to save review' }
   }
 }
-

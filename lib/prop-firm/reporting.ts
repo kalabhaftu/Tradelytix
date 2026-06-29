@@ -1,4 +1,7 @@
-import type { MasterAccount, PhaseAccount, Payout, Trade } from '@prisma/client'
+import type { PhaseAccountType } from '@/lib/db/schema/accounts';
+import type { TradeType } from '@/lib/db/schema/trades';
+import type { PayoutType, MasterAccountType } from '@/lib/db/schema/accounts';
+
 import { groupTradesByExecution, type GroupedTrade } from '@/lib/utils'
 import { calculateWinRate } from '@/lib/metrics/outcome'
 
@@ -33,13 +36,13 @@ export interface PropFirmPhaseMetrics {
   breachCount: number
 }
 
-type ReportPhase = PhaseAccount & {
-  Trade?: Trade[]
-  Payout?: Payout[]
+type ReportPhase = PhaseAccountType & {
+  Trade?: TradeType[]
+  Payout?: PayoutType[]
   BreachRecord?: Array<{ id: string }>
 }
 
-type ReportMasterAccount = MasterAccount & {
+type ReportMasterAccount = MasterAccountType & {
   PhaseAccount: ReportPhase[]
 }
 
@@ -67,7 +70,7 @@ export function resolveReportPhase(master: ReportMasterAccount): ReportPhase | n
   const livePhase = [...byPhaseNumber]
     .filter((phase) => phase.status === 'active' || phase.status === 'pending_approval')
     .sort((a, b) => {
-      const priority = (status: string) => (status === 'active' ? 0 : 1)
+      const priority = (status: string | null) => (status === 'active' ? 0 : 1)
       return priority(a.status) - priority(b.status) || b.phaseNumber - a.phaseNumber
     })[0]
 
@@ -77,8 +80,8 @@ export function resolveReportPhase(master: ReportMasterAccount): ReportPhase | n
 }
 
 export function derivePropFirmLifecycleStatus(
-  master: Pick<MasterAccount, 'status' | 'evaluationType'> & { PhaseAccount?: Array<Pick<PhaseAccount, 'status' | 'phaseNumber'>> },
-  resolvedPhase: Pick<PhaseAccount, 'status' | 'phaseNumber'> | null
+  master: Pick<MasterAccountType, 'status' | 'evaluationType'> & { PhaseAccount?: Array<Pick<PhaseAccountType, 'status' | 'phaseNumber'>> },
+  resolvedPhase: Pick<PhaseAccountType, 'status' | 'phaseNumber'> | null
 ): PropFirmLifecycleStatus {
   if (!resolvedPhase) {
     return master.status === 'failed' ? 'failed' : master.status === 'funded' ? 'funded' : 'passed'
@@ -104,14 +107,14 @@ export function derivePropFirmLifecycleStatus(
   return 'passed'
 }
 
-export function summarizePhaseHistory(master: Pick<MasterAccount, 'evaluationType'> & { PhaseAccount: ReportPhase[] }): PhaseHistorySummary[] {
+export function summarizePhaseHistory(master: Pick<MasterAccountType, 'evaluationType'> & { PhaseAccount: ReportPhase[] }): PhaseHistorySummary[] {
   return [...master.PhaseAccount]
     .sort((a, b) => a.phaseNumber - b.phaseNumber)
     .map((phase) => ({
       id: phase.id,
       phaseNumber: phase.phaseNumber,
       phaseId: phase.phaseId,
-      status: phase.status,
+      status: phase.status ?? 'pending',
       isFundedStage: isFundedPhaseForEvaluation(master.evaluationType, phase.phaseNumber),
     }))
 }
@@ -120,7 +123,7 @@ export function calculatePropFirmPhaseMetrics(
   phase: ReportPhase,
   accountSize: number
 ): PropFirmPhaseMetrics {
-  const groupedTrades = groupTradesByExecution((phase.Trade ?? []) as Trade[])
+  const groupedTrades = groupTradesByExecution((phase.Trade ?? []) as TradeType[])
   const tradeDates = new Set<string>()
   let grossPnl = 0
   let netPnl = 0
@@ -165,8 +168,8 @@ export function calculatePropFirmPhaseMetrics(
       : '0.00'
 
   const paidPayouts = (phase.Payout ?? [])
-    .filter((payout) => payout.status === 'paid')
-    .reduce((sum, payout) => sum + Number(payout.amount || 0), 0)
+    .filter((payout: PayoutType) => payout.status === 'paid')
+    .reduce((sum: number, payout: PayoutType) => sum + Number(payout.amount || 0), 0)
 
   return {
     groupedTrades,

@@ -1,5 +1,7 @@
 import { Account } from '@/context/data-provider'
-import { User } from '@prisma/client'
+import { type InferSelectModel } from 'drizzle-orm'
+import { User as schemaUser } from '@/lib/db/schema'
+type User = InferSelectModel<typeof schemaUser>
 import { User as SupabaseUser } from '@supabase/supabase-js'
 import { create } from 'zustand'
 import { UserSettingsShape } from '@/lib/user-settings'

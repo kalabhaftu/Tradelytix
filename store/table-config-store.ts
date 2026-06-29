@@ -100,15 +100,16 @@ export const useTableConfigStore = create<TableConfigState>()(
         }
       },
 
-      setTableConfig: (tableId, config) => set((state) => ({
-        tables: {
-          ...state.tables,
-          [tableId]: {
-            ...state.tables[tableId],
-            ...config,
+      setTableConfig: (tableId, config) => set((state) => {
+        const table = state.tables[tableId]
+        if (!table) return state
+        return {
+          tables: {
+            ...state.tables,
+            [tableId]: { ...table, ...config },
           },
-        },
-      })),
+        }
+      }),
 
       updateColumnVisibility: (tableId, columnId, visible) => set((state) => {
         const table = state.tables[tableId]
@@ -131,15 +132,16 @@ export const useTableConfigStore = create<TableConfigState>()(
         }
       }),
 
-      updateColumnVisibilityState: (tableId, visibility) => set((state) => ({
-        tables: {
-          ...state.tables,
-          [tableId]: {
-            ...state.tables[tableId],
-            columnVisibility: visibility,
+      updateColumnVisibilityState: (tableId, visibility) => set((state) => {
+        const table = state.tables[tableId]
+        if (!table) return state
+        return {
+          tables: {
+            ...state.tables,
+            [tableId]: { ...table, columnVisibility: visibility },
           },
-        },
-      })),
+        }
+      }),
 
       updateColumnSize: (tableId, columnId, size) => set((state) => {
         const table = state.tables[tableId]
@@ -175,58 +177,64 @@ export const useTableConfigStore = create<TableConfigState>()(
         }
       }),
 
-      updateSorting: (tableId, sorting) => set((state) => ({
-        tables: {
-          ...state.tables,
-          [tableId]: {
-            ...state.tables[tableId],
-            sorting,
+      updateSorting: (tableId, sorting) => set((state) => {
+        const table = state.tables[tableId]
+        if (!table) return state
+        return {
+          tables: {
+            ...state.tables,
+            [tableId]: { ...table, sorting },
           },
-        },
-      })),
+        }
+      }),
 
-      updateColumnFilters: (tableId, filters) => set((state) => ({
-        tables: {
-          ...state.tables,
-          [tableId]: {
-            ...state.tables[tableId],
-            columnFilters: filters,
+      updateColumnFilters: (tableId, filters) => set((state) => {
+        const table = state.tables[tableId]
+        if (!table) return state
+        return {
+          tables: {
+            ...state.tables,
+            [tableId]: { ...table, columnFilters: filters },
           },
-        },
-      })),
+        }
+      }),
 
-      updatePageSize: (tableId, pageSize) => set((state) => ({
-        tables: {
-          ...state.tables,
-          [tableId]: {
-            ...state.tables[tableId],
-            pageSize,
+      updatePageSize: (tableId, pageSize) => set((state) => {
+        const table = state.tables[tableId]
+        if (!table) return state
+        return {
+          tables: {
+            ...state.tables,
+            [tableId]: { ...table, pageSize },
           },
-        },
-      })),
+        }
+      }),
 
-      updatePageIndex: (tableId, pageIndex) => set((state) => ({
-        tables: {
-          ...state.tables,
-          [tableId]: {
-            ...state.tables[tableId],
-            pageIndex,
+      updatePageIndex: (tableId, pageIndex) => set((state) => {
+        const table = state.tables[tableId]
+        if (!table) return state
+        return {
+          tables: {
+            ...state.tables,
+            [tableId]: { ...table, pageIndex },
           },
-        },
-      })),
+        }
+      }),
 
-      updateGroupingGranularity: (tableId, granularity) => set((state) => ({
-        tables: {
-          ...state.tables,
-          [tableId]: {
-            ...state.tables[tableId],
-            groupingGranularity: granularity,
+      updateGroupingGranularity: (tableId, granularity) => set((state) => {
+        const table = state.tables[tableId]
+        if (!table) return state
+        return {
+          tables: {
+            ...state.tables,
+            [tableId]: { ...table, groupingGranularity: granularity },
           },
-        },
-      })),
+        }
+      }),
 
       resetTableConfig: (tableId) => set((state) => {
         const defaultConfig = tableId === 'trade-table' ? defaultTradeTableConfig : state.tables[tableId]
+        if (!defaultConfig) return state
         return {
           tables: {
             ...state.tables,

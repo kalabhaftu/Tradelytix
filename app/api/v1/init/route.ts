@@ -1,16 +1,7 @@
-/**
- * Initial App Load API (v1)
- * 
- * GET /api/v1/init
- * 
- * Lightweight initial load endpoint replacing /api/bundled-data.
- * Returns only what's needed at app startup: user profile and accounts.
- * Trades are fetched separately via /api/v1/trades with proper filtering.
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getInitBootstrapData } from '@/server/init-bootstrap'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
@@ -32,24 +23,22 @@ export async function GET(request: NextRequest) {
       
       if (countryCode || city) {
         // Run completely asynchronously without blocking the payload delivery
-        prisma.userGeoLog.findFirst({
-          where: { userId: payload.user.id },
-          orderBy: { createdAt: 'desc' }
+        db.query.UserGeoLog.findFirst({
+          where: (table, { eq }) => eq(table.userId, payload.user.id),
+          orderBy: (table, { desc }) => [desc(table.createdAt)]
         }).then(lastLog => {
           if (
             !lastLog ||
             normalizeCountryCode(lastLog.countryCode) !== countryCode ||
             normalizeCityName(lastLog.city) !== city
           ) {
-            return prisma.userGeoLog.create({
-              data: {
-                userId: payload.user.id,
-                countryCode: countryCode || null,
-                country: country || null,
-                city: city || null,
-                ipAddress: headerList.get('x-forwarded-for') || 'hidden'
-              }
-            }).catch((err: unknown) => logger.error('Geo logging failed', err, 'Init'))
+            return db.insert(schema.UserGeoLog).values({
+              userId: payload.user.id,
+              countryCode: countryCode || null,
+              country: country || null,
+              city: city || null,
+              ipAddress: headerList.get('x-forwarded-for') || 'hidden'
+            }).returning().then((rows) => rows[0]).catch((err: unknown) => logger.error('Geo logging failed', err, 'Init'))
           }
         }).catch((err: unknown) => logger.error('Geo logging failed on ip', err, 'Init'))
       }

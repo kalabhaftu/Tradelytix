@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq, and } from 'drizzle-orm'
 import { deletePublicStorageUrls } from '@/server/storage-admin'
 
 // GET - Fetch all backtests for user
@@ -22,9 +24,9 @@ export async function GET(request: NextRequest) {
     const internalUserId = identity.internalUserId
 
     // Fetch all backtests for user
-    const backtests = await prisma.backtestTrade.findMany({
-      where: { userId: internalUserId },
-      orderBy: { dateExecuted: 'desc' }
+    const backtests = await db.query.BacktestTrade.findMany({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      orderBy: (table, { desc }) => [desc(table.dateExecuted)]
     })
 
     return NextResponse.json({ backtests }, { status: 200 })
@@ -81,38 +83,36 @@ export async function POST(request: NextRequest) {
     }
 
     // Create backtest
-    const backtest = await prisma.backtestTrade.create({
-      data: {
-        id: crypto.randomUUID(),
-        updatedAt: new Date(),
-        userId: internalUserId,
-        pair,
-        direction,
-        outcome,
-        session,
-        model,
-        customModel: customModel || null,
-        riskRewardRatio: parseFloat(riskRewardRatio) || 0,
-        riskPoints: parseFloat(riskPoints) || 0,
-        rewardPoints: parseFloat(rewardPoints) || 0,
-        entryPrice: parseFloat(entryPrice),
-        stopLoss: parseFloat(stopLoss),
-        takeProfit: parseFloat(takeProfit),
-        exitPrice: parseFloat(exitPrice),
-        pnl: parseFloat(pnl),
-        imageOne: images?.[0] || null,
-        imageTwo: images?.[1] || null,
-        imageThree: images?.[2] || null,
-        imageFour: images?.[3] || null,
-        imageFive: images?.[4] || null,
-        imageSix: images?.[5] || null,
-        cardPreviewImage: cardPreviewImage || null,
-        notes: notes || null,
-        tags: tags || [],
-        dateExecuted: dateExecuted ? new Date(dateExecuted) : new Date(),
-        backtestDate: backtestDate ? new Date(backtestDate) : null,
-      }
-    })
+    const backtest = (await db.insert(schema.BacktestTrade).values({
+      id: crypto.randomUUID(),
+      updatedAt: new Date(),
+      userId: internalUserId,
+      pair,
+      direction,
+      outcome,
+      session,
+      model,
+      customModel: customModel || null,
+      riskRewardRatio: parseFloat(riskRewardRatio) || 0,
+      riskPoints: parseFloat(riskPoints) || 0,
+      rewardPoints: parseFloat(rewardPoints) || 0,
+      entryPrice: parseFloat(entryPrice),
+      stopLoss: parseFloat(stopLoss),
+      takeProfit: parseFloat(takeProfit),
+      exitPrice: parseFloat(exitPrice),
+      pnl: parseFloat(pnl),
+      imageOne: images?.[0] || null,
+      imageTwo: images?.[1] || null,
+      imageThree: images?.[2] || null,
+      imageFour: images?.[3] || null,
+      imageFive: images?.[4] || null,
+      imageSix: images?.[5] || null,
+      cardPreviewImage: cardPreviewImage || null,
+      notes: notes || null,
+      tags: tags || [],
+      dateExecuted: dateExecuted ? new Date(dateExecuted) : new Date(),
+      backtestDate: backtestDate ? new Date(backtestDate) : null,
+    }).returning())[0]
 
     return NextResponse.json({ backtest }, { status: 201 })
   } catch (error) {
@@ -143,8 +143,8 @@ export async function PUT(request: NextRequest) {
     }
 
     // Verify ownership
-    const existingBacktest = await prisma.backtestTrade.findFirst({
-      where: { id, userId: internalUserId }
+    const existingBacktest = await db.query.BacktestTrade.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, id), eq(table.userId, internalUserId))
     })
 
     if (!existingBacktest) {
@@ -174,10 +174,7 @@ export async function PUT(request: NextRequest) {
       updateData.imageSix = images[5] || null
     }
 
-    const backtest = await prisma.backtestTrade.update({
-      where: { id },
-      data: updateData
-    })
+    const backtest = (await db.update(schema.BacktestTrade).set(updateData).where(eq(schema.BacktestTrade.id, id)).returning())[0]
 
     return NextResponse.json({ backtest }, { status: 200 })
   } catch (error) {
@@ -208,9 +205,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     // 1. Fetch backtest to get image URLs
-    const backtestTrade = await prisma.backtestTrade.findFirst({
-      where: { id, userId: internalUserId },
-      select: {
+    const backtestTrade = await db.query.BacktestTrade.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, id), eq(table.userId, internalUserId)),
+      columns: {
         imageOne: true,
         imageTwo: true,
         imageThree: true,
@@ -249,9 +246,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // 4. Delete from database
-    await prisma.backtestTrade.delete({
-      where: { id }
-    })
+    await db.delete(schema.BacktestTrade).where(eq(schema.BacktestTrade.id, id))
 
     return NextResponse.json({ success: true }, { status: 200 })
   } catch (error) {
@@ -261,4 +256,3 @@ export async function DELETE(request: NextRequest) {
     )
   }
 }
-

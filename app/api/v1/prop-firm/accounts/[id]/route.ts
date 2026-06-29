@@ -1,14 +1,8 @@
-/**
- * Individual Master Account API - Rebuilt System
- * GET /api/prop-firm/accounts/[id] - Get single master account with full details
- * PATCH /api/prop-firm/accounts/[id] - Update master account
- * DELETE /api/prop-firm/accounts/[id] - Delete master account
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { z } from 'zod'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
@@ -16,6 +10,7 @@ import { logger } from '@/lib/logger'
 import { getTradeNetPnl } from '@/lib/metrics/pnl'
 import { getRuntimeBreakEvenThreshold } from '@/server/user-settings'
 import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
+import { eq, and, inArray, desc, asc } from 'drizzle-orm'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -56,12 +51,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // PERFORMANCE OPTIMIZATION: Use parallel queries and database aggregations
     const [masterAccount, phases, allPhaseTrades, breakEvenThreshold] = await Promise.all([
       // 1. Get master account basic info (no nested relations)
-      prisma.masterAccount.findFirst({
-        where: {
-          id: masterAccountId,
-          userId: internalUserId
-        },
-        select: {
+      db.query.MasterAccount.findFirst({
+        where: (table, { eq, and }) => and(
+          eq(table.id, masterAccountId),
+          eq(table.userId, internalUserId)
+        ),
+        columns: {
           id: true,
           accountName: true,
           propFirmName: true,
@@ -75,13 +70,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       }),
 
       // 2. Get phases with 10 most recent trades and breach records using nested include
-      prisma.phaseAccount.findMany({
-        where: {
-          masterAccountId
-        },
-        include: {
+      db.query.PhaseAccount.findMany({
+        where: (table, { eq }) => eq(table.masterAccountId, masterAccountId),
+        with: {
           Trade: {
-            select: {
+            columns: {
               id: true,
               instrument: true,
               symbol: true,
@@ -89,28 +82,29 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
               exitTime: true,
               entryTime: true,
             },
-            orderBy: { exitTime: 'desc' },
-            take: 10
+            orderBy: (table, { desc }) => [desc(table.exitTime)],
+            limit: 10
           },
           BreachRecord: {
-            orderBy: { breachTime: 'asc' },
-            take: 1
+            orderBy: (table, { asc }) => [asc(table.breachTime)],
+            limit: 1
           }
         },
-        orderBy: { phaseNumber: 'asc' }
+        orderBy: (table, { asc }) => [asc(table.phaseNumber)]
       }),
 
       // 3. Get all phase trades once, then build grouped execution stats consistently
-      prisma.trade.findMany({
-        where: {
-          PhaseAccount: {
-            masterAccountId
-          }
-        },
-        select: TRADE_COUNT_SELECT,
-        orderBy: {
-          exitTime: 'asc'
-        }
+      db.query.Trade.findMany({
+        where: (table, { exists, eq }) => exists(
+          db.query.PhaseAccount.findMany({
+            where: (pa, { eq }) => and(
+              eq(pa.id, table.phaseAccountId),
+              eq(pa.masterAccountId, masterAccountId)
+            )
+          })
+        ),
+        columns: TRADE_COUNT_SELECT as any,
+        orderBy: (table, { asc }) => [asc(table.exitTime)]
       }),
       getRuntimeBreakEvenThreshold(internalUserId)
     ])
@@ -211,14 +205,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       drawdownData.currentEquity = currentEquity
 
       // Get daily start balance from daily anchor (fallback to account size)
-      const todayAnchor = await prisma.dailyAnchor.findFirst({
-        where: {
-          phaseAccountId: currentPhase.id,
-          date: {
-            gte: new Date(new Date().setHours(0, 0, 0, 0))
-          }
-        },
-        orderBy: { date: 'desc' }
+      const todayAnchor = await db.query.DailyAnchor.findFirst({
+        where: (table, { eq, and, gte }) => and(
+          eq(table.phaseAccountId, currentPhase.id),
+          gte(table.date, new Date(new Date().setHours(0, 0, 0, 0)))
+        ),
+        orderBy: (table, { desc }) => [desc(table.date)]
       })
 
       const dailyStartBalance = todayAnchor?.anchorEquity || masterAccount.accountSize
@@ -315,7 +307,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       lastUpdated: new Date().toISOString()
     }
 
-    // Return the format expected by the hook
     const response = {
       account: accountData,
       drawdown: drawdownData,
@@ -449,11 +440,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const updateData = UpdateMasterAccountSchema.parse(body)
 
     // Verify ownership
-    const existingAccount = await prisma.masterAccount.findFirst({
-      where: {
-        id: masterAccountId,
-        userId: internalUserId
-      }
+    const existingAccount = await db.query.MasterAccount.findFirst({
+      where: (table, { eq, and }) => and(
+        eq(table.id, masterAccountId),
+        eq(table.userId, internalUserId)
+      )
     })
 
     if (!existingAccount) {
@@ -464,10 +455,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Update the account
-    const updatedAccount = await prisma.masterAccount.update({
-      where: { id: masterAccountId },
-      data: updateData
-    })
+    const updatedAccount = (await db.update(schema.MasterAccount).set(updateData).where(eq(schema.MasterAccount.id, masterAccountId)).returning())[0]
 
     // Invalidate caches after archiving/unarchiving to refresh dashboard
     if (typeof updateData.isArchived === 'boolean') {
@@ -520,14 +508,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     // ID is pure masterAccountId (UUID), not composite
 
     // Verify ownership first
-    const existingAccount = await prisma.masterAccount.findFirst({
-      where: {
-        id: masterAccountId,
-        userId: internalUserId
-      },
-      include: {
+    const existingAccount = await db.query.MasterAccount.findFirst({
+      where: (table, { eq, and }) => and(
+        eq(table.id, masterAccountId),
+        eq(table.userId, internalUserId)
+      ),
+      with: {
         PhaseAccount: {
-          select: { id: true, phaseId: true }
+          columns: { id: true, phaseId: true }
         }
       }
     })
@@ -540,47 +528,40 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Delete all associated data in a transaction
-      await prisma.$transaction(async (tx) => {
-        // Get all phase IDs for this master account
-        const phaseIds = existingAccount.PhaseAccount.map(
-          (phase: (typeof existingAccount.PhaseAccount)[number]) => phase.id
-        )
-        const phaseAccountNumbers = existingAccount.PhaseAccount.map(
-          (phase: (typeof existingAccount.PhaseAccount)[number]) => phase.phaseId
-        ).filter(Boolean) as string[]
+    await db.transaction(async (tx) => {
+      // Get all phase IDs for this master account
+      const phaseIds = existingAccount.PhaseAccount.map(
+        (phase: (typeof existingAccount.PhaseAccount)[number]) => phase.id
+      )
+      const phaseAccountNumbers = existingAccount.PhaseAccount.map(
+        (phase: (typeof existingAccount.PhaseAccount)[number]) => phase.phaseId
+      ).filter(Boolean) as string[]
 
       // Delete all trades associated with this master account strictly by phaseAccountId UUIDs
       // to prevent deleting trades of other accounts that share the same phaseId or accountName
-      await tx.trade.deleteMany({
-        where: {
-          phaseAccountId: { in: phaseIds }
-        }
-      })
+      if (phaseIds.length > 0) {
+        await tx.delete(schema.Trade).where(inArray(schema.Trade.phaseAccountId, phaseIds))
+      }
 
       // Delete all phase accounts
       if (phaseIds.length > 0) {
-        await tx.phaseAccount.deleteMany({
-          where: {
-            masterAccountId
-          }
-        })
+        await tx.delete(schema.PhaseAccount).where(eq(schema.PhaseAccount.masterAccountId, masterAccountId))
       }
 
       // Delete daily anchors
-      await tx.dailyAnchor.deleteMany({
-        where: {
-          PhaseAccount: {
-            masterAccountId
-          }
-        }
-      })
+      await tx.delete(schema.DailyAnchor).where(
+        exists(
+          db.query.PhaseAccount.findMany({
+            where: (pa, { eq }) => and(
+              eq(pa.id, schema.DailyAnchor.phaseAccountId),
+              eq(pa.masterAccountId, masterAccountId)
+            )
+          })
+        )
+      )
 
       // Finally delete the master account
-      await tx.masterAccount.delete({
-        where: {
-          id: masterAccountId
-        }
-      })
+      await tx.delete(schema.MasterAccount).where(eq(schema.MasterAccount.id, masterAccountId))
     })
 
     // Invalidate all cache tags to ensure fresh data

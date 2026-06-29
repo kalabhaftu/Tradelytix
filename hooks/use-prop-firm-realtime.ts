@@ -147,7 +147,6 @@ export function usePropFirmRealtime(options: UsePropFirmRealtimeOptions): UsePro
         })
       }
 
-      // Update refs for next comparison
       previousAccountRef.current = accountData
       previousDrawdownRef.current = drawdownData
 
@@ -213,17 +212,14 @@ export function usePropFirmRealtime(options: UsePropFirmRealtimeOptions): UsePro
   // Track previous accountId to detect changes and reset hasFetchedRef
   const prevAccountIdRef = useRef<string | undefined>(undefined)
 
-  // Initial fetch - only once per accountId
   useEffect(() => {
     if (!enabled || !accountId) return
     
-    // Reset hasFetchedRef when accountId changes
     if (prevAccountIdRef.current !== accountId) {
       hasFetchedRef.current = false
       prevAccountIdRef.current = accountId
     }
     
-    // Only fetch once per accountId
     if (hasFetchedRef.current) return
     hasFetchedRef.current = true
     

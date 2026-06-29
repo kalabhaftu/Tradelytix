@@ -1,5 +1,7 @@
-import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq, isNull, or, sql, notInArray, inArray } from 'drizzle-orm'
+
 import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData, parseTradeChartLinks } from '@/lib/trade-core'
 import { extractUserSettingsWriteData } from '@/lib/user-settings'
 
@@ -12,15 +14,13 @@ function sleep(ms: number) {
 
 function isTransientDbError(error: unknown) {
   return (
-    error instanceof Prisma.PrismaClientInitializationError ||
-    (error instanceof Prisma.PrismaClientKnownRequestError &&
-      (error.code === 'P2024' || error.code === 'P1001')) ||
     (error instanceof Error && (
       error.message.includes("Can't reach database server") ||
       error.message.includes('Timed out fetching a new connection') ||
       error.message.includes('Connection closed') ||
       error.message.includes('pool_timeout') ||
-      error.message.includes('socket_timeout')
+      error.message.includes('socket_timeout') ||
+      error.message.includes('ECONNREFUSED')
     ))
   )
 }
@@ -45,11 +45,11 @@ async function withRetry<T>(operation: () => Promise<T>, attempts = 6): Promise<
 }
 
 async function backfillUserSettings() {
-  const users = await withRetry(() => prisma.user.findMany({
-    where: {
-      settings: null,
+  const users = await withRetry(() => db.query.User.findMany({
+    with: {
+      settings: true,
     },
-    select: {
+    columns: {
       id: true,
       timezone: true,
       theme: true,
@@ -61,15 +61,13 @@ async function backfillUserSettings() {
       accentPack: true,
       autoAdjustAccountDate: true,
     },
-  }))
+  }).then(res => res.filter(u => !u.settings)))
 
   if (APPLY) {
     for (const user of users) {
-      await withRetry(() => prisma.userSettings.create({
-        data: {
+      await withRetry(() => db.insert(schema.UserSettings).values({
           userId: user.id,
           ...extractUserSettingsWriteData(user as any),
-        },
       }))
     }
   }
@@ -78,28 +76,27 @@ async function backfillUserSettings() {
 }
 
 async function backfillPhaseSnapshots() {
-  const phases = await withRetry(() => prisma.phaseAccount.findMany({
-    where: {
-      accountSize: null,
-    },
-    select: {
-      id: true,
+  const phases = await withRetry(() => db.query.PhaseAccount.findMany({
+    where: (table, { isNull }) => isNull(table.accountSize),
+    with: {
       MasterAccount: {
-        select: {
+        columns: {
           accountSize: true,
         },
       },
+    },
+    columns: {
+      id: true,
     },
   }))
 
   if (APPLY) {
     for (const phase of phases) {
-      await withRetry(() => prisma.phaseAccount.update({
-        where: { id: phase.id },
-        data: {
-          accountSize: phase.MasterAccount.accountSize,
-        },
-      }))
+      if (phase.MasterAccount) {
+        await withRetry(() => db.update(schema.PhaseAccount).set({
+            accountSize: phase.MasterAccount.accountSize,
+        }).where(eq(schema.PhaseAccount.id, phase.id)))
+      }
     }
   }
 
@@ -119,70 +116,42 @@ type AuditSnapshot = {
 }
 
 async function loadAuditSnapshot(): Promise<AuditSnapshot> {
-  const [{ tradesWithInvalidUserReference }] = await withRetry(() => prisma.$queryRawUnsafe<
-    Array<{ tradesWithInvalidUserReference: number }>
-  >(`
+  const rawRes = await withRetry(() => db.execute(sql`
     SELECT COUNT(*)::int AS "tradesWithInvalidUserReference"
     FROM "Trade" t
     LEFT JOIN "User" u ON u."id" = t."userId"
     WHERE u."id" IS NULL
   `))
+  const tradesWithInvalidUserReference = Number((rawRes as any)[0]?.tradesWithInvalidUserReference || 0)
 
-  const usersMissingSettings = await withRetry(() => prisma.user.count({
-    where: {
-      settings: null,
-    },
-  }))
-  const phasesMissingAccountSize = await withRetry(() => prisma.phaseAccount.count({
-    where: {
-      accountSize: null,
-    },
-  }))
-  const tradesMissingIdentity = await withRetry(() => prisma.trade.count({
-    where: {
-      OR: [
-        { tradeIdentityKey: null },
-        { tradeIdentityKey: '' },
-      ],
-    },
-  }))
-  const tradesMissingTypedTimes = await withRetry(() => prisma.trade.count({
-    where: {
-      OR: [
-        { entryTime: null },
-        { exitTime: null },
-      ],
-    },
-  }))
-  const tradesMissingTypedPrices = await withRetry(() => prisma.trade.count({
-    where: {
-      OR: [
-        { entryPriceValue: null },
-        { closePriceValue: null },
-      ],
-    },
-  }))
-  const tradesMissingChartLinksList = await withRetry(() => prisma.trade.count({
-    where: {
-      chartLinksList: {
-        isEmpty: true,
-      },
-      chartLinks: {
-        not: null,
-      },
-    },
-  }))
-  const tradesWithoutExecutions = await withRetry(() => prisma.trade.count({
-    where: {
-      executions: {
-        none: {},
-      },
-    },
-  }))
-  const invalidEmotionNotes = await withRetry(() => prisma.dailyNote.count({
-    where: {
-      emotion: {
-        notIn: [
+  const usersMissingSettingsRes = await withRetry(() => db.execute(sql`
+    SELECT COUNT(*)::int AS count FROM "User" u LEFT JOIN "UserSettings" s ON u.id = s."userId" WHERE s."userId" IS NULL
+  `))
+  const usersMissingSettings = Number((usersMissingSettingsRes as any)[0]?.count || 0)
+
+  const phasesMissingAccountSizeRes = await withRetry(() => db.select({ count: sql`count(*)` }).from(schema.PhaseAccount).where(isNull(schema.PhaseAccount.accountSize)))
+  const phasesMissingAccountSize = Number((phasesMissingAccountSizeRes as any)[0]?.count || 0)
+
+  const tradesMissingIdentityRes = await withRetry(() => db.select({ count: sql`count(*)` }).from(schema.Trade).where(or(isNull(schema.Trade.tradeIdentityKey), eq(schema.Trade.tradeIdentityKey, ''))))
+  const tradesMissingIdentity = Number((tradesMissingIdentityRes as any)[0]?.count || 0)
+
+  const tradesMissingTypedTimesRes = await withRetry(() => db.select({ count: sql`count(*)` }).from(schema.Trade).where(or(isNull(schema.Trade.entryTime), isNull(schema.Trade.exitTime))))
+  const tradesMissingTypedTimes = Number((tradesMissingTypedTimesRes as any)[0]?.count || 0)
+
+  const tradesMissingTypedPricesRes = await withRetry(() => db.select({ count: sql`count(*)` }).from(schema.Trade).where(or(isNull(schema.Trade.entryPriceValue), isNull(schema.Trade.closePriceValue))))
+  const tradesMissingTypedPrices = Number((tradesMissingTypedPricesRes as any)[0]?.count || 0)
+
+  const tradesMissingChartLinksListRes = await withRetry(() => db.execute(sql`
+    SELECT COUNT(*)::int AS count FROM "Trade" WHERE (cardinality("chartLinksList") = 0 OR "chartLinksList" IS NULL) AND "chartLinks" IS NOT NULL
+  `))
+  const tradesMissingChartLinksList = Number((tradesMissingChartLinksListRes as any)[0]?.count || 0)
+
+  const tradesWithoutExecutionsRes = await withRetry(() => db.execute(sql`
+    SELECT COUNT(*)::int AS count FROM "Trade" t WHERE NOT EXISTS (SELECT 1 FROM "TradeExecution" e WHERE e."tradeId" = t.id)
+  `))
+  const tradesWithoutExecutions = Number((tradesWithoutExecutionsRes as any)[0]?.count || 0)
+
+  const invalidEmotionNotesRes = await withRetry(() => db.select({ count: sql`count(*)` }).from(schema.DailyNote).where(notInArray(schema.DailyNote.emotion, [
           'confident',
           'anxious',
           'focused',
@@ -200,10 +169,8 @@ async function loadAuditSnapshot(): Promise<AuditSnapshot> {
           'excited',
           'stressed',
           'relaxed',
-        ],
-      },
-    },
-  }))
+        ] as any)))
+  const invalidEmotionNotes = Number((invalidEmotionNotesRes as any)[0]?.count || 0)
 
   return {
     tradesWithInvalidUserReference,
@@ -227,7 +194,7 @@ async function backfillTradesAndExecutions() {
   let resolvedIdentityCollisions = 0
 
   while (true) {
-    const candidateIds = await withRetry(() => prisma.$queryRawUnsafe<Array<{ id: string }>>(`
+    const candidateIdsRes = await withRetry(() => db.execute(sql.raw(`
       SELECT t."id"
       FROM "Trade" t
       LEFT JOIN "User" u ON u."id" = t."userId"
@@ -252,28 +219,26 @@ async function backfillTradesAndExecutions() {
         )
       ORDER BY t."id" ASC
       LIMIT ${BATCH_SIZE}
-    `))
+    `)))
+    
+    const candidateIds = candidateIdsRes as any[]
 
     if (candidateIds.length === 0) break
 
-    const trades = await withRetry(() => prisma.trade.findMany({
-      where: {
-        id: {
-          in: candidateIds.map((row) => row.id),
-        },
-      },
-      orderBy: { id: 'asc' },
-      include: {
+    const trades = await withRetry(() => db.query.Trade.findMany({
+      where: (table, { inArray }) => inArray(table.id, candidateIds.map((row) => row.id)),
+      orderBy: (table, { asc }) => asc(table.id),
+      with: {
         executions: {
-          select: { id: true },
+          columns: { id: true },
         },
         Account: {
-          select: { userId: true },
+          columns: { userId: true },
         },
         PhaseAccount: {
-          select: {
+          with: {
             MasterAccount: {
-              select: { userId: true },
+              columns: { userId: true },
             },
           },
         },
@@ -320,23 +285,16 @@ async function backfillTradesAndExecutions() {
         }
 
         try {
-          await withRetry(() => prisma.trade.update({
-            where: { id: trade.id },
-            data: updateData,
-          }))
-        } catch (error) {
+          await withRetry(() => db.update(schema.Trade).set(updateData).where(eq(schema.Trade.id, trade.id)))
+        } catch (error: any) {
           if (
-            error instanceof Prisma.PrismaClientKnownRequestError &&
-            error.code === 'P2002'
+            error.code === '23505'
           ) {
             resolvedIdentityCollisions += 1
-            await withRetry(() => prisma.trade.update({
-              where: { id: trade.id },
-              data: {
+            await withRetry(() => db.update(schema.Trade).set({
                 ...updateData,
                 tradeIdentityKey: `${prepared.tradeIdentityKey}|legacy|${trade.id}`,
-              },
-            }))
+              }).where(eq(schema.Trade.id, trade.id)))
           } else {
             throw error
           }
@@ -354,10 +312,7 @@ async function backfillTradesAndExecutions() {
       if (!trade.executions || trade.executions.length === 0) {
         const executionRows = buildSyntheticExecutionsFromTrade(prepared as any)
         if (APPLY) {
-          await withRetry(() => prisma.tradeExecution.createMany({
-            data: executionRows as any,
-            skipDuplicates: true,
-          }))
+          await withRetry(() => db.insert(schema.TradeExecution).values(executionRows as any).onConflictDoNothing())
         }
         createdExecutions += executionRows.length
       }
@@ -383,7 +338,7 @@ async function backfillTradesAndExecutions() {
 }
 
 async function main() {
-  await withRetry(() => prisma.$queryRawUnsafe('select 1'), 8)
+  await withRetry(() => db.execute(sql`select 1`), 8)
 
   const auditBefore = await loadAuditSnapshot()
   const needsWork = Object.values(auditBefore).some((count) => count > 0)
@@ -417,7 +372,6 @@ async function main() {
 main()
   .catch((error) => {
     if (
-      error instanceof Prisma.PrismaClientInitializationError ||
       (error instanceof Error && error.message.includes("Can't reach database server"))
     ) {
       console.error('Trade-core backfill could not connect to the database. Check DATABASE_URL/network access and try again.')
@@ -427,5 +381,5 @@ main()
     process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect()
+    process.exit(0)
   })

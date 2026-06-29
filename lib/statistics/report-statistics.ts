@@ -11,7 +11,9 @@
  * Now they run server-side in a single pass and return pre-computed DTOs.
  */
 
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import { Trade, TradingModel } from '@/lib/db/schema'
+import { eq, and, or, inArray, gte, lte, isNull, asc } from 'drizzle-orm'
 import { classifyTrade } from '@/lib/utils'
 import { getTradingSession } from '@/lib/time-utils'
 import { groupTradesByExecution } from '@/lib/utils'
@@ -33,12 +35,6 @@ import {
 } from '@/lib/math/performance-metrics'
 
 export { calculateTradeRMultiple as calculateRMultiple }
-
-// Moved to @/lib/math/performance-metrics.ts
-
-// ===========================================
-// TYPES (Report-specific DTOs)
-// ===========================================
 
 export interface TradingActivityDTO {
   totalTrades: number
@@ -131,113 +127,95 @@ export interface ReportStatsFilters {
   ruleBroken?: string
 }
 
-// ===========================================
-// CORE COMPUTATION
-// ===========================================
-
 export async function calculateReportStatistics(
   filters: ReportStatsFilters
 ): Promise<ReportStatsResponse> {
   const { userId, accountNumbers, dateFrom, dateTo, accountId } = filters
   const requestedOutcome = filters.outcome && filters.outcome !== 'all' ? filters.outcome : null
 
-  // Build Prisma where clause — all filtering done server-side
-  const whereClause: any = { userId }
+  const conditions = [eq(Trade.userId, userId)]
 
   if (accountId) {
-    whereClause.accountId = accountId
+    conditions.push(eq(Trade.accountId, accountId))
   }
 
   if (accountNumbers && accountNumbers.length > 0) {
-    whereClause.accountNumber = { in: accountNumbers }
+    conditions.push(inArray(Trade.accountNumber, accountNumbers))
   }
 
-  // entryDate is String in schema — compare as ISO strings (not Date objects)
-  // Reports UI sends ISO via toISOString(). We preserve full timestamps to match stored values.
   if (dateFrom || dateTo) {
-    whereClause.entryDate = {}
     if (dateFrom) {
-      whereClause.entryDate.gte = dateFrom.includes('T') ? dateFrom : `${dateFrom}T00:00:00.000Z`
+      conditions.push(gte(Trade.entryDate, dateFrom.includes('T') ? dateFrom : `${dateFrom}T00:00:00.000Z`))
     }
     if (dateTo) {
-      whereClause.entryDate.lte = dateTo.includes('T') ? dateTo : `${dateTo}T23:59:59.999Z`
+      conditions.push(lte(Trade.entryDate, dateTo.includes('T') ? dateTo : `${dateTo}T23:59:59.999Z`))
     }
   }
 
   if (filters.symbol && filters.symbol !== 'all') {
-    whereClause.OR = [
-      { symbol: filters.symbol },
-      { instrument: filters.symbol }
-    ]
+    conditions.push(or(eq(Trade.symbol, filters.symbol), eq(Trade.instrument, filters.symbol)) as any)
   }
 
   if (requestedOutcome && !['WIN', 'LOSS', 'BREAKEVEN'].includes(requestedOutcome)) {
-    whereClause.outcome = requestedOutcome
+    conditions.push(eq(Trade.outcome, requestedOutcome as any))
   }
 
   if (filters.strategy && filters.strategy !== 'all') {
     if (filters.strategy === 'unassigned') {
-      whereClause.modelId = null
+      conditions.push(isNull(Trade.modelId))
     } else {
-      whereClause.modelId = filters.strategy
+      conditions.push(eq(Trade.modelId, filters.strategy))
     }
   }
 
   if (filters.ruleBroken && filters.ruleBroken !== 'all') {
-    whereClause.ruleBroken = filters.ruleBroken === 'broken'
+    conditions.push(eq(Trade.ruleBroken, filters.ruleBroken === 'broken'))
   }
 
-  // Fetch trades with fields needed for computations + spreadsheet display
-  // Fetch filter options separately to ensure they are always populated regardless of current filters
   const [rawTrades, tradingModels, allPossibleSymbols, breakEvenThreshold] = await Promise.all([
-    prisma.trade.findMany({
-      where: whereClause,
-      select: {
-        id: true,
-        entryId: true,
-        entryDate: true,
-        closeDate: true,
-        closePrice: true,
-        instrument: true,
-        symbol: true,
-        side: true,
-        pnl: true,
-        commission: true,
-        quantity: true,
-        entryPrice: true,
-        stopLoss: true,
-        takeProfit: true,
-        groupId: true,
-        accountNumber: true,
-        accountId: true,
-        phaseAccountId: true,
-        timeInPosition: true,
-        outcome: true,
-        modelId: true,
-        ruleBroken: true,
-      },
-      orderBy: { entryDate: 'asc' },
-    }),
-    prisma.tradingModel.findMany({
-      where: { userId },
-      select: { id: true, name: true },
-      orderBy: { name: 'asc' },
-    }),
-    prisma.trade.findMany({
-      where: {
-        userId,
-        // When fetching options, we only filter by account if one is selected, 
-        // ensuring the list adapts to the selected account but not the date range.
-        ...(accountId && accountId !== 'all' ? { accountId } : {}),
-        ...(accountNumbers && accountNumbers.length > 0 ? { accountNumber: { in: accountNumbers } } : {})
-      },
-      select: { symbol: true, instrument: true },
-    }),
+    db.select({
+      id: Trade.id,
+      entryId: Trade.entryId,
+      entryDate: Trade.entryDate,
+      closeDate: Trade.closeDate,
+      closePrice: Trade.closePrice,
+      instrument: Trade.instrument,
+      symbol: Trade.symbol,
+      side: Trade.side,
+      pnl: Trade.pnl,
+      commission: Trade.commission,
+      quantity: Trade.quantity,
+      entryPrice: Trade.entryPrice,
+      stopLoss: Trade.stopLoss,
+      takeProfit: Trade.takeProfit,
+      groupId: Trade.groupId,
+      accountNumber: Trade.accountNumber,
+      accountId: Trade.accountId,
+      phaseAccountId: Trade.phaseAccountId,
+      timeInPosition: Trade.timeInPosition,
+      outcome: Trade.outcome,
+      modelId: Trade.modelId,
+      ruleBroken: Trade.ruleBroken,
+    })
+      .from(Trade)
+      .where(and(...conditions))
+      .orderBy(asc(Trade.entryDate)),
+    db.select({ id: TradingModel.id, name: TradingModel.name })
+      .from(TradingModel)
+      .where(eq(TradingModel.userId, userId))
+      .orderBy(asc(TradingModel.name)),
+    db.select({ symbol: Trade.symbol, instrument: Trade.instrument })
+      .from(Trade)
+      .where(
+        and(
+          eq(Trade.userId, userId),
+          accountId && accountId !== 'all' ? eq(Trade.accountId, accountId) : undefined,
+          accountNumbers && accountNumbers.length > 0 ? inArray(Trade.accountNumber, accountNumbers) : undefined
+        )
+      ),
     getRuntimeBreakEvenThreshold(userId),
   ])
 
-  // Extract unique symbols from the separate query for filter options
-  // Extract unique symbols from the separate query for filter options
   // Use a Case-Insensitive Set to deduplicate instrument vs symbol
   const symbols = [...new Set(
     allPossibleSymbols.map(t => (t.instrument || t.symbol || '').trim())
@@ -245,7 +223,6 @@ export async function calculateReportStatistics(
   )].sort() as string[]
   const strategies = tradingModels.map(m => ({ id: m.id, name: m.name }))
 
-  // Group by execution for accurate counting
   const trades = groupTradesByExecution(rawTrades as any[]) as any[]
 
   // Session filter (needs to be done post-query since it's derived from entryDate)
@@ -277,7 +254,6 @@ export async function calculateReportStatistics(
     }
   }
 
-  // Single-pass computation for all metrics
   const result = computeAllMetrics(filteredTrades, dateFrom, dateTo, breakEvenThreshold)
 
   return {
@@ -311,10 +287,6 @@ function buildFilterOptions(symbols: string[], strategies: Array<{ id: string; n
   }
 }
 
-
-// ===========================================
-// ALL METRICS IN OPTIMIZED PASSES
-// ===========================================
 
 function computeAllMetrics(
   trades: any[],
@@ -447,10 +419,10 @@ function computeAllMetrics(
     // Trading days + day-of-week tracking
     if (trade.entryDate) {
       const d = new Date(trade.entryDate)
-      const dateStr = d.toISOString().split('T')[0]
+      const dateStr = d.toISOString().split('T')[0] || ''
       tradeDates.add(dateStr)
 
-      const dayName = dayNames[d.getDay()]
+      const dayName = dayNames[d.getDay()] || 'Unknown'
       dayTradeCount[dayName] = (dayTradeCount[dayName] || 0) + 1
       dayPnL[dayName] = (dayPnL[dayName] || 0) + netPnL
       
@@ -628,7 +600,7 @@ function computeAllMetrics(
       equityCurve,
       outcomeDistribution: outcomeDistribution.filter(d => d.value > 0),
       dayOfWeekPerformance: [1, 2, 3, 4, 5, 0, 6].map(dayIdx => {
-        const day = dayNames[dayIdx]
+        const day = dayNames[dayIdx] || 'Unknown'
         return {
           name: day.substring(0, 3),
           Win: Number((dayWinPnL[day] || 0).toFixed(2)),

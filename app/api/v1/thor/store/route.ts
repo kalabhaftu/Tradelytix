@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Trade } from '@prisma/client'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client';
+import * as schema from '@/lib/db/schema';
 import { saveTradesAction } from '@/server/database';
+import { eq, and, gte, lte, desc, count } from 'drizzle-orm';
+import { logger } from '@/lib/logger';
 
 // Common authentication function to use across all methods
 async function authenticateRequest(req: NextRequest) {
@@ -21,10 +23,8 @@ async function authenticateRequest(req: NextRequest) {
   
   try {
     // Verify the token by finding the user
-    const user = await prisma.user.findFirst({
-      where: {
-        thorToken: token
-      }
+    const user = await db.query.User.findFirst({
+      where: (table, { eq }) => eq(table.thorToken, token)
     });
     
     if (!user) {
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     const data: ThorRequest = await req.json();
     
     // Transform the data to match the Trade schema
-    const trades: Partial<Trade>[] = data.dates.flatMap(dateData => 
+    const trades: any[] = data.dates.flatMap(dateData => 
       dateData.trades.map(trade => {
         const entryTime = new Date(trade.entry_time)
         const exitTime = new Date(trade.exit_time)
@@ -119,9 +119,8 @@ export async function POST(req: NextRequest) {
       })
     )
 
-    const result = await saveTradesAction(trades as Trade[])
+    const result = await saveTradesAction(trades as any[])
 
-    // Handle duplicate trades as success, but return errors for other cases
     if (result.error && result.error !== 'DUPLICATE_TRADES') {
       return NextResponse.json(
         { error: result.error, details: result.details },
@@ -135,7 +134,7 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[thor/store] Error processing request:', error)
+    logger.error('[thor/store] Error processing request:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -172,38 +171,33 @@ export async function GET(req: NextRequest) {
     const fromDate = searchParams.get('from');
     const toDate = searchParams.get('to');
     
-    // Build the query
-    const query: any = {
-      where: {
-        userId: user.id,
-        accountNumber: accountNumber
-      },
-      orderBy: {
-        entryDate: 'desc' as const
-      },
-      take: limit,
-      skip: offset
-    };
+    // Build conditions
+    const conditions = [
+      eq(schema.Trade.userId, user.id),
+      eq(schema.Trade.accountNumber, accountNumber)
+    ];
     
-    if (fromDate || toDate) {
-      query.where.entryDate = {};
-      
-      if (fromDate) {
-        query.where.entryDate.gte = new Date(fromDate);
-      }
-      
-      if (toDate) {
-        query.where.entryDate.lte = new Date(toDate);
-      }
+    if (fromDate) {
+      conditions.push(gte(schema.Trade.entryDate, new Date(fromDate).toISOString()));
+    }
+    
+    if (toDate) {
+      conditions.push(lte(schema.Trade.entryDate, new Date(toDate).toISOString()));
     }
     
     // Get trades
-    const trades = await prisma.trade.findMany(query);
+    const trades = await db.query.Trade.findMany({
+      where: (table, { and }) => and(...conditions),
+      orderBy: (table, { desc }) => [desc(table.entryDate)],
+      limit,
+      offset
+    });
     
     // Get total count for pagination
-    const totalCount = await prisma.trade.count({
-      where: query.where
-    });
+    const totalCountResult = await db.select({ count: count() })
+      .from(schema.Trade)
+      .where(and(...conditions));
+    const totalCount = totalCountResult[0]?.count || 0;
     
     return NextResponse.json({ 
       success: true, 
@@ -218,7 +212,7 @@ export async function GET(req: NextRequest) {
     }, { status: 200 });
     
   } catch (error) {
-    console.error('[thor/store] Error retrieving trades:', error);
+    logger.error('[thor/store] Error retrieving trades:', error);
     return NextResponse.json({ 
       error: 'Failed to retrieve trades', 
       details: error instanceof Error ? error.message : 'Unknown error' 
@@ -251,20 +245,20 @@ export async function DELETE(req: NextRequest) {
     }
     
     // Delete trades for this user and specific account
-    const result = await prisma.trade.deleteMany({
-      where: {
-        userId: user.id,
-        accountNumber: accountNumber
-      }
-    });
+    const result = await db.delete(schema.Trade)
+      .where(and(
+        eq(schema.Trade.userId, user.id),
+        eq(schema.Trade.accountNumber, accountNumber)
+      ))
+      .returning();
     
     return NextResponse.json({
       success: true,
-      message: `${result.count} trades deleted successfully for account ${accountNumber}`
+      message: `${result.length} trades deleted successfully for account ${accountNumber}`
     }, { status: 200 });
     
   } catch (error) {
-    console.error('[thor/store] Error deleting trades:', error);
+    logger.error('[thor/store] Error deleting trades:', error);
     return NextResponse.json({ 
       error: 'Failed to delete trades', 
       details: error instanceof Error ? error.message : 'Unknown error' 

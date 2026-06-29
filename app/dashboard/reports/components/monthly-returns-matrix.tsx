@@ -101,11 +101,11 @@ export function MonthlyReturnsMatrix({ equityCurve }: MonthlyReturnsMatrixProps)
                 <td className="text-center py-2 pl-3">
                   <div className={cn(
                     "rounded-lg px-2 py-1.5 text-[11px] font-black font-mono border",
-                    matrix[year].total >= 0
+                    (matrix[year]?.total ?? 0) >= 0
                       ? "text-long bg-long/10 border-long/20"
                       : "text-short bg-short/10 border-short/20"
                   )}>
-                    {matrix[year].total >= 0 ? '+' : ''}{formatCurrency(matrix[year].total)}
+                    {(matrix[year]?.total ?? 0) >= 0 ? '+' : ''}{formatCurrency(matrix[year]?.total ?? 0)}
                   </div>
                 </td>
               </tr>

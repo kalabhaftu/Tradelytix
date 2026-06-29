@@ -1,7 +1,8 @@
 'use client'
 
 import React, { memo, useMemo } from 'react'
-import { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import { Badge } from "@/components/ui/badge"
 import { cn, formatQuantity, classifyTrade } from "@/lib/utils"
 import { formatTradePrice } from '@/lib/trading/precision'

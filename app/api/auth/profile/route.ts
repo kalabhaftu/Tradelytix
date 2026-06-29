@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { logActivity, getClientIp } from '@/lib/activity-logger'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
@@ -13,6 +14,7 @@ import {
   normalizeAiSettings,
   pickSettingsPatch,
 } from '@/lib/user-settings'
+import { eq } from 'drizzle-orm'
 
 // GET /api/auth/profile - Get user profile information
 export async function GET() {
@@ -26,17 +28,10 @@ export async function GET() {
     }
     const internalUserId = identity.internalUserId
 
-    const user = await prisma.user.findUnique({
-      where: { id: internalUserId },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        onboardingStatus: true,
-        settings: {
-          select: USER_SETTINGS_SELECT
-        }
+    const user = await db.query.User.findFirst({
+      where: (table, { eq }) => eq(table.id, internalUserId),
+      with: {
+        settings: true
       }
     })
 
@@ -142,17 +137,10 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Build update data — only include fields that were sent
-    const currentUser = await prisma.user.findUnique({
-      where: { id: internalUserId },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        onboardingStatus: true,
-        settings: {
-          select: USER_SETTINGS_SELECT
-        }
+    const currentUser = await db.query.User.findFirst({
+      where: (table, { eq }) => eq(table.id, internalUserId),
+      with: {
+        settings: true
       }
     })
 
@@ -195,32 +183,27 @@ export async function PATCH(request: NextRequest) {
         : undefined,
     })
 
-    const updated = await prisma.$transaction(async (tx) => {
-      const baseUser = await tx.user.update({
-        where: { id: internalUserId },
-        data: userUpdateData,
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          onboardingStatus: true,
-        }
-      })
+    const updated = await db.transaction(async (tx) => {
+      const baseUser = (await tx.update(schema.User).set(userUpdateData).where(eq(schema.User.id, internalUserId)).returning({
+        id: schema.User.id,
+        email: schema.User.email,
+        firstName: schema.User.firstName,
+        lastName: schema.User.lastName,
+        onboardingStatus: schema.User.onboardingStatus,
+      }))[0]
 
       const effectiveSettings = mergeUserSettings({}, {
         ...(currentUser.settings ?? {}),
         ...settingsPatch,
       })
 
-      const storedSettings = await tx.userSettings.upsert({
-        where: { userId: internalUserId },
-        create: {
-          userId: internalUserId,
-          ...extractUserSettingsWriteData(effectiveSettings),
-        },
-        update: buildUserSettingsUpdateData(settingsPatch),
-      })
+      const storedSettings = (await tx.insert(schema.UserSettings).values({
+        userId: internalUserId,
+        ...extractUserSettingsWriteData(effectiveSettings),
+      }).onConflictDoUpdate({
+        target: schema.UserSettings.userId,
+        set: buildUserSettingsUpdateData(settingsPatch),
+      }).returning())[0]
 
       return { baseUser, storedSettings }
     })

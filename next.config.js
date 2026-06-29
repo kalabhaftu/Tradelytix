@@ -14,6 +14,7 @@ const baseExperimental = {
   serverActions: {
     bodySizeLimit: '10mb', // Increased from default 1MB to 10MB
   },
+  typedRoutes: true,
   // Note: PPR requires Next.js canary. Uncomment when upgrading:
   // ppr: 'incremental',
 }

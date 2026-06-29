@@ -49,7 +49,6 @@ interface LiveAccountData {
   createdAt: string
 }
 
-// --- Account Trades Tab ---
 function AccountTradesTab({ accountNumber, trades }: { accountNumber: string; trades: any[] }) {
   const accountTrades = useMemo(() => {
     return trades
@@ -153,7 +152,6 @@ function AccountTradesTab({ accountNumber, trades }: { accountNumber: string; tr
   )
 }
 
-// --- Account Analytics Tab ---
 function AccountAnalyticsTab({ accountNumber, trades }: { accountNumber: string; trades: any[] }) {
   const accountTrades = useMemo(() => {
     return trades.filter((t: any) => t.accountNumber === accountNumber)
@@ -252,7 +250,6 @@ export default function LiveAccountDetailPage() {
     userId: user?.id,
     enabled: !!user?.id && !!accountId,
     onAccountChange: (change) => {
-      // Check if this change affects the current account
       const changedAccountId = (change.newRecord?.id || change.oldRecord?.id) as string | undefined
       if (changedAccountId === accountId) {
         // Refresh account data immediately

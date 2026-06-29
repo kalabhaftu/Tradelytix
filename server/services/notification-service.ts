@@ -1,5 +1,8 @@
-import { prisma } from '@/lib/prisma'
-import { NotificationType } from '@prisma/client'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq, and } from 'drizzle-orm'
+import { NotificationType } from '@/lib/db/schema'
+
 import { revalidateTag } from 'next/cache'
 
 export type NotificationData = {
@@ -18,56 +21,50 @@ export class NotificationService {
         const { userId, type, title, message, data, actionRequired, referenceId, invalidationKey } = payload
 
         if (invalidationKey) {
-            const existing = await prisma.notification.findFirst({
-                where: {
-                    userId,
-                    isRead: false,
-                    invalidationKey,
-                }
+            const existing = await db.query.Notification.findFirst({
+                where: (table, { eq, and }) => and(
+                    eq(table.userId, userId),
+                    eq(table.isRead, false),
+                    eq(table.invalidationKey, invalidationKey)
+                )
             })
 
             if (existing) {
-                const updated = await prisma.notification.update({
-                    where: { id: existing.id },
-                    data: {
-                        title,
-                        message,
-                        type,
-                        actionRequired: actionRequired ?? existing.actionRequired,
-                        invalidationKey,
-                        data: { ...(existing.data as object || {}), ...data, referenceId },
-                    }
-                })
-                revalidateTag(`notifications-${userId}`, 'max')
+                const updated = await db.update(schema.Notification).set({
+                    title,
+                    message,
+                    type,
+                    actionRequired: actionRequired ?? existing.actionRequired,
+                    invalidationKey,
+                    updatedAt: new Date(),
+                    data: { ...(existing.data as object || {}), ...data, referenceId },
+                }).where(eq(schema.Notification.id, existing.id)).returning().then(r => r[0]);
+                revalidateTag(`notifications-${userId}`)
                 return updated
             }
         }
 
-        const notification = await prisma.notification.create({
-            data: {
-                userId,
-                type,
-                title,
-                message,
-                actionRequired: actionRequired ?? false,
-                invalidationKey,
-                data: { ...data, referenceId }
-            }
-        })
+        const notification = await db.insert(schema.Notification).values({
+            userId,
+            type,
+            title,
+            message,
+            actionRequired: actionRequired ?? false,
+            invalidationKey,
+            updatedAt: new Date(),
+            data: { ...data, referenceId }
+        }).returning().then(r => r[0]);
 
-        revalidateTag(`notifications-${userId}`, 'max')
+        revalidateTag(`notifications-${userId}`)
         return notification
     }
 
     static async bulkInvalidate(userId: string, type: NotificationType) {
-        await prisma.notification.updateMany({
-            where: {
-                userId,
-                type,
-                isRead: false
-            },
-            data: { isRead: true }
-        })
-        revalidateTag(`notifications-${userId}`, 'max')
+        await db.update(schema.Notification).set({ isRead: true, updatedAt: new Date() }).where(and(
+            eq(schema.Notification.userId, userId),
+            eq(schema.Notification.type, type),
+            eq(schema.Notification.isRead, false)
+        ));
+        revalidateTag(`notifications-${userId}`)
     }
 }

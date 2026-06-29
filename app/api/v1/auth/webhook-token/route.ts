@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { randomUUID } from 'crypto'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
@@ -14,9 +15,8 @@ export async function GET(req: NextRequest) {
   try {
     const { internalUserId } = await getResolvedUserIdentity()
 
-    const settings = await prisma.userSettings.findUnique({
-      where: { userId: internalUserId },
-      select: { webhookToken: true },
+    const settings = await db.query.UserSettings.findFirst({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
     })
 
     const token = settings?.webhookToken ?? null
@@ -38,11 +38,13 @@ export async function POST(req: NextRequest) {
     const { internalUserId } = await getResolvedUserIdentity()
     const token = randomUUID()
 
-    await prisma.userSettings.upsert({
-      where: { userId: internalUserId },
-      create: { userId: internalUserId, webhookToken: token },
-      update: { webhookToken: token },
-    })
+    await db
+      .insert(schema.UserSettings)
+      .values({ userId: internalUserId, webhookToken: token })
+      .onConflictDoUpdate({
+        target: schema.UserSettings.userId,
+        set: { webhookToken: token },
+      })
 
     return NextResponse.json({ token })
   } catch (err) {
@@ -50,4 +52,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to regenerate webhook token' }, { status: 500 })
   }
 }
-

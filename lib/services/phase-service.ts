@@ -1,4 +1,6 @@
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import { PhaseAccount, MasterAccount, BreachRecord } from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
 import { PhaseEvaluationEngine } from '@/lib/prop-firm/phase-evaluation-engine'
 
 /**
@@ -16,17 +18,11 @@ export async function evaluateAllActivePhases() {
   }
 
   try {
-    // Get all active phase accounts
-    const activePhases = await prisma.phaseAccount.findMany({
-      where: {
-        status: 'active',
+    const activePhasesRaw = await db.query.PhaseAccount.findMany({
+      where: eq(PhaseAccount.status, 'active'),
+      with: {
         MasterAccount: {
-          status: 'active'
-        }
-      },
-      include: {
-        MasterAccount: {
-          select: {
+          columns: {
             id: true,
             accountName: true,
             status: true
@@ -34,6 +30,9 @@ export async function evaluateAllActivePhases() {
         }
       }
     })
+    
+    // Filter to those whose MasterAccount is also active
+    const activePhases = activePhasesRaw.filter(p => p.MasterAccount?.status === 'active')
 
     results.totalPhases = activePhases.length
 
@@ -49,33 +48,32 @@ export async function evaluateAllActivePhases() {
 
         // If account failed, mark phase and master account as failed, and record breach
         if (evaluation.isFailed) {
-          await prisma.$transaction([
-            prisma.phaseAccount.update({
-              where: { id: phase.id },
-              data: {
+          await db.transaction(async (tx) => {
+            await tx.update(PhaseAccount)
+              .set({
                 status: 'failed',
                 endDate: new Date()
-              }
-            }),
-            prisma.masterAccount.update({
-              where: { id: phase.masterAccountId },
-              data: { status: 'failed' }
-            }),
-            prisma.breachRecord.create({
-              data: {
-                id: crypto.randomUUID(),
-                phaseAccountId: phase.id,
-                breachType: evaluation.drawdown.breachType || 'max_drawdown',
-                breachAmount: evaluation.drawdown.breachAmount || 0,
-                breachTime: new Date(),
-                currentEquity: evaluation.drawdown.currentEquity,
-                accountSize: evaluation.drawdown.dailyStartBalance || 0,
-                dailyStartBalance: evaluation.drawdown.dailyStartBalance,
-                highWaterMark: evaluation.drawdown.highWaterMark,
-                notes: `Auto-detected breach during background evaluation. ${evaluation.drawdown.breachType?.replace('_', ' ')} exceeded by $${evaluation.drawdown.breachAmount?.toFixed(2)}`
-              }
+              })
+              .where(eq(PhaseAccount.id, phase.id))
+
+            await tx.update(MasterAccount)
+              .set({ status: 'failed' })
+              .where(eq(MasterAccount.id, phase.masterAccountId))
+
+            await tx.insert(BreachRecord).values({
+              id: crypto.randomUUID(),
+              phaseAccountId: phase.id,
+              breachType: evaluation.drawdown.breachType || 'max_drawdown',
+              breachAmount: evaluation.drawdown.breachAmount || 0,
+              breachTime: new Date(),
+              currentEquity: evaluation.drawdown.currentEquity,
+              accountSize: evaluation.drawdown.dailyStartBalance || 0,
+              dailyStartBalance: evaluation.drawdown.dailyStartBalance,
+              highWaterMark: evaluation.drawdown.highWaterMark,
+              notes: `Auto-detected breach during background evaluation. ${evaluation.drawdown.breachType?.replace('_', ' ')} exceeded by $${evaluation.drawdown.breachAmount?.toFixed(2)}`,
+              updatedAt: new Date()
             })
-          ])
+          })
 
           results.failed++
         }

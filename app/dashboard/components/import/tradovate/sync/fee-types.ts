@@ -1,4 +1,3 @@
-/** Fee type keys matching TradovateFillFee fields - shared with client components */
 export const TRADOVATE_FEE_TYPE_KEYS = [
   'commission',
   'exchangeFee',

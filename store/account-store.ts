@@ -1,6 +1,9 @@
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
-import { Account } from "@prisma/client"
+import { type InferSelectModel } from 'drizzle-orm'
+import { Account as schemaAccount } from '@/lib/db/schema'
+
+type Account = InferSelectModel<typeof schemaAccount>
 
 interface AccountStore {
   accounts: Account[]

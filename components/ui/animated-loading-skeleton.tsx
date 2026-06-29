@@ -50,7 +50,7 @@ const AnimatedLoadingSkeleton = () => {
             .sort(() => Math.random() - 0.5)
             .slice(0, numRandomCards)
 
-        shuffledPositions.push(shuffledPositions[0])
+        shuffledPositions.push(shuffledPositions[0]!)
 
         return {
             x: shuffledPositions.map(pos => pos.x),
@@ -117,7 +117,6 @@ const AnimatedLoadingSkeleton = () => {
             animate="visible"
         >
             <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-muted/50 to-muted p-8">
-                {/* Search icon animation */}
                 <motion.div
                     className="absolute z-10 pointer-events-none"
                     animate={controls}
@@ -144,7 +143,6 @@ const AnimatedLoadingSkeleton = () => {
                     </motion.div>
                 </motion.div>
 
-                {/* Skeleton cards grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[...Array(config.numCards)].map((_, i) => (
                         <motion.div

@@ -22,7 +22,8 @@ import {
   Trophy
 } from "lucide-react"
 import { toast } from "sonner"
-import { Notification } from '@prisma/client'
+import type { NotificationRow } from '@/lib/db/schema/users';
+
 import { clearAccountsCache } from '@/hooks/use-accounts'
 import { useData } from '@/context/data-provider'
 import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
@@ -30,7 +31,7 @@ import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
 interface PhaseTransitionApprovalDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  notification: Notification | null
+  notification: NotificationRow | null
   onComplete: () => void
 }
 
@@ -94,7 +95,6 @@ export function PhaseTransitionApprovalDialog({
     try {
       setIsSubmitting(true)
 
-      // Call the phase transition API
       const response = await fetch(`/api/v1/prop-firm/accounts/${notificationData.masterAccountId}/transition`, {
         method: 'POST',
         headers: {
@@ -127,7 +127,6 @@ export function PhaseTransitionApprovalDialog({
         duration: 5000
       })
 
-      // Clear all caches to force fresh data
       clearAccountsCache()
 
       // Clear localStorage caches that might contain stale data
@@ -137,7 +136,6 @@ export function PhaseTransitionApprovalDialog({
         // Ignore storage errors
       }
 
-      // Refresh data
       await refreshTrades()
 
       // Call onComplete callback - state is already reset, so callback sees clean state

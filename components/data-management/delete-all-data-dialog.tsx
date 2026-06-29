@@ -67,7 +67,6 @@ export function DeleteAllDataDialog({ open, onOpenChange }: DeleteAllDataDialogP
         throw new Error('Failed to generate backup')
       }
 
-      // Get the blob and download it
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -124,17 +123,14 @@ export function DeleteAllDataDialog({ open, onOpenChange }: DeleteAllDataDialogP
         description: 'Your account data has been permanently removed.'
       })
 
-      // Clear local storage
       try {
         localStorage.clear()
       } catch (e) {
         // Ignore storage errors
       }
 
-      // Close dialog and refresh
       handleClose()
 
-      // Force reload to reset all state
       window.location.href = '/dashboard'
 
     } catch (error) {

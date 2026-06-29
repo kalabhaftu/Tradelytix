@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { applyRateLimit, importLimiter } from '@/lib/rate-limiter'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 import { createTradeImportJob } from '@/server/trade-import-jobs'
 import { createErrorResponse } from '@/lib/api-response'
 import { z } from 'zod'
@@ -24,10 +24,10 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('Unauthorized', 401)
     }
 
-    const jobs = await prisma.importJob.findMany({
-      where: { userId: identity.internalUserId },
-      orderBy: { createdAt: 'desc' },
-      select: {
+    const jobs = await db.query.ImportJob.findMany({
+      where: (table, { eq }) => eq(table.userId, identity.internalUserId),
+      orderBy: (table, { desc }) => [desc(table.createdAt)],
+      columns: {
         id: true,
         status: true,
         stage: true,

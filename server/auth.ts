@@ -2,7 +2,22 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { prisma, safeDbOperation } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq, sql } from 'drizzle-orm'
+import logger from '@/lib/logger'
+
+export const safeDbOperation = async <T>(
+  operation: () => Promise<T>,
+  fallbackValue?: T
+): Promise<T | undefined> => {
+  try {
+    return await operation()
+  } catch (error) {
+    logger.error({ event: 'system_error', error: error }, 'Database operation failed:')
+    return fallbackValue
+  }
+}
 import { headers } from "next/headers"
 import { logActivity } from '@/lib/activity-logger'
 import { extractUserSettingsWriteData } from '@/lib/user-settings'
@@ -10,7 +25,6 @@ import { emailOtpLimiter, consumeRateLimitKey, getEmailRateLimitKey } from '@/li
 import { getSafeRedirectPath } from '@/lib/security/redirects'
 // Removed locales import - using plain English strings
 
-// Helper function to determine if we're in local development
 function isLocalDevelopment() {
   const isVercel = process.env.VERCEL === '1'
   return process.env.NODE_ENV === 'development' && !isVercel
@@ -41,7 +55,6 @@ export async function createClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  // Check if we have placeholder or missing values
   const hasPlaceholderValues = !supabaseUrl || !supabaseKey ||
     supabaseUrl.includes('[YOUR_PROJECT_REF]') ||
     supabaseKey.includes('your-anon-key') ||
@@ -50,7 +63,6 @@ export async function createClient() {
     supabaseUrl === 'https://your-project.supabase.co' ||
     supabaseKey === 'your-anon-key-here'
 
-  // Only throw in production mode
   if (hasPlaceholderValues && process.env.NODE_ENV === 'production') {
     throw new Error('Supabase configuration is incomplete. Please check your environment variables.')
   }
@@ -93,8 +105,7 @@ export async function signInWithDiscord(next: string | null = null) {
     },
   })
   if (data.url) {
-    // Before redirecting, ensure user is created/updated in Prisma database
-    redirect(data.url)
+      redirect(data.url)
   }
 }
 
@@ -140,24 +151,19 @@ export async function signInWithEmail(email: string, next: string | null = null)
   const websiteURL = await getWebsiteURL()
 
   const existingUser = await safeDbOperation(
-    () => prisma.user.findUnique({
-      where: { email: normalizedEmail }
+    () => db.query.User.findFirst({
+      where: (table, { eq }) => eq(table.email, normalizedEmail)
     }),
     null
   )
   const isExistingUser = !!existingUser
 
   if (isExistingUser) {
-    // For existing users in Prisma DB, send OTP (code) instead of magic link
     const { error } = await supabase.auth.signInWithOtp({
-      email: normalizedEmail,
-      options: {
-        emailRedirectTo: undefined, // Providing undefined forces OTP code
-      }
+      email: normalizedEmail
     })
 
     if (error) {
-      // Handle Supabase's built-in rate limiting
       if (error.status === 429 && (error.message.includes('rate limit') || error.code === 'over_email_send_rate_limit')) {
         return {
           error: 'Too many sign-in code requests. Please wait before trying again.',
@@ -167,7 +173,6 @@ export async function signInWithEmail(email: string, next: string | null = null)
         }
       }
 
-      // Return generic error result instead of exposing provider details
       return {
         error: 'Unable to send sign-in code. Please try again.',
         rateLimited: false,
@@ -178,12 +183,10 @@ export async function signInWithEmail(email: string, next: string | null = null)
 
     return { isExistingUser: true, emailSent: true }
   } else {
-    // For new users, use signUp with OTP
     const { error } = await supabase.auth.signUp({
       email: normalizedEmail,
       password: generateTemporaryPassword(),
       options: {
-        emailRedirectTo: undefined, // This forces OTP mode for new users
         data: {
           email: normalizedEmail,
         }
@@ -191,7 +194,6 @@ export async function signInWithEmail(email: string, next: string | null = null)
     })
 
     if (error) {
-      // Handle Supabase's built-in rate limiting
       if (error.status === 429 && (error.message.includes('rate limit') || error.code === 'over_email_send_rate_limit')) {
         return {
           error: 'Too many sign-in code requests. Please wait before trying again.',
@@ -201,7 +203,6 @@ export async function signInWithEmail(email: string, next: string | null = null)
         }
       }
 
-      // Return generic error result instead of exposing provider details
       return {
         error: 'Unable to send sign-in code. Please try again.',
         rateLimited: false,
@@ -214,10 +215,7 @@ export async function signInWithEmail(email: string, next: string | null = null)
   }
 }
 
-// Generate a cryptographically secure temporary password for signUp (user won't use this)
 function generateTemporaryPassword(): string {
-  // Use crypto.randomUUID() for secure random generation (built-in Node.js 15+)
-  // Format: Remove hyphens and add complexity requirement
   const uuid = crypto.randomUUID().replace(/-/g, '')
   return uuid.substring(0, 16) + 'A1!' // 16 chars + complexity
 }
@@ -279,8 +277,8 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
 
   try {
     const existingUserByAuthId = await safeDbOperation(
-      () => prisma.user.findUnique({
-        where: { auth_user_id: user.id },
+      () => db.query.User.findFirst({
+        where: (table, { eq }) => eq(table.auth_user_id, user.id),
       }),
       null
     )
@@ -288,7 +286,6 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
     const generatedNames = buildGeneratedNames(user)
     const shouldHydrateNames = shouldHydrateNamesFromProvider(user)
 
-    // If user exists by auth_user_id, update email and hydrate blank names if needed
     if (existingUserByAuthId) {
       const needsEmailUpdate = existingUserByAuthId.email !== user.email
       const shouldFillFirstName =
@@ -317,41 +314,36 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
 
         try {
           const updatedUser = await safeDbOperation(
-            () => prisma.$transaction(async (tx) => {
-              const updated = await tx.user.update({
-                where: {
-                  auth_user_id: user.id
-                },
-                data: updateData,
-              })
+            () => db.transaction(async (tx) => {
+              const updated = await tx.update(schema.User).set(updateData).where(eq(schema.User.auth_user_id, user.id)).returning().then(r => r[0]);
 
-              await tx.userSettings.upsert({
-                where: { userId: updated.id },
-                create: {
-                  userId: updated.id,
-                  ...extractUserSettingsWriteData(updated as any),
-                },
-                update: {},
-              })
+              if (!updated) throw new Error('Failed to update user');
 
-              // Ensure at least one account exists
-              const accountCount = await tx.account.count({ where: { userId: updated.id } })
-              const masterAccountCount = await tx.masterAccount.count({ where: { userId: updated.id } })
+              await tx.insert(schema.UserSettings).values({
+                userId: updated.id,
+                ...extractUserSettingsWriteData(updated as any),
+                updatedAt: new Date()
+              }).onConflictDoNothing();
+
+              const accountCountRes = await tx.select({ count: sql`count(*)` }).from(schema.Account).where(eq(schema.Account.userId, updated.id));
+              const accountCount = Number(accountCountRes[0]?.count || 0);
+              
+              const masterAccountCountRes = await tx.select({ count: sql`count(*)` }).from(schema.MasterAccount).where(eq(schema.MasterAccount.userId, updated.id));
+              const masterAccountCount = Number(masterAccountCountRes[0]?.count || 0);
               
               if (accountCount === 0 && masterAccountCount === 0) {
-                await tx.account.create({
-                  data: {
-                    id: crypto.randomUUID(),
-                    number: 'Default',
-                    name: 'Main Trading Account',
-                    startingBalance: 0,
-                    isConfigured: false,
-                    userId: updated.id
-                  }
-                })
+                await tx.insert(schema.Account).values({
+                  id: crypto.randomUUID(),
+                  number: 'Default',
+                  name: 'Main Trading Account',
+                  startingBalance: 0,
+                  isConfigured: false,
+                  userId: updated.id,
+                  updatedAt: new Date()
+                });
               }
 
-              return updated
+              return updated;
             }),
             existingUserByAuthId
           );
@@ -361,41 +353,36 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
         }
       }
       
-      // Even if no update was needed, ensure account exists
-      const accounts = await prisma.account.findFirst({ where: { userId: existingUserByAuthId.id } })
-      const masterAccounts = await prisma.masterAccount.findFirst({ where: { userId: existingUserByAuthId.id } })
+      const accounts = await db.query.Account.findFirst({ where: (table, { eq }) => eq(table.userId, existingUserByAuthId.id) });
+      const masterAccounts = await db.query.MasterAccount.findFirst({ where: (table, { eq }) => eq(table.userId, existingUserByAuthId.id) });
       
       if (!accounts && !masterAccounts) {
-        await prisma.account.create({
-          data: {
+        await db.insert(schema.Account).values({
             id: crypto.randomUUID(),
             number: 'Default',
             name: 'Main Trading Account',
             startingBalance: 0,
             isConfigured: false,
-            userId: existingUserByAuthId.id
-          }
-        })
+            userId: existingUserByAuthId.id,
+            updatedAt: new Date()
+        });
       }
 
       return JSON.parse(JSON.stringify(existingUserByAuthId));
     }
 
-    // If user doesn't exist by auth_user_id, check if email exists
     if (user.email) {
       const existingUserByEmail = await safeDbOperation(
-        () => prisma.user.findUnique({
-          where: { email: user.email! },
+        () => db.query.User.findFirst({
+          where: (table, { eq }) => eq(table.email, user.email!),
         }),
         null
       )
 
       if (existingUserByEmail && existingUserByEmail.auth_user_id !== user.id) {
         const relinkedUser = await safeDbOperation(
-          () => prisma.$transaction(async (tx) => {
-            const updated = await tx.user.update({
-              where: { email: user.email! },
-              data: {
+          () => db.transaction(async (tx) => {
+            const updated = await tx.update(schema.User).set({
                 id: user.id,
                 auth_user_id: user.id,
                 email: user.email || existingUserByEmail.email,
@@ -405,36 +392,35 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
                 lastName: hasStoredName(existingUserByEmail.lastName)
                   ? existingUserByEmail.lastName
                   : (shouldHydrateNames ? generatedNames.lastName : existingUserByEmail.lastName),
-              },
-            })
+              }).where(eq(schema.User.email, user.email!)).returning().then(r => r[0]);
 
-            await tx.userSettings.upsert({
-              where: { userId: updated.id },
-              create: {
+            if (!updated) throw new Error('Failed to update user');
+
+            await tx.insert(schema.UserSettings).values({
                 userId: updated.id,
                 ...extractUserSettingsWriteData(updated as any),
-              },
-              update: {},
-            })
+                updatedAt: new Date()
+              }).onConflictDoNothing();
 
-            // Ensure at least one account exists
-            const accountCount = await tx.account.count({ where: { userId: updated.id } })
-            const masterAccountCount = await tx.masterAccount.count({ where: { userId: updated.id } })
+              const accountCountRes = await tx.select({ count: sql`count(*)` }).from(schema.Account).where(eq(schema.Account.userId, updated.id));
+              const accountCount = Number(accountCountRes[0]?.count || 0);
+              
+              const masterAccountCountRes = await tx.select({ count: sql`count(*)` }).from(schema.MasterAccount).where(eq(schema.MasterAccount.userId, updated.id));
+            const masterAccountCount = Number(masterAccountCountRes[0]?.count || 0);
             
             if (accountCount === 0 && masterAccountCount === 0) {
-              await tx.account.create({
-                data: {
+              await tx.insert(schema.Account).values({
                   id: crypto.randomUUID(),
                   number: 'Default',
                   name: 'Main Trading Account',
                   startingBalance: 0,
                   isConfigured: false,
-                  userId: updated.id
-                }
-              })
+                  userId: updated.id,
+                  updatedAt: new Date()
+              });
             }
 
-            return updated
+            return updated;
           }),
           null
         )
@@ -459,41 +445,39 @@ export async function ensureUserInDatabase(user: SupabaseUser, locale?: string) 
       }
     }
 
-    // Create new user if no existing user found
     try {
       const newUser = await safeDbOperation(
-        () => prisma.$transaction(async (tx) => {
-          const created = await tx.user.create({
-            data: {
+        () => db.transaction(async (tx) => {
+          const created = await tx.insert(schema.User).values({
               auth_user_id: user.id,
               email: user.email || '',
               id: user.id,
               role: 'user',
               firstName: generatedNames.firstName,
               lastName: generatedNames.lastName
-            },
-          })
+          }).returning().then(r => r[0]);
 
-          await tx.userSettings.create({
-            data: {
+          if (!created) {
+            throw new Error('Failed to insert user record');
+          }
+
+          await tx.insert(schema.UserSettings).values({
               userId: created.id,
               ...extractUserSettingsWriteData(created as any),
-            }
-          })
+              updatedAt: new Date()
+          });
 
-          // Auto-assign a default trading account to the new user
-          await tx.account.create({
-            data: {
+      await tx.insert(schema.Account).values({
               id: crypto.randomUUID(),
               number: 'Default',
               name: 'Main Trading Account',
               startingBalance: 0,
               isConfigured: false,
-              userId: created.id
-            }
-          })
+              userId: created.id,
+              updatedAt: new Date()
+          });
 
-          return created
+          return created;
         }),
         null
       );
@@ -583,7 +567,6 @@ export async function verifyOtp(email: string, token: string, type: 'email' | 's
   try {
     const supabase = await createClient()
 
-    // Try to verify the OTP - Supabase will handle the type automatically
     const { data, error } = await supabase.auth.verifyOtp({
       email,
       token,
@@ -591,12 +574,10 @@ export async function verifyOtp(email: string, token: string, type: 'email' | 's
     })
 
     if (error) {
-      // Handle rate limiting specifically
       if (error.status === 429 || error.message?.includes('rate limit') || error.message?.includes('too many requests')) {
         throw new Error('Too many verification attempts. Please wait a moment before trying again.')
       }
 
-      // Only throw error for actual authentication failures
       if (error.status === 403 ||
         error.message.includes('expired') ||
         error.message.includes('invalid') ||
@@ -609,14 +590,13 @@ export async function verifyOtp(email: string, token: string, type: 'email' | 's
       }
     }
 
-    // If we have a user from Supabase, authentication was successful
     if (data?.user) {
       // After successful OTP verification, ensure user exists in database (if DB is available)
       try {
         // Check if user already exists in our database with this email
         const existingUser = await safeDbOperation(
-          () => prisma.user.findUnique({
-            where: { email: email }
+          () => db.query.User.findFirst({
+            where: (table, { eq }) => eq(table.email, email)
           }),
           null
         )
@@ -625,15 +605,11 @@ export async function verifyOtp(email: string, token: string, type: 'email' | 's
           // User exists with different auth ID - update the auth_user_id instead of creating conflict
           const newAuthId = data.user.id
           await safeDbOperation(
-            () => prisma.user.update({
-              where: { email: email },
-              data: { auth_user_id: newAuthId }
-            }),
+            () => db.update(schema.User).set({ auth_user_id: newAuthId }).where(eq(schema.User.email, email)),
             null
           )
         } else if (!existingUser) {
-          // New user, create in database
-          const locale = 'en' // Default locale
+        const locale = 'en'
           await ensureUserInDatabase(data.user, locale)
         }
 
@@ -644,7 +620,6 @@ export async function verifyOtp(email: string, token: string, type: 'email' | 's
 
       logActivity({ userId: data.user.id, action: 'USER_LOGIN', entity: 'Auth' })
 
-      // Return the successful authentication data
       return data
     } else {
       // No user data means authentication failed
@@ -683,7 +658,6 @@ export async function getUserId(): Promise<string> {
       }
     }
 
-    // First try to get user ID from middleware headers
     const userIdFromMiddleware = headersList.get('x-user-id')
     const authStatus = headersList.get('x-user-authenticated')
 
@@ -691,7 +665,6 @@ export async function getUserId(): Promise<string> {
       return userIdFromMiddleware
     }
 
-    // Check if middleware already detected auth failure
     if (authStatus === "unauthenticated") {
       const authError = headersList.get('x-auth-error')
       if (authError && authError.includes("timeout")) {
@@ -700,10 +673,7 @@ export async function getUserId(): Promise<string> {
       throw new Error("User not authenticated")
     }
   } catch (headerError) {
-    // Headers not available, fallback to Supabase
   }
-
-  // Fallback to Supabase call (for API routes or edge cases) with timeout
 
   try {
     const supabase = await createClient()
@@ -767,7 +737,6 @@ export async function getUserIdSafe(): Promise<string | null> {
   }
 }
 
-// Identity linking functions
 export async function linkDiscordAccount() {
   const supabase = await createClient()
   const websiteURL = await getWebsiteURL()

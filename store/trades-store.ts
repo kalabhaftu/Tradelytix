@@ -1,5 +1,8 @@
 import { create } from 'zustand'
-import { Trade as PrismaTrade } from '@prisma/client'
+import { type InferSelectModel } from 'drizzle-orm'
+import { Trade as schemaTrade } from '@/lib/db/schema'
+
+export type PrismaTrade = InferSelectModel<typeof schemaTrade>
 import { persist } from 'zustand/middleware'
 import { StoreApi, UseBoundStore } from 'zustand'
 

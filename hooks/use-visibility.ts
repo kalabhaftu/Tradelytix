@@ -57,7 +57,6 @@ export function useVisibilityAwarePolling(
       return
     }
 
-    // Only poll when visible
     if (!isVisible) {
       setIsPolling(false)
       return

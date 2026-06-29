@@ -36,7 +36,6 @@ const COLORS = {
   axis: 'hsl(var(--muted-foreground))'
 } as const
 
-
 export default function DrawdownChart({ size = 'small-long' }: DrawdownChartProps) {
   const { data: rawChartData, isLoading } = useWidgetData('dailyCumulativePnl')
   const chartData = React.useMemo(() => rawChartData ?? [], [rawChartData])

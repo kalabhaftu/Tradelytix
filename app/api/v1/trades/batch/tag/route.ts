@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
+import { inArray, eq, and } from 'drizzle-orm'
 
 export async function POST(request: NextRequest) {
   const rl = await applyRateLimit(request, apiLimiter)
@@ -24,17 +26,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'tags must be a non-empty array' }, { status: 400 })
     }
 
-    const result = await prisma.trade.updateMany({
-      where: {
-        id: { in: tradeIds },
-        userId: identity.internalUserId,
-      },
-      data: {
-        tags: { push: tags },
-      },
-    })
+    const result = await db.update(schema.Trade)
+      .set({ tags })
+      .where(and(
+        inArray(schema.Trade.id, tradeIds),
+        eq(schema.Trade.userId, identity.internalUserId)
+      ))
 
-    return NextResponse.json({ success: true, updated: result.count })
+    return NextResponse.json({ success: true, updated: result.rowCount })
   } catch (error: any) {
     logger.error('Failed to batch tag trades', error, 'Batch Tag')
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })

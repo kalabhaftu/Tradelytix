@@ -140,7 +140,7 @@ export default async function proxy(request: NextRequest) {
           })
 
           cookiesToSet.forEach(({ name, value, options }) => {
-            authResponse.cookies.set(name, value, options)
+            authResponse.cookies.set(name, value, options as any)
           })
         },
       },

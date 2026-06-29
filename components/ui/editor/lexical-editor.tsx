@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { logger } from '@/lib/logger'
+import logger from '@/lib/logger'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
@@ -228,7 +228,7 @@ export function LexicalEditor({
           <ListPlugin />
           <CheckListPlugin />
           <LinkPlugin />
-          <SyncExternalValuePlugin value={value} />
+          <SyncExternalValuePlugin {...(value !== undefined && { value })} />
           <PlaceholderPlugin />
           <OnChangePlugin onChange={handleChange} />
         </div>

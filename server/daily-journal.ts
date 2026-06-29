@@ -1,14 +1,11 @@
-import { Prisma } from '@prisma/client'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 
 interface DailyJournalQuery {
   accountId?: string | null
   startDate?: Date | string
   endDate?: Date | string
-  sortOrder?: Prisma.SortOrder
+  sortOrder?: 'asc' | 'desc'
 }
-
-type DailyNoteClient = Pick<typeof prisma, 'dailyNote'>
 
 export function normalizeJournalDate(date: Date | string) {
   const normalized = new Date(date)
@@ -19,54 +16,66 @@ export function normalizeJournalDate(date: Date | string) {
 export function buildDailyJournalWhere(
   userId: string,
   { accountId, startDate, endDate }: DailyJournalQuery = {}
-): Prisma.DailyNoteWhereInput {
-  const where: Prisma.DailyNoteWhereInput = { userId }
+) {
+  const conditions: any[] = [{ userId }]
 
   if (accountId !== undefined) {
-    where.accountId = accountId || null
+    conditions.push({ accountId: accountId || null })
   }
 
   if (startDate || endDate) {
-    where.date = {}
-
+    const dateConditions: any = {}
     if (startDate) {
-      where.date.gte = normalizeJournalDate(startDate)
+      dateConditions.gte = normalizeJournalDate(startDate)
     }
-
     if (endDate) {
-      where.date.lte = normalizeJournalDate(endDate)
+      dateConditions.lte = normalizeJournalDate(endDate)
     }
+    conditions.push({ date: dateConditions })
   }
 
-  return where
+  return conditions
 }
 
 export async function getDailyJournalEntry(
   userId: string,
   date: Date | string,
-  accountId?: string | null,
-  client: DailyNoteClient = prisma
+  accountId?: string | null
 ) {
-  return client.dailyNote.findFirst({
-    where: buildDailyJournalWhere(userId, {
-      startDate: date,
-      endDate: date,
-      accountId,
-    }),
+  return db.query.DailyNote.findFirst({
+    where: (table, { eq, and, isNull }) =>
+      and(
+        eq(table.userId, userId),
+        eq(table.date, normalizeJournalDate(date)),
+        accountId !== undefined ? (accountId ? eq(table.accountId, accountId) : isNull(table.accountId)) : undefined
+      ),
   })
 }
 
 export async function listDailyJournalEntries(
   userId: string,
-  query: DailyJournalQuery = {},
-  client: DailyNoteClient = prisma
+  query: DailyJournalQuery = {}
 ) {
-  return client.dailyNote.findMany({
-    where: buildDailyJournalWhere(userId, query),
-    orderBy: { date: query.sortOrder || 'desc' },
-    include: {
+  const sortOrder = query.sortOrder || 'desc'
+  return db.query.DailyNote.findMany({
+    where: (table, { eq, and, gte, lte, isNull }) => {
+      const conditions = [eq(table.userId, userId)]
+      if (query.accountId !== undefined) {
+        conditions.push(query.accountId ? eq(table.accountId, query.accountId) : isNull(table.accountId))
+      }
+      if (query.startDate) {
+        conditions.push(gte(table.date, normalizeJournalDate(query.startDate)))
+      }
+      if (query.endDate) {
+        conditions.push(lte(table.date, normalizeJournalDate(query.endDate)))
+      }
+      return and(...conditions)
+    },
+    orderBy: (table, { desc, asc }) =>
+      sortOrder === 'desc' ? [desc(table.date)] : [asc(table.date)],
+    with: {
       Account: {
-        select: {
+        columns: {
           id: true,
           name: true,
           number: true,

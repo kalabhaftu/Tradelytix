@@ -1,4 +1,6 @@
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import { AdminAISetting, User, AIChatUsageLog } from '@/lib/db/schema'
+import { eq, and, gte, count } from 'drizzle-orm'
 import { checkSubscriptionAccess } from './subscription-guard-service'
 
 export interface AIGuardResult {
@@ -12,26 +14,30 @@ export interface AIGuardResult {
  * role, global admin controls, and daily usage limits.
  */
 export async function checkAIAccess(userId: string): Promise<AIGuardResult> {
-  // 1. Load Admin Settings
-  let settings = await prisma.adminAISetting.findUnique({
-    where: { id: 'global' },
+  let settings = await db.query.AdminAISetting.findFirst({
+    where: eq(AdminAISetting.id, 'global'),
   })
 
   if (!settings) {
-    settings = await prisma.adminAISetting.create({
-      data: { id: 'global' },
-    })
+    const [inserted] = await db.insert(AdminAISetting)
+      .values({ id: 'global', updatedAt: new Date() })
+      .returning()
+    settings = inserted
+  }
+
+  if (!settings) {
+    return { hasAccess: false, reason: 'Failed to initialize AI settings' }
   }
 
   // If AI is globally disabled
-  if (!settings.enabled) {
+  if (!settings?.enabled) {
     return { hasAccess: false, reason: 'AI assistant is currently disabled by administrator.', settings }
   }
 
   // 2. Fetch User Role
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true },
+  const user = await db.query.User.findFirst({
+    where: eq(User.id, userId),
+    columns: { role: true },
   })
 
   if (!user) {
@@ -42,7 +48,7 @@ export async function checkAIAccess(userId: string): Promise<AIGuardResult> {
 
   // Admin access check
   if (isAdmin) {
-    if (settings.adminAccess) {
+    if (settings?.adminAccess) {
       return { hasAccess: true, settings }
     }
     return { hasAccess: false, reason: 'AI access is disabled for administrators.', settings }
@@ -53,22 +59,25 @@ export async function checkAIAccess(userId: string): Promise<AIGuardResult> {
   const isPaid = subStatus.hasAccess && subStatus.status !== 'past_due' // active, free_access, invited_free, promo_active
 
   if (isPaid) {
-    if (settings.paidPlanAccess) {
+    if (settings?.paidPlanAccess) {
       // 4. Rate Limiting Check: Max Messages Per Day
       const startOfDay = new Date()
       startOfDay.setHours(0, 0, 0, 0)
       
-      const messageCount = await prisma.aIChatUsageLog.count({
-        where: {
-          userId,
-          createdAt: { gte: startOfDay },
-        },
-      })
-
-      if (messageCount >= settings.maxMessagesPerDay) {
+      const [result] = await db.select({ count: count() })
+        .from(AIChatUsageLog)
+        .where(
+          and(
+            eq(AIChatUsageLog.userId, userId),
+            gte(AIChatUsageLog.createdAt, startOfDay)
+          )
+        )
+      const messageCount = result?.count || 0
+      
+      if (messageCount >= (settings?.maxMessagesPerDay ?? 0)) {
         return { 
           hasAccess: false, 
-          reason: `You have reached your daily limit of ${settings.maxMessagesPerDay} AI messages. Try again tomorrow.`, 
+          reason: `You have reached your daily limit of ${settings?.maxMessagesPerDay || 'default'} AI messages. Try again tomorrow.`, 
           settings 
         }
       }
@@ -79,22 +88,25 @@ export async function checkAIAccess(userId: string): Promise<AIGuardResult> {
   }
 
   // User is on a Free Plan
-  if (settings.freePlanAccess) {
+  if (settings?.freePlanAccess) {
     // Check daily limits
     const startOfDay = new Date()
     startOfDay.setHours(0, 0, 0, 0)
     
-    const messageCount = await prisma.aIChatUsageLog.count({
-      where: {
-        userId,
-        createdAt: { gte: startOfDay },
-      },
-    })
+    const [result] = await db.select({ count: count() })
+      .from(AIChatUsageLog)
+      .where(
+        and(
+          eq(AIChatUsageLog.userId, userId),
+          gte(AIChatUsageLog.createdAt, startOfDay)
+        )
+      )
+    const messageCount = result?.count || 0
 
-    if (messageCount >= settings.maxMessagesPerDay) {
+    if (messageCount >= (settings?.maxMessagesPerDay ?? 0)) {
       return { 
         hasAccess: false, 
-        reason: `You have reached your daily limit of ${settings.maxMessagesPerDay} AI messages. Try again tomorrow.`, 
+        reason: `You have reached your daily limit of ${settings?.maxMessagesPerDay || 'default'} AI messages. Try again tomorrow.`, 
         settings 
       }
     }

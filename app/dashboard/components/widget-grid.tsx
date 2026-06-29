@@ -77,6 +77,7 @@ import WidgetLibraryDialog from './widget-library-dialog'
 import KpiWidgetSelector from './kpi-widget-selector'
 import { EmptyAccountState } from './empty-account-state'
 import { TemplateAwareDashboardSkeleton } from '@/components/ui/dashboard-skeleton'
+import { WidgetErrorBoundary } from './widget-wrapper'
 import { WIDGET_GRID_DEFAULTS } from '../config/widget-dimensions'
 import { buildResponsiveDashboardLayouts } from '@/lib/dashboard/responsive-layouts'
 import { toast } from 'sonner'
@@ -540,7 +541,9 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
 
                   {/* Widget content */}
                   <div className="h-full w-full overflow-hidden">
-                    {config.getComponent({ size: widget.size as any })}
+                    <WidgetErrorBoundary widgetId={widget.i} title={config.title}>
+                      {config.getComponent({ size: widget.size as any })}
+                    </WidgetErrorBoundary>
                   </div>
                 </div>
               </div>

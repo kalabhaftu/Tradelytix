@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 import { SharedReportView } from './shared-report-view'
 
 interface Props {
@@ -9,9 +9,8 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const report = await prisma.sharedReport.findUnique({
-    where: { slug },
-    select: { title: true },
+  const report = await db.query.SharedReport.findFirst({
+    where: (table, { eq }) => eq(table.slug, slug),
   })
   return {
     title: report?.title ? `${report.title} | Tradelytix` : 'Shared Trading Report | Tradelytix',
@@ -21,8 +20,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SharedReportPage({ params }: Props) {
   const { slug } = await params
-  const report = await prisma.sharedReport.findUnique({
-    where: { slug },
+  const report = await db.query.SharedReport.findFirst({
+    where: (table, { eq }) => eq(table.slug, slug),
   })
 
   if (!report || !report.isPublic) {

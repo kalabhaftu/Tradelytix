@@ -1,11 +1,12 @@
-import { Trade } from "@prisma/client";
+import type { TradeType } from '@/lib/db/schema/trades';
+;
 
 export interface CalendarEntry {
   pnl: number;
   tradeNumber: number;
   longNumber: number;
   shortNumber: number;
-  trades: Trade[];
+  trades: TradeType[];
   isProfit?: boolean;
   isLoss?: boolean;
   isBreakEven?: boolean;

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq, and } from 'drizzle-orm'
 import { invalidateUserCaches } from '@/server/accounts'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
+import { logger } from '@/lib/logger';
 
 export async function POST(
   request: NextRequest,
@@ -40,22 +43,37 @@ export async function POST(
     }
 
     if (isPropFirm) {
-      await prisma.masterAccount.update({
-        where: { id: accountId, userId: internalUserId },
-        data: { createdAt: adjustedDate }
-      })
+      await db
+        .update(schema.MasterAccount)
+        .set({ createdAt: adjustedDate })
+        .where(
+          and(
+            eq(schema.MasterAccount.id, accountId),
+            eq(schema.MasterAccount.userId, internalUserId)
+          )
+        )
     } else {
-      await prisma.account.update({
-        where: { id: accountId, userId: internalUserId },
-        data: { createdAt: adjustedDate }
-      })
+      await db
+        .update(schema.Account)
+        .set({ createdAt: adjustedDate })
+        .where(
+          and(
+            eq(schema.Account.id, accountId),
+            eq(schema.Account.userId, internalUserId)
+          )
+        )
     }
 
     if (notificationId) {
-      await prisma.notification.update({
-        where: { id: notificationId, userId: internalUserId },
-        data: { isRead: true }
-      })
+      await db
+        .update(schema.Notification)
+        .set({ isRead: true })
+        .where(
+          and(
+            eq(schema.Notification.id, notificationId),
+            eq(schema.Notification.userId, internalUserId)
+          )
+        )
     }
 
     await invalidateUserCaches(internalUserId)
@@ -65,7 +83,7 @@ export async function POST(
       message: 'Account creation date adjusted successfully'
     })
   } catch (error) {
-    console.error('Adjust account date error:', error)
+    logger.error('Adjust account date error:', error)
     return NextResponse.json(
       { success: false, error: 'Failed to adjust account date' },
       { status: 500 }

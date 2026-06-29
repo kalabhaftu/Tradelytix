@@ -34,6 +34,7 @@ import {
 import { TRADOVATE_FEE_TYPE_KEYS } from "./fee-types";
 import { useTradovateSyncStore } from "@/store/tradovate-sync-store";
 import { useTradovateSyncContext } from "@/context/tradovate-sync-context";
+import { logger } from '@/lib/logger';
 
 function translateTradovateFeeType(key: string): string {
   switch (key) {
@@ -85,7 +86,7 @@ export function TradovateCredentialsManager() {
         toast.success(`Account ${accountId} deleted`);
       } catch (error) {
         toast.error(`Failed to delete account ${accountId}`);
-        console.error("Delete error:", error);
+        logger.error("Delete error:", error);
       }
     },
     [],
@@ -126,7 +127,7 @@ export function TradovateCredentialsManager() {
       toast.success("Accounts reloaded successfully");
     } catch (error) {
       toast.error("Failed to reload accounts");
-      console.error("Reload error:", error);
+      logger.error("Reload error:", error);
     } finally {
       setIsReloading(false);
     }
@@ -175,7 +176,7 @@ export function TradovateCredentialsManager() {
       }
     } catch (error) {
       toast.error("Failed to update daily sync time");
-      console.error("Update sync time error:", error);
+      logger.error("Update sync time error:", error);
     } finally {
       setIsSavingTime(false);
     }

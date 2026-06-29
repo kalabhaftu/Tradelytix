@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { calculateAccountBalance } from '@/lib/utils/balance-calculator'
 import { buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
 import { logger } from '@/lib/logger'
+import { eq, or, inArray, desc, asc } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   const rateLimitResponse = await applyRateLimit(request, apiLimiter)
@@ -33,15 +35,15 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')?.toLowerCase() || ''
 
     // 1. Fetch live accounts
-    const liveAccounts = await prisma.account.findMany({
-      where: { userId: internalUserId },
-      orderBy: { createdAt: 'desc' },
+    const liveAccounts = await db.query.Account.findMany({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      orderBy: (table, { desc }) => [desc(table.createdAt)],
     })
 
     // 2. Fetch prop firm accounts
-    const propFirmAccounts = await prisma.masterAccount.findMany({
-      where: { userId: internalUserId },
-      include: { PhaseAccount: { orderBy: { phaseNumber: 'asc' } } }
+    const propFirmAccounts = await db.query.MasterAccount.findMany({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      with: { PhaseAccount: { orderBy: (table, { asc }) => [asc(table.phaseNumber)] } }
     })
 
     const isFundedPhase = (evaluationType: string, phaseNumber: number): boolean => {
@@ -108,7 +110,6 @@ export async function GET(request: NextRequest) {
          // Type filter
          if (typeFilter !== 'all' && acc.accountType !== typeFilter) return false
          
-         // Search
          if (search) {
             if (
               !acc.displayName?.toLowerCase().includes(search) &&
@@ -141,7 +142,6 @@ export async function GET(request: NextRequest) {
       // Type filter
       if (typeFilter !== 'all' && acc.accountType !== typeFilter) return false
       
-      // Search
       if (search) {
          if (
            !acc.displayName?.toLowerCase().includes(search) &&
@@ -169,27 +169,20 @@ export async function GET(request: NextRequest) {
     const propPhaseIdsToFetch = paginated.filter(a => a.accountType === 'prop-firm').map(a => a.id)
     const propNumbersToFetch = paginated.filter(a => a.accountType === 'prop-firm').map(a => a.number)
     
-    const relevantTrades = await prisma.trade.findMany({
-      where: {
-         userId: internalUserId,
-         OR: [
-           { accountNumber: { in: [...liveNumbersToFetch, ...propNumbersToFetch] } },
-           { phaseAccountId: { in: propPhaseIdsToFetch } }
-         ]
-      }
+    const relevantTrades = await db.query.Trade.findMany({
+      where: (table, { eq, or, inArray }) => or(
+        inArray(table.accountNumber, [...liveNumbersToFetch, ...propNumbersToFetch]),
+        inArray(table.phaseAccountId, propPhaseIdsToFetch)
+      )
     })
 
     const relevantIds = paginated.map(p => p.id)
     
-    // Check if Transaction exists in Prisma
     let relevantTransactions: any[] = []
     try {
-      // Use dynamic access to avoid ts error if it doesn't exist
-      if ('transaction' in prisma) {
-         relevantTransactions = await (prisma as any).transaction.findMany({
-            where: { accountId: { in: relevantIds } }
-         })
-      }
+      relevantTransactions = await db.query.Transaction.findMany({
+         where: (table, { inArray }) => inArray(table.accountId, relevantIds)
+      })
     } catch {
        // Ignore if not present
     }
@@ -272,11 +265,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const existingAccount = await prisma.account.findFirst({
-      where: {
-        number,
-        userId: internalUserId,
-      }
+    const existingAccount = await db.query.Account.findFirst({
+      where: (table, { eq, and }) => and(eq(table.number, number), eq(table.userId, internalUserId))
     })
 
     if (existingAccount) {
@@ -286,16 +276,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const account = await prisma.account.create({
-      data: {
-        id: crypto.randomUUID(),
-        number,
-        name,
-        startingBalance: numericStartingBalance,
-        broker,
-        userId: internalUserId
-      }
-    })
+    const account = (await db.insert(schema.Account).values({
+      id: crypto.randomUUID(),
+      number,
+      name,
+      startingBalance: numericStartingBalance,
+      broker,
+      userId: internalUserId
+    }).returning())[0]
+    
+    if (!account) {
+      return NextResponse.json({ success: false, error: 'Failed to create account' }, { status: 500 })
+    }
 
     return NextResponse.json({
       success: true,
@@ -306,7 +298,7 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error: any) {
-    console.error('[API] /api/v1/accounts POST error:', error)
+    logger.error('[API] /api/v1/accounts POST error:', error)
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }

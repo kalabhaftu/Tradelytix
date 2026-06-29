@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq, and, asc } from 'drizzle-orm'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 
@@ -19,15 +21,12 @@ export async function GET(
   const { chatId } = await params
 
   try {
-    const chat = await prisma.aIChat.findFirst({
-      where: {
-        id: chatId,
-        userId,
-        isDeleted: false,
-      },
-      include: {
+    const chat = await db.query.AIChat.findFirst({
+      where: (table, { eq, and }) =>
+        and(eq(table.id, chatId), eq(table.userId, userId), eq(table.isDeleted, false)),
+      with: {
         messages: {
-          orderBy: { createdAt: 'asc' },
+          orderBy: (table, { asc }) => [asc(table.createdAt)],
         },
       },
     })
@@ -58,12 +57,9 @@ export async function PATCH(
   const { chatId } = await params
 
   try {
-    const chat = await prisma.aIChat.findFirst({
-      where: {
-        id: chatId,
-        userId,
-        isDeleted: false,
-      },
+    const chat = await db.query.AIChat.findFirst({
+      where: (table, { eq, and }) =>
+        and(eq(table.id, chatId), eq(table.userId, userId), eq(table.isDeleted, false)),
     })
 
     if (!chat) {
@@ -73,22 +69,22 @@ export async function PATCH(
     const body = await request.json()
     const { title, isPinned, isArchived } = body
 
-    const updatedChat = await prisma.aIChat.update({
-      where: { id: chatId },
-      data: {
+    const updatedChat = (await db
+      .update(schema.AIChat)
+      .set({
         ...(title !== undefined && { title }),
         ...(isPinned !== undefined && { isPinned }),
         ...(isArchived !== undefined && { isArchived }),
-      },
-      select: {
-        id: true,
-        title: true,
-        isPinned: true,
-        isArchived: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    })
+      })
+      .where(eq(schema.AIChat.id, chatId))
+      .returning({
+        id: schema.AIChat.id,
+        title: schema.AIChat.title,
+        isPinned: schema.AIChat.isPinned,
+        isArchived: schema.AIChat.isArchived,
+        createdAt: schema.AIChat.createdAt,
+        updatedAt: schema.AIChat.updatedAt,
+      }))[0]
 
     return NextResponse.json({ success: true, data: updatedChat })
   } catch (error) {
@@ -112,22 +108,19 @@ export async function DELETE(
   const { chatId } = await params
 
   try {
-    const chat = await prisma.aIChat.findFirst({
-      where: {
-        id: chatId,
-        userId,
-        isDeleted: false,
-      },
+    const chat = await db.query.AIChat.findFirst({
+      where: (table, { eq, and }) =>
+        and(eq(table.id, chatId), eq(table.userId, userId), eq(table.isDeleted, false)),
     })
 
     if (!chat) {
       return NextResponse.json({ error: 'Chat not found' }, { status: 404 })
     }
 
-    await prisma.aIChat.update({
-      where: { id: chatId },
-      data: { isDeleted: true },
-    })
+    await db
+      .update(schema.AIChat)
+      .set({ isDeleted: true })
+      .where(eq(schema.AIChat.id, chatId))
 
     return NextResponse.json({ success: true, message: 'Chat deleted successfully' })
   } catch (error) {

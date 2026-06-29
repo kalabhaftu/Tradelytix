@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq, and } from 'drizzle-orm'
 import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { logActivity, getClientIp } from '@/lib/activity-logger'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
+import { logger } from '@/lib/logger';
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -22,11 +25,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { id: accountId } = await params
     const internalUserId = identity.internalUserId
 
-    const account = await prisma.account.findFirst({
-      where: {
-        id: accountId,
-        userId: internalUserId,
-      },
+    const account = await db.query.Account.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, accountId), eq(table.userId, internalUserId)),
     })
 
     if (!account) {
@@ -36,21 +36,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    const trades = await prisma.trade.findMany({
-      where: {
-        accountId: account.id,
-      },
-      select: TRADE_COUNT_SELECT,
-      orderBy: {
-        entryDate: 'desc'
-      }
+    const trades = await db.query.Trade.findMany({
+      where: (table, { eq }) => eq(table.accountId, account.id),
+      columns: TRADE_COUNT_SELECT,
+      orderBy: (table, { desc }) => [desc(table.entryDate)]
     })
 
-    const transactions = await prisma.liveAccountTransaction.findMany({
-      where: {
-        accountId: account.id,
-      },
-      select: {
+    const transactions = await db.query.LiveAccountTransaction.findMany({
+      where: (table, { eq }) => eq(table.accountId, account.id),
+      columns: {
         amount: true,
       }
     })
@@ -67,8 +61,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       0
     )
 
-    const currentEquity = account.startingBalance + profitLoss + totalTransactions
-    const lastTradeDate = trades.length > 0 ? trades[0].entryDate : null
+    const currentEquity = (account.startingBalance ?? 0) + profitLoss + totalTransactions
+    const lastTradeDate = trades.length > 0 ? trades[0]?.entryDate : null
     const tradeCounts = buildGroupedTradeCountSummary(trades as any)
 
     return NextResponse.json({
@@ -112,11 +106,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const body = await request.json()
     const { name, broker, isArchived, startingBalance, number } = body
 
-    const existingAccount = await prisma.account.findFirst({
-      where: {
-        id: accountId,
-        userId: internalUserId,
-      }
+    const existingAccount = await db.query.Account.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, accountId), eq(table.userId, internalUserId)),
     })
 
     if (!existingAccount) {
@@ -166,12 +157,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       // Optionally log or notify that these fields are locked.
     }
 
-    const updatedAccount = await prisma.account.update({
-      where: {
-        id: accountId,
-      },
-      data: updateData
-    })
+    const updatedAccount = (await db.update(schema.Account).set(updateData).where(eq(schema.Account.id, accountId)).returning())[0]
+    if (!updatedAccount) {
+      return NextResponse.json({ success: false, error: 'Account not found during update' }, { status: 404 })
+    }
 
     if (typeof isArchived === 'boolean') {
       const { invalidateUserCaches } = await import('@/server/accounts')
@@ -225,11 +214,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const internalUserId = identity.internalUserId
     const { id: accountId } = await params
 
-    const existingAccount = await prisma.account.findFirst({
-      where: {
-        id: accountId,
-        userId: internalUserId,
-      }
+    const existingAccount = await db.query.Account.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, accountId), eq(table.userId, internalUserId)),
     })
 
     if (!existingAccount) {
@@ -240,12 +226,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Fetch all trade images for the account before deleting
-    const accountTrades = await prisma.trade.findMany({
-      where: {
-        accountId: accountId,
-        userId: internalUserId,
-      },
-      select: {
+    const accountTrades = await db.query.Trade.findMany({
+      where: (table, { eq, and }) => and(eq(table.accountId, accountId), eq(table.userId, internalUserId)),
+      columns: {
         imageOne: true,
         imageTwo: true,
         imageThree: true,
@@ -271,16 +254,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         const { deletePublicStorageUrls } = await import('@/server/storage-admin')
         await deletePublicStorageUrls(imageUrls)
       } catch (err) {
-        console.error('Failed to delete account trade images from storage:', err)
+        logger.error('Failed to delete account trade images from storage:', err)
         // We continue with DB deletion even if storage cleanup fails
       }
     }
 
-    await prisma.account.delete({
-      where: {
-        id: accountId,
-      }
-    })
+    await db.delete(schema.Account).where(eq(schema.Account.id, accountId))
 
     const { invalidateUserCaches } = await import('@/server/accounts')
     await invalidateUserCaches(internalUserId)

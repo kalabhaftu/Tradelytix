@@ -2,7 +2,8 @@ import { Suspense } from 'react'
 import { BacktestingClient } from './components/backtesting-client'
 import { BacktestTrade } from '@/types/backtesting-types'
 import { getUserId } from '@/server/auth'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { BacktestingPageSkeleton } from './components/backtesting-page-skeleton'
 
 // Enable ISR with 5 minute revalidation
@@ -10,24 +11,21 @@ export const revalidate = 300
 // Note: PPR requires Next.js canary
 // export const experimental_ppr = true
 
-// Server Component - fetches data with connection retry
 async function getBacktests(): Promise<BacktestTrade[]> {
   try {
     const userId = await getUserId()
     
-    // Add connection timeout and retry logic
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
     
     try {
-      const backtests = await prisma.backtestTrade.findMany({
-        where: { userId },
-        orderBy: { createdAt: 'desc' },
+      const backtests = await db.query.BacktestTrade.findMany({
+        where: (bt, { eq }) => eq(bt.userId, userId),
+        orderBy: (bt, { desc }) => [desc(bt.createdAt)],
       })
       
       clearTimeout(timeoutId)
 
-      // Transform to client format
       return backtests.map((bt: typeof backtests[number]) => ({
         id: bt.id,
         pair: bt.pair,
@@ -66,12 +64,10 @@ async function getBacktests(): Promise<BacktestTrade[]> {
     }
   } catch (error) {
     
-    // Return empty array on any error to prevent page crash
     return []
   }
 }
 
-// Server Component page
 export default async function BacktestingPage() {
   const backtests = await getBacktests()
 

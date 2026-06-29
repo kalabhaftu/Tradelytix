@@ -206,19 +206,20 @@ export default function ReportsPageClient({
         ruleBroken: 'all'
     })
 
+    const filterArgs: any = {}
+    if (selectedAccountId) filterArgs.accountId = selectedAccountId
+    if (dateRange?.from) filterArgs.dateFrom = dateRange.from.toISOString()
+    if (dateRange?.to) filterArgs.dateTo = dateRange.to.toISOString()
+    if (advancedFilters.symbol !== 'all') filterArgs.symbol = advancedFilters.symbol
+    if (advancedFilters.session !== 'all') filterArgs.session = advancedFilters.session
+    if (advancedFilters.outcome !== 'all') filterArgs.outcome = advancedFilters.outcome
+    if (advancedFilters.strategy !== 'all') filterArgs.strategy = advancedFilters.strategy
+    if (advancedFilters.ruleBroken !== 'all') filterArgs.ruleBroken = advancedFilters.ruleBroken
+
     // SERVER-SIDE: Use React Query hook instead of client-side fetching + useMemo
-    const { data: reportData, isLoading } = useReportStats({
-        accountId: selectedAccountId || undefined,
-        dateFrom: dateRange?.from?.toISOString(),
-        dateTo: dateRange?.to?.toISOString(),
-        symbol: advancedFilters.symbol !== 'all' ? advancedFilters.symbol : undefined,
-        session: advancedFilters.session !== 'all' ? advancedFilters.session : undefined,
-        outcome: advancedFilters.outcome !== 'all' ? advancedFilters.outcome : undefined,
-        strategy: advancedFilters.strategy !== 'all' ? advancedFilters.strategy : undefined,
-        ruleBroken: advancedFilters.ruleBroken !== 'all' ? advancedFilters.ruleBroken : undefined,
-    }, true, {
-        initialData: initialReportData || undefined,
-        initialDataKey: initialReportKey,
+    const { data: reportData, isLoading } = useReportStats(filterArgs, true, {
+        ...(initialReportData !== undefined && { initialData: initialReportData }),
+        ...(initialReportKey !== undefined && { initialDataKey: initialReportKey })
     })
 
     // Extract server-computed data
@@ -506,7 +507,7 @@ export default function ReportsPageClient({
                                                             tradingDays: tradingActivity.tradingDaysActive,
                                                             avgTradesPerMonth: tradingActivity.avgTradesPerMonth
                                                         }}
-                                                        userName={user?.firstName ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` : undefined}
+                                                        {...(user?.firstName ? { userName: `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` } : {})}
                                                     />
                                                 </div>
                                             )}
@@ -968,12 +969,12 @@ export default function ReportsPageClient({
 
                         <TabsContent value="statement" className="focus-visible:outline-none">
                             {filteredTrades && filteredTrades.length > 0 && (
-                                <StatementView trades={filteredTrades} dateRange={dateRange} />
+                                <StatementView trades={filteredTrades} {...(dateRange !== undefined && { dateRange })} />
                             )}
                         </TabsContent>
 
                         <TabsContent value="propfirm" className="focus-visible:outline-none">
-                            <PropFirmTab initialData={initialPropFirmData || undefined} />
+                            <PropFirmTab {...(initialPropFirmData !== undefined && initialPropFirmData !== null && { initialData: initialPropFirmData })} />
                         </TabsContent>
                     </Tabs>
                 )}

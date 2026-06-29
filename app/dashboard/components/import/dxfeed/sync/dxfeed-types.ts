@@ -91,7 +91,7 @@ export interface DxFeedTradesMultiAccountResponse {
 }
 
 export interface DxFeedTradesResult {
-  processedTrades?: import('@prisma/client').Trade[]
+  processedTrades?: typeof import('@/lib/db/schema').Trade.$inferSelect[]
   savedCount?: number
   tradesCount?: number
   error?: string

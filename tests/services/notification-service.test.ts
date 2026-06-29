@@ -2,16 +2,18 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import * as NotificationService from '@/lib/services/notification-service'
 import { NotificationType, NotificationPriority } from '@prisma/client'
 
-// Mock Prisma
-vi.mock('@/lib/prisma', () => ({
-    prisma: {
-        notification: {
-            findFirst: vi.fn(),
-            create: vi.fn(),
-            update: vi.fn(),
-            updateMany: vi.fn(),
-            count: vi.fn()
-        }
+// Mock db client
+vi.mock('@/lib/db/client', () => ({
+    db: {
+        query: {
+            Notification: {
+                findFirst: vi.fn()
+            }
+        },
+        insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
+        update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn() })) })) })),
+        updateMany: vi.fn(),
+        count: vi.fn()
     }
 }))
 
@@ -20,7 +22,8 @@ vi.mock('next/cache', () => ({
     revalidateTag: vi.fn()
 }))
 
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 
 describe('NotificationService', () => {
     const userId = 'test-user-id'
@@ -32,7 +35,7 @@ describe('NotificationService', () => {
 
     describe('createOrUpdateNotification', () => {
         it('should CREATE new notification when no invalidation key exists', async () => {
-            vi.mocked(prisma.notification.create).mockResolvedValue({
+            vi.mocked(db.insert).mockResolvedValue([{
                 id: 'new-id',
                 userId,
                 type: NotificationType.SYSTEM,
@@ -45,7 +48,7 @@ describe('NotificationService', () => {
                 priority: NotificationPriority.MEDIUM,
                 createdAt: new Date(),
                 updatedAt: new Date()
-            })
+            }])
 
             const result = await NotificationService.createOrUpdateNotification(userId, {
                 type: NotificationType.SYSTEM,
@@ -55,7 +58,7 @@ describe('NotificationService', () => {
 
             expect(result.success).toBe(true)
             expect(result.action).toBe('created')
-            expect(prisma.notification.create).toHaveBeenCalledTimes(1)
+            expect(db.insert).toHaveBeenCalledTimes(1)
         })
 
         it('should UPDATE existing unread notification with same invalidation key', async () => {
@@ -74,13 +77,13 @@ describe('NotificationService', () => {
                 updatedAt: new Date()
             }
 
-            vi.mocked(prisma.notification.findFirst).mockResolvedValue(existingNotification)
-            vi.mocked(prisma.notification.update).mockResolvedValue({
+            vi.mocked(db.query.Notification.findFirst).mockResolvedValue(existingNotification)
+            vi.mocked(db.update).mockResolvedValue([{
                 ...existingNotification,
                 title: 'Updated title',
                 message: 'Updated message',
                 data: { percentage: 85 }
-            })
+            }])
 
             const result = await NotificationService.createOrUpdateNotification(userId, {
                 type: NotificationType.RISK_DAILY_LOSS_80,
@@ -92,21 +95,17 @@ describe('NotificationService', () => {
 
             expect(result.success).toBe(true)
             expect(result.action).toBe('updated')
-            expect(prisma.notification.findFirst).toHaveBeenCalledWith({
-                where: {
-                    userId,
-                    invalidationKey: 'risk_daily_loss_test-phase',
-                    isRead: false
-                }
+            expect(db.query.Notification.findFirst).toHaveBeenCalledWith({
+                where: (table: any, { eq }: any) => and(eq(table.userId, userId), eq(table.invalidationKey, 'risk_daily_loss_test-phase'), eq(table.isRead, false))
             })
-            expect(prisma.notification.update).toHaveBeenCalledTimes(1)
-            expect(prisma.notification.create).not.toHaveBeenCalled()
+            expect(db.update).toHaveBeenCalledTimes(1)
+            expect(db.insert).not.toHaveBeenCalled()
         })
 
         it('should CREATE new notification if existing is already read', async () => {
             // findFirst returns null because no UNREAD notification exists
-            vi.mocked(prisma.notification.findFirst).mockResolvedValue(null)
-            vi.mocked(prisma.notification.create).mockResolvedValue({
+            vi.mocked(db.query.Notification.findFirst).mockResolvedValue(null)
+            vi.mocked(db.insert).mockResolvedValue([{
                 id: 'new-id',
                 userId,
                 type: NotificationType.RISK_DAILY_LOSS_95,
@@ -119,7 +118,7 @@ describe('NotificationService', () => {
                 priority: NotificationPriority.CRITICAL,
                 createdAt: new Date(),
                 updatedAt: new Date()
-            })
+            }])
 
             const result = await NotificationService.createOrUpdateNotification(userId, {
                 type: NotificationType.RISK_DAILY_LOSS_95,
@@ -130,7 +129,7 @@ describe('NotificationService', () => {
 
             expect(result.success).toBe(true)
             expect(result.action).toBe('created')
-            expect(prisma.notification.create).toHaveBeenCalledTimes(1)
+            expect(db.insert).toHaveBeenCalledTimes(1)
         })
     })
 
@@ -143,8 +142,8 @@ describe('NotificationService', () => {
         }
 
         it('should create HIGH priority alert at 80% daily loss', async () => {
-            vi.mocked(prisma.notification.findFirst).mockResolvedValue(null)
-            vi.mocked(prisma.notification.create).mockResolvedValue({
+            vi.mocked(db.query.Notification.findFirst).mockResolvedValue(null)
+            vi.mocked(db.insert).mockResolvedValue([{
                 id: 'alert-id',
                 userId,
                 type: NotificationType.RISK_DAILY_LOSS_80,
@@ -157,7 +156,7 @@ describe('NotificationService', () => {
                 priority: NotificationPriority.HIGH,
                 createdAt: new Date(),
                 updatedAt: new Date()
-            })
+            }])
 
             const result = await NotificationService.createRiskAlert(
                 userId,
@@ -168,15 +167,15 @@ describe('NotificationService', () => {
             )
 
             expect(result.success).toBe(true)
-            const createCall = vi.mocked(prisma.notification.create).mock.calls[0][0]
+            const createCall = vi.mocked(db.insert).mock.calls[0][0]
             expect(createCall.data.type).toBe(NotificationType.RISK_DAILY_LOSS_80)
             expect(createCall.data.priority).toBe(NotificationPriority.HIGH)
             expect(createCall.data.actionRequired).toBe(false)
         })
 
         it('should create CRITICAL priority alert at 95% daily loss', async () => {
-            vi.mocked(prisma.notification.findFirst).mockResolvedValue(null)
-            vi.mocked(prisma.notification.create).mockResolvedValue({
+            vi.mocked(db.query.Notification.findFirst).mockResolvedValue(null)
+            vi.mocked(db.insert).mockResolvedValue([{
                 id: 'alert-id',
                 userId,
                 type: NotificationType.RISK_DAILY_LOSS_95,
@@ -189,7 +188,7 @@ describe('NotificationService', () => {
                 priority: NotificationPriority.CRITICAL,
                 createdAt: new Date(),
                 updatedAt: new Date()
-            })
+            }])
 
             const result = await NotificationService.createRiskAlert(
                 userId,
@@ -200,7 +199,7 @@ describe('NotificationService', () => {
             )
 
             expect(result.success).toBe(true)
-            const createCall = vi.mocked(prisma.notification.create).mock.calls[0][0]
+            const createCall = vi.mocked(db.insert).mock.calls[0][0]
             expect(createCall.data.type).toBe(NotificationType.RISK_DAILY_LOSS_95)
             expect(createCall.data.priority).toBe(NotificationPriority.CRITICAL)
             expect(createCall.data.actionRequired).toBe(true)
@@ -208,7 +207,7 @@ describe('NotificationService', () => {
 
         it('should update same notification when percentage increases', async () => {
             // Simulate existing 80% alert
-            vi.mocked(prisma.notification.findFirst).mockResolvedValue({
+            vi.mocked(db.query.Notification.findFirst).mockResolvedValue({
                 id: 'existing-alert',
                 userId,
                 type: NotificationType.RISK_DAILY_LOSS_80,
@@ -223,7 +222,7 @@ describe('NotificationService', () => {
                 updatedAt: new Date()
             })
 
-            vi.mocked(prisma.notification.update).mockResolvedValue({
+            vi.mocked(db.update).mockResolvedValue([{
                 id: 'existing-alert',
                 userId,
                 type: NotificationType.RISK_DAILY_LOSS_80,
@@ -236,7 +235,7 @@ describe('NotificationService', () => {
                 priority: NotificationPriority.HIGH,
                 createdAt: new Date(),
                 updatedAt: new Date()
-            })
+            }])
 
             const result = await NotificationService.createRiskAlert(
                 userId,
@@ -248,8 +247,8 @@ describe('NotificationService', () => {
 
             expect(result.success).toBe(true)
             expect(result.action).toBe('updated')
-            expect(prisma.notification.update).toHaveBeenCalledTimes(1)
-            expect(prisma.notification.create).not.toHaveBeenCalled()
+            expect(db.update).toHaveBeenCalledTimes(1)
+            expect(db.insert).not.toHaveBeenCalled()
         })
     })
 
@@ -257,8 +256,8 @@ describe('NotificationService', () => {
         const importId = 'import-123'
 
         it('should create "processing" notification', async () => {
-            vi.mocked(prisma.notification.findFirst).mockResolvedValue(null)
-            vi.mocked(prisma.notification.create).mockResolvedValue({
+            vi.mocked(db.query.Notification.findFirst).mockResolvedValue(null)
+            vi.mocked(db.insert).mockResolvedValue([{
                 id: 'import-notif',
                 userId,
                 type: NotificationType.IMPORT_PROCESSING,
@@ -271,7 +270,7 @@ describe('NotificationService', () => {
                 priority: NotificationPriority.MEDIUM,
                 createdAt: new Date(),
                 updatedAt: new Date()
-            })
+            }])
 
             const result = await NotificationService.createImportNotification(
                 userId,
@@ -284,7 +283,7 @@ describe('NotificationService', () => {
         })
 
         it('should update to "complete" notification with summary', async () => {
-            vi.mocked(prisma.notification.findFirst).mockResolvedValue({
+            vi.mocked(db.query.Notification.findFirst).mockResolvedValue({
                 id: 'import-notif',
                 userId,
                 type: NotificationType.IMPORT_PROCESSING,
@@ -299,7 +298,7 @@ describe('NotificationService', () => {
                 updatedAt: new Date()
             })
 
-            vi.mocked(prisma.notification.update).mockResolvedValue({
+            vi.mocked(db.update).mockResolvedValue([{
                 id: 'import-notif',
                 userId,
                 type: NotificationType.IMPORT_COMPLETE,
@@ -312,7 +311,7 @@ describe('NotificationService', () => {
                 priority: NotificationPriority.MEDIUM,
                 createdAt: new Date(),
                 updatedAt: new Date()
-            })
+            }])
 
             const result = await NotificationService.createImportNotification(
                 userId,
@@ -331,8 +330,8 @@ describe('NotificationService', () => {
         })
 
         it('should mark as HIGH priority if errors exist', async () => {
-            vi.mocked(prisma.notification.findFirst).mockResolvedValue(null)
-            vi.mocked(prisma.notification.create).mockResolvedValue({
+            vi.mocked(db.query.Notification.findFirst).mockResolvedValue(null)
+            vi.mocked(db.insert).mockResolvedValue([{
                 id: 'import-notif',
                 userId,
                 type: NotificationType.IMPORT_COMPLETE,
@@ -345,7 +344,7 @@ describe('NotificationService', () => {
                 priority: NotificationPriority.HIGH,
                 createdAt: new Date(),
                 updatedAt: new Date()
-            })
+            }])
 
             const result = await NotificationService.createImportNotification(
                 userId,
@@ -359,7 +358,7 @@ describe('NotificationService', () => {
             )
 
             expect(result.success).toBe(true)
-            const createCall = vi.mocked(prisma.notification.create).mock.calls[0][0]
+            const createCall = vi.mocked(db.insert).mock.calls[0][0]
             expect(createCall.data.priority).toBe(NotificationPriority.HIGH)
             expect(createCall.data.actionRequired).toBe(true)
         })
@@ -367,7 +366,7 @@ describe('NotificationService', () => {
 
     describe('dismissNotificationsByType', () => {
         it('should mark all notifications of type as read', async () => {
-            vi.mocked(prisma.notification.updateMany).mockResolvedValue({ count: 3 })
+            vi.mocked(db.update).mockResolvedValue({ count: 3 })
 
             const result = await NotificationService.dismissNotificationsByType(
                 userId,
@@ -375,7 +374,7 @@ describe('NotificationService', () => {
             )
 
             expect(result.success).toBe(true)
-            expect(prisma.notification.updateMany).toHaveBeenCalledWith({
+            expect(db.update).toHaveBeenCalledWith({
                 where: {
                     userId,
                     type: NotificationType.RISK_ALERT,
@@ -390,7 +389,7 @@ describe('NotificationService', () => {
 
     describe('getNotificationStats', () => {
         it('should return notification statistics', async () => {
-            vi.mocked(prisma.notification.count)
+            vi.mocked(db.count)
                 .mockResolvedValueOnce(25) // total
                 .mockResolvedValueOnce(8)  // unread
                 .mockResolvedValueOnce(2)  // critical

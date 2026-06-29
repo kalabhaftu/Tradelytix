@@ -85,7 +85,6 @@ export function CreateLiveAccountDialog({ open, onOpenChange, onSuccess }: LiveA
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
 
-
   const {
     register,
     control,

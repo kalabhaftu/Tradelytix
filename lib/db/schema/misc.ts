@@ -1,0 +1,221 @@
+import { relations } from 'drizzle-orm';
+import { pgTable, uuid, text, integer, boolean, timestamp, jsonb, doublePrecision, json } from 'drizzle-orm/pg-core';
+import { ErrorSourceEnum, ErrorLevelEnum, PromoTypeEnum, PromoApplicabilityEnum, FreeAccessTypeEnum } from './enums';
+import { AdminFeatureFlag, AdminSharingPolicy, User, UserSettings, ImportJob, Notification, Feedback, UserGeoLog, SharedReport, Subscription, Synchronization } from './users';
+import { WeeklyAIReview, AIChat, AISavedInsight } from './ai';
+
+export const FeedbackReply = pgTable('feedback_reply', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  feedbackId: text('feedbackId').notNull(),
+  message: text('message').notNull(),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
+});
+
+export type FeedbackReplyType = typeof FeedbackReply.$inferSelect;
+export type NewFeedbackReply = typeof FeedbackReply.$inferInsert;
+
+export const DonationAddress = pgTable('donation_address', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  token: text('token').notNull(),
+  network: text('network').notNull(),
+  address: text('address').notNull(),
+  isActive: boolean('isActive').default(true),
+  sortOrder: integer('sortOrder').default(0),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+});
+
+export type DonationAddressType = typeof DonationAddress.$inferSelect;
+export type NewDonationAddress = typeof DonationAddress.$inferInsert;
+
+export const SiteUiSettings = pgTable('site_ui_settings', {
+  id: text('id').primaryKey(),
+  showDonateButton: boolean('showDonateButton').default(true),
+  showFeedbackButton: boolean('showFeedbackButton').default(true),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+});
+
+export type SiteUiSettingsType = typeof SiteUiSettings.$inferSelect;
+export type NewSiteUiSettings = typeof SiteUiSettings.$inferInsert;
+
+export const ErrorLog = pgTable('error_log', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  source: ErrorSourceEnum('source').notNull(),
+  level: ErrorLevelEnum('level').default('ERROR'),
+  message: text('message').notNull(),
+  stack: text('stack'),
+  url: text('url'),
+  userId: text('user_id'),
+  metadata: jsonb('metadata'),
+  ipAddress: text('ip_address'),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
+});
+
+export type ErrorLogType = typeof ErrorLog.$inferSelect;
+export type NewErrorLog = typeof ErrorLog.$inferInsert;
+
+export const PaymentRecord = pgTable('payment_record', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('userId').notNull(),
+  subscriptionId: text('subscriptionId').notNull(),
+  planId: text('planId').default('pro'),
+  amountUsd: doublePrecision('amountUsd').notNull(),
+  provider: text('provider').default('nowpayments'),
+  providerPaymentId: text('providerPaymentId').unique(),
+  providerInvoiceId: text('providerInvoiceId').unique(),
+  providerStatus: text('provider_status'),
+  payCurrency: text('pay_currency'),
+  payAmount: doublePrecision('pay_amount'),
+  paymentUrl: text('payment_url'),
+  invoiceUrl: text('invoice_url'),
+  subscriptionPeriodStart: timestamp('subscription_period_start', { withTimezone: true, mode: 'date' }),
+  subscriptionPeriodEnd: timestamp('subscription_period_end', { withTimezone: true, mode: 'date' }),
+  dueDate: timestamp('due_date', { withTimezone: true, mode: 'date' }),
+  paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }),
+  expiredAt: timestamp('expired_at', { withTimezone: true, mode: 'date' }),
+  rawProviderPayload: jsonb('raw_provider_payload'),
+  promoCodeId: text('promo_code_id'),
+  discountAmount: doublePrecision('discountAmount').default(0),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+});
+
+export type PaymentRecordType = typeof PaymentRecord.$inferSelect;
+export type NewPaymentRecord = typeof PaymentRecord.$inferInsert;
+
+export const PromoCode = pgTable('promo_code', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  code: text('code').notNull().unique(),
+  type: PromoTypeEnum('type').notNull(),
+  applicability: PromoApplicabilityEnum('applicability').default('signup_only'),
+  value: doublePrecision('value').notNull(),
+  maxUses: integer('max_uses'),
+  usesCount: integer('usesCount').default(0),
+  validFrom: timestamp('validFrom', { withTimezone: true, mode: 'date' }).defaultNow(),
+  validUntil: timestamp('valid_until', { withTimezone: true, mode: 'date' }),
+  isActive: boolean('isActive').default(true),
+  appliesToPlan: text('appliesToPlan').default('pro'),
+  createdBy: text('created_by'),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+});
+
+export type PromoCodeType = typeof PromoCode.$inferSelect;
+export type NewPromoCode = typeof PromoCode.$inferInsert;
+
+export const PromoRedemption = pgTable('promo_redemption', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  promoCodeId: text('promoCodeId').notNull(),
+  userId: text('userId').notNull(),
+  redeemedAt: timestamp('redeemedAt', { withTimezone: true, mode: 'date' }).defaultNow(),
+});
+
+export type PromoRedemptionType = typeof PromoRedemption.$inferSelect;
+export type NewPromoRedemption = typeof PromoRedemption.$inferInsert;
+
+export const FreeAccessInvite = pgTable('free_access_invite', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  email: text('email').notNull().unique(),
+  type: FreeAccessTypeEnum('type').notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }),
+  note: text('note'),
+  grantedBy: text('granted_by'),
+  grantedAt: timestamp('grantedAt', { withTimezone: true, mode: 'date' }).defaultNow(),
+  revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'date' }),
+  isActive: boolean('isActive').default(true),
+  registeredAt: timestamp('registered_at', { withTimezone: true, mode: 'date' }),
+  registeredUserId: text('registered_user_id'),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+});
+
+export type FreeAccessInviteType = typeof FreeAccessInvite.$inferSelect;
+export type NewFreeAccessInvite = typeof FreeAccessInvite.$inferInsert;
+
+export const AIChatMessage = pgTable('a_i_chat_message', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  chatId: text('chatId').notNull(),
+  role: text('role').notNull(),
+  content: text('content').notNull(),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
+});
+
+export type AIChatMessageType = typeof AIChatMessage.$inferSelect;
+export type NewAIChatMessage = typeof AIChatMessage.$inferInsert;
+
+export const AdminAISetting = pgTable('admin_a_i_setting', {
+  id: text('id').primaryKey().default('global'),
+  enabled: boolean('enabled').default(true),
+  demoModeEnabled: boolean('demoModeEnabled').default(true),
+  freePlanAccess: boolean('freePlanAccess').default(false),
+  paidPlanAccess: boolean('paidPlanAccess').default(true),
+  adminAccess: boolean('adminAccess').default(true),
+  maxContextSize: integer('maxContextSize').default(32768),
+  maxMessagesPerDay: integer('maxMessagesPerDay').default(50),
+  maxTokensPerResponse: integer('maxTokensPerResponse').default(2048),
+  conversationRetentionDays: integer('conversationRetentionDays').default(30),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+});
+
+export type AdminAISettingType = typeof AdminAISetting.$inferSelect;
+export type NewAdminAISetting = typeof AdminAISetting.$inferInsert;
+
+export const AIChatUsageLog = pgTable('a_i_chat_usage_log', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('userId').notNull(),
+  chatId: text('chat_id'),
+  promptTokens: integer('promptTokens').default(0),
+  completionTokens: integer('completionTokens').default(0),
+  totalTokens: integer('totalTokens').default(0),
+  estimatedCost: doublePrecision('estimatedCost').default(0),
+  responseTimeMs: integer('responseTimeMs').default(0),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
+});
+
+export type AIChatUsageLogType = typeof AIChatUsageLog.$inferSelect;
+export type NewAIChatUsageLog = typeof AIChatUsageLog.$inferInsert;
+
+export const FeedbackReplyRelations = relations(FeedbackReply, ({ one, many }) => ({
+  Feedback: one(Feedback, {
+    fields: [FeedbackReply.feedbackId],
+    references: [Feedback.id]
+  }),
+}));
+
+export const PaymentRecordRelations = relations(PaymentRecord, ({ one, many }) => ({
+  Subscription: one(Subscription, {
+    fields: [PaymentRecord.subscriptionId],
+    references: [Subscription.id]
+  }),
+  PromoCode: one(PromoCode, {
+    fields: [PaymentRecord.promoCodeId],
+    references: [PromoCode.id]
+  }),
+}));
+
+export const PromoCodeRelations = relations(PromoCode, ({ one, many }) => ({
+  Subscription: many(Subscription),
+  PaymentRecord: many(PaymentRecord),
+  PromoRedemption: many(PromoRedemption),
+}));
+
+export const PromoRedemptionRelations = relations(PromoRedemption, ({ one, many }) => ({
+  PromoCode: one(PromoCode, {
+    fields: [PromoRedemption.promoCodeId],
+    references: [PromoCode.id]
+  }),
+}));
+
+export const FreeAccessInviteRelations = relations(FreeAccessInvite, ({ one, many }) => ({
+  Subscription: many(Subscription),
+}));
+
+export const AIChatMessageRelations = relations(AIChatMessage, ({ one, many }) => ({
+  Chat: one(AIChat, {
+    fields: [AIChatMessage.chatId],
+    references: [AIChat.id]
+  }),
+}));
+

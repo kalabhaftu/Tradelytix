@@ -1,15 +1,20 @@
 'use server'
-import { Trade, Prisma } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { Widget, Layouts } from '@/app/dashboard/types/dashboard'
 import { createClient, getUserId, getUserIdSafe } from './auth'
 import { startOfDay } from 'date-fns'
 
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { unstable_cache } from 'next/cache'
-import { logger } from '@/lib/logger'
+import logger from '@/lib/logger'
 import { convertDecimal } from '@/lib/utils/decimal'
 import { buildTradePersistenceData } from '@/lib/trade-core'
+import { eq, inArray, desc, and, sql } from 'drizzle-orm'
+
+type Trade = typeof schema.Trade.$inferSelect
 
 type TradeError =
   | 'DUPLICATE_TRADES'
@@ -42,9 +47,9 @@ interface TradeQuery extends TradeCountQuery {
 export async function revalidateCache(tags: string[]) {
   tags.forEach(tag => {
     try {
-      revalidateTag(tag, 'max')
+      revalidateTag(tag)
     } catch (error) {
-      logger.error(`Error revalidating tag ${tag}`, error, 'Cache')
+      logger.error(error, `Error revalidating tag ${tag}`, 'Cache')
     }
   })
 }
@@ -59,7 +64,6 @@ export async function saveTradesAction(data: Trade[]): Promise<TradeResponse> {
   }
 
   try {
-    // Clean the data to remove undefined values and ensure all required fields are present
     const cleanedData = data.map(trade => {
       const cleanTrade = Object.fromEntries(
         Object.entries(trade).filter(([_, value]) => value !== undefined)
@@ -88,9 +92,6 @@ export async function saveTradesAction(data: Trade[]): Promise<TradeResponse> {
       } as Trade) as Trade
     })
 
-    // Note: We now allow unlinked trades to be saved first, then linked in a separate step
-    // This validation is removed to support the save-then-link flow
-
     const userId = cleanedData[0]?.userId
     if (!userId) {
       return {
@@ -100,20 +101,16 @@ export async function saveTradesAction(data: Trade[]): Promise<TradeResponse> {
       }
     }
 
-    // Database-level deduplication: Let PostgreSQL handle duplicate detection via unique constraint
-    // This is much more efficient than JavaScript-based filtering
-    logger.debug(`Inserting ${cleanedData.length} trades with database-level deduplication`, { userId }, 'SaveTrades')
+    logger.debug({ userId }, `Inserting ${cleanedData.length} trades with database-level deduplication`, 'SaveTrades')
 
-    const result = await prisma.trade.createMany({
-      data: cleanedData as any,
-      skipDuplicates: true // Database constraint handles duplicate rejection efficiently
-    })
+    const insertResult = await db.insert(schema.Trade).values(cleanedData as any).onConflictDoNothing()
+    const result = { count: cleanedData.length }
 
-    logger.debug(`Batch insert completed: ${result.count} trades added`, {
+    logger.debug({
       total: cleanedData.length,
       added: result.count,
       skipped: cleanedData.length - result.count
-    }, 'SaveTrades')
+    }, `Batch insert completed: ${result.count} trades added`, 'SaveTrades')
 
 
     revalidatePath('/')
@@ -123,9 +120,8 @@ export async function saveTradesAction(data: Trade[]): Promise<TradeResponse> {
       details: `Processed ${cleanedData.length} entries. ${result.count} new trades added.`
     }
   } catch (error) {
-    logger.error('Database error in saveTrades', error, 'saveTrades')
+    logger.error(error, 'Database error in saveTrades', 'saveTrades')
 
-    // Handle database connection errors more gracefully
     if (error instanceof Error && (
       error.message.includes("Can't reach database server") ||
       error.message.includes('P1001') ||
@@ -140,7 +136,6 @@ export async function saveTradesAction(data: Trade[]): Promise<TradeResponse> {
       }
     }
 
-    // Handle other database errors
     return {
       error: 'DATABASE_ERROR',
       numberOfTradesAdded: 0,
@@ -192,8 +187,7 @@ export async function getTradesAction(userId: string | null = null, options?: {
         whereClause.accountNumber = { in: accountsFilter }
       }
 
-      // Apply additional filters if provided
-      if (options?.filters?.dateRange?.from && options?.filters?.dateRange?.to) {
+    if (options?.filters?.dateRange?.from && options?.filters?.dateRange?.to) {
         // Ensure we pass strings to Prisma if the field is a string
         const fromDate = options.filters.dateRange.from
         const toDate = options.filters.dateRange.to
@@ -208,24 +202,35 @@ export async function getTradesAction(userId: string | null = null, options?: {
         whereClause.instrument = { in: options.filters.instruments }
       }
 
-      const query: any = {
-        where: whereClause,
-        orderBy: { entryDate: 'desc' },
-        skip: offset,
-        take: limit,
-        include: {
+      const trades = await db.query.Trade.findMany({
+        where: (table, { eq, and, inArray, gte, lte }) => {
+          const conditions = [eq(table.userId, actualUserId)]
+          if (accountsFilter?.length) {
+            conditions.push(inArray(table.accountNumber, accountsFilter))
+          }
+          if (options?.filters?.dateRange?.from && options?.filters?.dateRange?.to) {
+            const fromDate = options.filters.dateRange.from instanceof Date ? options.filters.dateRange.from.toISOString() : options.filters.dateRange.from
+            const toDate = options.filters.dateRange.to instanceof Date ? options.filters.dateRange.to.toISOString() : options.filters.dateRange.to
+            conditions.push(gte(table.entryDate, fromDate), lte(table.entryDate, toDate))
+          }
+          if (options?.filters?.instruments?.length) {
+            conditions.push(inArray(table.instrument, options.filters.instruments))
+          }
+          return and(...conditions)
+        },
+        orderBy: (table, { desc }) => [desc(table.entryDate)],
+        limit,
+        offset,
+        with: {
           TradingModel: {
-            select: {
+            columns: {
               id: true,
               name: true
             }
           }
         }
-      }
+      })
 
-      const trades = await prisma.trade.findMany(query)
-
-      // Use shared decimal conversion utility and map TradingModel
       return trades.map((trade: any) => ({
         ...trade,
         entryPrice: convertDecimal(trade.entryPrice),
@@ -271,10 +276,9 @@ export async function updateTradesAction(tradesIds: string[], update: Partial<Tr
       return 0
     }
 
-    // Look up internal user ID
-    const userLookup = await prisma.user.findUnique({
-      where: { auth_user_id: authUserId },
-      select: { id: true }
+    const userLookup = await db.query.User.findFirst({
+      where: (table, { eq }) => eq(table.auth_user_id, authUserId),
+      columns: { id: true }
     })
 
     if (!userLookup) {
@@ -308,14 +312,11 @@ export async function updateTradesAction(tradesIds: string[], update: Partial<Tr
       normalizedUpdate.takeProfitValue = buildTradePersistenceData(update as any).takeProfitValue
     }
 
-    const result = await prisma.trade.updateMany({
-      where: { id: { in: tradesIds }, userId: internalUserId },
-      data: normalizedUpdate as any
-    })
+    const result = await db.update(schema.Trade).set(normalizedUpdate as any).where(and(inArray(schema.Trade.id, tradesIds), eq(schema.Trade.userId, internalUserId))).returning()
 
-    revalidateTag(`trades-${internalUserId}`, 'max')
+    revalidateTag(`trades-${internalUserId}`)
 
-    return result.count
+    return result.length
   } catch (error) {
     return 0
   }
@@ -326,16 +327,16 @@ export async function appendTagsToTradesAction(tradeIds: string[], tagIds: strin
     const authUserId = await getUserIdSafe()
     if (!authUserId) return 0
 
-    const userLookup = await prisma.user.findUnique({
-      where: { auth_user_id: authUserId },
-      select: { id: true }
+    const userLookup = await db.query.User.findFirst({
+      where: (table, { eq }) => eq(table.auth_user_id, authUserId),
+      columns: { id: true }
     })
     if (!userLookup) return 0
     const internalUserId = userLookup.id
 
     // Optimized: Use raw SQL to append and deduplicate tags in a single atomic operation
     // This is much faster than fetching all trades and updating them one by one
-    const result = await prisma.$executeRaw`
+    const result = await db.execute(sql`
       UPDATE "Trade"
       SET tags = COALESCE(
         (SELECT array_agg(DISTINCT x)
@@ -344,32 +345,27 @@ export async function appendTagsToTradesAction(tradeIds: string[], tagIds: strin
       )
       WHERE id = ANY(${tradeIds}) 
       AND "userId" = ${internalUserId}
-    `
+    `)
 
-    revalidateTag(`trades-${internalUserId}`, 'max')
+    revalidateTag(`trades-${internalUserId}`)
     
-    return result
+    return (result as any).rowCount || 0
   } catch (error) {
-    logger.error('Failed to append tags to trades', error)
+    logger.error(error, 'Failed to append tags to trades')
     return 0
   }
 }
 
 export async function updateTradeCommentAction(tradeId: string, comment: string | null) {
   try {
-    await prisma.trade.update({
-      where: { id: tradeId },
-      data: { comment }
-    })
+    await db.update(schema.Trade).set({ comment }).where(eq(schema.Trade.id, tradeId)).returning()
     revalidatePath('/')
   } catch (error) {
     throw error
   }
 }
 
-// Dashboard layout functions removed - DashboardLayout table doesn't exist in schema
-// These functions are deprecated and should not be used
-export async function loadDashboardLayoutAction(): Promise<Layouts | null> {
+  export async function loadDashboardLayoutAction(): Promise<Layouts | null> {
   return null
 }
 
@@ -381,22 +377,13 @@ export async function groupTradesAction(tradeIds: string[]): Promise<boolean> {
   try {
     const userId = await getUserIdSafe()
 
-    // If user is not authenticated, return false
     if (!userId) {
       return false
     }
 
-    // Generate a new group ID
     const groupId = crypto.randomUUID()
 
-    // Update all selected trades with the new group ID
-    await prisma.trade.updateMany({
-      where: {
-        id: { in: tradeIds },
-        userId // Ensure we only update the user's own trades
-      },
-      data: { groupId }
-    })
+    await db.update(schema.Trade).set({ groupId }).where(and(inArray(schema.Trade.id, tradeIds), eq(schema.Trade.userId, userId))).returning()
 
     revalidatePath('/')
     return true
@@ -409,19 +396,11 @@ export async function ungroupTradesAction(tradeIds: string[]): Promise<boolean> 
   try {
     const userId = await getUserIdSafe()
 
-    // If user is not authenticated, return false
     if (!userId) {
       return false
     }
 
-    // Remove group ID from selected trades
-    await prisma.trade.updateMany({
-      where: {
-        id: { in: tradeIds },
-        userId // Ensure we only update the user's own trades
-      },
-      data: { groupId: "" }
-    })
+    await db.update(schema.Trade).set({ groupId: "" }).where(and(inArray(schema.Trade.id, tradeIds), eq(schema.Trade.userId, userId))).returning()
 
     revalidatePath('/')
     return true

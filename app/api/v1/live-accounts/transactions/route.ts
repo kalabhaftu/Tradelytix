@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
@@ -20,9 +20,9 @@ export async function GET(request: NextRequest) {
     const userId = identity.internalUserId
 
     // Get all transactions for user's accounts
-    const transactions = await prisma.liveAccountTransaction.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' }
+    const transactions = await db.query.LiveAccountTransaction.findMany({
+      where: (table, { eq }) => eq(table.userId, userId),
+      orderBy: (table, { desc }) => [desc(table.createdAt)]
     })
 
     return NextResponse.json({
@@ -37,4 +37,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-

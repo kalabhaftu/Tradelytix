@@ -1,13 +1,13 @@
 'use server'
 
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { NotificationType } from '@/lib/db/schema'
 import { getUserId } from '@/server/auth-utils'
 import { revalidateTag } from 'next/cache'
-import { NotificationType } from '@prisma/client'
 
-/**
- * Create a new notification for the user
- */
+import { eq, and, desc, count } from 'drizzle-orm'
+
 export async function createNotificationAction(data: {
   type: NotificationType
   title: string
@@ -19,27 +19,23 @@ export async function createNotificationAction(data: {
     const userId = await getUserId()
     if (!userId) return { success: false, error: 'Unauthorized' }
 
-    const notification = await prisma.notification.create({
-      data: {
-        userId,
-        type: data.type,
-        title: data.title,
-        message: data.message,
-        data: data.data ?? undefined,
-        actionRequired: data.actionRequired ?? false
-      }
-    })
+    const notification = (await db.insert(schema.Notification).values({
+      userId,
+      type: data.type,
+      title: data.title,
+      message: data.message,
+      data: data.data ?? undefined,
+      actionRequired: data.actionRequired ?? false,
+      updatedAt: new Date()
+    }).returning())[0]
 
-    revalidateTag(`notifications-${userId}`, 'max')
+    revalidateTag(`notifications-${userId}`)
     return { success: true, data: notification }
   } catch (error) {
     return { success: false, error: 'Failed to create notification' }
   }
 }
 
-/**
- * Get all notifications for the user
- */
 export async function getNotificationsAction(options?: {
   unreadOnly?: boolean
   limit?: number
@@ -47,92 +43,61 @@ export async function getNotificationsAction(options?: {
   const userId = await getUserId()
   if (!userId) throw new Error('Unauthorized')
 
-  const notifications = await prisma.notification.findMany({
-    where: {
-      userId,
-      ...(options?.unreadOnly ? { isRead: false } : {})
+  const notifications = await db.query.Notification.findMany({
+    where: (table, { eq, and }) => {
+      const conditions = [eq(table.userId, userId)]
+      if (options?.unreadOnly) conditions.push(eq(table.isRead, false))
+      return and(...conditions)
     },
-    orderBy: { createdAt: 'desc' },
-    take: options?.limit || 50
+    orderBy: (table, { desc }) => [desc(table.createdAt)],
+    limit: options?.limit || 50
   })
 
   return notifications
 }
 
-/**
- * Get count of unread notifications
- */
 export async function getUnreadCountAction() {
   const userId = await getUserId()
   if (!userId) return 0
 
-  const count = await prisma.notification.count({
-    where: {
-      userId,
-      isRead: false
-    }
-  })
+  const result = await db.select({ count: count() })
+    .from(schema.Notification)
+    .where(and(eq(schema.Notification.userId, userId), eq(schema.Notification.isRead, false)))
 
-  return count
+  return result[0]?.count || 0
 }
 
-/**
- * Mark a notification as read
- */
 export async function markNotificationReadAction(notificationId: string) {
   try {
     const userId = await getUserId()
     if (!userId) return { success: false, error: 'Unauthorized' }
 
-    const notification = await prisma.notification.update({
-      where: {
-        id: notificationId,
-        userId // Ensure user owns this notification
-      },
-      data: { isRead: true }
-    })
+    const notification = (await db.update(schema.Notification).set({ isRead: true, updatedAt: new Date() }).where(and(eq(schema.Notification.id, notificationId), eq(schema.Notification.userId, userId))).returning())[0]
 
-    revalidateTag(`notifications-${userId}`, 'max')
+    revalidateTag(`notifications-${userId}`)
     return { success: true, data: notification }
   } catch (error) {
     return { success: false, error: 'Failed to mark as read' }
   }
 }
 
-/**
- * Mark all notifications as read
- */
 export async function markAllNotificationsReadAction() {
   const userId = await getUserId()
   if (!userId) return { success: false, error: 'Unauthorized' }
 
-  await prisma.notification.updateMany({
-    where: {
-      userId,
-      isRead: false
-    },
-    data: { isRead: true }
-  })
+  await db.update(schema.Notification).set({ isRead: true, updatedAt: new Date() }).where(and(eq(schema.Notification.userId, userId), eq(schema.Notification.isRead, false)))
 
-  revalidateTag(`notifications-${userId}`, 'max')
+  revalidateTag(`notifications-${userId}`)
 }
 
-/**
- * Delete a notification
- */
 export async function deleteNotificationAction(notificationId: string) {
   try {
     const userId = await getUserId()
     if (!userId) return { success: false, error: 'Unauthorized' }
 
-    await prisma.notification.delete({
-      where: {
-        id: notificationId,
-        userId // Ensure user owns this notification
-      }
-    })
+    await db.delete(schema.Notification).where(and(eq(schema.Notification.id, notificationId), eq(schema.Notification.userId, userId)))
 
-    revalidateTag(`notifications-${userId}`, 'max')
+    revalidateTag(`notifications-${userId}`)
     return { success: true }
   } catch (error) {
     return { success: false, error: 'Failed to delete notification' }
@@ -151,15 +116,11 @@ export async function handleFundedApprovalAction(data: {
   const userId = await getUserId()
   if (!userId) throw new Error('Unauthorized')
 
-  // Get the master account and validate ownership
-  const masterAccount = await prisma.masterAccount.findFirst({
-    where: {
-      id: data.masterAccountId,
-      userId
-    },
-    include: {
+  const masterAccount = await db.query.MasterAccount.findFirst({
+    where: (table, { eq, and }) => and(eq(table.id, data.masterAccountId), eq(table.userId, userId)),
+    with: {
       PhaseAccount: {
-        orderBy: { phaseNumber: 'desc' }
+        orderBy: (table, { desc }) => [desc(table.phaseNumber)]
       }
     }
   })
@@ -168,14 +129,12 @@ export async function handleFundedApprovalAction(data: {
     throw new Error('Account not found')
   }
 
-  // Find the pending_approval phase
   const pendingPhase = masterAccount.PhaseAccount.find(p => p.status === 'pending_approval')
   if (!pendingPhase) {
     throw new Error('No pending approval found for this account')
   }
 
-  // Update the phase to active with the funded account ID
-  await prisma.$transaction(async (tx) => {
+  await db.transaction(async (tx) => {
     // Determine funded phase based on evaluation type
     // For Instant accounts: the pending_approval phase IS the funded phase (phaseNumber = 1)
     // For One Step: funded is phase 2
@@ -185,23 +144,14 @@ export async function handleFundedApprovalAction(data: {
     if (isInstantAccount) {
       // For Instant accounts, the pending_approval phase IS the funded phase
       // Just update it directly with the new account ID and activate it
-      await tx.phaseAccount.update({
-        where: { id: pendingPhase.id },
-        data: {
-          phaseId: data.fundedAccountId,
-          status: 'active'
-        }
-      })
+      await tx.update(schema.PhaseAccount).set({
+        phaseId: data.fundedAccountId,
+        status: 'active'
+      }).where(eq(schema.PhaseAccount.id, pendingPhase.id))
     } else {
-      // For One Step and Two Step accounts, mark current phase as passed
-      // and activate the next phase (the funded phase)
-      await tx.phaseAccount.update({
-        where: { id: pendingPhase.id },
-        data: { status: 'passed' }
-      })
+        await tx.update(schema.PhaseAccount).set({ status: 'passed' }).where(eq(schema.PhaseAccount.id, pendingPhase.id))
 
-      // Find the funded phase - it should always exist from account creation
-      const fundedPhaseNumber = pendingPhase.phaseNumber + 1
+        const fundedPhaseNumber = pendingPhase.phaseNumber + 1
       const fundedPhase = masterAccount.PhaseAccount.find(p => p.phaseNumber === fundedPhaseNumber)
 
       if (!fundedPhase) {
@@ -209,56 +159,42 @@ export async function handleFundedApprovalAction(data: {
         throw new Error(`Funded phase (phase ${fundedPhaseNumber}) not found for master account ${data.masterAccountId}. The account may be in a corrupted state.`)
       }
 
-      // Update funded phase with the new account ID and activate it
-      await tx.phaseAccount.update({
-        where: { id: fundedPhase.id },
-        data: {
+        await tx.update(schema.PhaseAccount).set({
           phaseId: data.fundedAccountId,
           status: 'active'
-        }
-      })
+        }).where(eq(schema.PhaseAccount.id, fundedPhase.id))
     }
 
-    // Update master account current phase
-    // For Instant accounts, funded phase is phase 1
-    // For One Step, funded phase is phase 2
-    // For Two Step, funded phase is phase 3
     const currentPhaseForFunded = isInstantAccount ? 1 : pendingPhase.phaseNumber + 1
-    await tx.masterAccount.update({
-      where: { id: data.masterAccountId },
-      data: {
-        currentPhase: currentPhaseForFunded,
-        status: 'funded'
-      }
-    })
+    await tx.update(schema.MasterAccount).set({
+      currentPhase: currentPhaseForFunded,
+      status: 'funded',
+      updatedAt: new Date()
+    }).where(eq(schema.MasterAccount.id, data.masterAccountId))
 
-    // Mark notification as read and update data
-    await tx.notification.update({
-      where: { id: data.notificationId },
-      data: {
-        isRead: true,
-        actionRequired: false
-      }
-    })
+    await tx.update(schema.Notification).set({
+      isRead: true,
+      actionRequired: false,
+      updatedAt: new Date()
+    }).where(eq(schema.Notification.id, data.notificationId))
 
     // Create approval notification
-    await tx.notification.create({
+    await tx.insert(schema.Notification).values({
+      userId,
+      type: 'FUNDED_APPROVED',
+      title: 'Funded Account Activated',
+      message: `Congratulations! Your ${masterAccount.accountName} account is now funded.`,
       data: {
-        userId,
-        type: 'FUNDED_APPROVED',
-        title: 'Funded Account Activated',
-        message: `Congratulations! Your ${masterAccount.accountName} account is now funded.`,
-        data: {
-          masterAccountId: data.masterAccountId,
-          fundedAccountId: data.fundedAccountId
-        },
-        actionRequired: false
-      }
+        masterAccountId: data.masterAccountId,
+        fundedAccountId: data.fundedAccountId
+      },
+      actionRequired: false,
+      updatedAt: new Date()
     })
   })
 
-  revalidateTag(`notifications-${userId}`, 'max')
-  revalidateTag(`accounts-${userId}`, 'max')
+  revalidateTag(`notifications-${userId}`)
+  revalidateTag(`accounts-${userId}`)
 }
 
 /**
@@ -273,13 +209,9 @@ export async function handleFundedDeclineAction(data: {
   const userId = await getUserId()
   if (!userId) throw new Error('Unauthorized')
 
-  // Get the master account and validate ownership
-  const masterAccount = await prisma.masterAccount.findFirst({
-    where: {
-      id: data.masterAccountId,
-      userId
-    },
-    include: {
+  const masterAccount = await db.query.MasterAccount.findFirst({
+    where: (table, { eq, and }) => and(eq(table.id, data.masterAccountId), eq(table.userId, userId)),
+    with: {
       PhaseAccount: true
     }
   })
@@ -288,52 +220,37 @@ export async function handleFundedDeclineAction(data: {
     throw new Error('Account not found')
   }
 
-  // Find the pending_approval phase
   const pendingPhase = masterAccount.PhaseAccount.find(p => p.status === 'pending_approval')
   if (!pendingPhase) {
     throw new Error('No pending approval found for this account')
   }
 
-  await prisma.$transaction(async (tx) => {
-    // Update the phase to failed
-    await tx.phaseAccount.update({
-      where: { id: pendingPhase.id },
-      data: { status: 'failed' }
-    })
+  await db.transaction(async (tx) => {
+    await tx.update(schema.PhaseAccount).set({ status: 'failed' }).where(eq(schema.PhaseAccount.id, pendingPhase.id))
 
-    // Update master account status
-    await tx.masterAccount.update({
-      where: { id: data.masterAccountId },
-      data: { status: 'failed' }
-    })
+    await tx.update(schema.MasterAccount).set({ status: 'failed' }).where(eq(schema.MasterAccount.id, data.masterAccountId))
 
-    // Mark notification as read
-    await tx.notification.update({
-      where: { id: data.notificationId },
+    await tx.update(schema.Notification).set({
+      isRead: true,
+      actionRequired: false,
+      updatedAt: new Date()
+    }).where(eq(schema.Notification.id, data.notificationId))
+
+    await tx.insert(schema.Notification).values({
+      userId,
+      type: 'FUNDED_DECLINED',
+      title: 'Funded Request Declined',
+      message: `Your ${masterAccount.accountName} account was declined by the firm.`,
       data: {
-        isRead: true,
-        actionRequired: false
-      }
-    })
-
-    // Create decline notification with reason in data
-    await tx.notification.create({
-      data: {
-        userId,
-        type: 'FUNDED_DECLINED',
-        title: 'Funded Request Declined',
-        message: `Your ${masterAccount.accountName} account was declined by the firm.`,
-        data: {
-          masterAccountId: data.masterAccountId,
-          reason: data.reason,
-          note: 'Met profit target but failed firm review'
-        },
-        actionRequired: false
-      }
+        masterAccountId: data.masterAccountId,
+        reason: data.reason,
+        note: 'Met profit target but failed firm review'
+      },
+      actionRequired: false,
+      updatedAt: new Date()
     })
   })
 
-  revalidateTag(`notifications-${userId}`, 'max')
-  revalidateTag(`accounts-${userId}`, 'max')
+  revalidateTag(`notifications-${userId}`)
+  revalidateTag(`accounts-${userId}`)
 }
-

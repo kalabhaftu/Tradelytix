@@ -115,7 +115,8 @@ export function PerformanceCard({ period, stats, userName }: PerformanceCardProp
             setIsCopied(true)
             toast.success('Stats copied to clipboard')
             setTimeout(() => setIsCopied(false), 2500)
-        }).catch(() => {
+        }).catch((e) => {
+            console.error('Failed to copy to clipboard', e)
             toast.error('Could not access clipboard')
         })
     }, [period, displayName, stats, isProfit])

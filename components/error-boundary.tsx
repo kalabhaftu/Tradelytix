@@ -5,6 +5,7 @@ import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
+import logger from "@/lib/logger";
 
 /**
  * Props for ErrorBoundary component
@@ -66,11 +67,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     this.setState({ errorInfo })
 
-    // Call optional error handler
     this.props.onError?.(error, errorInfo)
 
-    // Log error for debugging
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
+    logger.error('ErrorBoundary caught an error:', error, errorInfo)
   }
 
   handleRetry = (): void => {
@@ -89,12 +88,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     } = this.props
 
     if (hasError) {
-      // Use custom fallback if provided
       if (fallback) {
         return fallback
       }
 
-      // Default error UI
       return (
         <Card className={`border-destructive/50 ${className}`}>
           <CardHeader>
@@ -171,19 +168,17 @@ export function ErrorBoundaryWrapper({
 }: ErrorBoundaryWrapperProps): ReactElement {
   const [key, setKey] = React.useState(0)
 
-  // Reset on resetKey change
   React.useEffect(() => {
     setKey(prev => prev + 1)
   }, [resetKey])
 
-  // Build error message with context if provided
   const finalErrorMessage = errorMessage || (context ? `Error in ${context}` : undefined)
 
   return (
     <ErrorBoundary
       key={key}
       onRetry={() => setKey(prev => prev + 1)}
-      errorMessage={finalErrorMessage}
+      {...(finalErrorMessage !== undefined && { errorMessage: finalErrorMessage })}
       {...props}
     >
       {children}
@@ -252,7 +247,7 @@ export function LoadingOrError({
   }
 
   if (error) {
-    return <DataError error={error} onRetry={onRetry} />
+    return <DataError error={error} {...(onRetry !== undefined && { onRetry })} />
   }
 
   return <>{children}</>

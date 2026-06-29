@@ -1,14 +1,13 @@
 /**
  * Console interceptor for production environment
- * Redirects console.warn and console.error to the centralized logger
+ * Redirects logger.warn and logger.error to the centralized logger
  */
-import { logger } from './logger'
+import logger from './logger'
 
-// Store original console methods to bypass interception when needed
 const originalConsole = {
-  log: typeof window !== 'undefined' ? window.console.log : console.log,
-  warn: typeof window !== 'undefined' ? window.console.warn : console.warn,
-  error: typeof window !== 'undefined' ? window.console.error : console.error,
+  log: typeof window !== 'undefined' ? window.console.log : logger.info,
+  warn: typeof window !== 'undefined' ? window.console.warn : logger.warn,
+  error: typeof window !== 'undefined' ? window.console.error : logger.error,
   info: typeof window !== 'undefined' ? window.console.info : console.info,
   debug: typeof window !== 'undefined' ? window.console.debug : console.debug
 }
@@ -59,8 +58,7 @@ export function applyConsoleInterceptor() {
           .map(arg => typeof arg === 'string' ? arg : safeStringify(arg))
           .join(' ')
 
-        // Forward to our logger
-        if (level === 'error') {
+    if (level === 'error') {
           logger.error(message, { originalArgs: args }, 'ConsoleInterceptor')
         } else if (level === 'warn') {
           logger.warn(message, { originalArgs: args }, 'ConsoleInterceptor')
@@ -84,7 +82,6 @@ export function applyConsoleInterceptor() {
   window.console.error = intercept('error', originalConsole.error)
   window.console.info = intercept('info', originalConsole.info)
   
-  // Mark as intercepted
   ;(window.console as any).__isIntercepted = true
 }
 

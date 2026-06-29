@@ -91,10 +91,10 @@ export async function safeFetch<T = any>(
   try {
     const response = await fetch(url, fetchOptions)
     return handleApiResponse<T>(response, {
-      showToast,
-      autoRefresh,
-      refreshDelay,
-      onError,
+      ...(showToast !== undefined && { showToast }),
+      ...(autoRefresh !== undefined && { autoRefresh }),
+      ...(refreshDelay !== undefined && { refreshDelay }),
+      ...(onError !== undefined && { onError }),
     })
   } catch (error) {
     // Network errors

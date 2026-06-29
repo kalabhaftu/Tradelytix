@@ -33,9 +33,6 @@ const formatCompact = (value: number) => {
   return `$${value.toFixed(0)}`
 }
 
-// ============================================================================
-// Day Cell — exact match to reference images
-// ============================================================================
 const DayCell = memo(function DayCell({
   date,
   dayData,
@@ -115,9 +112,7 @@ const DayCell = memo(function DayCell({
         )} />
       )}
 
-      {/* =======================
-          MOBILE & MINI VIEW (Simple)
-          ======================= */}
+
       <div className={cn(
         "flex flex-col items-center justify-center w-full h-full relative p-1",
         !isMiniCalendar && "min-[1024px]:hidden"
@@ -153,9 +148,7 @@ const DayCell = memo(function DayCell({
         )}
       </div>
 
-      {/* =======================
-          DESKTOP VIEW (Detailed)
-          ======================= */}
+
       <div className={cn(
         "hidden flex-col w-full h-full relative p-2 justify-center items-center",
         !isMiniCalendar && "min-[1024px]:flex"
@@ -243,9 +236,6 @@ const DayCell = memo(function DayCell({
   )
 })
 
-// ============================================================================
-// Weekly Summary Card — right sidebar (looks like TradeZella's weekly summary)
-// ============================================================================
 function WeeklySummary({
   weekIndex,
   weekDays,
@@ -314,9 +304,6 @@ function WeeklySummary({
   )
 }
 
-// ============================================================================
-// Monthly View — grid + weekly summaries sidebar
-// ============================================================================
 export default function MonthlyView({
   currentDate,
   calendarData,
@@ -360,7 +347,6 @@ export default function MonthlyView({
     }
     return weeksArray
   }, [currentDate, shouldUseWeekdayOnlyLayout])
-
 
   // Start/End date bounds for journals
   const startBound = useMemo(() => startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 }), [currentDate])

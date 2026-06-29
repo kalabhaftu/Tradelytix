@@ -1,9 +1,30 @@
 'use server'
 
-import { prisma } from '@/lib/prisma'
-import { NotificationType, NotificationPriority } from '@prisma/client'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq, and, count } from 'drizzle-orm'
 import { revalidateTag } from 'next/cache'
 
+type NotificationType = 'FUNDED_PENDING_APPROVAL' | 'FUNDED_APPROVED' | 'FUNDED_DECLINED' | 'PHASE_TRANSITION_PENDING' | 'PAYOUT_APPROVED' | 'PAYOUT_REJECTED' | 'SYSTEM' | 'RISK_ALERT' | 'IMPORT_STATUS' | 'WEEKLY_PERFORMANCE' | 'STRATEGY_DEVIATION' | 'SYSTEM_ANNOUNCEMENT' | 'TRADE_STATUS' | 'RISK_DAILY_LOSS_80' | 'RISK_DAILY_LOSS_95' | 'RISK_MAX_DRAWDOWN_80' | 'RISK_MAX_DRAWDOWN_95' | 'IMPORT_PROCESSING' | 'IMPORT_COMPLETE' | 'STRATEGY_SESSION_VIOLATION' | 'FEEDBACK_REPLY' | 'PAYMENT_DUE_SOON' | 'PAYMENT_DUE_TODAY' | 'PAYMENT_OVERDUE' | 'SUBSCRIPTION_EXPIRED' | 'PAYMENT_RECEIVED' | 'PAYMENT_FAILED' | 'ACCESS_RESTORED' | 'ADMIN_FREE_ACCESS_GRANTED' | 'ADMIN_FREE_ACCESS_REVOKED';
+
+type NotificationPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+const NotificationType = {
+  RISK_DAILY_LOSS_95: 'RISK_DAILY_LOSS_95' as NotificationType,
+  RISK_DAILY_LOSS_80: 'RISK_DAILY_LOSS_80' as NotificationType,
+  RISK_MAX_DRAWDOWN_95: 'RISK_MAX_DRAWDOWN_95' as NotificationType,
+  RISK_MAX_DRAWDOWN_80: 'RISK_MAX_DRAWDOWN_80' as NotificationType,
+  IMPORT_PROCESSING: 'IMPORT_PROCESSING' as NotificationType,
+  IMPORT_COMPLETE: 'IMPORT_COMPLETE' as NotificationType,
+  SYSTEM_ANNOUNCEMENT: 'SYSTEM_ANNOUNCEMENT' as NotificationType,
+}
+
+const NotificationPriority = {
+  LOW: 'LOW' as NotificationPriority,
+  MEDIUM: 'MEDIUM' as NotificationPriority,
+  HIGH: 'HIGH' as NotificationPriority,
+  CRITICAL: 'CRITICAL' as NotificationPriority,
+}
 export interface NotificationPayload {
     type: NotificationType
     title: string
@@ -39,19 +60,18 @@ export async function createOrUpdateNotification(userId: string, notification: N
     try {
         if (notification.invalidationKey) {
             // Try to find existing unread notification with same invalidation key
-            const existing = await prisma.notification.findFirst({
-                where: {
-                    userId,
-                    invalidationKey: notification.invalidationKey,
-                    isRead: false
-                }
+            const existing = await db.query.Notification.findFirst({
+                where: and(
+                    eq(schema.Notification.userId, userId),
+                    eq(schema.Notification.invalidationKey, notification.invalidationKey),
+                    eq(schema.Notification.isRead, false)
+                )
             })
 
             if (existing) {
                 // UPDATE existing unread notification
-                const updated = await prisma.notification.update({
-                    where: { id: existing.id },
-                    data: {
+                const [updated] = await db.update(schema.Notification)
+                    .set({
                         type: notification.type,
                         title: notification.title,
                         message: notification.message,
@@ -59,29 +79,29 @@ export async function createOrUpdateNotification(userId: string, notification: N
                         priority: notification.priority || NotificationPriority.MEDIUM,
                         actionRequired: notification.actionRequired ?? false,
                         updatedAt: new Date() // Bump to top of notification list
-                    }
-                })
+                    })
+                    .where(eq(schema.Notification.id, existing.id))
+                    .returning()
 
-                revalidateTag(`notifications-${userId}`, 'max')
+                revalidateTag(`notifications-${userId}`)
                 return { success: true, data: updated, action: 'updated' as const }
             }
         }
 
         // CREATE new notification (either no invalidation key or existing was already read)
-        const created = await prisma.notification.create({
-            data: {
-                userId,
-                type: notification.type,
-                title: notification.title,
-                message: notification.message,
-                data: notification.data,
-                invalidationKey: notification.invalidationKey,
-                priority: notification.priority || NotificationPriority.MEDIUM,
-                actionRequired: notification.actionRequired ?? false
-            }
-        })
+        const [created] = await db.insert(schema.Notification).values({
+            userId,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            data: notification.data,
+            invalidationKey: notification.invalidationKey,
+            priority: notification.priority || NotificationPriority.MEDIUM,
+            actionRequired: notification.actionRequired ?? false,
+            updatedAt: new Date()
+        }).returning()
 
-        revalidateTag(`notifications-${userId}`, 'max')
+        revalidateTag(`notifications-${userId}`)
         return { success: true, data: created, action: 'created' as const }
 
     } catch (error) {
@@ -237,18 +257,17 @@ export async function createSystemAnnouncement(
  */
 export async function dismissNotificationsByType(userId: string, type: NotificationType) {
     try {
-        await prisma.notification.updateMany({
-            where: {
-                userId,
-                type,
-                isRead: false
-            },
-            data: {
-                isRead: true
-            }
-        })
+        await db.update(schema.Notification)
+            .set({ isRead: true })
+            .where(
+                and(
+                    eq(schema.Notification.userId, userId),
+                    eq(schema.Notification.type, type),
+                    eq(schema.Notification.isRead, false)
+                )
+            )
 
-        revalidateTag(`notifications-${userId}`, 'max')
+        revalidateTag(`notifications-${userId}`)
         return { success: true }
     } catch (error) {
         return { success: false, error: 'Failed to dismiss notifications' }
@@ -260,17 +279,26 @@ export async function dismissNotificationsByType(userId: string, type: Notificat
  */
 export async function getNotificationStats(userId: string) {
     try {
-        const [total, unread, critical] = await Promise.all([
-            prisma.notification.count({ where: { userId } }),
-            prisma.notification.count({ where: { userId, isRead: false } }),
-            prisma.notification.count({
-                where: {
-                    userId,
-                    isRead: false,
-                    priority: NotificationPriority.CRITICAL
-                }
-            })
+        const [[totalRes], [unreadRes], [criticalRes]] = await Promise.all([
+            db.select({ value: count() }).from(schema.Notification).where(eq(schema.Notification.userId, userId)),
+            db.select({ value: count() }).from(schema.Notification).where(
+                and(
+                    eq(schema.Notification.userId, userId),
+                    eq(schema.Notification.isRead, false)
+                )
+            ),
+            db.select({ value: count() }).from(schema.Notification).where(
+                and(
+                    eq(schema.Notification.userId, userId),
+                    eq(schema.Notification.isRead, false),
+                    eq(schema.Notification.priority, NotificationPriority.CRITICAL)
+                )
+            )
         ])
+
+        const total = totalRes?.value || 0;
+        const unread = unreadRes?.value || 0;
+        const critical = criticalRes?.value || 0;
 
         return {
             success: true,

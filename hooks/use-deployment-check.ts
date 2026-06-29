@@ -29,7 +29,6 @@ export function useDeploymentCheck({
 
   const checkForNewDeployment = useCallback(async () => {
     try {
-      // Fetch the current build ID from a special endpoint
       // We'll use a cache-busted request to ensure we get fresh data
       const response = await fetch('/api/build-id?' + Date.now(), {
         cache: 'no-store',
@@ -46,13 +45,11 @@ export function useDeploymentCheck({
       const newBuildId = data.buildId
 
       if (!buildId) {
-        // First time - just store the build ID
         setBuildId(newBuildId)
         return
       }
 
       if (newBuildId !== buildId) {
-        // New deployment detected!
         setIsNewDeployment(true)
 
         if (!toastShownRef.current) {
@@ -93,10 +90,8 @@ export function useDeploymentCheck({
       return
     }
 
-    // Check immediately on mount
     checkForNewDeployment()
 
-    // Then check periodically
     intervalRef.current = setInterval(checkForNewDeployment, checkInterval)
 
     return () => {
@@ -106,7 +101,6 @@ export function useDeploymentCheck({
     }
   }, [enabled, checkInterval, checkForNewDeployment])
 
-  // Manual check function
   const manualCheck = useCallback(() => {
     checkForNewDeployment()
   }, [checkForNewDeployment])

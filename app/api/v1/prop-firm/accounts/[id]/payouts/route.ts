@@ -1,11 +1,6 @@
-/**
- * Payout Management API
- * GET /api/prop-firm/accounts/[id]/payouts - Get payout eligibility and history
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { getTradeNetPnl } from '@/lib/metrics/pnl'
@@ -41,21 +36,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // ID is pure masterAccountId (UUID), not composite
 
     // Get account and calculate eligibility
-    const masterAccount = await prisma.masterAccount.findFirst({
-      where: { id: masterAccountId, userId: internalUserId },
-      include: {
+    const masterAccount = await db.query.MasterAccount.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, masterAccountId), eq(table.userId, internalUserId)),
+      with: {
         PhaseAccount: {
-          where: { status: { in: ['active', 'passed', 'archived'] } },
-          include: { 
+          where: (table, { inArray }) => inArray(table.status, ['active', 'passed', 'archived']),
+          with: { 
             Trade: {
-              select: {
+              columns: {
                 pnl: true,
                 commission: true,
                 exitTime: true
               }
             }
           },
-          orderBy: { phaseNumber: 'asc' }
+          orderBy: (table, { asc }) => [asc(table.phaseNumber)]
         }
       }
     })
@@ -115,13 +110,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Fetch actual payout history from database
-    const payoutHistory = currentPhase ? await prisma.payout.findMany({
-      where: {
-        phaseAccountId: currentPhase.id
-      },
-      orderBy: {
-        requestDate: 'desc'
-      }
+    const payoutHistory = currentPhase ? await db.query.Payout.findMany({
+      where: (table, { eq }) => eq(table.phaseAccountId, currentPhase.id),
+      orderBy: (table, { desc }) => [desc(table.requestDate)]
     }) : []
 
     return NextResponse.json({

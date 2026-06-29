@@ -3,6 +3,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { z } from "zod"
 
 import { ensureUserInDatabase } from "@/server/auth"
+import { logger } from '@/lib/logger';
 
 const restoreSessionSchema = z.object({
   accessToken: z.string().trim().min(1).max(8192),
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
 
   if (!parsed.success) {
     if (process.env.NODE_ENV !== "production") {
-      console.error("Session restore schema validation failed:", parsed.error.format(), "Body received:", body)
+      logger.error("Session restore schema validation failed:", parsed.error.format(), "Body received:", body)
     }
     return NextResponse.json({ authenticated: false, error: "invalid_tokens" }, { status: 400 })
   }
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
       { status: 401 },
     )
     pendingCookies.forEach(({ name, value, options }) => {
-      errorResponse.cookies.set(name, value, options)
+      errorResponse.cookies.set(name, value, options as any)
     })
     return errorResponse
   }
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
   )
 
   pendingCookies.forEach(({ name, value, options }) => {
-    response.cookies.set(name, value, options)
+    response.cookies.set(name, value, options as any)
   })
 
   return response

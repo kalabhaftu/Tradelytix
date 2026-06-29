@@ -1,6 +1,7 @@
 'use client'
 
 import { formatDistanceToNow } from 'date-fns'
+import { NotificationRow as Notification } from '@/lib/db/schema/users'
 import {
   Check,
   Trash2,
@@ -21,7 +22,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { Notification, NotificationType } from '@prisma/client' // Trigger IDE TS cache refresh
+import type { NotificationType } from '@/lib/db/schema/users';
 
 interface NotificationItemProps {
   notification: Notification
@@ -172,7 +173,7 @@ export function NotificationItem({
 
           <div className="flex items-center justify-between mt-2">
             <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+              {notification.createdAt ? formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true }) : 'Just now'}
             </span>
 
             <div className="flex items-center gap-1">
@@ -208,7 +209,7 @@ export function NotificationItem({
             </div>
           </div>
 
-          {notification.type === 'FUNDED_DECLINED' && notification.data && (
+          {notification.type === 'FUNDED_DECLINED' && !!notification.data && (
             <div className="mt-2 p-2 bg-destructive/10 rounded text-xs">
               <div className="flex items-center gap-1 text-destructive">
                 <AlertTriangle className="h-3 w-3" />

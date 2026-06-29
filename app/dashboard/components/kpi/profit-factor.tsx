@@ -22,7 +22,6 @@ const ProfitFactor = React.memo(function ProfitFactor({ size }: ProfitFactorProp
   const { isPrivacyMode } = useDashboardDisplay()
   const safeProfitFactor = Number.isFinite(profitFactor) ? profitFactor : 0
 
-  // Memoize expensive calculations
   const { progressValue, color } = React.useMemo(() => {
     // Convert profit factor to percentage for circular progress
     // Map 0-3.0 to 0-100% for better visualization

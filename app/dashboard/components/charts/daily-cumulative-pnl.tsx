@@ -27,10 +27,6 @@ import { formatNumber } from "@/lib/utils"
 import { WidgetSize } from '@/app/dashboard/types/dashboard'
 import { useTheme } from '@/context/theme-provider'
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
 interface DailyCumulativePnLProps {
   size?: WidgetSize
 }
@@ -41,10 +37,6 @@ interface ChartDataPoint {
   dailyPnL: number
   trades: number
 }
-
-// ============================================================================
-// CONSTANTS - Tradezella Premium Styling
-// ============================================================================
 
 const COLORS = {
   profit: 'hsl(var(--chart-profit))',
@@ -58,11 +50,6 @@ const CHART_CONFIG = {
   referenceLineOpacity: 0.4,
   strokeWidth: 2.5
 } as const
-
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
 
 export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulativePnLProps) {
   const { data: rawChartData, isLoading } = useWidgetData('dailyCumulativePnl')
@@ -79,9 +66,6 @@ export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulat
     [rawChartData, transformValue, displayMode]
   )
 
-  // ---------------------------------------------------------------------------
-  // GRADIENT OFFSET CALCULATION (PRESERVED - DO NOT MODIFY)
-  // ---------------------------------------------------------------------------
   const gradientOffset = React.useMemo(() => {
     if (chartData.length === 0) return 0
 
@@ -116,9 +100,6 @@ export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulat
     )
   }
 
-  // ---------------------------------------------------------------------------
-  // RENDER
-  // ---------------------------------------------------------------------------
   return (
     <WidgetCard title="Cumulative P/L">
       <div className="w-full h-full">
@@ -127,9 +108,7 @@ export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulat
               data={chartData}
               margin={{ top: 20, right: 20, left: 10, bottom: 20 }}
             >
-              {/* Gradient Definitions */}
               <defs>
-                {/* Split gradient for area fill */}
                 <linearGradient id="cumulativeFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={COLORS.profit} stopOpacity={0.5} />
                   <stop offset={`${gradientOffset * 100}%`} stopColor={COLORS.profit} stopOpacity={0.1} />
@@ -137,14 +116,12 @@ export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulat
                   <stop offset="100%" stopColor={COLORS.loss} stopOpacity={0.5} />
                 </linearGradient>
 
-                {/* Split gradient for stroke */}
                 <linearGradient id="cumulativeStroke" x1="0" y1="0" x2="0" y2="1">
                   <stop offset={`${gradientOffset * 100}%`} stopColor={COLORS.profit} />
                   <stop offset={`${gradientOffset * 100}%`} stopColor={COLORS.loss} />
                 </linearGradient>
               </defs>
 
-              {/* Subtle Grid - Horizontal Only */}
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke={COLORS.grid}
@@ -152,7 +129,6 @@ export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulat
                 vertical={false}
               />
 
-              {/* X Axis - Dates */}
               <XAxis
                 dataKey="date"
                 tickFormatter={(value) => {
@@ -171,7 +147,6 @@ export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulat
                 minTickGap={40}
               />
 
-{/* Y Axis - Currency */}
                <YAxis
                  tick={isPrivacyMode ? false : { fontSize: isCompact ? 10 : 11 }}
                  tickFormatter={(value) => isPrivacyMode ? "" : formatValue(value, { kind: 'money', forceMode: displayMode, compact: true, sensitive: true })}
@@ -182,7 +157,6 @@ export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulat
                  width={isPrivacyMode ? 10 : 55}
                />
 
-              {/* Zero Reference Line */}
               <ReferenceLine
                 y={0}
                 stroke={COLORS.axis}
@@ -190,7 +164,6 @@ export default function DailyCumulativePnL({ size = 'small-long' }: DailyCumulat
                 strokeOpacity={CHART_CONFIG.referenceLineOpacity}
               />
 
-              {/* Tooltip */}
               <RechartsTooltip
                 content={<SharedChartTooltip />}
                 cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeDasharray: '3 3' }}

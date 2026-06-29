@@ -1,13 +1,10 @@
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db/client';
+import * as schema from '@/lib/db/schema';
 import { NextRequest, NextResponse } from 'next/server';
 import { validateCronRequest } from '@/lib/cron-auth';
 import { logger } from '@/lib/logger';
+import { eq, and, isNotNull, inArray } from 'drizzle-orm';
 
-/**
- * Helper function to check if current time matches the configured daily sync time
- * @param dailySyncTime The configured sync time from database
- * @returns true if it's time to sync (within 15 minutes of configured time)
- */
 function shouldPerformDailySync(dailySyncTime: Date | null): boolean {
   if (!dailySyncTime) return false;
   
@@ -22,7 +19,6 @@ function shouldPerformDailySync(dailySyncTime: Date | null): boolean {
   const currentTimeInMinutes = currentHour * 60 + currentMinute;
   const diffInMinutes = Math.abs(currentTimeInMinutes - syncTimeInMinutes);
   
-  // Check if we're within 15 minutes of the sync time (accounting for day wrap)
   return diffInMinutes <= 15 || diffInMinutes >= (24 * 60 - 15);
 }
 
@@ -32,23 +28,15 @@ export async function GET(request: NextRequest) {
 
   try {
     // Get all users with Tradovate tokens from your database
-    const synchronizations = await prisma.synchronization.findMany({
-      where: {
-        service: 'tradovate',
-        token: { not: null }
-      }
+    const synchronizations = await db.query.Synchronization.findMany({
+      where: (table, { eq, isNotNull }) => and(eq(table.service, 'tradovate'), isNotNull(table.token))
     });
 
     // If tokenExpiresAt is null, clear the token (invalid state)
     const missingExpiry = synchronizations.filter((s) => !s.tokenExpiresAt);
     if (missingExpiry.length > 0) {
       logger.warn(`[CRON] Clearing ${missingExpiry.length} Tradovate tokens missing tokenExpiresAt`);
-      await prisma.synchronization.updateMany({
-        where: {
-          id: { in: missingExpiry.map((s) => s.id) }
-        },
-        data: { token: null, tokenExpiresAt: null }
-      });
+      await db.update(schema.Synchronization).set({ token: null, tokenExpiresAt: null }).where(inArray(schema.Synchronization.id, missingExpiry.map((s) => s.id)));
     }
 
     const validSynchronizations = synchronizations.filter((s) => !!s.tokenExpiresAt);
@@ -63,7 +51,6 @@ export async function GET(request: NextRequest) {
       // Always attempt renewal for each token
       renewed = await renewUserToken(synchronization);
       
-      // Check if we should perform daily sync
       if (shouldPerformDailySync(synchronization.dailySyncTime)) {
         synced = await performDailySync(synchronization);
       }
@@ -92,9 +79,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/**
- * Attempts to renew the Tradovate access token for a given synchronization record.
- */
 async function renewUserToken(synchronization: any): Promise<boolean> {
   try {
     const apiBaseUrl = synchronization.environment === 'demo' 
@@ -113,57 +97,24 @@ async function renewUserToken(synchronization: any): Promise<boolean> {
       const errorText = await renewal.text();
       logger.error(`[CRON] Failed to renew token for account ${synchronization.accountId}: ${errorText}`);
       // Remove invalid/expired token
-      await prisma.user.update({
-        where: { id: synchronization.userId },
-        data: {
-          synchronizations: {
-            update: {
-              where: { id: synchronization.id },
-              data: { token: null, tokenExpiresAt: null }
-            }
-          }
-        }
-      });
+      await db.update(schema.Synchronization).set({ token: null, tokenExpiresAt: null }).where(eq(schema.Synchronization.id, synchronization.id));
       return false;
     }
 
     const renewalData = await renewal.json();
     
     // Update database
-    await prisma.user.update({
-      where: { id: synchronization.userId },
-      data: {
-        synchronizations: {
-          update: {
-            where: { id: synchronization.id },
-            data: { token: renewalData.accessToken, tokenExpiresAt: new Date(renewalData.expirationTime) }
-          }
-        }
-      }
-    });
+    await db.update(schema.Synchronization).set({ token: renewalData.accessToken, tokenExpiresAt: new Date(renewalData.expirationTime) }).where(eq(schema.Synchronization.id, synchronization.id));
 
     return true;
   } catch (error) {
     logger.error(`[CRON] Error renewing token for account ${synchronization.accountId}:`, error);
     // On unexpected error, also expire the token to force re-auth
-    await prisma.user.update({
-      where: { id: synchronization.userId },
-      data: {
-        synchronizations: {
-          update: {
-            where: { id: synchronization.id },
-            data: { token: null, tokenExpiresAt: null }
-          }
-        }
-      }
-    });
+    await db.update(schema.Synchronization).set({ token: null, tokenExpiresAt: null }).where(eq(schema.Synchronization.id, synchronization.id));
     return false;
   }
 }
 
-/**
- * Performs a daily sync for the given synchronization by fetching trades from Tradovate
- */
 async function performDailySync(synchronization: any): Promise<boolean> {
   try {
     logger.info(`[CRON] Performing daily sync for account ${synchronization.accountId}`);
@@ -175,7 +126,7 @@ async function performDailySync(synchronization: any): Promise<boolean> {
     const includedFeeTypes = synchronization.includedFeeTypes as Record<string, boolean> | null | undefined
     const result = await getTradovateTrades(synchronization.token, {
       userId: synchronization.userId,
-      includedFeeTypes: includedFeeTypes ?? undefined,
+      ...(includedFeeTypes && { includedFeeTypes: includedFeeTypes as any }),
     });
     
     if (result.error) {

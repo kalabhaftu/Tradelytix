@@ -1,6 +1,9 @@
 import { useState, useCallback } from 'react'
 import { DataSerializer } from '@/lib/data-serialization'
-import { Trade } from '@prisma/client'
+import { type InferSelectModel } from 'drizzle-orm'
+import { Trade as schemaTrade } from '@/lib/db/schema'
+
+type Trade = InferSelectModel<typeof schemaTrade>
 
 export interface LargeDatasetConfig {
   pageSize: number
@@ -82,12 +85,10 @@ export const useLargeDataset = <T>(
         }
       }
 
-      // Ensure data is an array
       if (!Array.isArray(data)) {
         data = []
       }
 
-      // Ensure each item in the array has the expected structure
       data = data.filter((item: any) => item && typeof item === 'object')
 
       setCache(prev => new Map(prev.set(page, data)))
@@ -184,7 +185,6 @@ export const useLargeDataset = <T>(
       error: null
     }))
 
-    // Load first page
     await loadMore(filters)
   }, [loadMore])
 
@@ -211,7 +211,6 @@ export const useSharedTrades = () => {
 
   const pageSize = 200 // Load 200 trades at a time
 
-  // Simplified helper function for fetching trades
   const fetchTrades = useCallback(async (limit: number = pageSize): Promise<Trade[]> => {
     try {
 
@@ -250,11 +249,9 @@ export const useSharedTrades = () => {
     setError(null)
 
     try {
-      // Clear existing trades and start fresh
       setAllTrades([])
 
-      // Load all trades at once using the simplified helper
-      const tradesArray = await fetchTrades(5000) // Load up to 5000 trades at once
+      const tradesArray = await fetchTrades(5000)
 
       setAllTrades(tradesArray)
       setTotalCount(tradesArray.length)
@@ -273,12 +270,10 @@ export const useSharedTrades = () => {
     setLoading(true)
 
     try {
-      // Load additional trades using the simplified helper
       const moreTrades = await fetchTrades(pageSize)
 
       if (moreTrades.length === 0) {
       } else {
-        // Append to existing trades
         setAllTrades(prev => [...prev, ...moreTrades])
       }
 

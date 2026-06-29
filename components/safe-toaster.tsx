@@ -21,16 +21,16 @@ import { cn } from '@/lib/utils'
 type Variant = 'default' | 'success' | 'error' | 'warning'
 
 interface CustomToastProps {
-  title?: string
+  title?: string | undefined
   message: string
-  variant?: Variant
+  variant?: Variant | undefined
   toastId: string | number
   actions?: {
     label: string
     onClick: () => void
     variant?: 'default' | 'outline' | 'ghost'
-  }
-  onDismiss?: () => void
+  } | undefined
+  onDismiss?: (() => void) | undefined
 }
 
 const variantStyles: Record<Variant, string> = {

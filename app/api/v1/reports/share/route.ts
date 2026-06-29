@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { nanoid } from 'nanoid'
 import { z } from 'zod'
@@ -8,6 +9,7 @@ import { calculateReportStatistics } from '@/lib/statistics/report-statistics'
 import { createErrorResponse, createSuccessResponse } from '@/lib/api-response'
 import { logger } from '@/lib/logger'
 import { getWebsiteURL } from '@/server/auth'
+import { eq, desc } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
 
@@ -69,7 +71,7 @@ export async function POST(req: NextRequest) {
     }
 
     const payload = parsed.data
-    const sharingPolicy = await (prisma as any).adminSharingPolicy.findUnique({ where: { key: 'default' } }).catch(() => null)
+    const sharingPolicy = await db.query.AdminSharingPolicy.findFirst({ where: (table, { eq }) => eq(table.key, 'default') }).catch(() => null)
 
     if (sharingPolicy?.publicSharingEnabled === false) {
       return createErrorResponse('Public report sharing is currently disabled', 403)
@@ -121,20 +123,18 @@ export async function POST(req: NextRequest) {
       return createErrorResponse('Shared reports require an expiration date', 400)
     }
 
-    const shared = await prisma.sharedReport.create({
-      data: {
-        id: nanoid(),
-        userId: internalUserId,
-        slug,
-        title: payload.title || 'Trading Report',
-        dateFrom: payload.dateFrom || null,
-        dateTo: payload.dateTo || null,
-        accountId: payload.accountId || null,
-        snapshot: snapshotPayload,
-        isPublic: true,
-        expiresAt,
-      },
-    })
+    const shared = (await db.insert(schema.SharedReport).values({
+      id: nanoid(),
+      userId: internalUserId,
+      slug,
+      title: payload.title || 'Trading Report',
+      dateFrom: payload.dateFrom || null,
+      dateTo: payload.dateTo || null,
+      accountId: payload.accountId || null,
+      snapshot: snapshotPayload,
+      isPublic: true,
+      expiresAt,
+    }).returning())[0]
 
     const appUrl = await getWebsiteURL()
     return createSuccessResponse({ slug, url: new URL(`/reports/shared/${slug}`, appUrl).toString(), id: shared.id })
@@ -150,9 +150,9 @@ export async function GET(req: NextRequest) {
 
   try {
     const { internalUserId } = await getResolvedUserIdentity()
-    const reports = await prisma.sharedReport.findMany({
-      where: { userId: internalUserId },
-      select: {
+    const reports = await db.query.SharedReport.findMany({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      columns: {
         id: true,
         slug: true,
         title: true,
@@ -163,7 +163,7 @@ export async function GET(req: NextRequest) {
         expiresAt: true,
         createdAt: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: (table, { desc }) => [desc(table.createdAt)],
     })
     return createSuccessResponse({ reports })
   } catch (err) {
@@ -185,9 +185,9 @@ export async function DELETE(req: NextRequest) {
       return createErrorResponse('Missing report ID', 400)
     }
 
-    const report = await prisma.sharedReport.findUnique({
-      where: { id },
-      select: { userId: true },
+    const report = await db.query.SharedReport.findFirst({
+      where: (table, { eq }) => eq(table.id, id),
+      columns: { userId: true },
     })
 
     if (!report) {
@@ -198,9 +198,7 @@ export async function DELETE(req: NextRequest) {
       return createErrorResponse('Unauthorized', 403)
     }
 
-    await prisma.sharedReport.delete({
-      where: { id },
-    })
+    await db.delete(schema.SharedReport).where(eq(schema.SharedReport.id, id))
 
     return createSuccessResponse({ deleted: true })
   } catch (err) {

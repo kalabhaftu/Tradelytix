@@ -83,7 +83,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     clearTimeout(timeoutId)
 
-    // Handle timeout errors gracefully
     if (error instanceof Error) {
       if (error.name === 'AbortError' || error.message.includes('timeout')) {
         return NextResponse.json(
@@ -99,8 +98,6 @@ export async function GET(request: NextRequest) {
         )
       }
     }
-
-    // Handle unexpected errors
 
     return NextResponse.json(
       { error: 'Auth check failed' },

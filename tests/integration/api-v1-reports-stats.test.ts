@@ -23,10 +23,12 @@ vi.mock('@/lib/rate-limiter', () => ({
   apiLimiter: {},
 }))
 
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
-    user: {
-      findUnique: vi.fn().mockResolvedValue({ id: 'internal-user-id' }),
+vi.mock('@/lib/db/client', () => ({
+  db: {
+    query: {
+      User: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'internal-user-id' }),
+      },
     },
   },
 }))

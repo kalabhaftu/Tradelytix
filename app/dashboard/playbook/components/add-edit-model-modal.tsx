@@ -132,7 +132,10 @@ export function AddEditModelModal({ isOpen, onClose, onSave, model, mode }: AddE
 
   const handleRuleChange = (index: number, field: keyof Rule, value: string) => {
     const newRules = [...rules]
-    newRules[index] = { ...newRules[index], [field]: value }
+    const updatedRule = { ...newRules[index] }
+    // @ts-ignore
+    updatedRule[field] = value
+    newRules[index] = updatedRule
     setRules(newRules)
   }
 
@@ -157,7 +160,7 @@ export function AddEditModelModal({ isOpen, onClose, onSave, model, mode }: AddE
         name: name.trim(),
         rules: filteredRules,
         setups: setups.filter(s => s.trim()),
-        notes: notes.trim() || null,
+        ...(notes.trim() ? { notes: notes.trim() } : {}),
       })
       toast.success(mode === 'add' ? 'Model created successfully' : 'Model updated successfully')
       onClose()
@@ -233,7 +236,7 @@ export function AddEditModelModal({ isOpen, onClose, onSave, model, mode }: AddE
                         </SelectContent>
                       </Select>
                       <Input
-                        placeholder={category.placeholder}
+                        placeholder={category?.placeholder}
                         className="font-medium text-sm h-10 bg-muted/10 border-border/40"
                         value={rule.text}
                         onChange={(e) => handleRuleChange(index, 'text', e.target.value)}

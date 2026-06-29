@@ -1,17 +1,6 @@
-/**
- * Server-Filtered Trades API (v1)
- * 
- * GET /api/v1/trades
- * 
- * Replaces client-side `formattedTrades` useMemo in DataProvider.
- * All 7 filters (account, date, instrument, PnL, time, weekday, hour)
- * are applied server-side via Prisma WHERE clauses.
- * 
- * Returns: { trades, total, statistics, calendarData }
- */
-
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { convertDecimal } from '@/lib/utils/decimal'
 import { calculateStatistics, classifyTrade, formatCalendarData, groupTradesByExecution } from '@/lib/utils'
@@ -40,6 +29,7 @@ import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { getTradeNetPnl, normalizePnlDisplayMode } from '@/lib/metrics/pnl'
+import { eq, and, or, inArray, desc } from 'drizzle-orm'
 
 const MAX_ANALYTICS_TRADE_LIMIT = 5000
 const MAX_TABLE_PAGE_LIMIT = 500
@@ -125,7 +115,6 @@ const TRADE_SELECT = {
   entryTime: true,
   exitTime: true,
   symbol: true,
-  TradingModel: { select: { id: true, name: true } },
 } as const
 
 export async function GET(request: NextRequest) {
@@ -162,7 +151,7 @@ export async function GET(request: NextRequest) {
     const outcome = (params.get('outcome') || '').trim()
     const tagIds = boundedList(params.get('tags'))
     
-    // Build Prisma where clause — ALL filtering server-side
+    // Build Drizzle where clause — ALL filtering server-side
     const whereClause: any = { userId: internalUserId }
 
     if (params.get('liveOnly') === 'true') {
@@ -171,27 +160,21 @@ export async function GET(request: NextRequest) {
     
     if (accountNumbers.length > 0) {
       // Find the user's regular accounts matching these accountNumbers (either by ID or number)
-      const userAccounts = await prisma.account.findMany({
-        where: {
-          userId: internalUserId,
-          OR: [
-            { id: { in: accountNumbers } },
-            { number: { in: accountNumbers } }
-          ]
-        },
-        select: { id: true, number: true }
+      const userAccounts = await db.query.Account.findMany({
+        where: (table, { or, inArray }) => or(
+          inArray(table.id, accountNumbers),
+          inArray(table.number, accountNumbers)
+        ),
+        columns: { id: true, number: true }
       })
 
       // Find the user's phase accounts matching these accountNumbers (either by ID or phaseId)
-      const userPhaseAccounts = await prisma.phaseAccount.findMany({
-        where: {
-          MasterAccount: { userId: internalUserId },
-          OR: [
-            { id: { in: accountNumbers } },
-            { phaseId: { in: accountNumbers } }
-          ]
-        },
-        select: { id: true, phaseId: true }
+      const userPhaseAccounts = await db.query.PhaseAccount.findMany({
+        where: (table, { or, inArray }) => or(
+          inArray(table.id, accountNumbers),
+          inArray(table.phaseId, accountNumbers)
+        ),
+        columns: { id: true, phaseId: true }
       })
 
       const resolvedAccountIds = userAccounts.map(a => a.id)
@@ -301,32 +284,33 @@ export async function GET(request: NextRequest) {
     const useDirectPagination = !needsAnalytics && pageLimit !== null && weekday === null && hour === null && !outcome
     const tradeQuery = {
       where: whereClause,
-      orderBy: { entryDate: 'desc' as const },
-      take: useDirectPagination ? pageLimit : limit,
-      ...(useDirectPagination ? { skip: pageOffset } : {}),
-      select: TRADE_SELECT,
+      orderBy: (table: any, { desc }: any) => [desc(table.entryDate)],
+      limit: useDirectPagination ? pageLimit : limit,
+      ...(useDirectPagination ? { offset: pageOffset } : {}),
+      columns: TRADE_SELECT,
+      with: { TradingModel: { columns: { id: true, name: true } } },
     }
 
-    const rawTrades = await prisma.trade.findMany(tradeQuery)
+    const rawTrades = await db.query.Trade.findMany(tradeQuery)
     const totalForDirectPagination = useDirectPagination
-      ? await prisma.trade.count({ where: whereClause })
+      ? await db.$count(schema.Trade, whereClause)
       : null
-    const userSettings = await prisma.userSettings.findUnique({
-      where: { userId: internalUserId },
-      select: {
+    const userSettings = await db.query.UserSettings.findFirst({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      columns: {
         breakEvenThreshold: true,
         pnlDisplayMode: true,
       }
     })
-    const regularAccounts = includeStats ? await prisma.account.findMany({
-      where: { userId: internalUserId },
-      select: { id: true, number: true, startingBalance: true }
+    const regularAccounts = includeStats ? await db.query.Account.findMany({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      columns: { id: true, number: true, startingBalance: true }
     }) : []
-    const propFirmAccounts = includeStats ? await prisma.masterAccount.findMany({
-      where: { userId: internalUserId },
-      include: {
+    const propFirmAccounts = includeStats ? await db.query.MasterAccount.findMany({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      with: {
         PhaseAccount: {
-          select: { id: true, phaseId: true, phaseNumber: true, status: true }
+          columns: { id: true, phaseId: true, phaseNumber: true, status: true }
         }
       }
     }) : []
@@ -406,20 +390,18 @@ export async function GET(request: NextRequest) {
 
     let relevantTransactions: any[] = []
     try {
-      if ('transaction' in prisma) {
-        const liveAccountIds = filteredAccounts
-          .filter((account: any) => account.accountType === 'live')
-          .map((account: any) => account.id)
-          .filter(Boolean)
-        if (liveAccountIds.length > 0) {
-          relevantTransactions = await (prisma as any).transaction.findMany({
-            where: {
-              userId: internalUserId,
-              accountId: { in: liveAccountIds },
-            },
-            select: { accountId: true, amount: true },
-          })
-        }
+      const liveAccountIds = filteredAccounts
+        .filter((account: any) => account.accountType === 'live')
+        .map((account: any) => account.id)
+        .filter(Boolean)
+      if (liveAccountIds.length > 0) {
+        relevantTransactions = await db.query.Transaction.findMany({
+          where: (table, { and, inArray }) => and(
+            eq(table.userId, internalUserId),
+            inArray(table.accountId, liveAccountIds)
+          ),
+          columns: { accountId: true, amount: true },
+        })
       }
     } catch {
       relevantTransactions = []

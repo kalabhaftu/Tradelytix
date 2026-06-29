@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from "next/server";
 import {
   getTradovateToken,
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
       message: "Sync completed",
     });
   } catch (error) {
-    console.error("Error performing Tradovate sync:", error);
+    logger.error("Error performing Tradovate sync:", error);
     return NextResponse.json(
       { success: false, message: "Failed to perform Tradovate sync" },
       { status: 500 }

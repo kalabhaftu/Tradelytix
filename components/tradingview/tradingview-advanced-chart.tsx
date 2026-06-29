@@ -54,7 +54,6 @@ export function TradingViewAdvancedChart({
       const symbol = tradeData?.symbol || 'NASDAQ:AAPL'
       const isDark = resolvedTheme === 'dark'
 
-      // Clear any existing content
       containerRef.current.innerHTML = ''
 
       // Create iframe-based TradingView widget
@@ -88,7 +87,6 @@ export function TradingViewAdvancedChart({
       // Use TradingView's built-in theme handling
       // The theme parameter already handles all colors and styles
 
-      // Add trade time range if available
       if (tradeData) {
         const entryTime = tradeData.entryTime.getTime() / 1000
         const exitTime = tradeData.exitTime.getTime() / 1000
@@ -99,7 +97,6 @@ export function TradingViewAdvancedChart({
       iframe.src = `${baseUrl}?${params.toString()}`
       iframe.title = `TradingView Chart for ${symbol}`
 
-      // Add error handling
       iframe.onerror = () => {
         setError('Failed to load chart')
         setIsLoading(false)
@@ -108,7 +105,6 @@ export function TradingViewAdvancedChart({
       iframe.onload = () => {
         setIsLoading(false)
 
-        // Chart loads without custom overlays - ready for new implementation
       }
 
       containerRef.current.appendChild(iframe)

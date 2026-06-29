@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
+import { eq, and } from 'drizzle-orm'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -34,19 +36,19 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const { id } = await params
 
   try {
-    const existing = await prisma.journalTemplate.findFirst({
-      where: {
-        id,
-        userId: identity.internalUserId,
-      },
-      select: { id: true },
+    const existing = await db.query.JournalTemplate.findFirst({
+      where: (table, { eq, and }) =>
+        and(eq(table.id, id), eq(table.userId, identity.internalUserId)),
+      columns: { id: true },
     })
 
     if (!existing) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 })
     }
 
-    await prisma.journalTemplate.delete({ where: { id } })
+    await db
+      .delete(schema.JournalTemplate)
+      .where(eq(schema.JournalTemplate.id, id))
 
     return NextResponse.json({ success: true })
   } catch (error) {

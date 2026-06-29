@@ -48,13 +48,10 @@ interface WidgetCardProps {
   children: React.ReactNode
   /** Widget title shown in the header */
   title?: string
-  /** Optional right-side header content (icons, badges, etc.) */
   headerRight?: React.ReactNode
   /** Whether this is a KPI card (compact, no border-radius padding) */
   isKpi?: boolean
-  /** Additional className */
   className?: string
-  /** Override padding */
   noPadding?: boolean
 }
 
@@ -201,9 +198,6 @@ export function WidgetCard({
   )
 }
 
-/**
- * Shared chart tooltip — matches the reports page tooltip design
- */
 export function ChartTooltip({ active, payload, label }: any) {
   const { formatValue, mode, startingBalance } = useDashboardDisplay()
 

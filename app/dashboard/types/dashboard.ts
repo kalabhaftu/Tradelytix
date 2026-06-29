@@ -32,7 +32,6 @@ export type WidgetType =
   | 'propFirmGrowthCurve'
 export type WidgetSize = 'tiny' | 'small' | 'small-long' | 'medium' | 'large' | 'extra-large' | 'kpi'
 
-
 export interface LayoutItem {
   i: string
   x: number

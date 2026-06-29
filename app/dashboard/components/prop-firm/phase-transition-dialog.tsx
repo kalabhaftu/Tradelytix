@@ -121,7 +121,6 @@ export function PhaseTransitionDialog({
       // Close dialog FIRST to prevent re-triggering
       onClose()
 
-      // Reset form
       setNextPhaseId('')
 
       // Wait a bit before refreshing to allow dialog to close

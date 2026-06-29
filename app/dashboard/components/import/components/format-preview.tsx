@@ -1,6 +1,7 @@
 "use client";
 
-import { Trade } from "@prisma/client";
+import type { TradeType } from '@/lib/db/schema/trades';
+;
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import {
   Table,
@@ -130,7 +131,6 @@ export function FormatPreview({
   // Auto-process next batch when current batch completes
   useEffect(() => {
     if (!isProcessing && hasStartedRef.current && currentBatch < totalBatches - 1 && processedTrades.length > 0) {
-      // Check if current batch was processed
       const expectedProcessed = (currentBatch + 1) * batchSize;
       if (processedTrades.length >= Math.min(expectedProcessed, validTrades.length) * 0.8) {
         // Calculate next batch values BEFORE the timeout to avoid stale closure

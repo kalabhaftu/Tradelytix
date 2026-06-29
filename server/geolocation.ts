@@ -1,4 +1,6 @@
-import { prisma } from '@/lib/prisma'
+import logger from '@/lib/logger';
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 
 interface GeoData {
   country?: string
@@ -16,7 +18,6 @@ interface GeoData {
  */
 export async function captureUserGeo(userId: string, ipAddress: string): Promise<void> {
   try {
-    // Skip localhost/private IPs
     if (!ipAddress || ipAddress === 'unknown' || isPrivateIP(ipAddress)) {
       return
     }
@@ -24,21 +25,19 @@ export async function captureUserGeo(userId: string, ipAddress: string): Promise
     const geo = await fetchGeoFromIP(ipAddress)
     if (!geo) return
 
-    await prisma.userGeoLog.create({
-      data: {
-        userId,
-        country: geo.country,
-        countryCode: geo.countryCode,
-        city: geo.city,
-        region: geo.region,
-        latitude: geo.lat,
-        longitude: geo.lon,
-        ipAddress,
-      },
+    await db.insert(schema.UserGeoLog).values({
+      userId,
+      country: geo.country,
+      countryCode: geo.countryCode,
+      city: geo.city,
+      region: geo.region,
+      latitude: geo.lat,
+      longitude: geo.lon,
+      ipAddress,
     })
   } catch (err) {
     // Silent failure — geo tracking should never break the user flow
-    console.error('[GeoCapture] Failed:', err)
+    logger.error({ event: 'system_error', error: err }, '[GeoCapture] Failed:')
   }
 }
 
@@ -88,11 +87,8 @@ function isPrivateIP(ip: string): boolean {
   )
 }
 
-/**
- * Extract client IP from request headers.
- */
 export function extractIP(headers: Headers): string {
   const forwarded = headers.get('x-forwarded-for')
-  if (forwarded) return forwarded.split(',')[0].trim()
+  if (forwarded) return forwarded.split(',')[0]?.trim() || 'unknown'
   return headers.get('x-real-ip') || 'unknown'
 }

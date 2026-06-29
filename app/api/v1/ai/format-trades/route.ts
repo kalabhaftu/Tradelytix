@@ -6,7 +6,6 @@ import { z } from "zod";
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 
-
 export const maxDuration = 30;
 
 // Initialize xAI provider (OpenAI-compatible)

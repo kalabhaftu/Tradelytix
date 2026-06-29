@@ -34,7 +34,6 @@ export function useAutoCacheCleanup(options: UseAutoCacheCleanupOptions = {}) {
           const wasCleared = await autoCleanStaleCache()
           
           if (wasCleared) {
-            // Also invalidate in-memory caches
             invalidateAccountsCache('auto-cleanup on version mismatch')
           }
         } catch (error) {
@@ -43,9 +42,7 @@ export function useAutoCacheCleanup(options: UseAutoCacheCleanupOptions = {}) {
       })()
     }
     
-    // Detect user change (login/logout/switch user)
     if (userId && lastUserIdRef.current && userId !== lastUserIdRef.current) {
-      // Clear account-related caches
       clearAccountCaches()
       invalidateAccountsCache('user changed')
     }
@@ -53,7 +50,6 @@ export function useAutoCacheCleanup(options: UseAutoCacheCleanupOptions = {}) {
     lastUserIdRef.current = userId
   }, [userId, enabled])
   
-  // Return manual cleanup function for emergency use
   return {
     manualCleanup: async () => {
       await autoCleanStaleCache()

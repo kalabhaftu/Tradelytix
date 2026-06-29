@@ -21,7 +21,6 @@ export async function GET() {
   )
 }
 
-// Support OPTIONS for CORS
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,

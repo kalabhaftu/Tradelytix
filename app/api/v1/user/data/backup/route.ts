@@ -1,16 +1,8 @@
-/**
- * User Data Backup API
- * GET /api/user/data/backup - Download complete user data backup
- * 
- * Returns a JSON file with all user data for archival purposes.
- * This is NOT for reimporting - it's a human-readable backup.
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 import { format } from 'date-fns'
 import { USER_SETTINGS_SELECT, mergeUserSettings } from '@/lib/user-settings'
 
@@ -40,33 +32,25 @@ export async function GET(request: NextRequest) {
       tags,
       liveAccountTransactions
     ] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: internalUserId },
-        select: {
-          id: true,
-          email: true,
-          isFirstConnection: true,
-          settings: {
-            select: USER_SETTINGS_SELECT
-          }
+      db.query.User.findFirst({
+        where: (table, { eq }) => eq(table.id, internalUserId),
+        with: {
+          settings: true
         }
       }),
-      prisma.account.findMany({
-        where: { userId: internalUserId },
-        include: {
-          // Group removed - no longer used
-        }
+      db.query.Account.findMany({
+        where: (table, { eq }) => eq(table.userId, internalUserId)
       }),
-      prisma.trade.findMany({
-        where: { userId: internalUserId }
+      db.query.Trade.findMany({
+        where: (table, { eq }) => eq(table.userId, internalUserId)
       }),
       // Groups removed - no longer used
       Promise.resolve([]),
-      prisma.masterAccount.findMany({
-        where: { userId: internalUserId },
-        include: {
+      db.query.MasterAccount.findMany({
+        where: (table, { eq }) => eq(table.userId, internalUserId),
+        with: {
           PhaseAccount: {
-            include: {
+            with: {
               Trade: true,
               BreachRecord: true,
               Payout: true,
@@ -76,17 +60,17 @@ export async function GET(request: NextRequest) {
           Payout: true
         }
       }),
-      prisma.dailyNote.findMany({
-        where: { userId: internalUserId }
+      db.query.DailyNote.findMany({
+        where: (table, { eq }) => eq(table.userId, internalUserId)
       }),
-      prisma.backtestTrade.findMany({
-        where: { userId: internalUserId }
+      db.query.BacktestTrade.findMany({
+        where: (table, { eq }) => eq(table.userId, internalUserId)
       }),
-      prisma.tradeTag.findMany({
-        where: { userId: internalUserId }
+      db.query.TradeTag.findMany({
+        where: (table, { eq }) => eq(table.userId, internalUserId)
       }),
-      prisma.liveAccountTransaction.findMany({
-        where: { userId: internalUserId }
+      db.query.LiveAccountTransaction.findMany({
+        where: (table, { eq }) => eq(table.userId, internalUserId)
       })
     ])
 
@@ -217,7 +201,6 @@ export async function GET(request: NextRequest) {
     const timestamp = format(new Date(), 'yyyy-MM-dd_HHmmss')
     const filename = `tradelytix-backup-${timestamp}.json`
 
-    // Return as downloadable JSON file
     return new NextResponse(JSON.stringify(backupData, null, 2), {
       status: 200,
       headers: {
@@ -235,4 +218,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-

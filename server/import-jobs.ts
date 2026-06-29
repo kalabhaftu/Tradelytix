@@ -1,8 +1,10 @@
 import JSZip from 'jszip'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { createClient } from '@/server/auth'
 import { buildUserSettingsUpdateData, extractUserSettingsWriteData, pickSettingsPatch } from '@/lib/user-settings'
 import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData } from '@/lib/trade-core'
+import { eq, and, or, inArray, desc, asc } from 'drizzle-orm'
 
 const TRADE_CHUNK_SIZE = 25
 const BACKTEST_CHUNK_SIZE = 25
@@ -175,24 +177,22 @@ async function resolveLookupMaps(data: any, internalUserId: string) {
 
   const [accounts, models, phaseAccounts] = await Promise.all([
     accountNumbers.length
-      ? prisma.account.findMany({
-          where: { userId: internalUserId, number: { in: accountNumbers } },
-          select: { id: true, number: true },
+      ? db.query.Account.findMany({
+          where: (table, { inArray }) => and(eq(table.userId, internalUserId), inArray(table.number, accountNumbers)),
+          columns: { id: true, number: true },
         })
       : [],
     modelNames.length
-      ? prisma.tradingModel.findMany({
-          where: { userId: internalUserId, name: { in: modelNames } },
-          select: { id: true, name: true },
+      ? db.query.TradingModel.findMany({
+          where: (table, { inArray }) => and(eq(table.userId, internalUserId), inArray(table.name, modelNames)),
+          columns: { id: true, name: true },
         })
       : [],
     phaseIds.length
-      ? prisma.phaseAccount.findMany({
-          where: {
-            phaseId: { in: phaseIds },
-            MasterAccount: { userId: internalUserId },
-          },
-          select: { id: true, phaseId: true },
+      ? db.query.PhaseAccount.findMany({
+          where: (table, { inArray }) => and(inArray(table.phaseId, phaseIds), eq(schema.MasterAccount.userId, internalUserId)),
+          columns: { id: true, phaseId: true },
+          with: { MasterAccount: true },
         })
       : [],
   ])
@@ -227,64 +227,67 @@ async function runPreparation(data: any, internalUserId: string) {
       pnlDisplayMode: data.user.pnlDisplayMode,
     })
 
-    await prisma.$transaction(async (tx) => {
-      await tx.user.update({
-        where: { id: internalUserId },
-        data: {
-          firstName: data.user.firstName,
-          lastName: data.user.lastName,
-        },
-      })
+    await db.transaction(async (tx) => {
+      await tx.update(schema.User).set({
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+      }).where(eq(schema.User.id, internalUserId))
 
-      await tx.userSettings.upsert({
-        where: { userId: internalUserId },
-        create: {
+      const existingSettings = await tx.query.UserSettings.findFirst({ where: (table, { eq }) => eq(table.userId, internalUserId) })
+      if (existingSettings) {
+        await tx.update(schema.UserSettings).set(buildUserSettingsUpdateData(settingsPatch)).where(eq(schema.UserSettings.userId, internalUserId))
+      } else {
+        await tx.insert(schema.UserSettings).values({
           userId: internalUserId,
           ...extractUserSettingsWriteData(settingsPatch),
-        },
-        update: buildUserSettingsUpdateData(settingsPatch),
-      })
+          updatedAt: new Date(),
+        })
+      }
     })
   }
 
   if (data.tradeTags) {
     for (const tag of data.tradeTags) {
-      await prisma.tradeTag.upsert({
-        where: { name_userId: { name: tag.name, userId: internalUserId } },
-        update: { color: tag.color },
-        create: {
+      const existing = await db.query.TradeTag.findFirst({ where: (table, { and, eq }) => and(eq(table.name, tag.name), eq(table.userId, internalUserId)) })
+      if (existing) {
+        await db.update(schema.TradeTag).set({ color: tag.color }).where(and(eq(schema.TradeTag.name, tag.name), eq(schema.TradeTag.userId, internalUserId)))
+      } else {
+        await db.insert(schema.TradeTag).values({
           id: crypto.randomUUID(),
           userId: internalUserId,
           name: tag.name,
           color: tag.color,
           updatedAt: new Date(),
-        },
-      })
+        })
+      }
     }
   }
 
   if (data.tradingModels) {
     for (const model of data.tradingModels) {
-      await prisma.tradingModel.upsert({
-        where: { userId_name: { userId: internalUserId, name: model.name } },
-        update: { rules: model.rules, notes: model.notes },
-        create: {
+      const existing = await db.query.TradingModel.findFirst({ where: (table, { and, eq }) => and(eq(table.userId, internalUserId), eq(table.name, model.name)) })
+      if (existing) {
+        await db.update(schema.TradingModel).set({ rules: model.rules, notes: model.notes }).where(and(eq(schema.TradingModel.userId, internalUserId), eq(schema.TradingModel.name, model.name)))
+      } else {
+        await db.insert(schema.TradingModel).values({
           id: crypto.randomUUID(),
           userId: internalUserId,
           name: model.name,
           rules: model.rules ?? [],
           notes: model.notes,
-        },
-      })
+          updatedAt: new Date(),
+        })
+      }
     }
   }
 
   if (data.dashboardTemplates) {
     for (const template of data.dashboardTemplates) {
-      await prisma.dashboardTemplate.upsert({
-        where: { userId_name: { userId: internalUserId, name: template.name } },
-        update: { layout: template.layout, isActive: template.isActive, isDefault: template.isDefault },
-        create: {
+      const existing = await db.query.DashboardTemplate.findFirst({ where: (table, { and, eq }) => and(eq(table.userId, internalUserId), eq(table.name, template.name)) })
+      if (existing) {
+        await db.update(schema.DashboardTemplate).set({ layout: template.layout, isActive: template.isActive, isDefault: template.isDefault }).where(and(eq(schema.DashboardTemplate.userId, internalUserId), eq(schema.DashboardTemplate.name, template.name)))
+      } else {
+        await db.insert(schema.DashboardTemplate).values({
           id: crypto.randomUUID(),
           userId: internalUserId,
           name: template.name,
@@ -292,23 +295,25 @@ async function runPreparation(data: any, internalUserId: string) {
           isActive: template.isActive,
           isDefault: template.isDefault,
           updatedAt: new Date(),
-        },
-      })
+        })
+      }
     }
   }
 
   const accountMap = new Map<string, string>()
   if (data.accounts) {
     for (const account of data.accounts) {
-      const target = await prisma.account.upsert({
-        where: { number_userId: { number: account.number, userId: internalUserId } },
-        update: {
+      const existing = await db.query.Account.findFirst({ where: (table, { and, eq }) => and(eq(table.number, account.number), eq(table.userId, internalUserId)) })
+      let target
+      if (existing) {
+        target = (await db.update(schema.Account).set({
           name: account.name,
           broker: account.broker,
           startingBalance: account.startingBalance,
           isArchived: account.isArchived,
-        },
-        create: {
+        }).where(and(eq(schema.Account.number, account.number), eq(schema.Account.userId, internalUserId))).returning())[0]
+      } else {
+        target = (await db.insert(schema.Account).values({
           id: crypto.randomUUID(),
           userId: internalUserId,
           number: account.number,
@@ -316,9 +321,10 @@ async function runPreparation(data: any, internalUserId: string) {
           broker: account.broker,
           startingBalance: account.startingBalance || 0,
           isArchived: account.isArchived || false,
-        },
-      })
-
+          updatedAt: new Date(),
+        }).returning())[0]
+      }
+      if (!target) continue
       accountMap.set(account.number, target.id)
     }
   }
@@ -329,17 +335,19 @@ async function runPreparation(data: any, internalUserId: string) {
 
   if (data.masterAccounts) {
     for (const masterAccount of data.masterAccounts) {
-      const targetMasterAccount = await prisma.masterAccount.upsert({
-        where: { userId_accountName: { userId: internalUserId, accountName: masterAccount.accountName } },
-        update: {
+      const existingMaster = await db.query.MasterAccount.findFirst({ where: (table, { and, eq }) => and(eq(table.userId, internalUserId), eq(table.accountName, masterAccount.accountName)) })
+      let targetMasterAccount
+      if (existingMaster) {
+        targetMasterAccount = (await db.update(schema.MasterAccount).set({
           propFirmName: masterAccount.propFirmName,
           accountSize: masterAccount.accountSize,
           evaluationType: masterAccount.evaluationType,
           currentPhase: masterAccount.currentPhase,
           status: masterAccount.status,
           isArchived: masterAccount.isArchived,
-        },
-        create: {
+        }).where(and(eq(schema.MasterAccount.userId, internalUserId), eq(schema.MasterAccount.accountName, masterAccount.accountName))).returning())[0]
+      } else {
+        targetMasterAccount = (await db.insert(schema.MasterAccount).values({
           id: crypto.randomUUID(),
           userId: internalUserId,
           accountName: masterAccount.accountName,
@@ -349,29 +357,28 @@ async function runPreparation(data: any, internalUserId: string) {
           currentPhase: masterAccount.currentPhase,
           status: masterAccount.status,
           isArchived: masterAccount.isArchived,
-        },
-      })
+        }).returning())[0]
+      }
+
+      if (!targetMasterAccount) continue
 
       masterMap.set(masterAccount.accountName, targetMasterAccount.id)
 
       if (masterAccount.PhaseAccount) {
         for (const phase of masterAccount.PhaseAccount) {
-          const targetPhase = await prisma.phaseAccount.upsert({
-            where: {
-              masterAccountId_phaseNumber: {
-                masterAccountId: targetMasterAccount.id,
-                phaseNumber: phase.phaseNumber,
-              },
-            },
-            update: {
+          const existingPhase = await db.query.PhaseAccount.findFirst({ where: (table, { and, eq }) => and(eq(table.masterAccountId, targetMasterAccount.id), eq(table.phaseNumber, phase.phaseNumber)) })
+          let targetPhase
+          if (existingPhase) {
+            targetPhase = (await db.update(schema.PhaseAccount).set({
               phaseId: phase.phaseId,
               status: phase.status,
               profitTargetPercent: phase.profitTargetPercent,
               dailyDrawdownPercent: phase.dailyDrawdownPercent,
               maxDrawdownPercent: phase.maxDrawdownPercent,
               startDate: phase.startDate ? new Date(phase.startDate) : undefined,
-            },
-            create: {
+            }).where(and(eq(schema.PhaseAccount.masterAccountId, targetMasterAccount.id), eq(schema.PhaseAccount.phaseNumber, phase.phaseNumber))).returning())[0]
+          } else {
+            targetPhase = (await db.insert(schema.PhaseAccount).values({
               id: crypto.randomUUID(),
               masterAccountId: targetMasterAccount.id,
               phaseNumber: phase.phaseNumber,
@@ -381,8 +388,10 @@ async function runPreparation(data: any, internalUserId: string) {
               maxDrawdownPercent: phase.maxDrawdownPercent,
               status: phase.status,
               startDate: phase.startDate ? new Date(phase.startDate) : undefined,
-            },
-          })
+            }).returning())[0]
+          }
+
+          if (!targetPhase) continue
 
           if (phase.phaseId) {
             phaseMap.set(phase.phaseId, targetPhase.id)
@@ -397,27 +406,27 @@ async function runPreparation(data: any, internalUserId: string) {
   if (data.journalTemplates) {
     for (const template of data.journalTemplates) {
       if (!template?.name) continue
-      await prisma.journalTemplate.upsert({
-        where: { userId_name: { userId: internalUserId, name: template.name } },
-        update: {
-          content: template.content,
-        },
-        create: {
+      const existing = await db.query.JournalTemplate.findFirst({ where: (table, { and, eq }) => and(eq(table.userId, internalUserId), eq(table.name, template.name)) })
+      if (existing) {
+        await db.update(schema.JournalTemplate).set({ content: template.content }).where(and(eq(schema.JournalTemplate.userId, internalUserId), eq(schema.JournalTemplate.name, template.name)))
+      } else {
+        await db.insert(schema.JournalTemplate).values({
           id: crypto.randomUUID(),
           userId: internalUserId,
           name: template.name,
           content: template.content,
-        },
-      })
+          updatedAt: new Date(),
+        })
+      }
     }
   }
 
   if (data.weeklyAIReviews) {
     for (const review of data.weeklyAIReviews) {
       if (!review?.weekStart) continue
-      await prisma.weeklyAIReview.upsert({
-        where: { userId_weekStart: { userId: internalUserId, weekStart: new Date(review.weekStart) } },
-        update: {
+      const existing = await db.query.WeeklyAIReview.findFirst({ where: (table, { and, eq }) => and(eq(table.userId, internalUserId), eq(table.weekStart, new Date(review.weekStart))) })
+      if (existing) {
+        await db.update(schema.WeeklyAIReview).set({
           weekEnd: review.weekEnd ? new Date(review.weekEnd) : undefined,
           stats: review.stats,
           summary: review.summary,
@@ -425,8 +434,9 @@ async function runPreparation(data: any, internalUserId: string) {
           lowlights: review.lowlights ?? [],
           focusNextWeek: review.focusNextWeek,
           grade: review.grade,
-        },
-        create: {
+        }).where(and(eq(schema.WeeklyAIReview.userId, internalUserId), eq(schema.WeeklyAIReview.weekStart, new Date(review.weekStart))))
+      } else {
+        await db.insert(schema.WeeklyAIReview).values({
           id: crypto.randomUUID(),
           userId: internalUserId,
           weekStart: new Date(review.weekStart),
@@ -437,39 +447,38 @@ async function runPreparation(data: any, internalUserId: string) {
           lowlights: review.lowlights ?? [],
           focusNextWeek: review.focusNextWeek,
           grade: review.grade,
-        },
-      })
+        })
+      }
     }
   }
 
   if (data.userGoals) {
     for (const goal of data.userGoals) {
       if (!goal?.title) continue
-      const existing = await prisma.userGoal.findFirst({
-        where: {
-          userId: internalUserId,
-          title: goal.title,
-          metric: goal.metric,
-          period: goal.period,
-          startDate: goal.startDate ? new Date(goal.startDate) : undefined,
-        },
+      const existing = await db.query.UserGoal.findFirst({
+        where: (table, { and, eq }) => and(
+          eq(table.userId, internalUserId),
+          eq(table.title, goal.title),
+          eq(table.metric, goal.metric),
+          eq(table.period, goal.period),
+          goal.startDate ? eq(table.startDate, new Date(goal.startDate)) : undefined,
+        ),
       })
 
       if (!existing) {
-        await prisma.userGoal.create({
-          data: {
-            id: crypto.randomUUID(),
-            userId: internalUserId,
-            title: goal.title,
-            metric: goal.metric,
-            targetValue: goal.targetValue,
-            currentValue: goal.currentValue ?? 0,
-            period: goal.period,
-            startDate: goal.startDate ? new Date(goal.startDate) : new Date(),
-            endDate: goal.endDate ? new Date(goal.endDate) : null,
-            isCompleted: Boolean(goal.isCompleted),
-            completedAt: goal.completedAt ? new Date(goal.completedAt) : null,
-          },
+        await db.insert(schema.UserGoal).values({
+          id: crypto.randomUUID(),
+          userId: internalUserId,
+          title: goal.title,
+          metric: goal.metric,
+          targetValue: goal.targetValue,
+          currentValue: goal.currentValue ?? 0,
+          period: goal.period,
+          startDate: goal.startDate ? new Date(goal.startDate) : new Date(),
+          endDate: goal.endDate ? new Date(goal.endDate) : null,
+          isCompleted: Boolean(goal.isCompleted),
+          completedAt: goal.completedAt ? new Date(goal.completedAt) : null,
+          updatedAt: new Date(),
         })
       }
     }
@@ -478,30 +487,29 @@ async function runPreparation(data: any, internalUserId: string) {
   if (data.notifications) {
     for (const notification of data.notifications) {
       if (!notification?.title || !notification?.createdAt) continue
-      const existing = await prisma.notification.findFirst({
-        where: {
-          userId: internalUserId,
-          title: notification.title,
-          type: notification.type,
-          createdAt: new Date(notification.createdAt),
-        },
+      const existing = await db.query.Notification.findFirst({
+        where: (table, { and, eq }) => and(
+          eq(table.userId, internalUserId),
+          eq(table.title, notification.title),
+          eq(table.type, notification.type),
+          eq(table.createdAt, new Date(notification.createdAt)),
+        ),
       })
 
       if (!existing) {
-        await prisma.notification.create({
-          data: {
-            id: crypto.randomUUID(),
-            userId: internalUserId,
-            title: notification.title,
-            message: notification.message,
-            type: notification.type,
-            priority: notification.priority,
-            isRead: Boolean(notification.isRead),
-            actionRequired: Boolean(notification.actionRequired),
-            invalidationKey: notification.invalidationKey,
-            data: notification.data,
-            createdAt: new Date(notification.createdAt),
-          },
+        await db.insert(schema.Notification).values({
+          id: crypto.randomUUID(),
+          userId: internalUserId,
+          title: notification.title,
+          message: notification.message,
+          type: notification.type,
+          priority: notification.priority,
+          isRead: Boolean(notification.isRead),
+          actionRequired: Boolean(notification.actionRequired),
+          invalidationKey: notification.invalidationKey,
+          data: notification.data,
+          createdAt: new Date(notification.createdAt),
+          updatedAt: new Date(),
         })
       }
     }
@@ -512,25 +520,23 @@ async function runPreparation(data: any, internalUserId: string) {
       const targetAccountId = accountMap.get(transaction.accountNumber)
       if (!targetAccountId) continue
 
-      const existing = await prisma.liveAccountTransaction.findFirst({
-        where: {
-          accountId: targetAccountId,
-          amount: transaction.amount,
-          createdAt: new Date(transaction.createdAt),
-        },
+      const existing = await db.query.LiveAccountTransaction.findFirst({
+        where: (table, { and, eq }) => and(
+          eq(table.accountId, targetAccountId),
+          eq(table.amount, transaction.amount),
+          eq(table.createdAt, new Date(transaction.createdAt)),
+        ),
       })
 
       if (!existing) {
-        await prisma.liveAccountTransaction.create({
-          data: {
-            id: crypto.randomUUID(),
-            accountId: targetAccountId,
-            userId: internalUserId,
-            type: transaction.type,
-            amount: transaction.amount,
-            description: transaction.description,
-            createdAt: new Date(transaction.createdAt),
-          },
+        await db.insert(schema.LiveAccountTransaction).values({
+          id: crypto.randomUUID(),
+          accountId: targetAccountId,
+          userId: internalUserId,
+          type: transaction.type,
+          amount: transaction.amount,
+          description: transaction.description,
+          createdAt: new Date(transaction.createdAt),
         })
       }
     }
@@ -545,28 +551,27 @@ async function runPreparation(data: any, internalUserId: string) {
           : undefined)
       if (!targetPhaseId) continue
 
-      const existing = await prisma.breachRecord.findFirst({
-        where: {
-          phaseAccountId: targetPhaseId,
-          breachType: breachRecord.breachType,
-          breachTime: new Date(breachRecord.breachTime),
-        },
+      const existing = await db.query.BreachRecord.findFirst({
+        where: (table, { and, eq }) => and(
+          eq(table.phaseAccountId, targetPhaseId),
+          eq(table.breachType, breachRecord.breachType),
+          eq(table.breachTime, new Date(breachRecord.breachTime)),
+        ),
       })
 
       if (!existing) {
-        await prisma.breachRecord.create({
-          data: {
-            id: crypto.randomUUID(),
-            phaseAccountId: targetPhaseId,
-            breachType: breachRecord.breachType,
-            breachAmount: breachRecord.breachAmount,
-            breachTime: new Date(breachRecord.breachTime),
-            currentEquity: breachRecord.currentEquity,
-            accountSize: breachRecord.accountSize,
-            dailyStartBalance: breachRecord.dailyStartBalance,
-            highWaterMark: breachRecord.highWaterMark,
-            notes: breachRecord.notes,
-          },
+        await db.insert(schema.BreachRecord).values({
+          id: crypto.randomUUID(),
+          phaseAccountId: targetPhaseId,
+          breachType: breachRecord.breachType,
+          breachAmount: breachRecord.breachAmount,
+          breachTime: new Date(breachRecord.breachTime),
+          currentEquity: breachRecord.currentEquity,
+          accountSize: breachRecord.accountSize,
+          dailyStartBalance: breachRecord.dailyStartBalance,
+          highWaterMark: breachRecord.highWaterMark,
+          notes: breachRecord.notes,
+          updatedAt: new Date(),
         })
       }
     }
@@ -581,21 +586,17 @@ async function runPreparation(data: any, internalUserId: string) {
           : undefined)
       if (!targetPhaseId) continue
 
-      await prisma.dailyAnchor.upsert({
-        where: {
-          phaseAccountId_date: {
-            phaseAccountId: targetPhaseId,
-            date: new Date(anchor.date),
-          },
-        },
-        update: { anchorEquity: anchor.anchorEquity },
-        create: {
+      const existing = await db.query.DailyAnchor.findFirst({ where: (table, { and, eq }) => and(eq(table.phaseAccountId, targetPhaseId), eq(table.date, new Date(anchor.date))) })
+      if (existing) {
+        await db.update(schema.DailyAnchor).set({ anchorEquity: anchor.anchorEquity }).where(and(eq(schema.DailyAnchor.phaseAccountId, targetPhaseId), eq(schema.DailyAnchor.date, new Date(anchor.date))))
+      } else {
+        await db.insert(schema.DailyAnchor).values({
           id: crypto.randomUUID(),
           phaseAccountId: targetPhaseId,
           date: new Date(anchor.date),
           anchorEquity: anchor.anchorEquity,
-        },
-      })
+        })
+      }
     }
   }
 
@@ -612,30 +613,29 @@ async function runPreparation(data: any, internalUserId: string) {
           : null
       if (!targetMasterId || !targetPhaseId) continue
 
-      const existing = await prisma.payout.findFirst({
-        where: {
-          masterAccountId: targetMasterId,
-          phaseAccountId: targetPhaseId,
-          amount: payout.amount,
-          requestDate: new Date(payout.requestDate),
-        },
+      const existing = await db.query.Payout.findFirst({
+        where: (table, { and, eq }) => and(
+          eq(table.masterAccountId, targetMasterId),
+          eq(table.phaseAccountId, targetPhaseId),
+          eq(table.amount, payout.amount),
+          eq(table.requestDate, new Date(payout.requestDate)),
+        ),
       })
 
       if (!existing) {
-        await prisma.payout.create({
-          data: {
-            id: crypto.randomUUID(),
-            masterAccountId: targetMasterId,
-            phaseAccountId: targetPhaseId,
-            amount: payout.amount,
-            status: payout.status,
-            requestDate: new Date(payout.requestDate),
-            approvedDate: payout.approvedDate ? new Date(payout.approvedDate) : null,
-            paidDate: payout.paidDate ? new Date(payout.paidDate) : null,
-            rejectedDate: payout.rejectedDate ? new Date(payout.rejectedDate) : null,
-            notes: payout.notes,
-            rejectionReason: payout.rejectionReason,
-          },
+        await db.insert(schema.Payout).values({
+          id: crypto.randomUUID(),
+          masterAccountId: targetMasterId,
+          phaseAccountId: targetPhaseId,
+          amount: payout.amount,
+          status: payout.status,
+          requestDate: new Date(payout.requestDate),
+          approvedDate: payout.approvedDate ? new Date(payout.approvedDate) : null,
+          paidDate: payout.paidDate ? new Date(payout.paidDate) : null,
+          rejectedDate: payout.rejectedDate ? new Date(payout.rejectedDate) : null,
+          notes: payout.notes,
+          rejectionReason: payout.rejectionReason,
+          updatedAt: new Date(),
         })
       }
     }
@@ -643,11 +643,7 @@ async function runPreparation(data: any, internalUserId: string) {
 }
 
 async function updateJob(jobId: string, data: Record<string, any>) {
-  const model = (prisma as any).importJob
-  return model.update({
-    where: { id: jobId },
-    data,
-  })
+  return (await db.update(schema.ImportJob).set(data).where(eq(schema.ImportJob.id, jobId)).returning())[0]
 }
 
 export function serializeImportJob(job: any) {
@@ -674,10 +670,9 @@ export function serializeImportJob(job: any) {
 }
 
 export async function getImportJobForUser(jobId: string, internalUserId: string) {
-  const model = (prisma as any).importJob
-  return model.findFirst({
-    where: { id: jobId, userId: internalUserId },
-    select: {
+  return db.query.ImportJob.findFirst({
+    where: (table, { and, eq }) => and(eq(table.id, jobId), eq(table.userId, internalUserId)),
+    columns: {
       id: true,
       userId: true,
       status: true,
@@ -705,33 +700,29 @@ export async function createImportJob(params: {
   fileSize: number
   fileData: ArrayBuffer
 }) {
-  const model = (prisma as any).importJob
-
-  const job = await model.create({
-    data: {
-      userId: params.internalUserId,
-      status: 'queued',
-      stage: 'queued',
-      progress: 0,
-      fileName: params.fileName,
-      fileSize: params.fileSize,
-      fileData: Buffer.from(params.fileData),
-      totalItems: 0,
-      processedItems: 0,
-      importedCount: 0,
-      skippedCount: 0,
-      state: DEFAULT_JOB_STATE,
-      cancelRequested: false,
-    },
-  })
+  const job = (await db.insert(schema.ImportJob).values({
+    userId: params.internalUserId,
+    status: 'queued',
+    stage: 'queued',
+    progress: 0,
+    fileName: params.fileName,
+    fileSize: params.fileSize,
+    fileData: Buffer.from(params.fileData),
+    totalItems: 0,
+    processedItems: 0,
+    importedCount: 0,
+    skippedCount: 0,
+    state: DEFAULT_JOB_STATE,
+    cancelRequested: false,
+    updatedAt: new Date(),
+  }).returning())[0]
 
   return serializeImportJob(job)
 }
 
 export async function cancelImportJob(jobId: string, internalUserId: string) {
-  const model = (prisma as any).importJob
-  const current = await model.findFirst({
-    where: { id: jobId, userId: internalUserId },
+  const current = await db.query.ImportJob.findFirst({
+    where: (table, { and, eq }) => and(eq(table.id, jobId), eq(table.userId, internalUserId)),
   })
 
   if (!current) {
@@ -744,29 +735,25 @@ export async function cancelImportJob(jobId: string, internalUserId: string) {
 
   const cancelledImmediately = current.status === 'queued'
 
-  const updated = await model.update({
-    where: { id: current.id },
-    data: cancelledImmediately
-      ? {
-          cancelRequested: true,
-          status: 'cancelled',
-          stage: 'cancelled',
-          progress: current.progress,
-          completedAt: new Date(),
-        }
-      : {
-          cancelRequested: true,
-        },
-  })
+  const updated = (await db.update(schema.ImportJob).set(cancelledImmediately
+    ? {
+        cancelRequested: true,
+        status: 'cancelled',
+        stage: 'cancelled',
+        progress: current.progress,
+        completedAt: new Date(),
+      }
+    : {
+        cancelRequested: true,
+      }).where(eq(schema.ImportJob.id, current.id)).returning())[0]
 
   return { job: serializeImportJob(updated), status: 200 as const }
 }
 
 export async function processImportJobChunk(jobId: string, internalUserId: string) {
-  const model = (prisma as any).importJob
-  const job = await model.findFirst({
-    where: { id: jobId, userId: internalUserId },
-    select: {
+  const job = await db.query.ImportJob.findFirst({
+    where: (table, { and, eq }) => and(eq(table.id, jobId), eq(table.userId, internalUserId)),
+    columns: {
       id: true,
       userId: true,
       status: true,
@@ -871,11 +858,8 @@ export async function processImportJobChunk(jobId: string, internalUserId: strin
           pnl: parseFloat(trade.pnl || 0),
         } as any)
 
-        const existing = await prisma.trade.findFirst({
-          where: {
-            userId: internalUserId,
-            tradeIdentityKey: preparedTrade.tradeIdentityKey,
-          },
+        const existing = await db.query.Trade.findFirst({
+          where: (table, { and, eq }) => and(eq(table.userId, internalUserId), eq(table.tradeIdentityKey, preparedTrade.tradeIdentityKey)),
         })
 
         if (existing) {
@@ -904,15 +888,10 @@ export async function processImportJobChunk(jobId: string, internalUserId: strin
           pnl: parseFloat(trade.pnl || 0),
         } as any)
 
-        await prisma.$transaction(async (tx) => {
-          await tx.trade.create({
-            data: tradeToCreate as any,
-          })
+        await db.transaction(async (tx) => {
+          await tx.insert(schema.Trade).values(tradeToCreate as any)
 
-          await tx.tradeExecution.createMany({
-            data: buildSyntheticExecutionsFromTrade(tradeToCreate as any) as any,
-            skipDuplicates: true,
-          })
+          await tx.insert(schema.TradeExecution).values(buildSyntheticExecutionsFromTrade(tradeToCreate as any) as any)
         })
 
         state.imported += 1
@@ -931,14 +910,14 @@ export async function processImportJobChunk(jobId: string, internalUserId: strin
       for (let index = state.backtestIndex; index < endIndex; index++) {
         const backtestTrade = backtests[index]
 
-        const existing = await prisma.backtestTrade.findFirst({
-          where: {
-            userId: internalUserId,
-            pair: backtestTrade.pair,
-            dateExecuted: backtestTrade.dateExecuted,
-            entryPrice: backtestTrade.entryPrice,
-            direction: backtestTrade.direction,
-          },
+        const existing = await db.query.BacktestTrade.findFirst({
+          where: (table, { and, eq }) => and(
+            eq(table.userId, internalUserId),
+            eq(table.pair, backtestTrade.pair),
+            eq(table.dateExecuted, backtestTrade.dateExecuted),
+            eq(table.entryPrice, backtestTrade.entryPrice),
+            eq(table.direction, backtestTrade.direction),
+          ),
         })
 
         if (existing) {
@@ -950,13 +929,11 @@ export async function processImportJobChunk(jobId: string, internalUserId: strin
         const images = await uploadBacktestImages(zip, internalUserId, supabase, backtestTrade, newId)
         const { id, userId, ...rest } = backtestTrade
 
-        await prisma.backtestTrade.create({
-          data: {
-            ...rest,
-            ...images,
-            userId: internalUserId,
-            id: newId,
-          },
+        await db.insert(schema.BacktestTrade).values({
+          ...rest,
+          ...images,
+          userId: internalUserId,
+          id: newId,
         })
 
         state.imported += 1

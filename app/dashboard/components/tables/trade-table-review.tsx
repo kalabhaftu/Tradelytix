@@ -24,7 +24,8 @@ import { formatTradePrice } from '@/lib/trading/precision'
 import { useTableConfigStore } from '@/store/table-config-store'
 import { useUserStore } from '@/store/user-store'
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, BarChart3, Info, Tag, Cable } from 'lucide-react'
-import { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import { useTags, TradeTag } from '@/hooks/use-tags'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useTradovateSyncContext } from '@/context/tradovate-sync-context'
@@ -51,6 +52,7 @@ import React from 'react'
 import { DataTableColumnHeader } from './column-header'
 import TradeChartModal from './trade-chart-modal'
 import { TradeTableMobileCard } from './trade-table-mobile-card'
+import { logger } from '@/lib/logger';
 
 export interface ExtendedTrade extends Omit<Trade, 'tags'> {
   tags: string[]
@@ -157,7 +159,6 @@ const buildGroupedTrades = (trades: ExtendedTrade[]) => {
 
   return Array.from(groups.values())
 }
-
 
 type ColumnFactoryParams = {
   timezone: string
@@ -660,7 +661,7 @@ export function TradeTableReview() {
       tableRef.current?.resetRowSelection()
       setSelectedTrades([])
     } catch (error) {
-      console.error('Failed to bulk tag trades:', error)
+      logger.error('Failed to bulk tag trades:', error)
     }
   }, [selectedTrades, appendTagsToTrades])
 

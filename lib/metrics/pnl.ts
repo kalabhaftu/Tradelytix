@@ -1,8 +1,9 @@
-import type { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 
 export type PnlDisplayMode = 'net' | 'gross'
 
-type TradePnlLike = Partial<Pick<Trade, 'pnl' | 'commission'>>
+type TradePnlLike = Partial<Pick<TradeType, 'pnl' | 'commission'>>
 
 export function normalizePnlDisplayMode(value: unknown): PnlDisplayMode {
   return value === 'gross' ? 'gross' : 'net'

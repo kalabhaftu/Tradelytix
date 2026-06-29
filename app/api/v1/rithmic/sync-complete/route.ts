@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
-import { prisma } from '@/lib/prisma'
-import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
@@ -22,24 +22,24 @@ export async function POST(request: NextRequest) {
     }
 
     const now = new Date()
-    await prisma.synchronization.upsert({
-      where: {
-        userId_service_accountId: {
-          userId: identity.internalUserId,
-          service: 'rithmic',
-          accountId,
-        },
-      },
-      update: {
-        lastSyncedAt: now,
-      },
-      create: {
+    await db
+      .insert(schema.Synchronization)
+      .values({
         userId: identity.internalUserId,
         service: 'rithmic',
         accountId,
         lastSyncedAt: now,
-      },
-    })
+      })
+      .onConflictDoUpdate({
+        target: [
+          schema.Synchronization.userId,
+          schema.Synchronization.service,
+          schema.Synchronization.accountId,
+        ],
+        set: {
+          lastSyncedAt: now,
+        },
+      })
 
     return NextResponse.json({
       success: true,

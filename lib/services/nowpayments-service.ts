@@ -4,14 +4,14 @@
  */
 
 import crypto from 'crypto'
-import { logger } from '@/lib/logger'
+import logger from "@/lib/logger"
 
 const API_BASE_URL = process.env.NOWPAYMENTS_API_BASE_URL || 'https://api.nowpayments.io/v1'
 const API_KEY = process.env.NOWPAYMENTS_API_KEY || ''
 const IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET || ''
 
 function providerError(action: string, status: number) {
-  logger.error(`NOWPayments ${action} failed`, { status })
+  logger.error({ status }, `NOWPayments ${action} failed`)
   return new Error(`Unable to ${action}. Please try again.`)
 }
 
@@ -109,7 +109,7 @@ export async function createInvoice(params: CreateInvoiceParams): Promise<Invoic
     cancel_url: params.cancel_url || process.env.NOWPAYMENTS_CANCEL_URL,
   }
 
-  logger.info('[NOWPayments] Creating invoice', { order_id: body.order_id, price_amount: body.price_amount })
+  logger.info({ order_id: body.order_id, price_amount: body.price_amount }, '[NOWPayments] Creating invoice')
 
   const res = await fetch(`${API_BASE_URL}/invoice`, {
     method: 'POST',
@@ -124,7 +124,7 @@ export async function createInvoice(params: CreateInvoiceParams): Promise<Invoic
   }
 
   const data: InvoiceResponse = await res.json()
-  logger.info('[NOWPayments] Invoice created', { id: data.id })
+  logger.info({ id: data.id }, '[NOWPayments] Invoice created')
   return data
 }
 
@@ -188,7 +188,7 @@ export function verifyIpnSignature(payload: Record<string, unknown>, signature: 
       Buffer.from(normalizedSignature, 'hex')
     )
   } catch (error) {
-    logger.error('[NOWPayments] IPN signature verification error', error)
+    logger.error(error, '[NOWPayments] IPN signature verification error')
     return false
   }
 }

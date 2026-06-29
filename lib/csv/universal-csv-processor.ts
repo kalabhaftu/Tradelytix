@@ -6,17 +6,14 @@
  * MetaTrader 4/5, cTrader, TradingView, Rithmic, Sierra Chart, Quantower, and more.
  */
 
-import type { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import { generateTradeHash } from '@/lib/utils'
 import { calculateTradeDuration } from '@/lib/time-utils'
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
 export interface ProcessingResult {
   success: boolean
-  trades: Partial<Trade>[]
+  trades: Partial<TradeType>[]
   warnings: ProcessingWarning[]
   errors: ProcessingError[]
   detectedPlatform: string | null
@@ -62,10 +59,6 @@ export interface MappedFields {
   timeInPosition: string | null
   ticket: string | null
 }
-
-// ============================================================================
-// FIELD MAPPINGS - Comprehensive header name variations
-// ============================================================================
 
 const FIELD_MAPPINGS: Record<keyof MappedFields, string[]> = {
   instrument: [
@@ -190,16 +183,8 @@ const FIELD_MAPPINGS: Record<keyof MappedFields, string[]> = {
   ]
 }
 
-// ============================================================================
-// SIDE VALUE MAPPINGS
-// ============================================================================
-
 const LONG_VALUES = ['buy', 'long', 'b', 'l', 'call', 'bullish', '1', 'acheter', 'achat']
 const SHORT_VALUES = ['sell', 'short', 's', 'put', 'bearish', '-1', '0', 'vendre', 'vente']
-
-// ============================================================================
-// DATE FORMAT PATTERNS
-// ============================================================================
 
 const DATE_PATTERNS = [
   // ISO 8601
@@ -215,10 +200,6 @@ const DATE_PATTERNS = [
   // Unix timestamp
   { regex: /^\d{10,13}$/, format: 'UNIX' },
 ]
-
-// ============================================================================
-// SUPPORTED PLATFORMS (for auto-detection info)
-// ============================================================================
 
 export const SUPPORTED_PLATFORMS = [
   'Tradezella',
@@ -239,10 +220,6 @@ export const SUPPORTED_PLATFORMS = [
   'Interactive Brokers',
   'Generic CSV'
 ] as const
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
 
 /**
  * Normalize a header string for matching
@@ -324,7 +301,7 @@ function parseDate(value: string, fallbackTimezone: string = 'America/New_York')
   const usMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*(AM|PM))?$/i)
   if (usMatch) {
     let [, month, day, year, hours, minutes, seconds, ampm] = usMatch
-    let hour24 = parseInt(hours)
+    let hour24 = parseInt(hours || '0')
     
     if (ampm) {
       if (ampm.toUpperCase() === 'PM' && hour24 !== 12) hour24 += 12
@@ -332,11 +309,11 @@ function parseDate(value: string, fallbackTimezone: string = 'America/New_York')
     }
     
     const date = new Date(
-      parseInt(year),
-      parseInt(month) - 1,
-      parseInt(day),
+      parseInt(year || '0'),
+      parseInt(month || '1') - 1,
+      parseInt(day || '1'),
       hour24,
-      parseInt(minutes),
+      parseInt(minutes || '0'),
       parseInt(seconds || '0')
     )
     
@@ -350,11 +327,11 @@ function parseDate(value: string, fallbackTimezone: string = 'America/New_York')
   if (euMatch) {
     const [, day, month, year, hours, minutes, seconds] = euMatch
     const date = new Date(
-      parseInt(year),
-      parseInt(month) - 1,
-      parseInt(day),
-      parseInt(hours),
-      parseInt(minutes),
+      parseInt(year || '0'),
+      parseInt(month || '1') - 1,
+      parseInt(day || '1'),
+      parseInt(hours || '0'),
+      parseInt(minutes || '0'),
       parseInt(seconds || '0')
     )
     
@@ -413,8 +390,8 @@ function parseDuration(value: string): number | null {
   // Format: Xmin Ysec or Xm Ys
   const minSecMatch = trimmed.match(/(\d+)\s*(min|m)\s*(\d+)?\s*(sec|s)?/i)
   if (minSecMatch) {
-    const minutes = parseInt(minSecMatch[1]) || 0
-    const seconds = parseInt(minSecMatch[3]) || 0
+    const minutes = parseInt(minSecMatch[1] || '0') || 0
+    const seconds = parseInt(minSecMatch[3] || '0') || 0
     return minutes * 60 + seconds
   }
   
@@ -423,10 +400,10 @@ function parseDuration(value: string): number | null {
   if (timeMatch) {
     if (timeMatch[3]) {
       // HH:MM:SS
-      return parseInt(timeMatch[1]) * 3600 + parseInt(timeMatch[2]) * 60 + parseInt(timeMatch[3])
+      return parseInt(timeMatch[1] || '0') * 3600 + parseInt(timeMatch[2] || '0') * 60 + parseInt(timeMatch[3] || '0')
     } else {
       // MM:SS
-      return parseInt(timeMatch[1]) * 60 + parseInt(timeMatch[2])
+      return parseInt(timeMatch[1] || '0') * 60 + parseInt(timeMatch[2] || '0')
     }
   }
   
@@ -497,10 +474,6 @@ function detectPlatform(headers: string[]): string | null {
   return 'Generic CSV'
 }
 
-// ============================================================================
-// MAIN PROCESSOR
-// ============================================================================
-
 /**
  * Process CSV data into trades
  */
@@ -552,7 +525,6 @@ export function processUniversalCSV(
     }
   }
   
-  // Step 1: Map headers to fields
   const headerMapping: Record<number, keyof MappedFields> = {}
   
   headers.forEach((header, index) => {
@@ -563,7 +535,7 @@ export function processUniversalCSV(
     }
   })
   
-  // Step 2: Check required fields
+  // If P&L is required but missing, add to required fields
   const requiredFields: (keyof MappedFields)[] = ['instrument', 'entryDate']
   const optionalButImportant: (keyof MappedFields)[] = ['pnl', 'entryPrice', 'closePrice', 'side', 'quantity']
   
@@ -573,12 +545,10 @@ export function processUniversalCSV(
     }
   }
   
-  // If P&L is required but missing, add to required fields
   if (requirePnl && !result.mappedFields.pnl) {
     result.missingRequiredFields.push('pnl')
   }
   
-  // If critical fields are missing, return early with error
   if (result.missingRequiredFields.includes('instrument') || result.missingRequiredFields.includes('entryDate')) {
     result.errors.push({
       row: 0,
@@ -588,12 +558,12 @@ export function processUniversalCSV(
     return result
   }
   
-  // Step 3: Process each row
   for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
     const row = data[rowIndex]
     
-    // Skip empty rows
-    if (skipEmptyRows && (!row || row.every(cell => !cell || cell.trim() === ''))) {
+    if (!row) continue
+    
+    if (skipEmptyRows && row.every(cell => !cell || cell.trim() === '')) {
       result.stats.skippedRows++
       continue
     }
@@ -605,10 +575,9 @@ export function processUniversalCSV(
       continue
     }
     
-    const trade: Partial<Trade> = {}
+    const trade: Partial<TradeType> = {}
     let hasError = false
     
-    // Extract values based on mapping
     for (const [indexStr, field] of Object.entries(headerMapping)) {
       const index = parseInt(indexStr)
       const cellValue = row[index]
@@ -705,7 +674,6 @@ export function processUniversalCSV(
       }
     }
     
-    // Validation
     if (!trade.instrument) {
       result.warnings.push({ row: rowIndex + 2, field: 'instrument', message: 'Missing instrument' })
       result.stats.skippedRows++
@@ -739,8 +707,7 @@ export function processUniversalCSV(
       }
     }
     
-    // Generate unique ID
-    trade.id = generateTradeHash(trade as Trade).toString()
+    trade.id = generateTradeHash(trade as TradeType).toString()
     
     result.trades.push(trade)
     result.stats.processedRows++

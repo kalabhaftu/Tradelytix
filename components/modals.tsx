@@ -28,7 +28,6 @@ export default function Modals() {
         setShowLoadingToast(true)
       }, 500)
     } else {
-      // Hide loading toast immediately when loading stops
       setShowLoadingToast(false)
     }
 

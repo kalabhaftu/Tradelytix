@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { and, inArray } from 'drizzle-orm'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
@@ -23,15 +25,15 @@ export async function POST(request: NextRequest) {
 
     const groupId = crypto.randomUUID()
 
-    const result = await prisma.trade.updateMany({
-      where: {
-        id: { in: tradeIds },
-        userId: identity.internalUserId,
-      },
-      data: { groupId },
-    })
+    const result = await db.update(schema.Trade)
+      .set({ groupId })
+      .where(and(
+        inArray(schema.Trade.id, tradeIds),
+        eq(schema.Trade.userId, identity.internalUserId)
+      ))
+      .returning()
 
-    return NextResponse.json({ success: true, groupId, updated: result.count })
+    return NextResponse.json({ success: true, groupId, updated: result.length })
   } catch (error: any) {
     logger.error('Failed to batch group trades', error, 'Batch Group')
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })

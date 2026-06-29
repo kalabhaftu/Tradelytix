@@ -1,12 +1,8 @@
-/**
- * Individual Notification API (v1)
- * PATCH  /api/v1/notifications/[id] - Mark as read/update
- * DELETE /api/v1/notifications/[id] - Delete notification
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentity } from '@/server/user-identity'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq, and } from 'drizzle-orm'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 
@@ -22,21 +18,18 @@ export async function PATCH(
     const { id } = await params
     const body = await request.json()
 
-    const notification = await prisma.notification.findFirst({
-      where: { id, userId: internalUserId },
+    const notification = await db.query.Notification.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, id), eq(table.userId, internalUserId)),
     })
 
     if (!notification) {
       return NextResponse.json({ error: 'Notification not found' }, { status: 404 })
     }
 
-    const updated = await prisma.notification.update({
-      where: { id },
-      data: {
-        isRead: body.isRead ?? notification.isRead,
-        actionRequired: body.actionRequired ?? notification.actionRequired,
-      },
-    })
+    const updated = (await db.update(schema.Notification).set({
+      isRead: body.isRead ?? notification.isRead,
+      actionRequired: body.actionRequired ?? notification.actionRequired,
+    }).where(eq(schema.Notification.id, id)).returning())[0]
 
     return NextResponse.json({ success: true, data: updated })
   } catch (error: any) {
@@ -59,15 +52,15 @@ export async function DELETE(
     const { internalUserId } = await getResolvedUserIdentity()
     const { id } = await params
 
-    const notification = await prisma.notification.findFirst({
-      where: { id, userId: internalUserId },
+    const notification = await db.query.Notification.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, id), eq(table.userId, internalUserId)),
     })
 
     if (!notification) {
       return NextResponse.json({ error: 'Notification not found' }, { status: 404 })
     }
 
-    await prisma.notification.delete({ where: { id } })
+    await db.delete(schema.Notification).where(eq(schema.Notification.id, id))
 
     return NextResponse.json({ success: true, message: 'Notification deleted' })
   } catch (error: any) {

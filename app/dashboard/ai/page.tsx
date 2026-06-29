@@ -224,7 +224,6 @@ export default function AIChatWorkspace() {
     }
   }, [messages, streamingText])
 
-  // Initialize
   useEffect(() => {
     if (isDemoMode) {
       // Setup mock chats for Demo
@@ -798,7 +797,6 @@ In a real subscription, the assistant analyzes your actual trading records. Here
 
   // Helper to render inline bold (**text**) in a line
   const renderInlineFormatting = (text: string) => {
-    // Handle **bold** markers
     const parts = text.split(/(\*\*[^*]+\*\*)/g)
     return parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
@@ -824,19 +822,15 @@ In a real subscription, the assistant analyzes your actual trading records. Here
           // Skip empty lines
           if (trimmed.length === 0) return null
           
-          // Handle ### headers
           if (trimmed.startsWith('### ')) {
             return <h4 key={idx} className="text-sm font-bold mt-4 mb-2 text-foreground tracking-tight">{renderInlineFormatting(trimmed.slice(4))}</h4>
           }
-          // Handle ## headers
           if (trimmed.startsWith('## ')) {
             return <h3 key={idx} className="text-base font-bold mt-4 mb-2 text-foreground tracking-tight">{renderInlineFormatting(trimmed.slice(3))}</h3>
           }
-          // Handle # headers
           if (trimmed.startsWith('# ') && !trimmed.startsWith('# ')) {
             return <h2 key={idx} className="text-lg font-bold mt-4 mb-2 text-foreground tracking-tight">{renderInlineFormatting(trimmed.slice(2))}</h2>
           }
-          // Handle bullet points
           if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
             const bulletContent = trimmed.slice(2)
             return (
@@ -846,7 +840,6 @@ In a real subscription, the assistant analyzes your actual trading records. Here
               </div>
             )
           }
-          // Handle numbered lists
           if (/^\d+\.\s/.test(trimmed)) {
             const content = trimmed.replace(/^\d+\.\s/, '')
             const num = trimmed.match(/^(\d+)\./)?.[1]

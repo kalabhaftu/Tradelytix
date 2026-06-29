@@ -8,7 +8,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { savePayoutAction } from '@/server/accounts'
 
-
 export async function POST(request: NextRequest) {
   const rateLimitRes = await applyRateLimit(request, apiLimiter)
   if (rateLimitRes) return rateLimitRes

@@ -173,8 +173,8 @@ export function apiSuccess<T = any>(
   return NextResponse.json(
     {
       success: true,
-      data,
-      message,
+      ...(data !== undefined && { data }),
+      ...(message !== undefined && { message }),
     },
     { status }
   )
@@ -194,8 +194,8 @@ export function apiError(
     {
       success: false,
       error,
-      details,
-      code,
+      ...(details !== undefined && { details }),
+      ...(code !== undefined && { code }),
       retryable,
     },
     { status }

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 
 // GET - Get backtest input mode preference
 export async function GET(request: NextRequest) {
@@ -17,9 +18,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ mode: 'manual' }, { status: 200 })
     }
 
-    const userSettings = await prisma.userSettings.findUnique({
-      where: { userId },
-      select: { backtestInputMode: true },
+    const userSettings = await db.query.UserSettings.findFirst({
+      where: (table, { eq }) => eq(table.userId, userId),
+      columns: { backtestInputMode: true },
     })
 
     return NextResponse.json({ 
@@ -49,16 +50,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid mode' }, { status: 400 })
     }
 
-    await prisma.userSettings.upsert({
-      where: { userId },
-      create: {
-        userId,
-        backtestInputMode: mode,
-      },
-      update: {
-        backtestInputMode: mode,
-      }
-    })
+    await db.insert(schema.UserSettings)
+      .values({ userId, backtestInputMode: mode })
+      .onConflictDoUpdate({
+        target: schema.UserSettings.userId,
+        set: { backtestInputMode: mode },
+      })
 
     return NextResponse.json({ success: true, mode }, { status: 200 })
   } catch (error) {
@@ -68,4 +65,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

@@ -1,7 +1,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import readline from 'readline'
-import { PrismaClient } from '@prisma/client'
+
 import { config as loadEnvFile } from 'dotenv'
 import { createClient } from '@supabase/supabase-js'
 

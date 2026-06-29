@@ -1,4 +1,7 @@
-import { Trade as PrismaTrade } from '@prisma/client'
+import { type InferSelectModel } from 'drizzle-orm'
+import { Trade as schemaTrade } from '@/lib/db/schema'
+
+export type PrismaTrade = InferSelectModel<typeof schemaTrade>
 
 // Re-export Prisma's Trade type
 export type Trade = PrismaTrade

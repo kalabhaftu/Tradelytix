@@ -22,9 +22,9 @@ export async function PublicShell({
   return (
     <div className="min-h-screen bg-background">
       <PublicHeader
-        navItems={navItems}
-        activeHref={activeHref}
-        containerClassName={headerContainerClassName}
+        {...(navItems !== undefined && { navItems })}
+        {...(activeHref !== undefined && { activeHref })}
+        {...(headerContainerClassName !== undefined && { containerClassName: headerContainerClassName })}
       />
       <main className={cn('mx-auto w-full px-4 py-8 sm:px-6', mainClassName)}>{children}</main>
     </div>

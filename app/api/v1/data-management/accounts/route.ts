@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
@@ -17,21 +17,21 @@ export async function GET(request: NextRequest) {
     const internalUserId = identity.internalUserId
 
     // 1. Fetch ALL LIVE accounts (unfiltered)
-    const liveAccounts = await prisma.account.findMany({
-      where: { userId: internalUserId },
-      orderBy: { createdAt: 'desc' }
+    const liveAccounts = await db.query.Account.findMany({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      orderBy: (table, { desc }) => [desc(table.createdAt)]
     });
 
     // 2. Fetch ALL PROP FIRM accounts (unfiltered)
-    const propFirmAccounts = await prisma.masterAccount.findMany({
-      where: { userId: internalUserId },
-      include: { PhaseAccount: { orderBy: { phaseNumber: 'asc' } } }
+    const propFirmAccounts = await db.query.MasterAccount.findMany({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      with: { PhaseAccount: { orderBy: (table, { asc }) => [asc(table.phaseNumber)] } }
     });
 
     // 3. Fetch all trades once and build grouped execution counts
-    const allTrades = await prisma.trade.findMany({
-      where: { userId: internalUserId },
-      select: TRADE_COUNT_SELECT,
+    const allTrades = await db.query.Trade.findMany({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      columns: TRADE_COUNT_SELECT,
     })
     const groupedCounts = buildGroupedTradeCountSummary(allTrades as any)
 

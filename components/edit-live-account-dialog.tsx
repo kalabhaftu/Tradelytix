@@ -67,7 +67,6 @@ export function EditLiveAccountDialog({
     resolver: zodResolver(editAccountSchema)
   })
 
-  // Reset form when account changes
   useEffect(() => {
     if (account && open) {
       setValue('name', account.name || account.displayName || account.number)
@@ -105,7 +104,6 @@ export function EditLiveAccountDialog({
         description: 'Your account has been successfully updated.',
       })
 
-      // Close dialog and trigger success callback
       onOpenChange(false)
       onSuccess?.()
 

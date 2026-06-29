@@ -395,10 +395,7 @@ export function BacktestingClient({ initialBacktests }: BacktestingClientProps) 
 
             if (!response.ok) throw new Error('Failed to create backtest')
 
-            // Close dialog immediately after successful POST
             setIsAddDialogOpen(false)
-
-            // Show success toast
             toast.success('Backtest added successfully')
 
             // Refresh in background with small delay to ensure UI is smooth

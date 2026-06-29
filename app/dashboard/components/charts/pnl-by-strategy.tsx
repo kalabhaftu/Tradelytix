@@ -25,10 +25,6 @@ import { useData } from "@/context/data-provider"
 import { classifyOutcome, getBreakEvenThreshold } from "@/lib/metrics/outcome"
 import { useDashboardDisplay } from '@/hooks/use-dashboard-display'
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
 interface PnLByStrategyProps {
   size?: WidgetSize
 }
@@ -46,10 +42,6 @@ interface StrategyData {
 
 const AnyBarChart = (RechartsPrimitive as any).BarChart as React.ComponentType<any>
 
-// ============================================================================
-// CONSTANTS - Tradezella Premium Styling
-// ============================================================================
-
 const COLORS = {
   profit: 'hsl(var(--chart-profit))',
   loss: 'hsl(var(--chart-loss))',
@@ -63,18 +55,10 @@ const CHART_CONFIG = {
   referenceLineOpacity: 0.4
 } as const
 
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
 export default function PnLByStrategy({ size = 'small-long' }: PnLByStrategyProps) {
   const { statistics } = useData()
   const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
   const { formatValue } = useDashboardDisplay()
-  // ---------------------------------------------------------------------------
-  // DATA HOOKS (PRESERVED - DO NOT MODIFY)
-  // ---------------------------------------------------------------------------
   const { data: chartData = [], isLoading } = useWidgetData('pnlByStrategy')
 
   if (isLoading) {
@@ -97,14 +81,8 @@ export default function PnLByStrategy({ size = 'small-long' }: PnLByStrategyProp
     )
   }
 
-  // ---------------------------------------------------------------------------
-  // SIZE-RESPONSIVE VALUES
-  // ---------------------------------------------------------------------------
   const isCompact = size === 'small' || size === 'small-long'
 
-  // ---------------------------------------------------------------------------
-  // RENDER
-  // ---------------------------------------------------------------------------
   return (
     <WidgetCard title="P/L by Strategy">
       <div className="w-full h-full">
@@ -115,7 +93,6 @@ export default function PnLByStrategy({ size = 'small-long' }: PnLByStrategyProp
               margin={{ top: 20, right: 20, left: 10, bottom: 20 }}
               barGap={4}
             >
-              {/* Subtle Grid - Vertical Only (since horizontal chart) */}
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke={COLORS.grid}
@@ -123,7 +100,6 @@ export default function PnLByStrategy({ size = 'small-long' }: PnLByStrategyProp
                 horizontal={false}
               />
 
-{/* X Axis - Currency Values */}
                <XAxis
                  type="number"
                  tickFormatter={(value) => formatValue(value, { kind: 'money', compact: true, sensitive: true })}
@@ -133,7 +109,6 @@ export default function PnLByStrategy({ size = 'small-long' }: PnLByStrategyProp
                  axisLine={false}
                />
 
-              {/* Y Axis - Strategy Names */}
               <YAxis
                 type="category"
                 dataKey="strategy"
@@ -145,7 +120,6 @@ export default function PnLByStrategy({ size = 'small-long' }: PnLByStrategyProp
                 tickFormatter={(value) => value.length > 12 ? value.substring(0, 10) + '...' : value}
               />
 
-              {/* Zero Reference Line */}
               <ReferenceLine
                 x={0}
                 stroke={COLORS.axis}
@@ -153,13 +127,11 @@ export default function PnLByStrategy({ size = 'small-long' }: PnLByStrategyProp
                 strokeOpacity={CHART_CONFIG.referenceLineOpacity}
               />
 
-              {/* Tooltip */}
               <RechartsTooltip
                 content={<SharedChartTooltip />}
                 cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
               />
 
-              {/* Bars with Rounded Ends */}
               <Bar
                 dataKey="pnl"
                 radius={[0, 4, 4, 0]}

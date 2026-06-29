@@ -3,7 +3,9 @@
  * Prevents duplicate phase IDs within a user's active accounts
  */
 
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import { PhaseAccount } from '@/lib/db/schema'
+import { eq, and, inArray } from 'drizzle-orm'
 
 export interface PhaseIdValidationResult {
   isValid: boolean
@@ -38,27 +40,28 @@ export async function validatePhaseId(
     }
 
     // Check for existing phase accounts with this ID
-    const existingPhaseAccount = await prisma.phaseAccount.findFirst({
-      where: {
-        phaseId: normalizedPhaseId,
+    const existingPhaseAccountsRaw = await db.query.PhaseAccount.findMany({
+      where: and(
+        eq(PhaseAccount.phaseId, normalizedPhaseId),
+        inArray(PhaseAccount.status, ['active', 'pending'])
+      ),
+      with: {
         MasterAccount: {
-          userId,
-          status: { not: 'failed' }, // Only check non-failed master accounts
-          ...(excludeAccountId ? { NOT: { id: excludeAccountId } } : {})
-        },
-        status: {
-          in: ['active', 'pending'] // Only check active or pending phases
-        }
-      },
-      include: {
-        MasterAccount: {
-          select: {
+          columns: {
             id: true,
-            accountName: true
+            accountName: true,
+            status: true,
+            userId: true
           }
         }
       }
     })
+
+    const existingPhaseAccount = existingPhaseAccountsRaw.find(p => 
+      p.MasterAccount?.userId === userId && 
+      p.MasterAccount?.status !== 'failed' && 
+      (!excludeAccountId || p.MasterAccount?.id !== excludeAccountId)
+    )
 
     if (existingPhaseAccount) {
 
@@ -66,9 +69,9 @@ export async function validatePhaseId(
         isValid: false,
         error: `Phase ID "${normalizedPhaseId}" is already in use`,
         conflictingAccount: {
-          id: existingPhaseAccount.MasterAccount.id,
-          accountName: existingPhaseAccount.MasterAccount.accountName,
-          phaseNumber: existingPhaseAccount.phaseNumber
+          id: existingPhaseAccount.MasterAccount!.id,
+          accountName: existingPhaseAccount.MasterAccount!.accountName,
+          phaseNumber: existingPhaseAccount.phaseNumber as number
         }
       }
     }

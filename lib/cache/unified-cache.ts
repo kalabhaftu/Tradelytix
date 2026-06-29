@@ -82,18 +82,15 @@ export async function getOrSetCached<T>(
   fetcher: () => Promise<T>,
   ttl: number = CacheTTL.SHORT
 ): Promise<T> {
-  // Try to get from cache
   const cached = await getCached<T>(key)
   if (cached !== null) {
     return cached
   }
 
-  // Cache miss - fetch fresh data
   const data = await fetcher()
-  
-  // Store in cache for next time
+
   await setCached(key, data, ttl)
-  
+
   return data
 }
 

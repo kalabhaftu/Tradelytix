@@ -17,8 +17,6 @@ import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { AppBanner } from "@/components/app-banner";
 import Script from "next/script"
 
-// Font configuration now imported from lib/fonts.ts
-
 const DEFAULT_SITE_URL = 'https://www.tradelytix.eu.cc'
 const SITE_NAME = 'Tradelytix'
 const SITE_DESCRIPTION = 'Where traders find consistency through the charts'
@@ -113,13 +111,11 @@ export default async function RootLayout({
         />
         <style>
           {`
-            /* Ensure font variables are available */
             :root {
               --font-system: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
               --font-satoshi: var(--font-system);
             }
 
-            /* Base layout */
             html {
               margin: 0;
               padding: 0;
@@ -149,7 +145,6 @@ export default async function RootLayout({
               overflow-x: hidden !important;
             }
 
-            /* Style the scrollbar */
             ::-webkit-scrollbar {
               width: 14px !important;
               background-color: transparent !important;
@@ -225,8 +220,6 @@ export default async function RootLayout({
             })();
           `}
         </Script>
-
-
 
         <ErrorBoundaryWrapper showDetails={process.env.NODE_ENV === 'development'}>
           <ThemeProvider>

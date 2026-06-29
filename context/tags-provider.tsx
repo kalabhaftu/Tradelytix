@@ -32,7 +32,6 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
   const mountedRef = useRef(true)
 
   const fetchTags = useCallback(async (force = false) => {
-    // Check cache first
     const now = Date.now()
     if (!force && tagsCache && (now - lastFetchTime) < CACHE_DURATION_MEDIUM) {
       setTags(tagsCache)
@@ -63,7 +62,6 @@ export function TagsProvider({ children }: { children: React.ReactNode }) {
           const data = await response.json()
           const fetchedTags = data.tags || []
           
-          // Update cache
           tagsCache = fetchedTags
           lastFetchTime = Date.now()
           

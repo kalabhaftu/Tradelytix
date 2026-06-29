@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq, and } from 'drizzle-orm'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 
@@ -19,20 +21,15 @@ export async function DELETE(
   const { insightId } = await params
 
   try {
-    const insight = await prisma.aISavedInsight.findFirst({
-      where: {
-        id: insightId,
-        userId,
-      },
+    const insight = await db.query.AISavedInsight.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, insightId), eq(table.userId, userId)),
     })
 
     if (!insight) {
       return NextResponse.json({ error: 'Insight not found' }, { status: 404 })
     }
 
-    await prisma.aISavedInsight.delete({
-      where: { id: insightId },
-    })
+    await db.delete(schema.AISavedInsight).where(eq(schema.AISavedInsight.id, insightId))
 
     return NextResponse.json({ success: true, message: 'Insight deleted successfully' })
   } catch (error) {

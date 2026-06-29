@@ -108,11 +108,9 @@ export async function deleteCachePattern(pattern: string): Promise<number> {
     }
 
     const client = getKvClient()
-    // Get all keys matching pattern
     const keys = await client.keys(pattern)
     if (keys.length === 0) return 0
 
-    // Delete all matching keys
     await client.del(...keys)
     return keys.length
   } catch (error) {
@@ -139,16 +137,13 @@ export async function getOrSet<T>(
   fetcher: () => Promise<T>,
   ttl: number = CacheTTL.SHORT
 ): Promise<T> {
-  // Try to get from cache
   const cached = await getFromCache<T>(key)
   if (cached !== null) {
     return cached
   }
 
-  // Cache miss - fetch fresh data
   const data = await fetcher()
 
-  // Store in cache for next time
   await setInCache(key, data, ttl)
 
   return data

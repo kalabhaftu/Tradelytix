@@ -9,7 +9,6 @@ export function AppBanner() {
   const [show, setShow] = useState(false)
 
   useEffect(() => {
-    // Check if on mobile device
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
     const isBannerDismissed = localStorage.getItem('tradelytix_app_banner_dismissed') === 'true'
     
@@ -20,7 +19,6 @@ export function AppBanner() {
       const path = window.location.pathname + window.location.search
       const deepLinkUrl = `tradelytix://open?path=${encodeURIComponent(path)}`
       
-      // Attempt redirect
       window.location.href = deepLinkUrl
     }
   }, [])

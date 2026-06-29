@@ -5,7 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Spinner } from "@/components/ui/spinner"
-import type { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import { 
   processUniversalCSV, 
   SUPPORTED_PLATFORMS,
@@ -478,9 +479,6 @@ export default function UniversalProcessor({
   )
 }
 
-/**
- * Info panel component showing supported platforms
- */
 export function UniversalProcessorInfo() {
   return (
     <div className="p-4 space-y-4">

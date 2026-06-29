@@ -27,12 +27,10 @@ export class PropFirmErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     return { hasError: true, error }
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Error caught by boundary
-  }
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {}
 
   handleReset = () => {
-    this.setState({ hasError: false, error: undefined })
+    this.setState({ hasError: false } as unknown as ErrorBoundaryState)
     this.props.onReset?.()
   }
 

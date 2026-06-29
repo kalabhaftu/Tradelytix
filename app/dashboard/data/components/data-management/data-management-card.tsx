@@ -35,7 +35,8 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import { AdvancedExportDialog } from './advanced-export-dialog'
 import { ImportDialog } from './import-dialog'
 import { DeleteAllDataDialog } from '@/components/data-management/delete-all-data-dialog'
@@ -180,7 +181,6 @@ export function DataManagementCard() {
     }))
   }, [allAccounts, accountsLoading])
 
-  // Stats
   const stats = useMemo(() => {
     const liveAccounts = groupedAccounts.filter(g => g.accountType === 'live')
     const propAccounts = groupedAccounts.filter(g => g.accountType === 'prop-firm')
@@ -398,10 +398,8 @@ export function DataManagementCard() {
         </div>
       </section>
 
-      {/* Loading State */}
       {accountsLoading && <DataManagementCardSkeleton />}
 
-      {/* Select All */}
       {!accountsLoading && accountsWithTrades.length > 0 && (
         <div className="flex items-center justify-between rounded-xl border border-border/24 bg-muted/18 p-4">
           <div className="flex items-center gap-3">
@@ -423,7 +421,6 @@ export function DataManagementCard() {
         </div>
       )}
 
-      {/* Account Groups */}
       {!accountsLoading && groupedAccounts.length > 0 && (
         <div className="space-y-3">
           {groupedAccounts.map((group) => {
@@ -436,7 +433,6 @@ export function DataManagementCard() {
                 key={group.accountName} 
                 className="overflow-hidden rounded-[22px] border border-border/24 bg-card/92"
               >
-                {/* Group Header */}
                 <div 
                   className={cn(
                     "p-4 transition-colors",
@@ -489,7 +485,6 @@ export function DataManagementCard() {
                   </div>
                 </div>
 
-                {/* Phases */}
                 {(isExpanded || !hasMultiplePhases) && (
                   <div className="divide-y divide-border/16 border-t border-border/18">
                     {group.phases.map((phase) => (
@@ -545,7 +540,6 @@ export function DataManagementCard() {
         </div>
       )}
 
-      {/* Empty State */}
       {!accountsLoading && accountsWithTrades.length === 0 && (
         <div className="rounded-2xl border border-dashed border-border/45 bg-card/30 py-16 text-center">
           <BarChart2 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
@@ -583,7 +577,6 @@ export function DataManagementCard() {
         onOpenChange={setDeleteAllDataDialogOpen} 
       />
 
-      {/* Rename Dialog */}
       <Dialog open={renameAccountDialogOpen} onOpenChange={setRenameAccountDialogOpen}>
         <DialogContent onOpenAutoFocus={(event) => event.preventDefault()}>
           <DialogHeader>

@@ -2,7 +2,10 @@
 
 import { useCallback } from 'react'
 import type { QueryClient } from '@tanstack/react-query'
-import type { Trade as PrismaTrade } from '@prisma/client'
+import { type InferSelectModel } from 'drizzle-orm'
+import { Trade as schemaTrade } from '@/lib/db/schema'
+
+type PrismaTrade = InferSelectModel<typeof schemaTrade>
 import {
   groupTradesAction,
   ungroupTradesAction,
@@ -82,7 +85,7 @@ export function useDataProviderTradeMutations({
 
     setTrades(trades.map((trade) =>
       tradeIds.includes(trade.id)
-        ? { ...trade, groupId: tradeIds[0] }
+        ? { ...trade, groupId: tradeIds[0] ?? null }
         : trade
     ))
 

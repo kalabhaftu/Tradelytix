@@ -129,7 +129,7 @@ export function IconButton({
  */
 interface ActionGroupProps {
   children: React.ReactNode
-  className?: string
+  className?: string | undefined
   orientation?: 'horizontal' | 'vertical'
 }
 

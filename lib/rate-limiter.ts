@@ -1,3 +1,4 @@
+import logger from '@/lib/logger';
 import { createHash } from 'crypto'
 import { RateLimiterMemory } from 'rate-limiter-flexible'
 import { NextRequest, NextResponse } from 'next/server'
@@ -74,14 +75,14 @@ function shouldFailClosed(limiter: LimiterConfig) {
 }
 
 function rateLimitUnavailableResponse() {
-  console.error('[Rate Limiter] Fail-closed triggered. Environment variables status:', {
+  logger.error({ event: 'system_error', error: {
     has_KV_URL: !!process.env.KV_REST_API_URL,
     has_KV_TOKEN: !!process.env.KV_REST_API_TOKEN,
     has_UPSTASH_URL: !!process.env.UPSTASH_REDIS_REST_URL,
     has_UPSTASH_TOKEN: !!process.env.UPSTASH_REDIS_REST_TOKEN,
     ALLOW_IN_MEMORY: process.env.ALLOW_IN_MEMORY_RATE_LIMITS_IN_PRODUCTION,
     NODE_ENV: process.env.NODE_ENV
-  })
+  } }, '[Rate Limiter] Fail-closed triggered. Environment variables status:')
   return NextResponse.json(
     {
       success: false,
@@ -127,7 +128,8 @@ export const emailOtpLimiter: LimiterConfig = { points: 3, duration: 3600, failC
  */
 export function getRateLimitIdentifier(req: NextRequest): string {
   const forwarded = req.headers.get('x-forwarded-for')
-  const ip = forwarded ? forwarded.split(',')[0].trim() : req.headers.get('x-real-ip') || 'unknown'
+  const ipPart = forwarded?.split(',')[0];
+  const ip = ipPart ? ipPart.trim() : req.headers.get('x-real-ip') || 'unknown'
   return `ip:${ip}`
 }
 

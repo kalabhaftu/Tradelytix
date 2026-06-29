@@ -86,7 +86,6 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
     const [isRateLimited, setIsRateLimited] = React.useState(false)
     const verificationTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
 
-    // OTP submission function
     const onSubmitOtp = React.useCallback(async (values: z.infer<typeof otpFormSchema>) => {
         if (isVerifying || isLoading || isRateLimited) return
 
@@ -156,7 +155,6 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
                 return
             }
 
-            // Success - Move to OTP step
             setIsEmailSent(true)
             setShowOtpInput(true)
             setCountdown(30)
@@ -206,7 +204,6 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
         }
     }
 
-    // STATE 1: EMAIL ENTRY
     if (!showOtpInput) {
         return (
             <div className={cn("grid gap-6", className)} {...props}>
@@ -288,7 +285,6 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
         )
     }
 
-    // STATE 2: OTP ENTRY
     return (
         <div className={cn("space-y-6", className)} {...props}>
             <div className="space-y-2 text-center">

@@ -1,16 +1,13 @@
-/**
- * Phase Transition API
- * POST /api/prop-firm/accounts/[id]/transition - Transition to the next phase
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { revalidateTag } from 'next/cache'
 import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
+import { eq, ne, and } from 'drizzle-orm'
 // NOTE: Do NOT import triggerDataRefresh here - it's a client-only module ('use client')
 // Use revalidateTag for cache invalidation instead
 
@@ -50,21 +47,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const body = await request.json()
     const { nextPhaseId } = PhaseTransitionSchema.parse(body)
 
-
     // Verify the master account belongs to the user
-    const masterAccount = await prisma.masterAccount.findFirst({
-      where: {
-        id: masterAccountId,
-        userId: internalUserId,
-        status: { not: 'failed' }
-      },
-      include: {
+    const masterAccount = await db.query.MasterAccount.findFirst({
+      where: (table, { eq, ne, and }) => and(
+        eq(table.id, masterAccountId),
+        eq(table.userId, internalUserId),
+        ne(table.status, 'failed')
+      ),
+      with: {
         PhaseAccount: {
-          orderBy: { phaseNumber: 'asc' }
+          orderBy: (table, { asc }) => [asc(table.phaseNumber)]
         }
       }
     })
-
 
     if (!masterAccount) {
       return NextResponse.json(
@@ -104,38 +99,30 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Perform the transition in a transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       // Mark the current phase as passed (not archived)
-      await tx.phaseAccount.update({
-        where: { id: currentPhase.id },
-        data: {
-          status: 'passed',
-          endDate: new Date()
-        }
-      })
+      await tx.update(schema.PhaseAccount)
+        .set({ status: 'passed', endDate: new Date() })
+        .where(eq(schema.PhaseAccount.id, currentPhase.id))
+        .returning()
 
       // Activate the next phase and set its phaseId
-      const updatedNextPhase = await tx.phaseAccount.update({
-        where: { id: nextPhase.id },
-        data: {
-          status: 'active',
-          phaseId: nextPhaseId,
-          startDate: new Date()
-        }
-      })
+      const updatedNextPhase = (await tx.update(schema.PhaseAccount)
+        .set({ status: 'active', phaseId: nextPhaseId, startDate: new Date() })
+        .where(eq(schema.PhaseAccount.id, nextPhase.id))
+        .returning())[0]
 
       // Determine if the next phase is the funded phase based on evaluation type
       const isTransitioningToFunded = isFundedPhase(masterAccount.evaluationType, nextPhaseNumber)
 
       // Update the master account's current phase and status
-      const updatedMasterAccount = await tx.masterAccount.update({
-        where: { id: masterAccountId },
-        data: {
+      const updatedMasterAccount = (await tx.update(schema.MasterAccount)
+        .set({
           currentPhase: nextPhaseNumber,
-          // Set status to 'funded' if transitioning to funded phase
           ...(isTransitioningToFunded && { status: 'funded' })
-        }
-      })
+        })
+        .where(eq(schema.MasterAccount.id, masterAccountId))
+        .returning())[0]
 
       return {
         masterAccount: updatedMasterAccount,
@@ -161,7 +148,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     })
 
   } catch (error) {
-    console.error('Phase transition error:', error)
+    logger.error('Phase transition error:', error)
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(

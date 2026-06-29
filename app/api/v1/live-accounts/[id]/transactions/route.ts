@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
@@ -65,11 +66,8 @@ export async function POST(
     }
 
     // Verify account belongs to user
-    const account = await prisma.account.findFirst({
-      where: {
-        id: accountId,
-        userId
-      }
+    const account = await db.query.Account.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, accountId), eq(table.userId, userId))
     })
 
     if (!account) {
@@ -82,12 +80,12 @@ export async function POST(
     // For withdrawals, check if account has sufficient balance
     if (type === 'WITHDRAWAL') {
       // Calculate current balance including trades and previous transactions
-      const trades = await prisma.trade.findMany({
-        where: { accountNumber: account.number }
+      const trades = await db.query.Trade.findMany({
+        where: (table, { eq }) => eq(table.accountNumber, account.number)
       })
 
-      const transactions = await prisma.liveAccountTransaction.findMany({
-        where: { accountId }
+      const transactions = await db.query.LiveAccountTransaction.findMany({
+        where: (table, { eq }) => eq(table.accountId, accountId)
       })
 
       const totalPnL = trades.reduce(
@@ -112,16 +110,14 @@ export async function POST(
     // Create transaction
     const transactionAmount = type === 'DEPOSIT' ? numericAmount : -numericAmount
 
-    const transaction = await prisma.liveAccountTransaction.create({
-      data: {
-        id: crypto.randomUUID(),
-        accountId,
-        userId,
-        type: type as 'DEPOSIT' | 'WITHDRAWAL',
-        amount: transactionAmount,
-        description: description || null
-      }
-    })
+    const transaction = (await db.insert(schema.LiveAccountTransaction).values({
+      id: crypto.randomUUID(),
+      accountId,
+      userId,
+      type: type as 'DEPOSIT' | 'WITHDRAWAL',
+      amount: transactionAmount,
+      description: description || null
+    }).returning())[0]
 
     return NextResponse.json({
       success: true,
@@ -157,11 +153,8 @@ export async function GET(
     const { id: accountId } = await params
 
     // Verify account belongs to user
-    const account = await prisma.account.findFirst({
-      where: {
-        id: accountId,
-        userId
-      }
+    const account = await db.query.Account.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, accountId), eq(table.userId, userId))
     })
 
     if (!account) {
@@ -172,9 +165,9 @@ export async function GET(
     }
 
     // Get transactions
-    const transactions = await prisma.liveAccountTransaction.findMany({
-      where: { accountId },
-      orderBy: { createdAt: 'desc' }
+    const transactions = await db.query.LiveAccountTransaction.findMany({
+      where: (table, { eq }) => eq(table.accountId, accountId),
+      orderBy: (table, { desc }) => [desc(table.createdAt)]
     })
 
     return NextResponse.json({

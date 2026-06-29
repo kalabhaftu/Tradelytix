@@ -19,7 +19,8 @@ import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, LayoutGrid, Calend
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { cn, formatCurrency, groupTradesByExecution, type GroupedTrade } from '@/lib/utils'
-import { Trade } from '@prisma/client'
+import type { TradeType as Trade } from '@/lib/db/schema';
+
 import { getTradePnlByMode, getPnlDisplayLabel, normalizePnlDisplayMode } from '@/lib/metrics/pnl'
 import { useUserStore } from '@/store/user-store'
 import { useJournalData } from '@/app/dashboard/hooks/use-journal-data'

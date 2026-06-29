@@ -1,4 +1,5 @@
-import { Trade } from "@prisma/client"
+import type { TradeType as Trade } from '@/lib/db/schema/trades';
+
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format } from "date-fns"
@@ -70,10 +71,6 @@ export function cn(...inputs: ClassValue[]) {
  * Returns an opacity value based on the magnitude of PnL.
  * Used for "PnL Intensity" background styling.
  */
-/**
- * Returns an opacity value based on the magnitude of PnL.
- * Used for "PnL Intensity" background styling.
- */
 export function getPnlIntensity(pnl: number): number {
   const absPnl = Math.abs(pnl)
   if (absPnl === 0) return 0
@@ -84,9 +81,6 @@ export function getPnlIntensity(pnl: number): number {
   return 0.35
 }
 
-/**
- * Standardized trade date formatter with day of week support.
- */
 /**
  * Standardized trade date formatter with day of week support.
  */
@@ -101,16 +95,13 @@ export function formatTradeDate(
   return formatInTimeZone(d, timezone, pattern)
 }
 
-// Utility function to format numbers without unnecessary trailing zeros
 export function formatNumber(value: number, maxDecimals: number = 4): string {
   if (isNaN(value) || !isFinite(value)) return '0'
 
-  // Convert to string and remove trailing zeros
   const formatted = value.toFixed(maxDecimals)
   return parseFloat(formatted).toString()
 }
 
-// Utility function to format currency with proper comma separation and decimal handling
 export function formatCurrency(value: number, maxDecimals: number = 2): string {
   if (isNaN(value) || !isFinite(value)) return '$0'
 
@@ -122,7 +113,6 @@ export function formatCurrency(value: number, maxDecimals: number = 2): string {
   }).format(value)
 }
 
-// Utility function to format percentage without unnecessary trailing zeros
 export function formatPercentage(value: number, maxDecimals: number = 1): string {
   if (isNaN(value) || !isFinite(value)) return '0%'
 
@@ -140,21 +130,16 @@ export function formatPercent(value: number, maxDecimals: number = 2): string {
   return `${cleanNumber}%`
 }
 
-// Utility function to format trade quantity/lots - removes trailing zeros intelligently
 export function formatQuantity(value: number | string | null | undefined): string {
   if (value === null || value === undefined) return '0'
   const numValue = typeof value === 'string' ? parseFloat(value) : value
   if (isNaN(numValue) || !isFinite(numValue)) return '0'
 
-  // Use up to 4 decimal places but remove trailing zeros
   const formatted = numValue.toFixed(4)
   const cleanNumber = parseFloat(formatted)
   return cleanNumber.toString()
 }
 
-// Get decimal precision based on instrument/pair
-
-// Format price based on instrument type (preserves exact decimal from import for display)
 export function formatPrice(price: string | number | { toString(): string }, instrument: string, forAggregation: boolean = false): string {
   if (price === null || price === undefined || price === '') return '0'
 
@@ -176,7 +161,6 @@ export function formatPrice(price: string | number | { toString(): string }, ins
     return numPrice.toFixed(precision)
   }
 
-  // Standard display formatting using the new precision utility
   return formatTradePrice(numPrice, instrument)
 }
 
@@ -372,20 +356,18 @@ export function groupTradesByExecution(trades: Trade[]): GroupedTrade[] {
   const groups = new Map<string, GroupedTrade>()
 
   trades.forEach(trade => {
-    // Create grouping key - prefer entryId, fallback to instrument+time+side
-    let key: string
+  let key: string
     if (trade.entryId && trade.entryId.trim() !== '') {
       key = `entryId:${trade.entryId}`
     } else {
       // Fallback: group by instrument, entry date (to nearest minute), and side
       const entryDate = getTradeEntryTimestamp(trade as any) ?? new Date(trade.entryDate)
       const roundedTime = new Date(entryDate)
-      roundedTime.setSeconds(0, 0) // Round to nearest minute
+      roundedTime.setSeconds(0, 0)
       key = `fallback:${trade.instrument}:${roundedTime.toISOString()}:${trade.side}`
     }
 
     if (!groups.has(key)) {
-      // First trade in group - create grouped trade
       groups.set(key, {
         ...trade,
         partialTrades: [trade],
@@ -409,20 +391,16 @@ export function groupTradesByExecution(trades: Trade[]): GroupedTrade[] {
       // Additional trade in group (partial close) - merge data
       const group = groups.get(key)!
 
-      // Add to partial trades array
       group.partialTrades.push(trade)
       group.isGrouped = true
 
-      // Sum P&L and commission
       group.pnl += trade.pnl || 0
       group.commission += trade.commission || 0
 
-      // Sum quantities
       group.quantity += trade.quantity || 0
 
-      // Use the longest timeInPosition (last close)
       if ((trade.timeInPosition || 0) > (group.timeInPosition || 0)) {
-        group.timeInPosition = trade.timeInPosition
+        group.timeInPosition = trade.timeInPosition || 0
         group.closeDate = trade.closeDate // Update close date to match longest time
         group.closePrice = trade.closePrice // Update close price to last execution
         if (trade.exitTime) group.exitTime = trade.exitTime
@@ -468,10 +446,8 @@ export function calculateStatistics(
   // PERF: Use pre-grouped trades if provided, otherwise group now
   const groupedTrades = preGrouped ?? groupTradesByExecution(trades)
 
-  // Create a map of accounts for quick lookup
   const accountMap = new Map(accounts.map(account => [account.number, account]));
 
-  // Use grouped trades for accurate statistics
   const filteredTrades = groupedTrades;
 
   if (!filteredTrades.length) {
@@ -528,11 +504,9 @@ export function calculateStatistics(
     totalPnL: 0,
   };
 
-  // Track consecutive winning streak
   let currentWinningStreak = 0;
   let maxWinningStreak = 0;
 
-  // Initialize totalPnL if it's not in initialStatistics
   if (initialStatistics.totalPnL === undefined) {
     (initialStatistics as any).totalPnL = 0;
   }
@@ -556,11 +530,9 @@ export function calculateStatistics(
     acc.cumulativeFees += commission;
     acc.totalPositionTime += timeInPosition;
 
-    // Update totalPnL (net P&L)
     if ((acc as any).totalPnL === undefined) (acc as any).totalPnL = 0;
     (acc as any).totalPnL += netPnl;
 
-    // Track biggest win and loss (using net P&L)
     if (netPnl > acc.biggestWin) {
       acc.biggestWin = netPnl;
     }
@@ -568,9 +540,8 @@ export function calculateStatistics(
       acc.biggestLoss = netPnl;
     }
 
-    // Categorize trades using net P&L and handle winning streak correctly
     const outcome = classifyTrade(netPnl, breakEvenThreshold)
-    if (outcome === 'breakeven') { // Treat small values within threshold as break-even
+    if (outcome === 'breakeven') {
       acc.nbBe++;
       currentWinningStreak = 0; // Break-even breaks winning streak
     } else if (outcome === 'win') {
@@ -589,10 +560,8 @@ export function calculateStatistics(
     return acc;
   }, { ...initialStatistics });
 
-  // Calculate Win Rate properly
   statistics.winRate = calculateOutcomeWinRate(statistics.nbWin, statistics.nbLoss)
 
-  // Calculate Average Win/Loss
   if (statistics.nbWin > 0) {
     (statistics as any).averageWin = statistics.grossWin / statistics.nbWin;
   } else {
@@ -612,43 +581,32 @@ export function calculateStatistics(
     ? (statistics as any).avgWin / (statistics as any).avgLoss 
     : 0;
 
-  // Set the maximum winning streak achieved
   statistics.winningStreak = maxWinningStreak;
 
-  // Get unique account numbers from the filtered trades
   const tradeAccountNumbers = new Set(filteredTrades.map(trade => trade.accountNumber));
 
-  // Calculate total payouts only from accounts that have trades in the current dataset
-  // and only include payouts that occurred after the reset date
   accounts.forEach(account => {
     if (tradeAccountNumbers.has(account.number)) {
       const payouts = account.payouts || [];
       payouts.forEach(payout => {
-        // Include all payouts (resetDate feature removed)
         statistics.totalPayouts += payout.amount;
         statistics.nbPayouts++;
       });
     }
   });
 
-  // Calculate average position time (handle division by zero)
   const averageTimeInSeconds = filteredTrades.length > 0 ?
     Math.round(statistics.totalPositionTime / filteredTrades.length) : 0;
   statistics.averagePositionTime = parsePositionTime(averageTimeInSeconds);
 
-  // Calculate proper profit factor (industry standard formula)
-  // Profit Factor = Gross Profits / Gross Losses
   if (statistics.grossLosses > 0) {
     statistics.profitFactor = statistics.grossWin / statistics.grossLosses;
   } else if (statistics.grossWin > 0) {
-    // If no losses but have profits, profit factor is theoretically infinite
     statistics.profitFactor = Number.POSITIVE_INFINITY;
   } else {
-    // No profits and no losses
     statistics.profitFactor = 0;
   }
 
-  // Round profit factor to reasonable precision
   if (statistics.profitFactor !== Number.POSITIVE_INFINITY) {
     statistics.profitFactor = Math.round(statistics.profitFactor * 100) / 100;
   }
@@ -660,14 +618,11 @@ export function formatCalendarData(trades: Trade[], accounts: Account[] = [], ti
   // PERF: Use pre-grouped trades if provided, otherwise group now
   const groupedTrades = preGrouped ?? groupTradesByExecution(trades)
 
-  // Create a map of accounts for quick lookup
   const accountMap = new Map(accounts.map(account => [account.number, account]));
 
-  // Use grouped trades for accurate calendar data
   const filteredTrades = groupedTrades;
 
   return filteredTrades.reduce((acc: any, trade: Trade) => {
-    // Parse the date and format it in the specified timezone to ensure consistency
     const entryTimestamp = getTradeEntryTimestamp(trade as any) ?? new Date(trade.entryDate)
     const date = formatInTimeZone(entryTimestamp, timezone, 'yyyy-MM-dd')
 

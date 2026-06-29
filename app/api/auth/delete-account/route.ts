@@ -2,8 +2,11 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserId } from '@/server/auth'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
 import { getSupabaseAdminClient } from '@/server/supabase-admin'
+import { logger } from '@/lib/logger';
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -18,25 +21,25 @@ export async function DELETE(request: NextRequest) {
     }
 
     const supabaseAdmin = getSupabaseAdminClient()
-    const dbUser = await prisma.user.findUnique({
-      where: { auth_user_id: userId },
-      select: { id: true },
+    const dbUser = await db.query.User.findFirst({
+      where: (table, { eq }) => eq(table.auth_user_id, userId),
+      columns: { id: true },
     })
 
     if (dbUser?.id) {
       // 0. Collect all trade and backtest images for storage cleanup
       const [trades, backtestTrades] = await Promise.all([
-        prisma.trade.findMany({
-          where: { userId: dbUser.id },
-          select: {
+        db.query.Trade.findMany({
+          where: (table, { eq }) => eq(table.userId, dbUser.id),
+          columns: {
             imageOne: true, imageTwo: true, imageThree: true,
             imageFour: true, imageFive: true, imageSix: true,
             cardPreviewImage: true
           }
         }),
-        prisma.backtestTrade.findMany({
-          where: { userId: dbUser.id },
-          select: {
+        db.query.BacktestTrade.findMany({
+          where: (table, { eq }) => eq(table.userId, dbUser.id),
+          columns: {
             imageOne: true, imageTwo: true, imageThree: true,
             imageFour: true, imageFive: true, imageSix: true,
             cardPreviewImage: true
@@ -54,7 +57,7 @@ export async function DELETE(request: NextRequest) {
           const { deletePublicStorageUrls } = await import('@/server/storage-admin')
           await deletePublicStorageUrls(imageUrls)
         } catch (err) {
-          console.error('Failed to cleanup storage during user account deletion:', err)
+          logger.error('Failed to cleanup storage during user account deletion:', err)
         }
       }
 
@@ -68,9 +71,7 @@ export async function DELETE(request: NextRequest) {
       }
 
       try {
-        await prisma.user.delete({
-          where: { id: dbUser.id }
-        })
+        await db.delete(schema.User).where(eq(schema.User.id, dbUser.id))
       } catch {
         // If the auth->public FK cascade already removed the row, there's nothing left to do.
       }
@@ -82,7 +83,6 @@ export async function DELETE(request: NextRequest) {
     })
 
   } catch (error) {
-    // Return appropriate error response
     if (error instanceof Error) {
       if (error.message.includes('Authentication')) {
         return NextResponse.json(

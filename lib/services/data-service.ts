@@ -7,10 +7,6 @@ import { fetchWithError, FetchResult } from '@/lib/utils/fetch-with-error'
 import { CacheManager, CacheKeys, CacheTags } from '@/lib/cache/cache-manager'
 import { CACHE_DURATION_SHORT, CACHE_DURATION_MEDIUM, API_TIMEOUT } from '@/lib/constants'
 
-// ===========================================
-// TYPES
-// ===========================================
-
 export interface DashboardStats {
   totalAccounts: number
   totalTrades: number
@@ -57,10 +53,6 @@ export interface PropFirmAccount {
   currentEquity?: number
 }
 
-// ===========================================
-// IN-FLIGHT REQUEST DEDUPLICATION
-// ===========================================
-
 const inFlightRequests = new Map<string, Promise<any>>()
 
 /**
@@ -71,13 +63,11 @@ async function deduplicatedFetch<T>(
   key: string,
   fetcher: () => Promise<FetchResult<T>>
 ): Promise<FetchResult<T>> {
-  // Check if request is already in flight
   const existing = inFlightRequests.get(key)
   if (existing) {
     return existing
   }
 
-  // Create new request
   const request = fetcher().finally(() => {
     inFlightRequests.delete(key)
   })
@@ -85,10 +75,6 @@ async function deduplicatedFetch<T>(
   inFlightRequests.set(key, request)
   return request
 }
-
-// ===========================================
-// DATA SERVICE CLASS
-// ===========================================
 
 class DataServiceClass {
   private static instance: DataServiceClass | null = null
@@ -102,10 +88,6 @@ class DataServiceClass {
     return DataServiceClass.instance
   }
 
-  // ===========================================
-  // DASHBOARD STATISTICS
-  // ===========================================
-
   /**
    * Fetch dashboard statistics
    * Uses caching and request deduplication
@@ -118,7 +100,6 @@ class DataServiceClass {
   }): Promise<FetchResult<DashboardStats>> {
     const cacheKey = CacheKeys.dashboard('current')
 
-    // Check cache first
     if (!options?.forceRefresh) {
       const cached = CacheManager.getWithStale<DashboardStats>(cacheKey)
       if (cached.data && !cached.isStale) {
@@ -126,7 +107,6 @@ class DataServiceClass {
       }
     }
 
-    // Build query params
     const params = new URLSearchParams()
     if (options?.masterAccountId) {
       params.append('masterAccountId', options.masterAccountId)
@@ -140,7 +120,6 @@ class DataServiceClass {
 
     const url = `/api/v1/trades?${params.toString() ? `${params.toString()}&` : ''}includeWidgets=true`
 
-    // Fetch with deduplication
     const result = await deduplicatedFetch<any>(
       `stats:${params.toString()}`,
       () => fetchWithError(url, { timeout: API_TIMEOUT })
@@ -170,7 +149,6 @@ class DataServiceClass {
         lastUpdated: new Date().toISOString()
       }
 
-      // Cache the result
       CacheManager.set(cacheKey, normalized, {
         ttl: CACHE_DURATION_SHORT,
         tags: [CacheTags.STATISTICS, CacheTags.DASHBOARD]
@@ -192,10 +170,6 @@ class DataServiceClass {
     }
   }
 
-  // ===========================================
-  // ACCOUNTS
-  // ===========================================
-
   /**
    * Fetch all accounts (unified - regular + prop firm)
    */
@@ -205,7 +179,6 @@ class DataServiceClass {
   }): Promise<FetchResult<Account[]>> {
     const cacheKey = `accounts:${options?.includeArchived ? 'all' : 'active'}`
 
-    // Check cache first
     if (!options?.forceRefresh) {
       const cached = CacheManager.getWithStale<Account[]>(cacheKey)
       if (cached.data && !cached.isStale) {
@@ -241,10 +214,6 @@ class DataServiceClass {
     }
   }
 
-  // ===========================================
-  // PROP FIRM ACCOUNTS
-  // ===========================================
-
   /**
    * Fetch single prop firm account with real-time data
    */
@@ -254,7 +223,6 @@ class DataServiceClass {
   ): Promise<FetchResult<PropFirmAccount>> {
     const cacheKey = CacheKeys.propFirmAccount(accountId)
 
-    // Check cache first
     if (!options?.forceRefresh) {
       const cached = CacheManager.getWithStale<PropFirmAccount>(cacheKey)
       if (cached.data && !cached.isStale) {
@@ -349,10 +317,6 @@ class DataServiceClass {
     }
   }
 
-  // ===========================================
-  // TRADES
-  // ===========================================
-
   /**
    * Fetch trades with pagination
    */
@@ -409,10 +373,6 @@ class DataServiceClass {
     }
   }
 
-  // ===========================================
-  // CACHE MANAGEMENT
-  // ===========================================
-
   /**
    * Invalidate all caches for a user
    */
@@ -451,10 +411,6 @@ class DataServiceClass {
     CacheManager.invalidateByTag([CacheTags.PROP_FIRM])
   }
 }
-
-// ===========================================
-// EXPORTS
-// ===========================================
 
 export const DataService = DataServiceClass.getInstance()
 

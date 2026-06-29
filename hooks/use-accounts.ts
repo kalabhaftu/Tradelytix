@@ -83,7 +83,6 @@ export function useAccounts(options: UseAccountsOptions = {}) {
   const user = useUserStore(state => state.user)
   const isDemo = typeof window !== 'undefined' && window.location.pathname.startsWith('/demo')
 
-  // We use SWR for pagination and targeted cache updates
   const url = (user?.id || isDemo) ? `/api/v1/accounts?page=${page}&limit=${limit}&status=${status}&type=${type}&search=${encodeURIComponent(search)}` : null
   
   const { data, error, isLoading, mutate } = useSWR(url, fetcher, {

@@ -102,7 +102,7 @@ function TableView() {
             </div>
           </div>
           <div className="relative flex-1 overflow-hidden bg-card">
-            <TradeReplay trade={trade} />
+            <TradeReplay trade={{ ...trade, quantity: trade.quantity || 0 }} />
           </div>
         </div>
       )

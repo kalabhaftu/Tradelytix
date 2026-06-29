@@ -1,3 +1,4 @@
+import logger from '@/lib/logger';
 import { getApps, initializeApp, cert } from 'firebase-admin/app'
 import { getMessaging } from 'firebase-admin/messaging'
 
@@ -18,10 +19,10 @@ if (!apps.length) {
         })
       })
     } else {
-      console.warn('Firebase admin credentials not found in environment variables.')
+      logger.warn({ event: 'system_warn' }, 'Firebase admin credentials not found in environment variables.')
     }
   } catch (error) {
-    console.error('Firebase admin initialization error:', error)
+    logger.error({ event: 'system_error', error: error }, 'Firebase admin initialization error:')
   }
 }
 

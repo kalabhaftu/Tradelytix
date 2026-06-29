@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client';
+import * as schema from '@/lib/db/schema';
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
@@ -19,9 +20,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const userSettings = await prisma.userSettings.findUnique({
-      where: { userId: identity.internalUserId },
-      select: { accountFilterSettings: true }
+    const userSettings = await db.query.UserSettings.findFirst({
+      where: (table, { eq }) => eq(table.userId, identity.internalUserId)
     })
     
     let settings = DEFAULT_FILTER_SETTINGS
@@ -48,7 +48,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    // Return defaults on error to prevent UI blocking
     return NextResponse.json({
       success: true,
       data: DEFAULT_FILTER_SETTINGS
@@ -78,16 +77,16 @@ export async function POST(request: NextRequest) {
     const settings: AccountFilterSettings = await request.json()
     settings.updatedAt = new Date().toISOString()
 
-    await prisma.userSettings.upsert({
-      where: { userId: identity.internalUserId },
-      create: {
-        userId: identity.internalUserId,
-        accountFilterSettings: JSON.stringify(settings)
-      },
-      update: {
-        accountFilterSettings: JSON.stringify(settings)
-      }
-    })
+    const settingsData = {
+      userId: identity.internalUserId,
+      accountFilterSettings: JSON.stringify(settings)
+    }
+    await db.insert(schema.UserSettings)
+      .values(settingsData)
+      .onConflictDoUpdate({
+        target: schema.UserSettings.userId,
+        set: { accountFilterSettings: settingsData.accountFilterSettings }
+      })
 
     return NextResponse.json({
       success: true,

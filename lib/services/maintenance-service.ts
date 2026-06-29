@@ -1,5 +1,7 @@
-import { logger } from '@/lib/logger'
-import { prisma } from '@/lib/prisma'
+import logger from "@/lib/logger"
+import { db } from '@/lib/db/client'
+import { ActivityLog, ImportJob } from '@/lib/db/schema'
+import { lt, and, inArray } from 'drizzle-orm'
 
 /**
  * Maintenance Service
@@ -14,17 +16,13 @@ export async function cleanupActivityLogs(daysOld = 90) {
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - daysOld)
 
-  logger.info('[Maintenance] Cleaning up activity logs', { daysOld, cutoff: cutoff.toISOString() })
+  logger.info({ daysOld, cutoff: cutoff.toISOString() }, '[Maintenance] Cleaning up activity logs')
   
-  const result = await prisma.activityLog.deleteMany({
-    where: {
-      createdAt: {
-        lt: cutoff
-      }
-    }
-  })
+  const result = await db.delete(ActivityLog)
+    .where(lt(ActivityLog.createdAt, cutoff))
+    .returning({ id: ActivityLog.id })
 
-  return { deleted: result.count }
+  return { deleted: result.length }
 }
 
 /**
@@ -35,20 +33,18 @@ export async function cleanupImportJobs(daysOld = 7) {
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - daysOld)
 
-  logger.info('[Maintenance] Cleaning up import jobs', { daysOld, cutoff: cutoff.toISOString() })
+  logger.info({ daysOld, cutoff: cutoff.toISOString() }, '[Maintenance] Cleaning up import jobs')
   
-  const result = await prisma.importJob.deleteMany({
-    where: {
-      updatedAt: {
-        lt: cutoff
-      },
-      status: {
-        in: ['completed', 'failed', 'cancelled']
-      }
-    }
-  })
+  const result = await db.delete(ImportJob)
+    .where(
+      and(
+        lt(ImportJob.updatedAt, cutoff),
+        inArray(ImportJob.status, ['completed', 'failed', 'cancelled'])
+      )
+    )
+    .returning({ id: ImportJob.id })
 
-  return { deleted: result.count }
+  return { deleted: result.length }
 }
 
 /**

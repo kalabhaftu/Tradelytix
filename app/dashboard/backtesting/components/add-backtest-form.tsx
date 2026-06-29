@@ -87,7 +87,6 @@ const COMMON_INSTRUMENTS = [
   { symbol: 'EUR/JPY', category: 'Forex', placeholder: '161.500' },
   { symbol: 'GBP/JPY', category: 'Forex', placeholder: '188.500' },
 
-  // Indices
   { symbol: 'NAS100', category: 'Indices', placeholder: '16250.50' },
   { symbol: 'US30', category: 'Indices', placeholder: '38500.00' },
   { symbol: 'SPX500', category: 'Indices', placeholder: '4850.00' },
@@ -95,7 +94,6 @@ const COMMON_INSTRUMENTS = [
   { symbol: 'GER40', category: 'Indices', placeholder: '17200.00' },
   { symbol: 'UK100', category: 'Indices', placeholder: '7650.00' },
 
-  // Commodities
   { symbol: 'GOLD', category: 'Commodities', placeholder: '2025.50' },
   { symbol: 'XAU/USD', category: 'Commodities', placeholder: '2025.50' },
   { symbol: 'SILVER', category: 'Commodities', placeholder: '23.50' },
@@ -103,7 +101,6 @@ const COMMON_INSTRUMENTS = [
   { symbol: 'WTI', category: 'Commodities', placeholder: '78.50' },
   { symbol: 'BRENT', category: 'Commodities', placeholder: '82.50' },
 
-  // Crypto
   { symbol: 'BTC/USD', category: 'Crypto', placeholder: '42500.00' },
   { symbol: 'ETH/USD', category: 'Crypto', placeholder: '2250.00' },
 ]
@@ -136,7 +133,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
     }
   })
 
-  // Propagate dirty state to parent
   useEffect(() => {
     if (onDirtyChange) {
       const hasImages = images.length > 0 || !!cardPreview
@@ -155,7 +151,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
   const watchedRewardPoints = watch('rewardPoints')
   const watchedRR = watch('riskRewardRatio')
 
-  // Get price placeholders based on selected pair
   const getPricePlaceholder = () => {
     const instrument = COMMON_INSTRUMENTS.find(
       inst => inst.symbol.toLowerCase() === watchedPair?.toLowerCase()
@@ -163,7 +158,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
     return instrument?.placeholder || '0.00000'
   }
 
-  // Filter instruments based on input
   const handlePairInputChange = (value: string) => {
     setValue('pair', value)
 
@@ -185,7 +179,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
     setShowSuggestions(false)
   }
 
-  // Fetch user's input mode preference
   useEffect(() => {
     const fetchMode = async () => {
       try {
@@ -202,7 +195,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
     fetchMode()
   }, [])
 
-  // Save mode preference when changed
   const handleModeChange = async (newMode: 'manual' | 'simple') => {
     setInputMode(newMode)
     try {
@@ -217,7 +209,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
     }
   }
 
-  // Auto-detect outcome based on P&L (manual mode) or validate (simple mode)
   useEffect(() => {
     const currentPnL = calculatePnL()
     const currentOutcome = watch('outcome')
@@ -248,7 +239,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchedEntryPrice, watchedExitPrice, watchedStopLoss, watchedRiskPoints, watchedRewardPoints, inputMode])
 
-  // Close suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
@@ -286,7 +276,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
     setImages(prev => prev.filter((_, i) => i !== index))
   }
 
-  // Calculate Risk in Points/Pips
   const calculateRisk = () => {
     if (inputMode === 'simple') {
       return parseFloat(watch('riskPoints') || '0')
@@ -297,11 +286,9 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
 
     if (!entry || !sl) return 0
 
-    // Risk is always the absolute distance from entry to stop loss
     return Math.abs(entry - sl)
   }
 
-  // Calculate Reward in Points/Pips
   const calculateReward = () => {
     if (inputMode === 'simple') {
       return parseFloat(watch('rewardPoints') || '0')
@@ -312,11 +299,9 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
 
     if (!entry || !exit) return 0
 
-    // Reward is always the absolute distance from entry to exit
     return Math.abs(entry - exit)
   }
 
-  // Calculate R:R Ratio
   const calculateRR = () => {
     if (inputMode === 'simple') {
       const rr = parseFloat(watch('riskRewardRatio') || '0')
@@ -328,29 +313,24 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
 
     if (risk <= 0) return 0
 
-    // R:R ratio is reward divided by risk
     return reward / risk
   }
 
-  // Calculate P&L based on outcome
   const calculatePnL = () => {
     const outcome = watch('outcome')
     const direction = watch('direction')
 
     if (inputMode === 'simple') {
-      // In simple mode, calculate P&L from risk/reward and outcome
       const risk = parseFloat(watch('riskPoints') || '0')
       const reward = parseFloat(watch('rewardPoints') || '0')
 
       if (!risk || !reward) return 0
 
-      // If WIN, P&L = +reward; if LOSS, P&L = -risk; if BREAKEVEN, P&L = 0
       if (outcome === 'WIN') return reward
       if (outcome === 'LOSS') return -risk
       return 0
     }
 
-    // In manual mode, calculate from actual prices
     const entry = parseFloat(watch('entryPrice') || '0')
     const exit = parseFloat(watch('exitPrice') || '0')
 
@@ -358,10 +338,8 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
 
     let pnl = 0
     if (direction === 'BUY') {
-      // Long: P&L = Exit Price - Entry Price
       pnl = exit - entry
     } else if (direction === 'SELL') {
-      // Short: P&L = Entry Price - Exit Price
       pnl = entry - exit
     }
 
@@ -376,7 +354,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
       const risk = calculateRisk()
       const reward = calculateReward()
 
-      // Final validation: Check P&L vs Outcome consistency
       if (pnl !== 0) {
         const expectedOutcome = pnl > 0 ? 'WIN' : pnl < 0 ? 'LOSS' : 'BREAKEVEN'
         if (data.outcome !== expectedOutcome) {
@@ -388,11 +365,9 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
         }
       }
 
-      // For simple mode, use placeholder values for prices since we don't collect them
       let entryPrice, exitPrice, stopLoss, takeProfit
 
       if (inputMode === 'simple') {
-        // Use placeholder values - these won't be displayed in simple mode
         entryPrice = '0'
         exitPrice = '0'
         stopLoss = '0'
@@ -426,17 +401,14 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
         dateExecuted: new Date().toISOString(),
       }
 
-      // Call onAdd if provided (API call happens in parent)
       if (onAdd) {
         await onAdd(backtestData)
       }
 
-      // Reset form only after successful add
       reset()
       setImages([])
       setCardPreview('')
     } catch (error) {
-      // Error toast is handled in parent component
     } finally {
       setIsSubmitting(false)
     }
@@ -454,7 +426,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Pair */}
             <div className="space-y-2 relative">
               <Label htmlFor="pair">Pair / Instrument *</Label>
               <Input
@@ -470,7 +441,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
                 <p className="text-xs text-destructive">{String(errors.pair.message)}</p>
               )}
 
-              {/* Suggestions Dropdown */}
               {showSuggestions && filteredInstruments.length > 0 && (
                 <div
                   ref={suggestionsRef}
@@ -507,7 +477,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
               )}
             </div>
 
-            {/* Direction */}
             <div className="space-y-2">
               <Label htmlFor="direction">Direction *</Label>
               <Select
@@ -524,7 +493,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
               </Select>
             </div>
 
-            {/* Session */}
             <div className="space-y-2">
               <Label htmlFor="session">Trading Session *</Label>
               <Select
@@ -542,7 +510,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
               </Select>
             </div>
 
-            {/* Outcome */}
             <div className="space-y-2">
               <Label htmlFor="outcome">Outcome *</Label>
               <Select
@@ -561,7 +528,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
             </div>
           </div>
 
-          {/* Model */}
           <div className="space-y-2">
             <Label htmlFor="model">Trading Model *</Label>
             <Select
@@ -583,7 +549,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
             </Select>
           </div>
 
-          {/* Custom Model Name */}
           {watchedModel === 'CUSTOM' && (
             <div className="space-y-2">
               <Label htmlFor="customModel">Custom Model Name</Label>
@@ -597,7 +562,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
         </CardContent>
       </Card>
 
-      {/* Price Levels */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -628,7 +592,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
         </CardHeader>
         <CardContent className="space-y-4">
           {inputMode === 'manual' ? (
-            // Manual Mode - Entry, Exit, Stop Loss
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="entryPrice">Entry Price *</Label>
@@ -676,7 +639,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
               </div>
             </div>
           ) : (
-            // Simple R:R Mode - Risk, Reward, and R:R Ratio
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="riskPoints">Risk (Points/Pips) *</Label>
@@ -728,7 +690,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
             </div>
           )}
 
-          {/* Calculated Metrics */}
           {inputMode === 'manual' && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted rounded-lg">
               <div>
@@ -788,7 +749,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
         </CardContent>
       </Card>
 
-      {/* Notes & Tags */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Notes & Tags</CardTitle>
@@ -824,7 +784,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
         </CardContent>
       </Card>
 
-      {/* Images */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
@@ -833,7 +792,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Card Preview - Smaller */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Card Preview Image</Label>
             <div className="max-w-xs">
@@ -878,10 +836,8 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
             </div>
           </div>
 
-          {/* Separator */}
           <div className="border-t pt-4">
             <Label className="text-sm font-medium mb-3 block">Additional Screenshots</Label>
-            {/* Image Grid - Always show 6 slots */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {[0, 1, 2, 3, 4, 5].map((idx) => (
                 <div key={idx} className="space-y-2">
@@ -930,7 +886,6 @@ export function AddBacktestForm({ onAdd, onDirtyChange }: AddBacktestFormProps) 
         </CardContent>
       </Card>
 
-      {/* Submit */}
       <div className="flex justify-end gap-2">
         <Button
           type="button"

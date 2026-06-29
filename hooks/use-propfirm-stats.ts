@@ -57,7 +57,7 @@ export function usePropFirmStats(initialData?: PropFirmSummaryDTO) {
       if (!res.ok) throw new Error('Failed to fetch prop firm stats')
       return res.json()
     },
-    initialData,
+    ...(initialData !== undefined && { initialData }),
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   })

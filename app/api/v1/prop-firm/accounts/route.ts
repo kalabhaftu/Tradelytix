@@ -1,9 +1,3 @@
-/**
- * Prop Firm Accounts API - Rebuilt with MasterAccount/PhaseAccount Architecture
- * GET /api/prop-firm/accounts - List all master accounts
- * POST /api/prop-firm/accounts - Create new master account with initial phase
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
@@ -11,22 +5,16 @@ import { logger } from '@/lib/logger'
 import { z } from 'zod'
 import { revalidateTag } from 'next/cache'
 import { validatePhaseId } from '@/lib/validation/phase-id-validator'
-import { prisma } from '@/lib/prisma'
-// NOTE: Do NOT import triggerDataRefresh here - it's a client-only module ('use client')
-// Use revalidateTag for cache invalidation instead - the client will refresh via polling or manual refresh
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq, desc, asc } from 'drizzle-orm'
 
-// Validation schema for creating a master account
 const CreateMasterAccountSchema = z.object({
-  // Basic master account info
   accountName: z.string().min(1, 'Account name is required'),
   propFirmName: z.string().min(1, 'Prop firm name is required'),
   accountSize: z.number().positive('Account size must be positive'),
   evaluationType: z.enum(['One Step', 'Two Step', 'Instant']),
-  
-  // Required Phase 1 ID
   phase1AccountId: z.string().min(1, 'Phase 1 account ID is required'),
-  
-  // Phase 1 rules
   phase1ProfitTargetPercent: z.number().min(0).max(100),
   phase1DailyDrawdownPercent: z.number().min(0).max(100),
   phase1MaxDrawdownPercent: z.number().min(0).max(100),
@@ -34,8 +22,6 @@ const CreateMasterAccountSchema = z.object({
   phase1TimeLimitDays: z.number().min(0).default(0).nullable(),
   phase1MaxDrawdownType: z.enum(['static', 'trailing']).default('static'),
   phase1ConsistencyRulePercent: z.number().min(0).max(100).default(0),
-  
-  // Phase 2 rules (optional for one-step and instant)
   phase2ProfitTargetPercent: z.number().min(0).max(100).optional(),
   phase2DailyDrawdownPercent: z.number().min(0).max(100).optional(),
   phase2MaxDrawdownPercent: z.number().min(0).max(100).optional(),
@@ -43,14 +29,12 @@ const CreateMasterAccountSchema = z.object({
   phase2TimeLimitDays: z.number().min(0).default(0).nullable().optional(),
   phase2MaxDrawdownType: z.enum(['static', 'trailing']).default('static').optional(),
   phase2ConsistencyRulePercent: z.number().min(0).max(100).default(0).optional(),
-  
-  // Funded rules
   fundedDailyDrawdownPercent: z.number().min(0).max(100),
   fundedMaxDrawdownPercent: z.number().min(0).max(100),
   fundedMaxDrawdownType: z.enum(['static', 'trailing']).default('static'),
   fundedProfitSplitPercent: z.number().min(0).max(100),
   fundedPayoutCycleDays: z.number().min(1),
-  fundedMinProfitForPayout: z.number().min(0).default(100) // Min profit (in $) to request payout
+  fundedMinProfitForPayout: z.number().min(0).default(100)
 })
 
 export async function POST(request: NextRequest) {
@@ -70,7 +54,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = CreateMasterAccountSchema.parse(body)
 
-    // ENHANCED: Validate Phase ID to prevent duplicates
     const phaseIdValidation = await validatePhaseId(internalUserId, validatedData.phase1AccountId)
     if (!phaseIdValidation.isValid) {
       return NextResponse.json(
@@ -83,113 +66,89 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create master account and initial phase in a transaction
-    // Increased timeout to handle network latency issues
-    const result = await prisma.$transaction(async (tx) => {
-      // Create the master account
-      const masterAccount = await tx.masterAccount.create({
-        data: {
-          id: crypto.randomUUID(),
-          userId: internalUserId,
-          accountName: validatedData.accountName,
-          propFirmName: validatedData.propFirmName,
-          accountSize: validatedData.accountSize,
-          evaluationType: validatedData.evaluationType,
-          currentPhase: 1,
-          status: 'active'
-        }
-      })
+    const result = await db.transaction(async (tx) => {
+      const masterAccount = (await tx.insert(schema.MasterAccount).values({
+        id: crypto.randomUUID(),
+        userId: internalUserId,
+        accountName: validatedData.accountName,
+        propFirmName: validatedData.propFirmName,
+        accountSize: validatedData.accountSize,
+        evaluationType: validatedData.evaluationType,
+        currentPhase: 1,
+        status: 'active'
+      }).returning())[0]
 
-      // Create Phase 1 (always exists and is active)
-      const phase1 = await tx.phaseAccount.create({
-        data: {
-          id: crypto.randomUUID(),
-          masterAccountId: masterAccount.id,
-          phaseNumber: 1,
-          phaseId: validatedData.phase1AccountId,
-          status: 'active',
-          profitTargetPercent: validatedData.evaluationType === 'Instant' ? 0 : validatedData.phase1ProfitTargetPercent,
-          dailyDrawdownPercent: validatedData.phase1DailyDrawdownPercent,
-          maxDrawdownPercent: validatedData.phase1MaxDrawdownPercent,
-          maxDrawdownType: validatedData.phase1MaxDrawdownType || 'static',
-          minTradingDays: validatedData.phase1MinTradingDays,
-          timeLimitDays: validatedData.phase1TimeLimitDays || undefined,
-          consistencyRulePercent: validatedData.phase1ConsistencyRulePercent
-        }
-      })
+      const phase1 = (await tx.insert(schema.PhaseAccount).values({
+        id: crypto.randomUUID(),
+        masterAccountId: masterAccount.id,
+        phaseNumber: 1,
+        phaseId: validatedData.phase1AccountId,
+        status: 'active',
+        profitTargetPercent: validatedData.evaluationType === 'Instant' ? 0 : validatedData.phase1ProfitTargetPercent,
+        dailyDrawdownPercent: validatedData.phase1DailyDrawdownPercent,
+        maxDrawdownPercent: validatedData.phase1MaxDrawdownPercent,
+        maxDrawdownType: validatedData.phase1MaxDrawdownType || 'static',
+        minTradingDays: validatedData.phase1MinTradingDays,
+        timeLimitDays: validatedData.phase1TimeLimitDays || undefined,
+        consistencyRulePercent: validatedData.phase1ConsistencyRulePercent
+      }).returning())[0]
 
-      // For Two Step evaluation, create Phase 2 (pending)
       let phase2 = null
       if (validatedData.evaluationType === 'Two Step') {
-        phase2 = await tx.phaseAccount.create({
-          data: {
-            id: crypto.randomUUID(),
-            masterAccountId: masterAccount.id,
-            phaseNumber: 2,
-            phaseId: null, // Will be set when user transitions
-            status: 'pending',
-            profitTargetPercent: validatedData.phase2ProfitTargetPercent!,
-            dailyDrawdownPercent: validatedData.phase2DailyDrawdownPercent!,
-            maxDrawdownPercent: validatedData.phase2MaxDrawdownPercent!,
-            maxDrawdownType: validatedData.phase2MaxDrawdownType || 'static',
-            minTradingDays: validatedData.phase2MinTradingDays || 0,
-            timeLimitDays: validatedData.phase2TimeLimitDays || undefined,
-            consistencyRulePercent: validatedData.phase2ConsistencyRulePercent || 0
-          }
-        })
+        phase2 = (await tx.insert(schema.PhaseAccount).values({
+          id: crypto.randomUUID(),
+          masterAccountId: masterAccount.id,
+          phaseNumber: 2,
+          phaseId: null,
+          status: 'pending',
+          profitTargetPercent: validatedData.phase2ProfitTargetPercent!,
+          dailyDrawdownPercent: validatedData.phase2DailyDrawdownPercent!,
+          maxDrawdownPercent: validatedData.phase2MaxDrawdownPercent!,
+          maxDrawdownType: validatedData.phase2MaxDrawdownType || 'static',
+          minTradingDays: validatedData.phase2MinTradingDays || 0,
+          timeLimitDays: validatedData.phase2TimeLimitDays || undefined,
+          consistencyRulePercent: validatedData.phase2ConsistencyRulePercent || 0
+        }).returning())[0]
       }
 
-      // Create Funded phase (pending)
       const fundedPhaseNumber = validatedData.evaluationType === 'One Step' ? 2 : 
                                validatedData.evaluationType === 'Instant' ? 1 : 3
       
-      const fundedPhase = await tx.phaseAccount.create({
-        data: {
-          id: crypto.randomUUID(),
-          masterAccountId: masterAccount.id,
-          phaseNumber: fundedPhaseNumber,
-          phaseId: null, // Will be set when user transitions (for One Step/Two Step) or uses current ID (for Instant)
-          status: validatedData.evaluationType === 'Instant' ? 'active' : 'pending',
-          profitTargetPercent: 0, // No profit target for funded phase
-          dailyDrawdownPercent: validatedData.fundedDailyDrawdownPercent,
-          maxDrawdownPercent: validatedData.fundedMaxDrawdownPercent,
-          maxDrawdownType: validatedData.fundedMaxDrawdownType || 'static',
-          minTradingDays: 0,
-          timeLimitDays: undefined,
-          consistencyRulePercent: 0,
-          profitSplitPercent: validatedData.fundedProfitSplitPercent,
-          payoutCycleDays: validatedData.fundedPayoutCycleDays,
-          minProfitForPayout: validatedData.fundedMinProfitForPayout || 100
-        }
-      })
+      const fundedPhase = (await tx.insert(schema.PhaseAccount).values({
+        id: crypto.randomUUID(),
+        masterAccountId: masterAccount.id,
+        phaseNumber: fundedPhaseNumber,
+        phaseId: null,
+        status: validatedData.evaluationType === 'Instant' ? 'active' : 'pending',
+        profitTargetPercent: 0,
+        dailyDrawdownPercent: validatedData.fundedDailyDrawdownPercent,
+        maxDrawdownPercent: validatedData.fundedMaxDrawdownPercent,
+        maxDrawdownType: validatedData.fundedMaxDrawdownType || 'static',
+        minTradingDays: 0,
+        timeLimitDays: undefined,
+        consistencyRulePercent: 0,
+        profitSplitPercent: validatedData.fundedProfitSplitPercent,
+        payoutCycleDays: validatedData.fundedPayoutCycleDays,
+        minProfitForPayout: validatedData.fundedMinProfitForPayout || 100
+      }).returning())[0]
 
-      // For Instant accounts, set the funded phase to use the same ID
       if (validatedData.evaluationType === 'Instant') {
-        await tx.phaseAccount.update({
-          where: { id: fundedPhase.id },
-          data: { phaseId: validatedData.phase1AccountId }
-        })
+        await tx.update(schema.PhaseAccount)
+          .set({ phaseId: validatedData.phase1AccountId })
+          .where(eq(schema.PhaseAccount.id, fundedPhase.id))
         
-        // Update master account to point to funded phase
-        await tx.masterAccount.update({
-          where: { id: masterAccount.id },
-          data: { currentPhase: fundedPhaseNumber }
-        })
+        await tx.update(schema.MasterAccount)
+          .set({ currentPhase: fundedPhaseNumber })
+          .where(eq(schema.MasterAccount.id, masterAccount.id))
       }
 
       return {
         masterAccount,
         phases: [phase1, phase2, fundedPhase].filter(Boolean)
       }
-    }, {
-      timeout: 15000, // Increased from default 5000ms to 15000ms for network latency
-      maxWait: 20000  // Maximum wait time for transaction to start
     })
 
-    // Invalidate accounts cache after successful creation
     revalidateTag(`accounts-${internalUserId}`, 'max')
-    // NOTE: Real-time refresh is handled client-side via polling or manual refresh
-    // triggerDataRefresh cannot be used here as it's a client-only module
     
     return NextResponse.json({
       success: true,
@@ -208,7 +167,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Handle specific database connection errors
     if (error?.code === 'P1001') {
       return NextResponse.json(
         { 
@@ -216,11 +174,10 @@ export async function POST(request: NextRequest) {
           error: 'Database connection failed. Please check your internet connection and try again.',
           retryable: true
         },
-        { status: 503 } // Service Unavailable
+        { status: 503 }
       )
     }
 
-    // Handle transaction timeout errors
     if (error?.code === 'P2028' || error?.message?.includes('Transaction already closed')) {
       return NextResponse.json(
         { 
@@ -228,11 +185,10 @@ export async function POST(request: NextRequest) {
           error: 'Request timed out due to network issues. Please try again.',
           retryable: true
         },
-        { status: 408 } // Request Timeout
+        { status: 408 }
       )
     }
 
-    // Handle unique constraint violation (duplicate account name)
     if (error?.code === 'P2002') {
       const target = error?.meta?.target
       if (target?.includes('accountName')) {
@@ -255,7 +211,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.error('[API] Failed to create master account:', error)
+    logger.error('[API] Failed to create master account:', error)
     return NextResponse.json(
       { 
         success: false, 
@@ -280,14 +236,14 @@ export async function GET(request: NextRequest) {
     }
     const internalUserId = identity.internalUserId
 
-    const masterAccounts = await prisma.masterAccount.findMany({
-      where: { userId: internalUserId },
-      include: {
+    const masterAccounts = await db.query.MasterAccount.findMany({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      with: {
         PhaseAccount: {
-          orderBy: { phaseNumber: 'asc' }
+          orderBy: (table, { asc }) => [asc(table.phaseNumber)]
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: (table, { desc }) => [desc(table.createdAt)]
     })
 
     return NextResponse.json({

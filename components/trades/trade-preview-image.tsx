@@ -41,15 +41,15 @@ export function TradePreviewImage({
         src={src}
         alt={alt}
         fill
-        sizes={sizes}
-        priority={priority}
-        loading={loading}
-        unoptimized={unoptimized}
+        {...(sizes !== undefined && { sizes })}
+        {...(priority !== undefined && { priority })}
+        {...(loading !== undefined && { loading })}
+        {...(unoptimized !== undefined && { unoptimized })}
         draggable={false}
         className={cn('select-none object-cover', imageClassName)}
         style={imageStyle}
-        onLoad={onLoad}
-        onError={onError}
+        {...(onLoad !== undefined && { onLoad })}
+        {...(onError !== undefined && { onError })}
       />
     </div>
   )

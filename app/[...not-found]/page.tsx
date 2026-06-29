@@ -4,12 +4,9 @@ import { notFound } from 'next/navigation'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-// This catch-all route handles any unmatched routes
-// It calls notFound() which renders the not-found.tsx page
 export default function CatchAllPage() {
   notFound()
   
-  // Fallback (never reached due to notFound())
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
       <h1 className="text-4xl font-bold">404 - Page Not Found</h1>

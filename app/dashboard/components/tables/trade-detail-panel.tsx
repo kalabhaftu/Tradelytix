@@ -23,7 +23,8 @@ import {
   PenLine,
   Zap
 } from 'lucide-react'
-import { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -83,7 +84,6 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
   const isLoss = outcome === 'loss'
   const isLong = trade.side?.toUpperCase() === 'BUY' || trade.side?.toLowerCase() === 'long'
 
-  // Images
   const images = [
     stripTradePreviewImageConfig(tradeData.cardPreviewImage),
     tradeData.imageOne,
@@ -139,7 +139,6 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
     : []
   const newsEvents = newsEventIds.map((id: string) => getNewsById(id)).filter(Boolean)
 
-  // Tags
   const tradeTags = Array.isArray(tradeData.tags)
     ? tradeData.tags.filter(Boolean).map((id: string) => tags.find(t => t.id === id)).filter(Boolean)
     : []

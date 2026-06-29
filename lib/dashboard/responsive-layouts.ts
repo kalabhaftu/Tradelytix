@@ -135,8 +135,8 @@ function toResponsiveGridItem(
     y: overrides.y ?? item.y,
     w: overrides.w ?? item.w,
     h: overrides.h ?? item.h,
-    minW: defaults.minW,
-    minH: defaults.minH,
+    minW: defaults?.minW ?? 2,
+    minH: defaults?.minH ?? 2,
     static: !isEditMode,
   }
 }
@@ -205,7 +205,7 @@ function buildLayoutFromRows(
     const defaults = getWidgetDefaults(item.type)
     const stackedWidth = cols === 1 ? 1 : cols
     const stackedHeight =
-      cols === 1 ? Math.max(item.h, defaults.minH || 4) : item.h
+      cols === 1 ? Math.max(item.h, defaults?.minH || 4) : item.h
 
     layout.push(
       toResponsiveGridItem(

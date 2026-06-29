@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 
@@ -14,9 +15,9 @@ export async function GET(request: NextRequest) {
   const userId = identity.internalUserId
 
   try {
-    const insights = await prisma.aISavedInsight.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
+    const insights = await db.query.AISavedInsight.findMany({
+      where: (table, { eq }) => eq(table.userId, userId),
+      orderBy: (table, { desc }) => [desc(table.createdAt)],
     })
 
     return NextResponse.json({ success: true, data: insights })
@@ -43,14 +44,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Title and content are required' }, { status: 400 })
     }
 
-    const insight = await prisma.aISavedInsight.create({
-      data: {
-        userId,
-        title,
-        content,
-        category: category || 'insight',
-      },
-    })
+    const insight = (await db.insert(schema.AISavedInsight).values({
+      userId,
+      title,
+      content,
+      category: category || 'insight',
+    }).returning())[0]
 
     return NextResponse.json({ success: true, data: insight })
   } catch (error) {

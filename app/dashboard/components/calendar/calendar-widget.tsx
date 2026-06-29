@@ -36,10 +36,10 @@ import {
   resolveCalendarGradientPreset,
 } from "./screenshot-gradients"
 
-// New Components
 import MonthlyView from "./monthly-view"
 import YearlyView from "./yearly-view"
 import { Logo } from "@/components/logo"
+import { logger } from '@/lib/logger';
 
 const formatCompact = (value: number) => {
   if (Math.abs(value) >= 1000) return `$${(value / 1000).toFixed(1)}k`
@@ -67,15 +67,12 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const calendarRef = useRef<HTMLDivElement>(null)
 
-  // View Store
   const { viewMode, setViewMode, selectedDate, setSelectedDate, selectedWeekDate, setSelectedWeekDate } = useCalendarViewStore()
   const [showWeeklyModal, setShowWeeklyModal] = useState(false)
 
-  // Construct Calendar Data entirely from the server 
   const localCalendarData = useMemo(() => {
     return (serverCalendarData as CalendarData) || {}
   }, [serverCalendarData])
-
 
   const handleScreenshot = useCallback(async (variant: 'basic' | 'random' | CalendarGradientPresetId) => {
     if (!calendarRef.current) return
@@ -90,7 +87,6 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
       const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim()
       const resolvedBg = bgColor ? `hsl(${bgColor})` : '#0d0d0d'
 
-      // Capture just the card
       const cardCanvas = await html2canvas(calendarRef.current, {
         backgroundColor: resolvedBg,
         scale,
@@ -106,7 +102,6 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
             innerCard.style.height = 'auto'
           }
 
-          // Show the logo bar
           const logoBar = clonedElem.querySelector('.screenshot-logo-bar') as HTMLElement
           if (logoBar) {
             logoBar.style.display = 'flex'
@@ -140,7 +135,6 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         ctx.shadowOffsetY = 15 * scale
         const r = 20 * scale
         clipCalendarCardSurface(ctx, padding, padding, cardW, cardH, r, resolvedBg)
-        // Draw the card content
         ctx.drawImage(cardCanvas, padding, padding)
         ctx.restore()
       }
@@ -161,12 +155,11 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         toast.success("Screenshot saved!")
       }, 'image/png')
     } catch (err) {
-      console.error(err)
+      logger.error(err)
       toast.error("Failed to capture screenshot")
     }
   }, [currentDate])
 
-  // Navigation
   const handlePrev = useCallback(() => {
     if (viewMode === 'daily') setCurrentDate(prev => subMonths(prev, 1))
     else setCurrentDate(prev => new Date(getYear(prev) - 1, 0, 1))
@@ -177,7 +170,6 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
     else setCurrentDate(prev => new Date(getYear(prev) + 1, 0, 1))
   }, [viewMode])
 
-  // Stats Calculation for Header
   const displayTotal = useMemo(() => {
     let total = 0
     if (viewMode === 'daily') {
@@ -216,10 +208,8 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
     return count;
   }, [localCalendarData, currentDate, viewMode])
   
-  // Header right content — settings gear + snapshot dropdown
   const headerControls = (
     <div className="flex items-center gap-1 max-[420px]:gap-0.5">
-      {/* Snapshot dropdown — icon only, hidden in screenshot output */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -262,7 +252,6 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Settings gear */}
       <CalendarSettings />
     </div>
   )
@@ -274,10 +263,8 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
         data-widget-card="true"
         className="overflow-hidden flex flex-col h-full"
       >
-        {/* Unified Header: Navigation + Stats + Controls */}
         <div className="border-b border-border/40 dark:border-border/20 bg-muted/5 px-3 py-2 flex-shrink-0 overflow-x-auto scrollbar-none">
           <div className="flex items-center justify-between gap-4 min-w-max">
-            {/* Left: Navigation Group */}
             <div className="flex items-center gap-2">
               <div className="flex items-center bg-muted/30 dark:bg-muted/10 border border-border/50 dark:border-border/30 rounded-lg overflow-hidden p-0.5 shrink-0">
                 <Button 
@@ -315,9 +302,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
               </span>
             </div>
 
-            {/* Right: Stats + View Switcher + Controls */}
             <div className="flex items-center gap-2 shrink-0">
-              {/* View Switcher */}
               <div className="flex items-center p-0.5 bg-muted/30 dark:bg-muted/10 border border-border/50 dark:border-border/30 rounded-lg shrink-0">
                 <button
                   onClick={() => setViewMode('daily')}
@@ -343,7 +328,6 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
                 </button>
               </div>
 
-              {/* Stats badges */}
               <div className="flex items-center gap-1.5 bg-muted/20 dark:bg-[#0c0e12]/40 border border-border/30 dark:border-border/10 rounded-lg p-0.5 sm:px-2 sm:py-0.5 sm:border sm:rounded-xl shrink-0">
                 <span className="hidden lg:inline text-muted-foreground/75 font-semibold text-[11px] mr-1">
                   {viewMode === 'daily' ? 'Monthly stats:' : 'Yearly stats:'}
@@ -363,7 +347,6 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex items-center gap-1 shrink-0">
                 {headerControls}
               </div>
@@ -371,7 +354,6 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
           </div>
         </div>
 
-        {/* Calendar Content - fully responsive, fills available space */}
         <div className="flex-1 min-h-0 overflow-hidden relative">
           {viewMode === 'daily' ? (
             <MonthlyView
@@ -399,7 +381,6 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
           isLoading={isLoading}
         />
 
-        {/* Logo Footer - only shown in screenshots, hidden in live view */}
         <div className="screenshot-logo-bar hidden border-t border-border/10 bg-muted/5 py-4 flex items-center justify-center gap-2 flex-shrink-0">
           <Logo className="h-4 w-4 text-foreground/70" transparent />
           <span className="text-[10px] font-black tracking-[0.2em] text-foreground/60">TRADELYTIX</span>

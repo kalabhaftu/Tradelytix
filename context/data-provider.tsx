@@ -10,25 +10,11 @@ import React, {
 import { useQueryClient } from '@tanstack/react-query';
 
 import {
-  Trade as PrismaTrade,
-  Account as PrismaAccount,
-  // Payout as PrismaPayout, // Payout model not available
-  // DashboardLayout as PrismaDashboardLayout, // DashboardLayout model not available
-
-} from '@prisma/client';
-
-// Payout model not available - placeholder type
-type PrismaPayout = any;
-
-// DashboardLayout model not available - placeholder type
-type PrismaDashboardLayout = {
-  id: string;
-  userId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  desktop: any[];
-  mobile: any[];
-};
+  TradeType,
+  AccountType,
+  PayoutType,
+  DashboardTemplateType as DashboardLayoutType
+} from '@/lib/db/schema';
 
 import {
   updateIsFirstConnectionAction
@@ -99,7 +85,7 @@ type CalendarData = {
     tradeNumber: number
     longNumber: number
     shortNumber: number
-    trades: PrismaTrade[]
+    trades: TradeType[]
   }
 }
 
@@ -107,8 +93,8 @@ type CalendarData = {
 
 
 // Update Account type to include payouts and balanceToDate
-export interface Account extends Omit<PrismaAccount, 'payouts'> {
-  payouts?: PrismaPayout[]
+export interface Account extends Omit<AccountType, 'payouts'> {
+  payouts?: PayoutType[]
   balanceToDate?: number
   status?: string
   accountType?: 'live' | 'prop-firm'
@@ -135,7 +121,7 @@ interface DataContextType {
   setError: React.Dispatch<React.SetStateAction<string | null>>
 
   // Formatted trades and filters
-  formattedTrades: PrismaTrade[]
+  formattedTrades: TradeType[]
   instruments: string[]
   setInstruments: React.Dispatch<React.SetStateAction<string[]>>
   accountNumbers: string[]
@@ -162,7 +148,7 @@ interface DataContextType {
 
   // Mutations
   // Trades
-  updateTrades: (tradeIds: string[], update: Partial<PrismaTrade>) => Promise<void>
+  updateTrades: (tradeIds: string[], update: Partial<TradeType>) => Promise<void>
   appendTagsToTrades: (tradeIds: string[], tagIds: string[]) => Promise<void>
   groupTrades: (tradeIds: string[]) => Promise<void>
   ungroupTrades: (tradeIds: string[]) => Promise<void>
@@ -172,17 +158,16 @@ interface DataContextType {
   saveAccount: (account: Account) => Promise<void>
 
   // Payouts
-  savePayout: (payout: PrismaPayout) => Promise<void>
+  savePayout: (payout: PayoutType) => Promise<void>
   deletePayout: (payoutId: string) => Promise<void>
 
   // Dashboard layout
-  saveDashboardLayout: (layout: PrismaDashboardLayout) => Promise<void>
+  saveDashboardLayout: (layout: DashboardLayoutType) => Promise<void>
 }
 
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-// Add this hook before the UserDataProvider component
 function useIsMobileDetection() {
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -206,7 +191,6 @@ function useIsMobileDetection() {
   return isMobile;
 }
 
-// Import unified balance calculator
 import { calculateAccountBalance as calcBalance } from '@/lib/utils/balance-calculator';
 
 const supabase = createClient()
@@ -252,7 +236,6 @@ export const DataProvider: React.FC<{
 
   // Remove unused states that caused dependency issues
 
-  // Account filter settings
   const { settings: accountFilterSettings, isLoading: isLoadingAccountFilterSettings, updateSettings: updateAccountFilterSettings } = useAccountFilterSettings()
 
   const {
@@ -292,7 +275,6 @@ export const DataProvider: React.FC<{
     const savedSignature = JSON.stringify(normalizeSelection(savedSelection))
 
     if (!selectionInitializedRef.current) {
-      // Check DB settings first
       if (savedSelection.length > 0) {
         setAccountNumbers(savedSelection)
         selectionInitializedRef.current = true
@@ -355,7 +337,6 @@ export const DataProvider: React.FC<{
 
   // HYDRATE FROM SERVER BOOTSTRAP (targeted SSR path)
   useEffect(() => {
-    // Prevent hydration if in demo mode
     if (isDemoMode) return
     
     if (!initialBootstrapData?.isAuthenticated) return
@@ -392,7 +373,6 @@ export const DataProvider: React.FC<{
     setIsLoading(false)
   }, [initialBootstrapData, setAccounts, setIsLoading, setTrades, setUser, isDemoMode])
 
-  // Load initial data (user + accounts) from /api/v1/init
   const loadData = useCallback(async () => {
     if (isLoading) return
     if (activeLoadPromiseRef.current) return activeLoadPromiseRef.current
@@ -409,7 +389,6 @@ export const DataProvider: React.FC<{
           return
         }
 
-        // Step 1: Get supabase user for session
         const { data: { user } } = await supabase.auth.getUser();
         if (!user?.id) {
           setIsLoading(false)
@@ -418,7 +397,6 @@ export const DataProvider: React.FC<{
         }
         setSupabaseUser(user);
 
-        // Set default dashboard layout if none exists
         if (!dashboardLayout) {
           const freshDefaultLayout = { 
             ...defaultLayouts,
@@ -525,7 +503,6 @@ export const DataProvider: React.FC<{
     return activeLoadPromiseRef.current
   }, [dashboardLayout, initialBootstrapData, isLoading, setAccounts, setDashboardLayout, setIsLoading, setSupabaseUser, setTrades, setUser]);
 
-  // Load data on mount only - ONCE
   useEffect(() => {
     if (isDemoMode) {
       if (hasLoadedDataRef.current) return;
@@ -545,7 +522,6 @@ export const DataProvider: React.FC<{
       return
     }
     
-    // START LOADING IMMEDIATELY before any async work
     setIsLoading(true);
     hasLoadedDataRef.current = true
     
@@ -555,7 +531,6 @@ export const DataProvider: React.FC<{
       if (!mounted) return;
       
       try {
-        // Load main data; account filter settings are handled by the hook.
         await loadData()
       } catch (error) {
         // Handle Next.js redirect errors (these are normal and expected)
@@ -592,9 +567,6 @@ export const DataProvider: React.FC<{
     };
   }, [supabaseUser, loadData, setIsLoading, isDemoMode]); // ONLY depend on supabaseUser, run once when it's set
 
-  // ============================================
-  // REACT QUERY: Server-filtered trades + stats + calendar
-  // ============================================
   const queryClient = useQueryClient()
   
   // PERF FIX: Enable trades fetch as soon as supabaseUser is available (not after init completes)
@@ -608,10 +580,8 @@ export const DataProvider: React.FC<{
     reloadBootstrapData: loadData,
   })
 
-  // ============================================
   // SUPABASE KEEP-ALIVE HEARTBEAT
   // Pings DB every 4 hours to prevent free-tier pause
-  // ============================================
   useEffect(() => {
     const FOUR_HOURS = 4 * 60 * 60 * 1000
 
@@ -646,7 +616,6 @@ export const DataProvider: React.FC<{
     setIsLoading(true)
     
     try {
-      // Clear legacy caches
       try {
         localStorage.removeItem('last-refresh-timestamp')
       } catch (e) {}
@@ -654,12 +623,10 @@ export const DataProvider: React.FC<{
       hasLoadedDataRef.current = false
       activeLoadPromiseRef.current = null
       
-      // Clear prop firm widgets cache
       usePropFirmStore.getState().clearCache()
       
       await revalidateCache([`trades-${user.id}`, `user-data-${user.id}-${locale}`])
       
-      // Invalidate React Query caches for fresh data
       await queryClient.invalidateQueries({ queryKey: ['v1'] })
       
       await new Promise(resolve => setTimeout(resolve, 200))
@@ -732,78 +699,72 @@ export const DataProvider: React.FC<{
     if (!user?.id) return
 
     try {
-      // Get the current account to preserve other properties
       const { accounts } = useUserStore.getState()
       const currentAccount = accounts.find(acc => acc.number === newAccount.number) as Account
-      // If the account is not found, create it
       if (!currentAccount) {
         const createdAccount = await setupAccountAction(newAccount)
-        setAccounts([...accounts, createdAccount])
-        // Revalidate cache for next reload
-        revalidateCache([`user-data-${user.id}`])
+        if (createdAccount) {
+          setAccounts([...accounts, createdAccount as Account])
+          revalidateCache([`user-data-${user.id}`])
+        }
         return
       }
 
-      // Update the account in the database
       const updatedAccount = await setupAccountAction(newAccount)
-      // Update the account in the local state
-      const updatedAccounts = accounts.map((account: Account) => {
-        if (account.number === updatedAccount.number) {
-          return { ...account, ...updatedAccount };
-        }
-        return account;
-      });
-      setAccounts(updatedAccounts);
+      if (updatedAccount) {
+        const updatedAccounts = accounts.map((account: Account) => {
+          if (account.number === updatedAccount.number) {
+            return { ...account, ...updatedAccount } as Account;
+          }
+          return account;
+        })
+        setAccounts(updatedAccounts)
+      }
       revalidateCache([`user-data-${user.id}`])
     } catch (error) {
-      // Error updating account
       throw error
     }
   }, [user?.id, setAccounts])
 
 
-  // Add savePayout function
-  const savePayout = useCallback(async (payout: PrismaPayout) => {
+  const savePayout = useCallback(async (payout: PayoutType) => {
     if (!user?.id) return;
 
     try {
-      // Add to database
-      const newPayout = await savePayoutAction(payout);
+      const payload: any = { ...payout };
+      if (payload.requestDate === undefined) delete payload.requestDate;
+      if (payload.notes === undefined) delete payload.notes;
 
-      // Update local state
+      const newPayout = await savePayoutAction(payload);
+
       setAccounts(accounts.map((account: Account) => {
-        if (account.number === payout.accountNumber) {
+        if (account.id === payout.masterAccountId || (account as any).number === (payout as any).accountNumber) {
           return {
             ...account,
             payouts: [...(account.payouts || []), newPayout]
-          };
+          } as Account;
         }
         return account;
       })
       );
 
     } catch (error) {
-      // Error adding payout
       throw error;
     }
   }, [user?.id, accounts, setAccounts]);
 
-  // Add deleteAccount function
   const deleteAccount = useCallback(async (account: Account) => {
     if (!user?.id) return;
 
     try {
-      // Update local state
       setAccounts(accounts.filter(acc => acc.id !== account.id));
       
-      // Delete from database based on type
       if (account.accountType === 'prop-firm') {
         await deleteMasterAccountAction(account.id);
       } else {
         await deleteAccountAction(account.id);
       }
     } catch (error) {
-      // Error deleting account
       if (handleServerActionError(error, { context: 'Delete Account' })) {
         return // Return early on deployment error (will refresh)
       }
@@ -811,24 +772,20 @@ export const DataProvider: React.FC<{
     }
   }, [user?.id, accounts, setAccounts]);
 
-  // Add deletePayout function
   const deletePayout = useCallback(async (payoutId: string) => {
     if (!user?.id) return;
 
     try {
 
-      // Update local state
       setAccounts(accounts.map((account: Account) => ({
         ...account,
         payouts: account.payouts?.filter(p => p.id !== payoutId) || []
       })
       ));
 
-      // Delete from database
       await deletePayoutAction(payoutId);
 
     } catch (error) {
-      // Error deleting payout
       if (handleServerActionError(error, { context: 'Delete Payout' })) {
         return // Return early on deployment error (will refresh)
       }
@@ -838,7 +795,6 @@ export const DataProvider: React.FC<{
 
   const changeIsFirstConnection = useCallback(async (isFirstConnection: boolean) => {
     if (!user?.id) return
-    // Update the user in the database
     setIsFirstConnection(isFirstConnection)
     await updateIsFirstConnectionAction(isFirstConnection)
   }, [user?.id, setIsFirstConnection])
@@ -850,7 +806,7 @@ export const DataProvider: React.FC<{
     queryClient,
   })
 
-  const saveDashboardLayout = useCallback(async (layout: PrismaDashboardLayout) => {
+  const saveDashboardLayout = useCallback(async (layout: DashboardLayoutType) => {
     if (!user?.id) return
     setDashboardLayout(layout)
     await saveDashboardLayoutAction(layout)
@@ -880,7 +836,6 @@ export const DataProvider: React.FC<{
     error,
     setError,
 
-    // Formatted trades and filters
     formattedTrades,
     instruments,
     setInstruments,
@@ -913,7 +868,6 @@ export const DataProvider: React.FC<{
 
     // Mutations
 
-    // Update trade
     updateTrades,
     appendTagsToTrades,
     groupTrades,
@@ -923,8 +877,6 @@ export const DataProvider: React.FC<{
     deleteAccount,
     saveAccount,
 
-    // Group functions
-    // Payout functions
     deletePayout,
     savePayout,
 

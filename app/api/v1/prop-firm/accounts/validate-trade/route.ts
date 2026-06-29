@@ -1,14 +1,9 @@
-/**
- * Trade Validation API
- * POST /api/prop-firm/accounts/validate-trade - Validate if trade can be added to an account
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 
 // Validation schema
 const ValidateTradeSchema = z.object({
@@ -33,15 +28,9 @@ export async function POST(request: NextRequest) {
     const { accountNumber } = ValidateTradeSchema.parse(body)
 
     // First, check if this is a phase account (prop firm)
-    const phaseAccount = await prisma.phaseAccount.findFirst({
-      where: {
-        phaseId: accountNumber,
-        status: 'active',
-        MasterAccount: {
-          userId: internalUserId
-        }
-      },
-      include: {
+    const phaseAccount = await db.query.PhaseAccount.findFirst({
+      where: (table, { eq }) => eq(table.phaseId, accountNumber) && eq(table.status, 'active'),
+      with: {
         MasterAccount: true
       }
     })
@@ -70,11 +59,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Not a prop firm account - check if it's a regular account
-    const regularAccount = await prisma.account.findFirst({
-      where: {
-        number: accountNumber,
-        userId: internalUserId
-      }
+    const regularAccount = await db.query.Account.findFirst({
+      where: (table, { eq }) => eq(table.number, accountNumber) && eq(table.userId, internalUserId)
     })
 
     if (regularAccount) {
@@ -119,4 +105,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

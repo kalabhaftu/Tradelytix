@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
+import { logger } from '@/lib/logger';
 
 function getPhaseLabel(evaluationType: string, phaseNumber: number) {
   switch (evaluationType) {
@@ -29,38 +30,39 @@ export async function GET(request: NextRequest) {
     const internalUserId = identity.internalUserId
 
     const [liveAccounts, masterAccounts, instrumentRows] = await Promise.all([
-      prisma.account.findMany({
-        where: { userId: internalUserId },
-        select: {
+      db.query.Account.findMany({
+        where: (table, { eq }) => eq(table.userId, internalUserId),
+        columns: {
           id: true,
           number: true,
           name: true,
           isArchived: true,
         },
       }),
-      prisma.masterAccount.findMany({
-        where: { userId: internalUserId },
-        select: {
+      db.query.MasterAccount.findMany({
+        where: (table, { eq }) => eq(table.userId, internalUserId),
+        columns: {
           id: true,
           accountName: true,
           propFirmName: true,
           evaluationType: true,
           isArchived: true,
+        },
+        with: {
           PhaseAccount: {
-            select: {
+            columns: {
               id: true,
               phaseNumber: true,
               phaseId: true,
               status: true,
             },
-            orderBy: { phaseNumber: 'asc' },
+            orderBy: (table, { asc }) => [asc(table.phaseNumber)],
           },
         },
       }),
-      prisma.trade.findMany({
-        where: { userId: internalUserId },
-        select: { instrument: true },
-        distinct: ['instrument'],
+      db.query.Trade.findMany({
+        where: (table, { eq }) => eq(table.userId, internalUserId),
+        columns: { instrument: true },
       }),
     ])
 
@@ -105,7 +107,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('[API] /api/v1/data/export/options error:', error)
+    logger.error('[API] /api/v1/data/export/options error:', error)
     return NextResponse.json(
       { success: false, error: 'Failed to load export options' },
       { status: 500 }

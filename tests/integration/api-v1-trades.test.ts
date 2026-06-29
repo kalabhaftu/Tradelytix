@@ -12,25 +12,27 @@ vi.mock('@/server/user-identity', () => ({
   }),
 }))
 
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
-    trade: {
-      findMany: vi.fn().mockResolvedValue([]),
-    },
-    account: {
-      findMany: vi.fn().mockResolvedValue([]),
-    },
-    phaseAccount: {
-      findMany: vi.fn().mockResolvedValue([]),
-    },
-    masterAccount: {
-      findMany: vi.fn().mockResolvedValue([]),
-    },
-    user: {
-      findUnique: vi.fn().mockResolvedValue({ breakEvenThreshold: 10 }),
-    },
-    userSettings: {
-      findUnique: vi.fn().mockResolvedValue({ breakEvenThreshold: 10, pnlDisplayMode: 'net' }),
+vi.mock('@/lib/db/client', () => ({
+  db: {
+    query: {
+      Trade: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      Account: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      PhaseAccount: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      MasterAccount: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      User: {
+        findFirst: vi.fn().mockResolvedValue({ breakEvenThreshold: 10 }),
+      },
+      UserSettings: {
+        findFirst: vi.fn().mockResolvedValue({ breakEvenThreshold: 10, pnlDisplayMode: 'net' }),
+      },
     },
   },
 }))
@@ -68,8 +70,8 @@ describe('GET /api/v1/trades', () => {
   })
 
   it('returns trades with statistics and calendarData when includeStats and includeCalendar are true', async () => {
-    const { prisma } = await import('@/lib/prisma')
-    vi.mocked(prisma.trade.findMany).mockResolvedValueOnce([
+    const { db } = await import('@/lib/db/client')
+    vi.mocked(db.query.Trade.findMany).mockResolvedValueOnce([
       {
         id: 't1',
         userId: 'internal-user-id',
@@ -89,11 +91,11 @@ describe('GET /api/v1/trades', () => {
         TradingModel: { id: 'm1', name: 'Model 1' },
       } as any,
     ])
-    vi.mocked(prisma.account.findMany).mockResolvedValueOnce([
+    vi.mocked(db.query.Account.findMany).mockResolvedValueOnce([
       { id: 'a1', number: '123', _count: { Trade: 1 } } as any,
     ])
-    vi.mocked(prisma.masterAccount.findMany).mockResolvedValueOnce([])
-    vi.mocked(prisma.userSettings.findUnique).mockResolvedValueOnce({ breakEvenThreshold: 12, pnlDisplayMode: 'net' } as any)
+    vi.mocked(db.query.MasterAccount.findMany).mockResolvedValueOnce([])
+    vi.mocked(db.query.UserSettings.findFirst).mockResolvedValueOnce({ breakEvenThreshold: 12, pnlDisplayMode: 'net' } as any)
 
     const { GET } = await import('@/app/api/v1/trades/route')
     const url = new URL('http://localhost/api/v1/trades')
@@ -112,17 +114,17 @@ describe('GET /api/v1/trades', () => {
   })
 
   it('applies account filter when accounts param is provided', async () => {
-    const { prisma } = await import('@/lib/prisma')
-    vi.mocked(prisma.trade.findMany).mockResolvedValueOnce([])
-    vi.mocked(prisma.account.findMany).mockResolvedValueOnce([])
-    vi.mocked(prisma.phaseAccount.findMany).mockResolvedValueOnce([])
+    const { db } = await import('@/lib/db/client')
+    vi.mocked(db.query.Trade.findMany).mockResolvedValueOnce([])
+    vi.mocked(db.query.Account.findMany).mockResolvedValueOnce([])
+    vi.mocked(db.query.PhaseAccount.findMany).mockResolvedValueOnce([])
 
     const { GET } = await import('@/app/api/v1/trades/route')
     const url = new URL('http://localhost/api/v1/trades?accounts=123,456')
     const request = { nextUrl: url } as any
     await GET(request)
 
-    expect(prisma.trade.findMany).toHaveBeenCalledWith(
+    expect(db.query.Trade.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           OR: expect.arrayContaining([
@@ -142,9 +144,9 @@ describe('GET /api/v1/trades', () => {
   })
 
   it('applies outcome filter using user threshold', async () => {
-    const { prisma } = await import('@/lib/prisma')
-    vi.mocked(prisma.userSettings.findUnique).mockResolvedValueOnce({ breakEvenThreshold: 25, pnlDisplayMode: 'net' } as any)
-    vi.mocked(prisma.trade.findMany).mockResolvedValueOnce([
+    const { db } = await import('@/lib/db/client')
+    vi.mocked(db.query.UserSettings.findFirst).mockResolvedValueOnce({ breakEvenThreshold: 25, pnlDisplayMode: 'net' } as any)
+    vi.mocked(db.query.Trade.findMany).mockResolvedValueOnce([
       {
         id: 'w1',
         userId: 'internal-user-id',

@@ -1,3 +1,4 @@
+import logger from '@/lib/logger';
 
 'use client'
 
@@ -12,8 +13,7 @@ interface GlobalErrorProps {
 
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
     React.useEffect(() => {
-        // Log the error to an error reporting service
-        console.error('Global Error Boundary caught:', error)
+        logger.error({ event: 'system_error', error: error }, 'Global Error Boundary caught:')
     }, [error])
 
     return (

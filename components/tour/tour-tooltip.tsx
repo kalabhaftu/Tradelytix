@@ -65,7 +65,6 @@ export const TourTooltip: React.FC = () => {
   const [placement, setPlacement] = useState<'top' | 'bottom' | 'left' | 'right' | 'center'>('center')
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null)
 
-  // Measure target coordinates
   useEffect(() => {
     if (!currentStep || !isTargetVisible || paused) {
       setCoords(null)
@@ -104,7 +103,6 @@ export const TourTooltip: React.FC = () => {
     }
   }, [currentStep, isTargetVisible, paused])
 
-  // Compute tooltip positioning
   useEffect(() => {
     if (!currentStep || paused) return
 
@@ -159,10 +157,8 @@ export const TourTooltip: React.FC = () => {
     <AnimatePresence>
       {placement === 'center' ? (
         <>
-          {/* Backdrop overlay for modal steps */}
           <div className="fixed inset-0 bg-background/40 backdrop-blur-[2px] pointer-events-auto z-[9998]" />
 
-          {/* Viewport-fixed Centered Container */}
           <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-[9999]">
             <motion.div
               ref={tooltipRef}
@@ -174,7 +170,6 @@ export const TourTooltip: React.FC = () => {
                 "backdrop-blur-lg bg-background/80 dark:bg-card/75 border border-border/60 rounded-2xl shadow-xl p-5 overflow-hidden relative"
               )}
             >
-              {/* Progress bar */}
               <div className="absolute top-0 left-0 w-full h-[3px] bg-muted">
                 <motion.div
                   className="h-full bg-primary"
@@ -184,11 +179,10 @@ export const TourTooltip: React.FC = () => {
                 />
               </div>
 
-              {/* Header */}
               <div className="flex items-start justify-between gap-3">
                 <h4 className="text-sm font-bold text-heading-text flex items-center gap-1.5">
                   {currentStep.icon && IconMap[currentStep.icon] ? (
-                    React.createElement(IconMap[currentStep.icon], { className: "h-4 w-4 text-primary shrink-0" })
+                    React.createElement(IconMap[currentStep.icon] as React.ElementType, { className: "h-4 w-4 text-primary shrink-0" })
                   ) : (
                     stepIndex === 0 && <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
                   )}
@@ -203,13 +197,11 @@ export const TourTooltip: React.FC = () => {
                 </button>
               </div>
 
-              {/* Body */}
               <div className="mt-2.5 space-y-2">
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   {currentStep.content}
                 </p>
 
-                {/* Contrast Explanation */}
                 {currentStep.contrastMessage && (
                   <div className="p-2.5 rounded-lg bg-primary/5 border border-primary/10 text-[11px] text-primary leading-normal">
                     <strong>Contrast Check:</strong> {currentStep.contrastMessage}
@@ -217,7 +209,6 @@ export const TourTooltip: React.FC = () => {
                 )}
               </div>
 
-              {/* Footer */}
               <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-3">
                 <span className="text-[10px] text-muted-foreground font-semibold">
                   Step {stepIndex + 1} of {totalSteps}
@@ -265,7 +256,6 @@ export const TourTooltip: React.FC = () => {
         </>
       ) : (
         <div className="absolute inset-0 pointer-events-none z-[9999]">
-          {/* Glow Highlighter Box */}
           {showHighlight && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -282,7 +272,6 @@ export const TourTooltip: React.FC = () => {
             />
           )}
 
-          {/* Tooltip Card */}
           <motion.div
             ref={tooltipRef}
             initial={{ opacity: 0, y: 10 }}
@@ -297,11 +286,10 @@ export const TourTooltip: React.FC = () => {
                 ? {
                     top: position.top,
                     left: position.left,
-                  }
+                  } as any
                 : undefined
             }
           >
-            {/* Progress bar */}
             <div className="absolute top-0 left-0 w-full h-[3px] bg-muted">
               <motion.div
                 className="h-full bg-primary"
@@ -311,11 +299,10 @@ export const TourTooltip: React.FC = () => {
               />
             </div>
 
-            {/* Header */}
             <div className="flex items-start justify-between gap-3">
               <h4 className="text-sm font-bold text-heading-text flex items-center gap-1.5">
                 {currentStep.icon && IconMap[currentStep.icon] ? (
-                  React.createElement(IconMap[currentStep.icon], { className: "h-4 w-4 text-primary shrink-0" })
+                  React.createElement(IconMap[currentStep.icon] as React.ElementType, { className: "h-4 w-4 text-primary shrink-0" })
                 ) : (
                   stepIndex === 0 && <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
                 )}
@@ -330,13 +317,11 @@ export const TourTooltip: React.FC = () => {
               </button>
             </div>
 
-            {/* Body */}
             <div className="mt-2.5 space-y-2">
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {currentStep.content}
               </p>
 
-              {/* Contrast Explanation */}
               {currentStep.contrastMessage && (
                 <div className="p-2.5 rounded-lg bg-primary/5 border border-primary/10 text-[11px] text-primary leading-normal">
                   <strong>Contrast Check:</strong> {currentStep.contrastMessage}
@@ -344,7 +329,6 @@ export const TourTooltip: React.FC = () => {
               )}
             </div>
 
-            {/* Footer */}
             <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-3">
               <span className="text-[10px] text-muted-foreground font-semibold">
                 Step {stepIndex + 1} of {totalSteps}

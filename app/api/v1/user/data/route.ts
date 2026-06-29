@@ -1,17 +1,11 @@
-/**
- * User Data Management API
- * DELETE /api/user/data - Delete all user data (keeps account intact)
- * 
- * This deletes all user DATA but keeps the user account.
- * For complete account deletion, use /api/user/account endpoint.
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { revalidateTag } from 'next/cache'
+import { eq, inArray } from 'drizzle-orm'
 
 function isMissingJournalTemplateTableError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false
@@ -53,17 +47,17 @@ export async function DELETE(request: NextRequest) {
 
     // 0. Collect all trade and backtest images for storage cleanup
     const [trades, backtestTrades] = await Promise.all([
-      prisma.trade.findMany({
-        where: { userId: internalUserId },
-        select: {
+      db.query.Trade.findMany({
+        where: (table, { eq }) => eq(table.userId, internalUserId),
+        columns: {
           imageOne: true, imageTwo: true, imageThree: true,
           imageFour: true, imageFive: true, imageSix: true,
           cardPreviewImage: true
         }
       }),
-      prisma.backtestTrade.findMany({
-        where: { userId: internalUserId },
-        select: {
+      db.query.BacktestTrade.findMany({
+        where: (table, { eq }) => eq(table.userId, internalUserId),
+        columns: {
           imageOne: true, imageTwo: true, imageThree: true,
           imageFour: true, imageFive: true, imageSix: true,
           cardPreviewImage: true
@@ -87,93 +81,65 @@ export async function DELETE(request: NextRequest) {
 
     // Delete all user data in a transaction
     // Order matters due to foreign key constraints
-    await prisma.$transaction(async (tx) => {
+    await db.transaction(async (tx) => {
       // 1. Delete all trades
-      await tx.trade.deleteMany({
-        where: { userId: internalUserId }
-      })
+      await tx.delete(schema.Trade).where(eq(schema.Trade.userId, internalUserId))
 
       // 3. Delete prop firm related data
       // Breach records, daily anchors, payouts (FK to phase accounts)
-      const masterAccountIds = await tx.masterAccount.findMany({
-        where: { userId: internalUserId },
-        select: { id: true }
+      const masterAccountIds = await tx.query.MasterAccount.findMany({
+        where: (table, { eq }) => eq(table.userId, internalUserId),
+        columns: { id: true }
       })
-      const masterIds = masterAccountIds.map((m: typeof masterAccountIds[number]) => m.id)
+      const masterIds = masterAccountIds.map((m) => m.id)
 
       if (masterIds.length > 0) {
         // Get phase account IDs
-        const phaseAccounts = await tx.phaseAccount.findMany({
-          where: { masterAccountId: { in: masterIds } },
-          select: { id: true }
+        const phaseAccounts = await tx.query.PhaseAccount.findMany({
+          where: (table, { eq, inArray }) => inArray(table.masterAccountId, masterIds),
+          columns: { id: true }
         })
-        const phaseIds = phaseAccounts.map((p: typeof phaseAccounts[number]) => p.id)
+        const phaseIds = phaseAccounts.map((p) => p.id)
 
         if (phaseIds.length > 0) {
-          await tx.breachRecord.deleteMany({
-            where: { phaseAccountId: { in: phaseIds } }
-          })
-          await tx.dailyAnchor.deleteMany({
-            where: { phaseAccountId: { in: phaseIds } }
-          })
-          await tx.payout.deleteMany({
-            where: { phaseAccountId: { in: phaseIds } }
-          })
+          await tx.delete(schema.BreachRecord).where(inArray(schema.BreachRecord.phaseAccountId, phaseIds))
+          await tx.delete(schema.DailyAnchor).where(inArray(schema.DailyAnchor.phaseAccountId, phaseIds))
+          await tx.delete(schema.Payout).where(inArray(schema.Payout.phaseAccountId, phaseIds))
         }
 
         // Delete phase accounts
-        await tx.phaseAccount.deleteMany({
-          where: { masterAccountId: { in: masterIds } }
-        })
+        await tx.delete(schema.PhaseAccount).where(inArray(schema.PhaseAccount.masterAccountId, masterIds))
 
         // Delete master accounts
-        await tx.masterAccount.deleteMany({
-          where: { userId: internalUserId }
-        })
+        await tx.delete(schema.MasterAccount).where(eq(schema.MasterAccount.userId, internalUserId))
       }
 
       // 4. Delete live account transactions
-      await tx.liveAccountTransaction.deleteMany({
-        where: { userId: internalUserId }
-      })
+      await tx.delete(schema.LiveAccountTransaction).where(eq(schema.LiveAccountTransaction.userId, internalUserId))
 
       // 5. Delete regular accounts
-      await tx.account.deleteMany({
-        where: { userId: internalUserId }
-      })
+      await tx.delete(schema.Account).where(eq(schema.Account.userId, internalUserId))
 
       // 6. Groups removed - no longer used
 
       // 7. Delete daily notes
-      await tx.dailyNote.deleteMany({
-        where: { userId: internalUserId }
-      })
+      await tx.delete(schema.DailyNote).where(eq(schema.DailyNote.userId, internalUserId))
 
       // 8. Delete backtest trades
-      await tx.backtestTrade.deleteMany({
-        where: { userId: internalUserId }
-      })
+      await tx.delete(schema.BacktestTrade).where(eq(schema.BacktestTrade.userId, internalUserId))
 
       // 9. Delete tags
-      await tx.tradeTag.deleteMany({
-        where: { userId: internalUserId }
-      })
+      await tx.delete(schema.TradeTag).where(eq(schema.TradeTag.userId, internalUserId))
 
       // 10. Delete notifications
-      await tx.notification.deleteMany({
-        where: { userId: internalUserId }
-      })
+      await tx.delete(schema.Notification).where(eq(schema.Notification.userId, internalUserId))
 
       // 11. Delete dashboard templates
-      await tx.dashboardTemplate.deleteMany({
-        where: { userId: internalUserId }
-      })
+      await tx.delete(schema.DashboardTemplate).where(eq(schema.DashboardTemplate.userId, internalUserId))
 
       // 11b. Delete journal templates
       try {
-        await tx.journalTemplate.deleteMany({
-          where: { userId: internalUserId }
-        })
+        await tx.delete(schema.JournalTemplate).where(eq(schema.JournalTemplate.userId, internalUserId))
       } catch (error) {
         if (!isMissingJournalTemplateTableError(error)) {
           throw error
@@ -181,22 +147,16 @@ export async function DELETE(request: NextRequest) {
       }
 
       // 12. Reset user settings (keep account)
-      await tx.user.update({
-        where: { id: internalUserId },
-        data: {
-          isFirstConnection: true,
-        }
-      })
+      await tx.update(schema.User).set({
+        isFirstConnection: true,
+      }).where(eq(schema.User.id, internalUserId))
 
-      await tx.userSettings.upsert({
-        where: { userId: internalUserId },
-        create: {
-          userId: internalUserId,
-          accountFilterSettings: null,
-        },
-        update: {
-          accountFilterSettings: null,
-        }
+      await tx.insert(schema.UserSettings).values({
+        userId: internalUserId,
+        accountFilterSettings: null,
+      }).onConflictDoUpdate({
+        target: schema.UserSettings.userId,
+        set: { accountFilterSettings: null }
       })
     }, {
       timeout: 60000, // 60 second timeout for large deletions
@@ -228,4 +188,3 @@ export async function GET(request: NextRequest) {
     { status: 405 }
   )
 }
-

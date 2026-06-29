@@ -18,12 +18,13 @@ import {
 } from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { NotificationItem } from './notification-item'
+import { NotificationRow as Notification, NotificationType } from '@/lib/db/schema/users'
 import { FundedApprovalDialog } from '@/components/prop-firm/funded-approval-dialog'
 import { PhaseTransitionApprovalDialog } from '@/components/prop-firm/phase-transition-approval-dialog'
 import { AdjustDateDialog } from './adjust-date-dialog'
 import { WeeklyReviewDialog } from './weekly-review-dialog'
 import { toast } from 'sonner'
-import { Notification, NotificationType } from '@prisma/client'
+
 import { useDatabaseRealtime } from '@/lib/realtime/database-realtime'
 import { useUserStore } from '@/store/user-store'
 import { Spinner } from '@/components/ui/spinner'
@@ -74,7 +75,6 @@ export function NotificationCenter() {
   const user = useUserStore(state => state.user)
   const isDemo = typeof window !== 'undefined' && window.location.pathname.startsWith('/demo')
 
-  // Dialog states
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
   const [phaseTransitionDialogOpen, setPhaseTransitionDialogOpen] = useState(false)
   const [adjustDateDialogOpen, setAdjustDateDialogOpen] = useState(false)
@@ -413,7 +413,6 @@ export function NotificationCenter() {
           side="bottom"
           sideOffset={8}
         >
-          {/* Header with filter icon */}
           <div className="flex justify-between items-center border-b px-4 py-2">
             <h2 className="text-sm font-medium flex items-center gap-2">
               <Filter className="h-4 w-4" /> Notifications
@@ -444,7 +443,6 @@ export function NotificationCenter() {
             </div>
           </div>
 
-          {/* Category filter buttons */}
           <div className="flex gap-2 px-4 py-2 border-b overflow-x-auto">
             {categories.map((cat) => (
               <Button
@@ -459,7 +457,6 @@ export function NotificationCenter() {
             ))}
           </div>
 
-          {/* Notifications list */}
           <ScrollArea className="h-[400px]">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">

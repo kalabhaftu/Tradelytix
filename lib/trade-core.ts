@@ -1,5 +1,9 @@
-import type { Trade, TradeExecutionKind } from '@prisma/client'
+import type { TradeType, TradeExecutionType } from '@/lib/db/schema/trades';
+
 import { decimalToNumber } from '@/lib/utils/decimal'
+
+type Trade = TradeType;
+type TradeExecutionKind = TradeExecutionType['kind'];
 
 type TradeLike = Partial<Trade> & {
   chartLinksList?: string[] | null

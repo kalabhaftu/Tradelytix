@@ -1,17 +1,17 @@
 'use server'
 
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getUserId } from './auth-utils'
 import { cloneDefaultTemplateLayout } from '@/lib/dashboard/default-template-layout'
-import { logger } from '@/lib/logger'
+import { eq } from 'drizzle-orm'
+import logger from '@/lib/logger'
 
-type PrismaClientLike = typeof prisma
-
-export async function ensureActiveTemplateForUser(userId: string, client: PrismaClientLike = prisma) {
-  return client.$transaction(async (tx) => {
-    const activeTemplate = await tx.dashboardTemplate.findFirst({
-      where: { userId, isActive: true },
-      select: {
+export async function ensureActiveTemplateForUser(userId: string, client: any = db) {
+  return client.transaction(async (tx: any) => {
+    const activeTemplate = await tx.query.DashboardTemplate.findFirst({
+      where: (table: any, { eq, and }: any) => and(eq(table.userId, userId), eq(table.isActive, true)),
+      columns: {
         id: true,
         userId: true,
         name: true,
@@ -25,9 +25,9 @@ export async function ensureActiveTemplateForUser(userId: string, client: Prisma
 
     if (activeTemplate) return activeTemplate
 
-    const defaultTemplate = await tx.dashboardTemplate.findFirst({
-      where: { userId, isDefault: true },
-      select: {
+    const defaultTemplate = await tx.query.DashboardTemplate.findFirst({
+      where: (table: any, { eq, and }: any) => and(eq(table.userId, userId), eq(table.isDefault, true)),
+      columns: {
         id: true,
         userId: true,
         name: true,
@@ -40,26 +40,13 @@ export async function ensureActiveTemplateForUser(userId: string, client: Prisma
     })
 
     if (defaultTemplate) {
-      return tx.dashboardTemplate.update({
-        where: { id: defaultTemplate.id },
-        data: { isActive: true },
-        select: {
-          id: true,
-          userId: true,
-          name: true,
-          isDefault: true,
-          isActive: true,
-          layout: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      })
+      return (await tx.update(schema.DashboardTemplate).set({ isActive: true }).where(eq(schema.DashboardTemplate.id, defaultTemplate.id)).returning())[0]
     }
 
-    const firstTemplate = await tx.dashboardTemplate.findFirst({
-      where: { userId },
-      orderBy: { createdAt: 'asc' },
-      select: {
+    const firstTemplate = await tx.query.DashboardTemplate.findFirst({
+      where: (table: any, { eq }: any) => eq(table.userId, userId),
+      orderBy: (table: any, { asc }: any) => [asc(table.createdAt)],
+      columns: {
         id: true,
         userId: true,
         name: true,
@@ -72,52 +59,27 @@ export async function ensureActiveTemplateForUser(userId: string, client: Prisma
     })
 
     if (firstTemplate) {
-      return tx.dashboardTemplate.update({
-        where: { id: firstTemplate.id },
-        data: { isActive: true },
-        select: {
-          id: true,
-          userId: true,
-          name: true,
-          isDefault: true,
-          isActive: true,
-          layout: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      })
+      return (await tx.update(schema.DashboardTemplate).set({ isActive: true }).where(eq(schema.DashboardTemplate.id, firstTemplate.id)).returning())[0]
     }
 
-    return tx.dashboardTemplate.create({
-      data: {
-        id: crypto.randomUUID(),
-        updatedAt: new Date(),
-        userId,
-        name: 'Default',
-        isDefault: true,
-        isActive: true,
-        layout: cloneDefaultTemplateLayout() as any,
-      },
-      select: {
-        id: true,
-        userId: true,
-        name: true,
-        isDefault: true,
-        isActive: true,
-        layout: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    })
+    return (await tx.insert(schema.DashboardTemplate).values({
+      id: crypto.randomUUID(),
+      updatedAt: new Date(),
+      userId,
+      name: 'Default',
+      isDefault: true,
+      isActive: true,
+      layout: cloneDefaultTemplateLayout() as any,
+    }).returning())[0]
   })
 }
 
 export async function ensureDefaultTemplate() {
   try {
     const userId = await getUserId()
-    const userExists = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true },
+    const userExists = await db.query.User.findFirst({
+      where: (table: any, { eq }: any) => eq(table.id, userId),
+      columns: { id: true },
     })
 
     if (!userExists) return
@@ -125,6 +87,6 @@ export async function ensureDefaultTemplate() {
     await ensureActiveTemplateForUser(userId)
   } catch (error: any) {
     if (error?.code === 'P2002') return
-    logger.warn('Default dashboard template initialization failed', { error: error?.message }, 'server')
+    logger.warn({ error: error?.message }, 'Default dashboard template initialization failed', 'server')
   }
 }

@@ -18,7 +18,8 @@ import {
 import { VisuallyHidden } from "@/components/ui/visually-hidden"
 import { toast } from "sonner"
 // UploadIcon removed
-import { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import { saveAndLinkTrades } from '@/server/accounts'
 import ImportTypeSelection, { ImportType } from './import-type-selection'
 import FileUpload from './file-upload'
@@ -166,7 +167,6 @@ export default function ImportButton() {
 
   const totalSteps = platform?.steps.length ?? 1
 
-  // Check if this is manual trade entry or custom sync engine (has custom component)
   const isManualEntry = !!platform?.customComponent
 
   const resetImportState = useCallback(() => {
@@ -286,7 +286,6 @@ export default function ImportButton() {
 
       setSaveProgress(90)
 
-      // Close dialog
       setIsOpen(false)
       resetImportState()
 
@@ -295,7 +294,6 @@ export default function ImportButton() {
 
       setSaveProgress(100)
 
-      // Handle results
       if (result.isDuplicate) {
         toast.info("No New Trades", {
           description: 'message' in result ? result.message : `All ${result.totalTrades} trades already exist`,
@@ -384,7 +382,6 @@ export default function ImportButton() {
     const currentIdx = platform.steps.findIndex(s => s.id === step)
     if (currentIdx === -1) return
 
-    // Handle PDF upload step
     if (step === 'upload-file' && importType === 'pdf') {
       if (files.length === 0) {
         setError("Please select files to upload")
@@ -504,7 +501,6 @@ export default function ImportButton() {
       )
     }
 
-    // Handle each step type
     if (Component === ImportTypeSelection) {
       return (
         <Component
@@ -577,7 +573,6 @@ export default function ImportButton() {
       )
     }
 
-    // Handle processor components
     if (platform.processorComponent && Component === platform.processorComponent) {
       return (
         <platform.processorComponent
@@ -589,7 +584,6 @@ export default function ImportButton() {
       )
     }
 
-    // Handle custom components (like ManualTradeForm) - render fullscreen
     if (platform.customComponent) {
       const CustomComponent = platform.customComponent
       return (

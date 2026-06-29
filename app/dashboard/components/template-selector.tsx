@@ -52,7 +52,6 @@ export function TemplateSelector() {
     }
   }
 
-  /** Generate a unique template name — appends 1, 2, etc. if taken */
   const getUniqueName = (baseName: string): string => {
     const existingNames = new Set(templates.map(t => t.name.toLowerCase()))
     if (!existingNames.has(baseName.toLowerCase())) return baseName
@@ -111,18 +110,15 @@ export function TemplateSelector() {
     setNameDialogOpen(true)
   }
 
-  /** Open clone dialog with suggested name */
   const openCloneDialog = () => {
     if (!activeTemplate) return
     openNameDialog('clone')
   }
 
-  /** Open create dialog */
   const openCreateDialog = () => {
     openNameDialog('create')
   }
 
-  /** Execute create/clone after user confirms name */
   const handleNameDialogConfirm = async () => {
     const finalName = templateName.trim()
     if (!finalName) return
@@ -151,12 +147,10 @@ export function TemplateSelector() {
     setTemplateName('')
   }
 
-  /** Open delete confirmation dialog */
   const handleDeleteClick = (templateId: string, name: string) => {
     setDeleteTarget({ id: templateId, name })
   }
 
-  /** Execute delete after user confirms */
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return
     try {

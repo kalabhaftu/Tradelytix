@@ -1,6 +1,6 @@
-import { Prisma } from '@prisma/client'
 import { NextResponse, NextRequest } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { applyRateLimit, errorReportLimiter } from '@/lib/rate-limiter'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { extractIP } from '@/server/geolocation'
@@ -59,18 +59,16 @@ export async function POST(req: NextRequest) {
     const identity = await getResolvedUserIdentitySafe()
     const source = (body.source === 'SERVER' || body.source === 'API') ? body.source : 'CLIENT'
 
-    await prisma.errorLog.create({
-      data: {
-        source,
-        level: body.level || 'ERROR',
-        message: String(body.message).slice(0, 2000),
-        stack: body.stack ? String(body.stack).slice(0, 5000) : null,
-        url: body.url ? String(body.url).slice(0, 500) : null,
-        userId: identity?.internalUserId || null,
-        metadata: sanitizeMetadata(body.metadata) as Prisma.InputJsonValue,
-        ipAddress: ip,
-      },
-    })
+    ;(await db.insert(schema.ErrorLog).values({
+      source,
+      level: body.level || 'ERROR',
+      message: String(body.message).slice(0, 2000),
+      stack: body.stack ? String(body.stack).slice(0, 5000) : null,
+      url: body.url ? String(body.url).slice(0, 500) : null,
+      userId: identity?.internalUserId || null,
+      metadata: sanitizeMetadata(body.metadata),
+      ipAddress: ip,
+    }).returning())[0]
 
     return NextResponse.json({ success: true })
   } catch {

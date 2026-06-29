@@ -1,5 +1,5 @@
 import { cache } from 'react'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 import { getUserId, getUserIdSafe } from '@/server/auth'
 
 export interface ResolvedUserIdentity {
@@ -21,9 +21,9 @@ function isTransientDatabaseError(error: unknown) {
 
 const resolveInternalUserIdFromAuthCached = cache(
   async (authUserId: string): Promise<string | null> => {
-    const byAuthId = await prisma.user.findUnique({
-      where: { auth_user_id: authUserId },
-      select: { id: true }
+    const byAuthId = await db.query.User.findFirst({
+      where: (table, { eq }) => eq(table.auth_user_id, authUserId),
+      columns: { id: true }
     })
 
     if (byAuthId?.id) {
@@ -31,9 +31,9 @@ const resolveInternalUserIdFromAuthCached = cache(
     }
 
     // Backward-compatibility fallback for legacy datasets where id may equal auth id.
-    const byId = await prisma.user.findUnique({
-      where: { id: authUserId },
-      select: { id: true }
+    const byId = await db.query.User.findFirst({
+      where: (table, { eq }) => eq(table.id, authUserId),
+      columns: { id: true }
     })
 
     return byId?.id ?? null

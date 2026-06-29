@@ -1,13 +1,16 @@
+import logger from '@/lib/logger';
 'use server'
 
 import { getUserId, getUserIdSafe } from '@/server/auth'
-import { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import { Account } from '@/context/data-provider'
 import { unstable_cache, revalidateTag } from 'next/cache'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client';
+import * as schema from '@/lib/db/schema';
 import { convertDecimal } from '@/lib/utils/decimal'
 import { NotificationService } from './services/notification-service'
-import { NotificationType } from '@prisma/client'
+
 import { logActivity } from '@/lib/activity-logger'
 import { calculateWinRate, classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
@@ -15,18 +18,12 @@ import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData, buildTrad
 import { getRuntimeAutoAdjustAccountDate, getRuntimeBreakEvenThreshold } from '@/server/user-settings'
 import { deletePublicStorageUrls } from '@/server/storage-admin'
 import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
+import { eq, and, or, inArray, desc, asc } from 'drizzle-orm'
 
-/**
- * Helper function to determine if a phase number represents the funded stage
- * based on the evaluation type.
- */
 function isFundedPhase(evaluationType: string, phaseNumber: number): boolean {
   return isFundedPhaseForEvaluation(evaluationType, phaseNumber)
 }
 
-/**
- * Helper function to get display name for a phase - stage only (Phase 1, Phase 2, Funded)
- */
 function getPhaseDisplayName(evaluationType: string, phaseNumber: number): string {
   if (isFundedPhase(evaluationType, phaseNumber)) {
     return 'Funded'
@@ -34,25 +31,19 @@ function getPhaseDisplayName(evaluationType: string, phaseNumber: number): strin
   return `Phase ${phaseNumber}`
 }
 
-type GroupedTrades = Record<string, Record<string, Trade[]>>
+type GroupedTrades = Record<string, Record<string, TradeType[]>>
 
 interface FetchTradesResult {
   groupedTrades: GroupedTrades;
-  flattenedTrades: Trade[];
+  flattenedTrades: TradeType[];
 }
 
 export async function fetchGroupedTradesAction(userId: string): Promise<FetchTradesResult> {
-  const trades = await prisma.trade.findMany({
-    where: {
-      userId: userId
-    },
-    orderBy: [
-      { accountNumber: 'asc' },
-      { instrument: 'asc' }
-    ]
+  const trades = await db.query.Trade.findMany({
+    where: (table, { eq }) => eq(table.userId, userId),
+    orderBy: (table, { asc }) => [asc(table.accountNumber), asc(table.instrument)]
   })
 
-  // Use shared decimal conversion utility
   const serializedTrades = trades.map(trade => ({
     ...trade,
     entryPrice: convertDecimal(trade.entryPrice),
@@ -81,13 +72,9 @@ export async function fetchGroupedTradesAction(userId: string): Promise<FetchTra
 export async function removeAccountsFromTradesAction(accountNumbers: string[]): Promise<void> {
   const userId = await getUserId()
   
-  // 1. Fetch image URLs for all trades associated with these accounts
-  const tradesWithImages = await prisma.trade.findMany({
-    where: {
-      accountNumber: { in: accountNumbers },
-      userId: userId
-    },
-    select: {
+  const tradesWithImages = await db.query.Trade.findMany({
+    where: (table, { and, inArray, eq }) => and(inArray(table.accountNumber, accountNumbers), eq(table.userId, userId)),
+    columns: {
       imageOne: true,
       imageTwo: true,
       imageThree: true,
@@ -108,40 +95,24 @@ export async function removeAccountsFromTradesAction(accountNumbers: string[]): 
     trade.cardPreviewImage
   ]).filter((url): url is string => !!url)
 
-  // 2. Delete from storage
   if (imageUrls.length > 0) {
     try {
       await deletePublicStorageUrls(imageUrls)
     } catch (error) {
-      console.error('[Remove Accounts] Storage deletion failed:', error)
+      logger.error({ event: 'system_error', error: error }, '[Remove Accounts] Storage deletion failed:')
     }
   }
 
-  // 3. Delete from database
-  await prisma.trade.deleteMany({
-    where: {
-      accountNumber: { in: accountNumbers },
-      userId: userId
-    }
-  })
-  await prisma.account.deleteMany({
-    where: {
-      number: { in: accountNumbers },
-      userId: userId
-    }
-  })
+  await db.delete(schema.Trade).where(and(inArray(schema.Trade.accountNumber, accountNumbers), eq(schema.Trade.userId, userId)))
+  await db.delete(schema.Account).where(and(inArray(schema.Account.number, accountNumbers), eq(schema.Account.userId, userId)))
 }
 
 export async function removeAccountFromTradesAction(accountNumber: string): Promise<void> {
   const userId = await getUserId()
 
-  // 1. Fetch image URLs for all trades associated with this account
-  const tradesWithImages = await prisma.trade.findMany({
-    where: {
-      accountNumber: accountNumber,
-      userId: userId
-    },
-    select: {
+  const tradesWithImages = await db.query.Trade.findMany({
+    where: (table, { and, eq }) => and(eq(table.accountNumber, accountNumber), eq(table.userId, userId)),
+    columns: {
       imageOne: true,
       imageTwo: true,
       imageThree: true,
@@ -162,33 +133,21 @@ export async function removeAccountFromTradesAction(accountNumber: string): Prom
     trade.cardPreviewImage
   ]).filter((url): url is string => !!url)
 
-  // 2. Delete from storage
   if (imageUrls.length > 0) {
     try {
       await deletePublicStorageUrls(imageUrls)
     } catch (error) {
-      console.error('[Remove Account From Trades] Storage deletion failed:', error)
+      logger.error({ event: 'system_error', error: error }, '[Remove Account From Trades] Storage deletion failed:')
     }
   }
 
-  // 3. Delete from database
-  await prisma.trade.deleteMany({
-    where: {
-      accountNumber: accountNumber,
-      userId: userId
-    }
-  })
+  await db.delete(schema.Trade).where(and(eq(schema.Trade.accountNumber, accountNumber), eq(schema.Trade.userId, userId)))
 }
 
 export async function deleteInstrumentGroupAction(accountNumber: string, instrumentGroup: string, userId: string): Promise<void> {
-  // 1. Fetch image URLs for trades in this instrument group
-  const tradesWithImages = await prisma.trade.findMany({
-    where: {
-      accountNumber: accountNumber,
-      instrument: instrumentGroup,
-      userId: userId
-    },
-    select: {
+  const tradesWithImages = await db.query.Trade.findMany({
+    where: (table, { and, eq }) => and(eq(table.accountNumber, accountNumber), eq(table.instrument, instrumentGroup), eq(table.userId, userId)),
+    columns: {
       imageOne: true,
       imageTwo: true,
       imageThree: true,
@@ -209,96 +168,50 @@ export async function deleteInstrumentGroupAction(accountNumber: string, instrum
     trade.cardPreviewImage
   ]).filter((url): url is string => !!url)
 
-  // 2. Delete from storage
   if (imageUrls.length > 0) {
     try {
       await deletePublicStorageUrls(imageUrls)
     } catch (error) {
-      console.error('[Delete Instrument Group] Storage deletion failed:', error)
+      logger.error({ event: 'system_error', error: error }, '[Delete Instrument Group] Storage deletion failed:')
     }
   }
 
-  // 3. Delete from database
-  await prisma.trade.deleteMany({
-    where: {
-      accountNumber: accountNumber,
-      instrument: instrumentGroup,
-      userId: userId
-    }
-  })
+  await db.delete(schema.Trade).where(and(eq(schema.Trade.accountNumber, accountNumber), eq(schema.Trade.instrument, instrumentGroup), eq(schema.Trade.userId, userId)))
 }
 
 export async function updateCommissionForGroupAction(accountNumber: string, instrumentGroup: string, newCommission: number): Promise<void> {
-  // We have to update the commission for all trades in the group and compute based on the quantity
-  const trades = await prisma.trade.findMany({
-    where: {
-      accountNumber: accountNumber,
-      instrument: { startsWith: instrumentGroup }
-    }
+  const trades = await db.query.Trade.findMany({
+    where: (table, { and, eq, like }) => and(eq(table.accountNumber, accountNumber), like(table.instrument, `${instrumentGroup}%`))
   })
-  // For each trade, update the commission
   for (const trade of trades) {
-    const updatedCommission = newCommission * trade.quantity
-    await prisma.trade.update({
-      where: {
-        id: trade.id
-      },
-      data: {
-        commission: updatedCommission
-      }
-    })
+    const updatedCommission = newCommission * Number(trade.quantity || 0)
+    await db.update(schema.Trade).set({ commission: updatedCommission }).where(eq(schema.Trade.id, trade.id))
   }
 }
 
 export async function renameAccountAction(oldAccountNumber: string, newAccountNumber: string): Promise<void> {
   try {
     const userId = await getUserId()
-    // First check if the account exists and get its ID
-    const existingAccount = await prisma.account.findFirst({
-      where: {
-        number: oldAccountNumber,
-        userId: userId
-      }
+    const existingAccount = await db.query.Account.findFirst({
+      where: (table, { and, eq }) => and(eq(table.number, oldAccountNumber), eq(table.userId, userId))
     })
 
     if (!existingAccount) {
       throw new Error('Account not found')
     }
 
-    // Check if the new account number is already in use by this user
-    const duplicateAccount = await prisma.account.findFirst({
-      where: {
-        number: newAccountNumber,
-        userId: userId
-      }
+    const duplicateAccount = await db.query.Account.findFirst({
+      where: (table, { and, eq }) => and(eq(table.number, newAccountNumber), eq(table.userId, userId))
     })
 
     if (duplicateAccount) {
       throw new Error('You already have an account with this number')
     }
 
-    // Use a transaction to ensure all updates happen together
-    await prisma.$transaction(async (tx) => {
-      // Update the account number
-      await tx.account.update({
-        where: {
-          id: existingAccount.id
-        },
-        data: {
-          number: newAccountNumber
-        }
-      })
+    await db.transaction(async (tx) => {
+      await tx.update(schema.Account).set({ number: newAccountNumber }).where(eq(schema.Account.id, existingAccount.id))
 
-      // Update trades accountNumber
-      await tx.trade.updateMany({
-        where: {
-          accountNumber: oldAccountNumber,
-          userId: userId
-        },
-        data: {
-          accountNumber: newAccountNumber
-        }
-      })
+      await tx.update(schema.Trade).set({ accountNumber: newAccountNumber }).where(and(eq(schema.Trade.accountNumber, oldAccountNumber), eq(schema.Trade.userId, userId)))
     })
   } catch (error) {
     if (error instanceof Error) {
@@ -311,13 +224,9 @@ export async function renameAccountAction(oldAccountNumber: string, newAccountNu
 export async function deleteTradesByIdsAction(tradeIds: string[]): Promise<void> {
   const userId = await getUserId()
   
-  // 1. Fetch image URLs for these trades
-  const tradesWithImages = await prisma.trade.findMany({
-    where: {
-      id: { in: tradeIds },
-      userId: userId
-    },
-    select: {
+  const tradesWithImages = await db.query.Trade.findMany({
+    where: (table, { and, inArray, eq }) => and(inArray(table.id, tradeIds), eq(table.userId, userId)),
+    columns: {
       imageOne: true,
       imageTwo: true,
       imageThree: true,
@@ -338,75 +247,56 @@ export async function deleteTradesByIdsAction(tradeIds: string[]): Promise<void>
     trade.cardPreviewImage
   ]).filter((url): url is string => !!url)
 
-  // 2. Delete from storage
   if (imageUrls.length > 0) {
     try {
       await deletePublicStorageUrls(imageUrls)
     } catch (error) {
-      console.error('[Delete Trades By IDs] Storage deletion failed:', error)
+      logger.error({ event: 'system_error', error: error }, '[Delete Trades By IDs] Storage deletion failed:')
     }
   }
 
-  // 3. Batch delete from database
   const BATCH_SIZE = 100
   for (let i = 0; i < tradeIds.length; i += BATCH_SIZE) {
     const batch = tradeIds.slice(i, i + BATCH_SIZE)
-    await prisma.trade.deleteMany({
-      where: {
-        id: { in: batch },
-        userId: userId
-      }
-    })
+    await db.delete(schema.Trade).where(and(inArray(schema.Trade.id, batch), eq(schema.Trade.userId, userId)))
   }
 }
 
 export async function setupAccountAction(account: Account) {
   const userId = await getUserId()
-  const existingAccount = await prisma.account.findFirst({
-    where: {
-      number: account.number,
-      userId: userId
-    }
+  const existingAccount = await db.query.Account.findFirst({
+    where: (table, { and, eq }) => and(eq(table.number, account.number), eq(table.userId, userId))
   })
 
-  // Extract fields that should not be included in the database operation
-  const {
-    id,
-    userId: _,
-    payouts,
-    balanceToDate,
-    ...baseAccountData
-  } = account
-
-  if (existingAccount) {
-    return await prisma.account.update({
-      where: { id: existingAccount.id },
-      data: baseAccountData
-    })
+  const insertData = {
+    number: account.number || '',
+    name: account.displayName || account.name || null,
+    broker: account.broker || null,
+    startingBalance: account.startingBalance || 0,
+    isArchived: account.isArchived ?? false,
+    isConfigured: account.isConfigured ?? false,
+    updatedAt: new Date()
   }
 
-  return await prisma.account.create({
-    data: {
-      id: crypto.randomUUID(),
-      ...baseAccountData,
-      User: {
-        connect: {
-          id: userId
-        }
-      }
-    }
-  })
+  if (existingAccount) {
+    return (await db.update(schema.Account).set(insertData).where(eq(schema.Account.id, existingAccount.id)).returning())[0]
+  }
+
+  return (await db.insert(schema.Account).values({
+    id: crypto.randomUUID(),
+    ...insertData,
+    userId
+  }).returning())[0]
 }
 
 export async function deleteAccountAction(accountId: string) {
   const userId = await getUserId()
 
-  // 1. Fetch the account and associated trades with images
-  const account = await prisma.account.findUnique({
-    where: { id: accountId, userId },
-    include: {
+  const account = await db.query.Account.findFirst({
+    where: (table, { and, eq }) => and(eq(table.id, accountId), eq(table.userId, userId)),
+    with: {
       Trade: {
-        select: {
+        columns: {
           imageOne: true,
           imageTwo: true,
           imageThree: true,
@@ -433,22 +323,15 @@ export async function deleteAccountAction(accountId: string) {
     trade.cardPreviewImage
   ]).filter((url): url is string => !!url)
 
-  // 2. Delete from storage
   if (imageUrls.length > 0) {
     try {
       await deletePublicStorageUrls(imageUrls)
     } catch (error) {
-      console.error('[Delete Account] Storage deletion failed:', error)
+      logger.error({ event: 'system_error', error: error }, '[Delete Account] Storage deletion failed:')
     }
   }
 
-  // 3. Delete from database
-  await prisma.account.delete({
-    where: {
-      id: accountId,
-      userId
-    }
-  })
+  await db.delete(schema.Account).where(and(eq(schema.Account.id, accountId), eq(schema.Account.userId, userId)))
 
   await invalidateUserCaches(userId)
   logActivity({ userId, action: 'ACCOUNT_DELETED', entity: 'Account', entityId: accountId })
@@ -459,14 +342,13 @@ export async function deleteAccountAction(accountId: string) {
 export async function deleteMasterAccountAction(masterAccountId: string) {
   const userId = await getUserId()
 
-  // 1. Fetch the master account and all associated phases and trades with images
-  const masterAccount = await prisma.masterAccount.findUnique({
-    where: { id: masterAccountId, userId },
-    include: {
+  const masterAccount = await db.query.MasterAccount.findFirst({
+    where: (table, { and, eq }) => and(eq(table.id, masterAccountId), eq(table.userId, userId)),
+    with: {
       PhaseAccount: {
-        include: {
+        with: {
           Trade: {
-            select: {
+            columns: {
               imageOne: true,
               imageTwo: true,
               imageThree: true,
@@ -485,7 +367,6 @@ export async function deleteMasterAccountAction(masterAccountId: string) {
     throw new Error('Prop firm account not found')
   }
 
-  // 2. Collect all image URLs from all trades across all phases
   const imageUrls = masterAccount.PhaseAccount.flatMap(phase => 
     phase.Trade.flatMap(trade => [
       trade.imageOne,
@@ -498,22 +379,16 @@ export async function deleteMasterAccountAction(masterAccountId: string) {
     ])
   ).filter((url): url is string => !!url)
 
-  // 3. Delete from storage
   if (imageUrls.length > 0) {
     try {
       await deletePublicStorageUrls(imageUrls)
     } catch (error) {
-      console.error('[Delete Master Account] Storage deletion failed:', error)
+      logger.error({ event: 'system_error', error: error }, '[Delete Master Account] Storage deletion failed:')
     }
   }
 
-  // 4. Delete from database (Cascades handle Payouts, PhaseAccounts, Trades, etc.)
-  await prisma.masterAccount.delete({
-    where: {
-      id: masterAccountId,
-      userId
-    }
-  })
+  // Cascades handle Payouts, PhaseAccounts, Trades, etc.
+  await db.delete(schema.MasterAccount).where(and(eq(schema.MasterAccount.id, masterAccountId), eq(schema.MasterAccount.userId, userId)))
 
   await invalidateUserCaches(userId)
   logActivity({ userId, action: 'MASTER_ACCOUNT_DELETED', entity: 'MasterAccount', entityId: masterAccountId })
@@ -538,16 +413,9 @@ export async function getAccountsAction(options?: { includeArchived?: boolean })
     let masterAccounts: any[] = [];
 
     try {
-      // Build where clause for live accounts
-      const accountWhere: any = { userId: userId }
-      if (!includeArchived) {
-        accountWhere.isArchived = false
-      }
-
-      // Fetch regular live trading accounts with optimized query
-      const accountsPromise = prisma.account.findMany({
-        where: accountWhere,
-        select: {
+      const accountsPromise = db.query.Account.findMany({
+        where: (table, { and, eq }) => and(eq(table.userId, userId), includeArchived ? undefined : eq(table.isArchived, false)),
+        columns: {
           id: true,
           number: true,
           name: true,
@@ -557,36 +425,22 @@ export async function getAccountsAction(options?: { includeArchived?: boolean })
           userId: true,
           isArchived: true,
         },
-        orderBy: {
-          createdAt: 'desc' // Show newest accounts first
-        }
+        orderBy: (table, { desc }) => [desc(table.createdAt)]
       })
 
-      // Build where clause for prop firm accounts
-      const masterAccountWhere: any = { userId: userId }
-      if (!includeArchived) {
-        masterAccountWhere.isArchived = false
-      }
-
-      // Fetch prop firm master accounts in parallel with better error handling
-      const masterAccountsPromise = prisma.masterAccount.findMany({
-        where: masterAccountWhere,
-        include: {
+      const masterAccountsPromise = db.query.MasterAccount.findMany({
+        where: (table, { and, eq }) => and(eq(table.userId, userId), includeArchived ? undefined : eq(table.isArchived, false)),
+        with: {
           PhaseAccount: {
-            orderBy: {
-              phaseNumber: 'desc' // Most recent first
-            },
-            take: 10 // Get latest 10 phases
+            orderBy: (table, { desc }) => [desc(table.phaseNumber)],
+            limit: 10
           }
         },
-        orderBy: {
-          createdAt: 'desc'
-        }
+        orderBy: (table, { desc }) => [desc(table.createdAt)]
       }).catch((masterAccountError) => {
         return []
       })
 
-      // Execute both queries in parallel for better performance
       const [regularAccounts, propFirmAccounts] = await Promise.all([
         accountsPromise,
         masterAccountsPromise
@@ -601,13 +455,12 @@ export async function getAccountsAction(options?: { includeArchived?: boolean })
 
     // PERFORMANCE FIX: Single trade count query instead of duplicate
     // Both live and prop-firm accounts use accountNumber field, so one query is sufficient
-    const allTrades = await prisma.trade.findMany({
-      where: { userId },
-      select: TRADE_COUNT_SELECT,
+    const allTrades = await db.query.Trade.findMany({
+      where: (table, { eq }) => eq(table.userId, userId),
+      columns: TRADE_COUNT_SELECT,
     })
     const groupedCounts = buildGroupedTradeCountSummary(allTrades as any)
 
-    // Transform regular accounts
     const transformedAccounts = accounts.map((account: any) => ({
       ...account,
       propfirm: '',
@@ -622,25 +475,19 @@ export async function getAccountsAction(options?: { includeArchived?: boolean })
       isArchived: account.isArchived || false
     }))
 
-    // Transform master accounts to unified format - create one entry per phase
-    // Only include active and funded phases (accounts page has its own status filter)
     const transformedMasterAccounts: any[] = []
     masterAccounts.forEach((masterAccount: any) => {
 
       if (masterAccount.PhaseAccount && masterAccount.PhaseAccount.length > 0) {
-        // Check if this master account has any failed phases
-        const hasFailedPhase = masterAccount.PhaseAccount.some((p: any) => p.status === 'failed')
+            const hasFailedPhase = masterAccount.PhaseAccount.some((p: any) => p.status === 'failed')
         const isMasterAccountFailed = masterAccount.status === 'failed'
 
         // Get all phaseIds for this master account (for aggregation when failed)
         // Only calculate aggregation if there's a failed phase (for accounts page display)
-        // Create one entry for each phase (excluding pending phases)
-        masterAccount.PhaseAccount.forEach((phase: any) => {
-          // Skip pending phases - they don't exist yet until user reaches them
+          masterAccount.PhaseAccount.forEach((phase: any) => {
           if (phase.status === 'pending') return
 
-          // Determine if this phase is the funded phase based on evaluation type
-          const phaseName = getPhaseDisplayName(masterAccount.evaluationType, phase.phaseNumber)
+                const phaseName = getPhaseDisplayName(masterAccount.evaluationType, phase.phaseNumber)
 
           // Always use individual phase trade count
           // Aggregation for failed phases will be calculated on the client side (accounts page)
@@ -704,7 +551,6 @@ export async function savePayoutAction(payout: {
   try {
     const userId = await getUserId()
 
-    // Validate required fields
     if (!payout.masterAccountId || !payout.phaseAccountId || payout.amount === undefined || payout.amount === null) {
       throw new Error('Missing required payout fields: masterAccountId, phaseAccountId, and amount are required')
     }
@@ -713,17 +559,11 @@ export async function savePayoutAction(payout: {
       throw new Error('Payout amount must be greater than 0')
     }
 
-    // Verify account ownership
-    const masterAccount = await prisma.masterAccount.findFirst({
-      where: {
-        id: payout.masterAccountId,
-        userId
-      },
-      include: {
+    const masterAccount = await db.query.MasterAccount.findFirst({
+      where: (table, { and, eq }) => and(eq(table.id, payout.masterAccountId), eq(table.userId, userId)),
+      with: {
         PhaseAccount: {
-          where: {
-            id: payout.phaseAccountId
-          }
+          where: (table, { eq }) => eq(table.id, payout.phaseAccountId)
         }
       }
     })
@@ -748,12 +588,9 @@ export async function savePayoutAction(payout: {
       throw new Error(`Cannot request payout for ${phaseAccount.status} account. Account must be active.`)
     }
 
-    // Calculate available balance for payout
-    const trades = await prisma.trade.findMany({
-      where: {
-        phaseAccountId: payout.phaseAccountId
-      },
-      select: {
+    const trades = await db.query.Trade.findMany({
+      where: (table, { eq }) => eq(table.phaseAccountId, payout.phaseAccountId),
+      columns: {
         pnl: true,
         commission: true
       }
@@ -761,12 +598,9 @@ export async function savePayoutAction(payout: {
 
     const totalProfit = trades.reduce((sum, trade) => sum + trade.pnl, 0)
 
-    // Get existing payouts to calculate remaining balance
-    const existingPayouts = await prisma.payout.findMany({
-      where: {
-        phaseAccountId: payout.phaseAccountId
-      },
-      select: {
+    const existingPayouts = await db.query.Payout.findMany({
+      where: (table, { eq }) => eq(table.phaseAccountId, payout.phaseAccountId),
+      columns: {
         amount: true
       }
     })
@@ -778,31 +612,26 @@ export async function savePayoutAction(payout: {
       throw new Error(`Insufficient balance for payout. Available: $${availableBalance.toFixed(2)}, Requested: $${payout.amount.toFixed(2)}`)
     }
 
-    // Create the payout record
-    const newPayout = await prisma.payout.create({
-      data: {
-        id: crypto.randomUUID(),
-        masterAccountId: payout.masterAccountId,
-        phaseAccountId: payout.phaseAccountId,
-        amount: payout.amount,
-        requestDate: payout.requestDate || new Date(),
-        status: 'pending',
-        notes: payout.notes || null,
-        updatedAt: new Date()
-      }
-    })
+    const newPayout = (await db.insert(schema.Payout).values({
+      id: crypto.randomUUID(),
+      masterAccountId: payout.masterAccountId,
+      phaseAccountId: payout.phaseAccountId,
+      amount: payout.amount,
+      requestDate: payout.requestDate || new Date(),
+      status: 'pending',
+      notes: payout.notes || null,
+      updatedAt: new Date()
+    }).returning())[0]
 
-    // Invalidate caches
     await invalidateUserCaches(userId)
 
-    // Send notification
     await NotificationService.send({
       userId,
-      type: NotificationType.SYSTEM,
+      type: 'SYSTEM',
       title: 'Payout Requested',
       message: `Request for $${payout.amount.toFixed(2)} submitted.`,
       data: {
-        payoutId: newPayout.id,
+        payoutId: newPayout?.id || '',
         amount: payout.amount,
         phaseAccountId: payout.phaseAccountId
       }
@@ -830,12 +659,11 @@ export async function deletePayoutAction(payoutId: string) {
       throw new Error('Payout ID is required')
     }
 
-    // Find the payout and verify ownership
-    const payout = await prisma.payout.findUnique({
-      where: { id: payoutId },
-      include: {
+    const payout = await db.query.Payout.findFirst({
+      where: (table, { eq }) => eq(table.id, payoutId),
+      with: {
         MasterAccount: {
-          select: {
+          columns: {
             userId: true
           }
         }
@@ -850,17 +678,12 @@ export async function deletePayoutAction(payoutId: string) {
       throw new Error('Unauthorized: You do not own this payout')
     }
 
-    // Only allow deletion of pending payouts
     if (payout.status !== 'pending') {
       throw new Error(`Cannot delete ${payout.status} payout. Only pending payouts can be deleted.`)
     }
 
-    // Delete the payout
-    await prisma.payout.delete({
-      where: { id: payoutId }
-    })
+    await db.delete(schema.Payout).where(eq(schema.Payout.id, payoutId))
 
-    // Invalidate caches
     await invalidateUserCaches(userId)
 
     return {
@@ -875,17 +698,7 @@ export async function deletePayoutAction(payoutId: string) {
 export async function renameInstrumentAction(accountNumber: string, oldInstrumentName: string, newInstrumentName: string): Promise<void> {
   try {
     const userId = await getUserId()
-    // Update all trades for this instrument in this account
-    await prisma.trade.updateMany({
-      where: {
-        accountNumber: accountNumber,
-        instrument: oldInstrumentName,
-        userId: userId
-      },
-      data: {
-        instrument: newInstrumentName
-      }
-    })
+    await db.update(schema.Trade).set({ instrument: newInstrumentName }).where(and(eq(schema.Trade.accountNumber, accountNumber), eq(schema.Trade.instrument, oldInstrumentName), eq(schema.Trade.userId, userId)))
   } catch (error) {
     if (error instanceof Error) {
       throw error
@@ -895,79 +708,65 @@ export async function renameInstrumentAction(accountNumber: string, oldInstrumen
 }
 
 export async function checkAndResetAccountsAction() {
-  // Reset functionality not implemented - placeholder function
 }
 
-// Utility function for comprehensive cache invalidation
 export async function invalidateUserCaches(userId: string) {
   try {
     const { revalidateTag } = await import('next/cache')
-    revalidateTag(`accounts-${userId}`, 'max')
-    revalidateTag(`user-data-${userId}`, 'max')
-    revalidateTag(`grouped-trades-${userId}`, 'max')
-    revalidateTag(`trades-${userId}`, 'max')
-    revalidateTag(`prop-firm-accounts-${userId}`, 'max')
-    revalidateTag(`prop-firm-phases-${userId}`, 'max')
+    revalidateTag(`accounts-${userId}`)
+    revalidateTag(`user-data-${userId}`)
+    revalidateTag(`grouped-trades-${userId}`)
+    revalidateTag(`trades-${userId}`)
+    revalidateTag(`prop-firm-accounts-${userId}`)
+    revalidateTag(`prop-firm-phases-${userId}`)
   } catch (error) {
-    // Ignore cache invalidation errors
   }
 }
 
 export async function createAccountAction(accountNumber: string) {
   try {
     const userId = await getUserId()
-    const account = await prisma.account.create({
-      data: {
-        id: crypto.randomUUID(),
-        number: accountNumber,
-        userId,
-        startingBalance: 0,
-      },
-    })
+    const account = (await db.insert(schema.Account).values({
+      id: crypto.randomUUID(),
+      number: accountNumber,
+      userId,
+      startingBalance: 0,
+      updatedAt: new Date()
+    }).returning())[0]
     return account
   } catch (error) {
     throw error
   }
 }
 
-// Phase-based Prop Firm Account Management
-
 export async function getCurrentActivePhase(accountId: string) {
   try {
     const userId = await getUserId()
 
-    // First check if this is a MasterAccount (prop firm account)
-    const masterAccount = await prisma.masterAccount.findUnique({
-      where: { id: accountId },
-      include: {
+    const masterAccount = await db.query.MasterAccount.findFirst({
+      where: (table, { eq }) => eq(table.id, accountId),
+      with: {
         PhaseAccount: {
-          where: {
-            status: 'active'
-          },
-          orderBy: {
-            phaseNumber: 'asc'
-          },
-          take: 1 // Get current active phase
+          where: (table, { eq }) => eq(table.status, 'active'),
+          orderBy: (table, { asc }) => [asc(table.phaseNumber)],
+          limit: 1
         }
       }
     })
 
-    // If it's a prop firm account, return the current active phase
     if (masterAccount && masterAccount.PhaseAccount.length > 0) {
       return masterAccount.PhaseAccount[0]
     }
 
-    // If not a prop firm account, check if it's a regular account
-    const regularAccount = await prisma.account.findFirst({
-      where: { id: accountId, userId },
-      select: { id: true }
+    const regularAccount = await db.query.Account.findFirst({
+      where: (table, { and, eq }) => and(eq(table.id, accountId), eq(table.userId, userId)),
+      columns: { id: true }
     })
 
     if (!regularAccount) {
       throw new Error('Account not found')
     }
 
-    // For regular accounts, we don't have phases, so return null
     return null
   } catch (error) {
     throw error
@@ -978,25 +777,18 @@ export async function getAccountPhases(accountId: string) {
   try {
     const userId = await getUserId()
 
-    // Verify account ownership
-    const account = await prisma.account.findFirst({
-      where: { id: accountId, userId },
-      select: { id: true, name: true }
+    const account = await db.query.Account.findFirst({
+      where: (table, { and, eq }) => and(eq(table.id, accountId), eq(table.userId, userId)),
+      columns: { id: true, name: true }
     })
 
     if (!account) {
       throw new Error('Account not found')
     }
 
-    // Get all phases for the account
-    const phases = await prisma.phaseAccount.findMany({
-      where: { masterAccountId: accountId },
-      orderBy: { startDate: 'asc' },
-      include: {
-        _count: {
-          select: { Trade: true }
-        }
-      }
+    const phases = await db.query.PhaseAccount.findMany({
+      where: (table, { eq }) => eq(table.masterAccountId, accountId),
+      orderBy: (table, { asc }) => [asc(table.startDate)]
     })
 
     return phases
@@ -1009,14 +801,12 @@ export async function linkTradesToCurrentPhase(accountId: string, trades: any[])
   try {
     const userId = await getUserId()
 
-    // First check if this is a MasterAccount (prop firm account)
-    const masterAccount = await prisma.masterAccount.findUnique({
-      where: { id: accountId },
-      select: { id: true, accountName: true }
+    const masterAccount = await db.query.MasterAccount.findFirst({
+      where: (table, { eq }) => eq(table.id, accountId),
+      columns: { id: true, accountName: true }
     })
 
     if (masterAccount) {
-      // It's a prop firm account, get current active phase
       const currentPhase = await getCurrentActivePhase(accountId)
 
       if (!currentPhase) {
@@ -1027,7 +817,6 @@ export async function linkTradesToCurrentPhase(accountId: string, trades: any[])
         throw new Error(`Prop firm account "${masterAccount.accountName}" is in ${currentPhase.status} status. Cannot add trades to inactive phases.`)
       }
 
-      // Optimized: Create trades with direct phase linking using createMany
       const tradesToCreate = trades.map(trade => buildTradePersistenceData({
         id: trade.id || crypto.randomUUID(),
         ...trade,
@@ -1036,15 +825,9 @@ export async function linkTradesToCurrentPhase(accountId: string, trades: any[])
       }))
 
       // Use createMany for batch insert with skipDuplicates
-      const result = await prisma.trade.createMany({
-        data: tradesToCreate as any,
-        skipDuplicates: true
-      })
+      const result = await db.insert(schema.Trade).values(tradesToCreate as any).onConflictDoNothing()
 
-      await prisma.tradeExecution.createMany({
-        data: tradesToCreate.flatMap((trade: any) => buildSyntheticExecutionsFromTrade(trade)) as any,
-        skipDuplicates: true
-      })
+      await db.insert(schema.TradeExecution).values(tradesToCreate.flatMap((trade: any) => buildSyntheticExecutionsFromTrade(trade)) as any).onConflictDoNothing()
 
       // If no trades were added, they're all duplicates
       if (result.count === 0) {
@@ -1062,7 +845,7 @@ export async function linkTradesToCurrentPhase(accountId: string, trades: any[])
       // Send notification for successful import
       await NotificationService.send({
         userId,
-        type: NotificationType.IMPORT_STATUS,
+        type: 'IMPORT_STATUS',
         title: 'Trades Imported',
         message: `Successfully imported ${result.count} trades to ${masterAccount.accountName}.`,
         data: {
@@ -1082,8 +865,8 @@ export async function linkTradesToCurrentPhase(accountId: string, trades: any[])
       }
     } else {
       // Regular account - batch update
-      const regularAccount = await prisma.account.findFirst({
-        where: { id: accountId, userId }
+      const regularAccount = await db.query.Account.findFirst({
+        where: (table, { and, eq }) => and(eq(table.id, accountId), eq(table.userId, userId))
       })
 
       if (!regularAccount) {
@@ -1098,15 +881,9 @@ export async function linkTradesToCurrentPhase(accountId: string, trades: any[])
         userId
       }))
 
-      const result = await prisma.trade.createMany({
-        data: tradesToCreate as any,
-        skipDuplicates: true
-      })
+      const result = await db.insert(schema.Trade).values(tradesToCreate as any).onConflictDoNothing()
 
-      await prisma.tradeExecution.createMany({
-        data: tradesToCreate.flatMap((trade: any) => buildSyntheticExecutionsFromTrade(trade)) as any,
-        skipDuplicates: true
-      })
+      await db.insert(schema.TradeExecution).values(tradesToCreate.flatMap((trade: any) => buildSyntheticExecutionsFromTrade(trade)) as any).onConflictDoNothing()
 
       // If no trades were added, they're all duplicates
       if (result.count === 0) {
@@ -1136,7 +913,6 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
   try {
     const userId = await getUserId()
 
-    // Clean the data to remove undefined values and ensure all required fields are present
     const cleanedData = trades.map(trade => {
       const cleanTrade = Object.fromEntries(
         Object.entries(trade).filter(([_, value]) => value !== undefined)
@@ -1164,11 +940,11 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
 
     // STEP 1: PRE-TRANSACTION VALIDATION (OUTSIDE TRANSACTION - FASTER)
     // Determine if this is a prop firm or regular account BEFORE duplicate check
-    const phaseAccount = await prisma.phaseAccount.findUnique({
-      where: { id: accountId },
-      include: {
+    const phaseAccount = await db.query.PhaseAccount.findFirst({
+      where: (table, { eq }) => eq(table.id, accountId),
+      with: {
         MasterAccount: {
-          select: {
+          columns: {
             id: true,
             accountName: true,
             accountSize: true,
@@ -1186,20 +962,16 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
     let masterAccountId: string | null = null
 
     if (phaseAccount) {
-      // It's a prop firm account
-      isPropFirm = true
+        isPropFirm = true
       phaseAccountId = phaseAccount.id
       phaseNumber = phaseAccount.phaseNumber
       accountName = phaseAccount.MasterAccount.accountName
       masterAccountId = phaseAccount.MasterAccount.id
 
       // Pre-check profit target OUTSIDE transaction to fail fast
-      const pnlSum = await prisma.trade.aggregate({
-        where: { phaseAccountId: phaseAccount.id },
-        _sum: { pnl: true }
-      })
+      const pnlSum = await db.select({ sum: schema.Trade.pnl }).from(schema.Trade).where(eq(schema.Trade.phaseAccountId, phaseAccount.id))
 
-      const currentPnL = pnlSum._sum.pnl || 0
+      const currentPnL = pnlSum[0]?.sum || 0
       const profitTargetAmount = (phaseAccount.profitTargetPercent / 100) * phaseAccount.MasterAccount.accountSize
 
       if (profitTargetAmount && currentPnL >= profitTargetAmount) {
@@ -1212,10 +984,9 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
         )
       }
     } else {
-      // Try regular account
-      const regularAccount = await prisma.account.findFirst({
-        where: { id: accountId, userId },
-        select: { id: true, name: true }
+      const regularAccount = await db.query.Account.findFirst({
+        where: (table, { and, eq }) => and(eq(table.id, accountId), eq(table.userId, userId)),
+        columns: { id: true, name: true }
       })
 
       if (!regularAccount) {
@@ -1239,16 +1010,9 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
 
     let existingIdentityKeys = new Set<string>()
     if (candidateIdentityKeys.length > 0) {
-      const existingTrades = await prisma.trade.findMany({
-        where: {
-          userId,
-          tradeIdentityKey: { in: candidateIdentityKeys },
-          ...(isPropFirm
-            ? { phaseAccountId: phaseAccountId! }
-            : { accountId: regularAccountId! }
-          )
-        },
-        select: {
+      const existingTrades = await db.query.Trade.findMany({
+        where: (table, { and, eq, inArray }) => and(eq(table.userId, userId), inArray(table.tradeIdentityKey, candidateIdentityKeys), isPropFirm ? eq(table.phaseAccountId, phaseAccountId!) : eq(table.accountId, regularAccountId!)),
+        columns: {
           tradeIdentityKey: true
         }
       })
@@ -1288,7 +1052,6 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
     const totalBatches = Math.ceil(newTrades.length / BATCH_SIZE)
     let totalCreated = 0
 
-    // Pre-process all trades once (avoid doing this per batch)
     const allTradesToCreate = newTrades.map(trade => {
       const cleanTrade: any = {}
 
@@ -1317,20 +1080,13 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
       const batch = allTradesToCreate.slice(start, end)
 
       // Direct createMany - faster than wrapping in transaction
-      const createResult = await prisma.trade.createMany({
-        data: batch as any,
-        skipDuplicates: true // Extra safety for duplicates
-      })
+      const createResult = await db.insert(schema.Trade).values(batch as any).onConflictDoNothing()
 
-      await prisma.tradeExecution.createMany({
-        data: batch.flatMap((trade: any) => buildSyntheticExecutionsFromTrade(trade)) as any,
-        skipDuplicates: true
-      })
+      await db.insert(schema.TradeExecution).values(batch.flatMap((trade: any) => buildSyntheticExecutionsFromTrade(trade)) as any).onConflictDoNothing()
 
       totalCreated += createResult.count
     }
 
-    // Build result
     const result = {
       success: true,
       linkedCount: totalCreated,
@@ -1376,72 +1132,65 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
           const currentPhaseNumber = phaseAccount.phaseNumber
           const nextPhaseNumber = currentPhaseNumber + 1
 
-          // Get master account to determine if there's a next phase
-          const masterAccountData = await prisma.masterAccount.findUnique({
-            where: { id: result.masterAccountId },
-            include: { PhaseAccount: { orderBy: { phaseNumber: 'asc' } } }
+          const masterAccountData = await db.query.MasterAccount.findFirst({
+            where: (table, { eq }) => eq(table.id, result.masterAccountId!),
+            with: { PhaseAccount: { orderBy: (table, { asc }) => [asc(table.phaseNumber)] } }
           })
 
           if (!masterAccountData) {
             throw new Error('Master account not found')
           }
 
-          // Check if next phase exists
           const nextPhase = masterAccountData.PhaseAccount.find(p => p.phaseNumber === nextPhaseNumber)
 
           if (nextPhase) {
             // Check if next phase has a phaseId (account number)
             // If not, this requires MANUAL transition (user must provide next phase account ID)
             if (!nextPhase.phaseId || nextPhase.phaseId.trim() === '') {
-              // Determine if the next phase is the FUNDED phase
               const isTransitioningToFunded = isFundedPhase(masterAccountData.evaluationType, nextPhaseNumber)
 
-              // Determine the display name for the next phase
               const nextPhaseName = isTransitioningToFunded ? 'Funded' : `Phase ${nextPhaseNumber}`
 
               // Set phase to pending_approval and create appropriate notification
-              await prisma.$transaction([
-                prisma.phaseAccount.update({
-                  where: { id: result.phaseAccountId },
-                  data: { status: 'pending_approval', endDate: new Date() }
-                }),
+              await db.transaction(async (tx) => {
+                await tx.update(schema.PhaseAccount).set({ status: 'pending_approval', endDate: new Date() }).where(eq(schema.PhaseAccount.id, result.phaseAccountId!))
                 // Create different notification based on whether transitioning to funded or another eval phase
-                prisma.notification.create({
-                  data: isTransitioningToFunded ? {
-                    // FUNDED transition: Needs approval first, then ID
-                    userId: userId,
-                    type: 'FUNDED_PENDING_APPROVAL',
-                    title: 'Congratulations! Evaluation Complete!',
-                    message: `Your ${masterAccountData.accountName} has passed all evaluation phases! Please confirm once your prop firm approves your funded account.`,
-                    data: {
-                      masterAccountId: result.masterAccountId,
-                      phaseAccountId: result.phaseAccountId,
-                      accountName: masterAccountData.accountName,
-                      propFirmName: masterAccountData.propFirmName,
-                      currentPhaseNumber: currentPhaseNumber,
-                      nextPhaseNumber: nextPhaseNumber,
-                      evaluationType: masterAccountData.evaluationType
-                    },
-                    actionRequired: true
-                  } : {
-                    // NON-FUNDED transition: Just needs ID
-                    userId: userId,
-                    type: 'PHASE_TRANSITION_PENDING',
-                    title: `Phase ${currentPhaseNumber} Complete!`,
-                    message: `Your ${masterAccountData.accountName} has met the profit target! Enter your ${nextPhaseName} account ID to continue.`,
-                    data: {
-                      masterAccountId: result.masterAccountId,
-                      phaseAccountId: result.phaseAccountId,
-                      accountName: masterAccountData.accountName,
-                      propFirmName: masterAccountData.propFirmName,
-                      currentPhaseNumber: currentPhaseNumber,
-                      nextPhaseNumber: nextPhaseNumber,
-                      evaluationType: masterAccountData.evaluationType
-                    },
-                    actionRequired: true
-                  }
+                await tx.insert(schema.Notification).values(isTransitioningToFunded ? {
+                  // FUNDED transition: Needs approval first, then ID
+                  userId: userId,
+                  type: 'FUNDED_PENDING_APPROVAL',
+                  title: 'Congratulations! Evaluation Complete!',
+                  message: `Your ${masterAccountData.accountName} has passed all evaluation phases! Please confirm once your prop firm approves your funded account.`,
+                  data: {
+                    masterAccountId: result.masterAccountId,
+                    phaseAccountId: result.phaseAccountId,
+                    accountName: masterAccountData.accountName,
+                    propFirmName: masterAccountData.propFirmName,
+                    currentPhaseNumber: currentPhaseNumber,
+                    nextPhaseNumber: nextPhaseNumber,
+                    evaluationType: masterAccountData.evaluationType
+                  },
+                  actionRequired: true,
+                  updatedAt: new Date()
+                } : {
+                  // NON-FUNDED transition: Just needs ID
+                  userId: userId,
+                  type: 'PHASE_TRANSITION_PENDING',
+                  title: `Phase ${currentPhaseNumber} Complete!`,
+                  message: `Your ${masterAccountData.accountName} has met the profit target! Enter your ${nextPhaseName} account ID to continue.`,
+                  data: {
+                    masterAccountId: result.masterAccountId,
+                    phaseAccountId: result.phaseAccountId,
+                    accountName: masterAccountData.accountName,
+                    propFirmName: masterAccountData.propFirmName,
+                    currentPhaseNumber: currentPhaseNumber,
+                    nextPhaseNumber: nextPhaseNumber,
+                    evaluationType: masterAccountData.evaluationType
+                  },
+                  actionRequired: true,
+                  updatedAt: new Date()
                 })
-              ])
+              })
 
                 // Return different status based on whether transitioning to funded or another eval phase
                 ; (result as any).evaluation = isTransitioningToFunded ? {
@@ -1471,26 +1220,14 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
                 }
             } else {
               // Next phase has an account ID - safe to auto-advance
-              await prisma.$transaction([
+              await db.transaction(async (tx) => {
                 // Mark current phase as passed
-                prisma.phaseAccount.update({
-                  where: { id: result.phaseAccountId },
-                  data: { status: 'passed', endDate: new Date() }
-                }),
+                await tx.update(schema.PhaseAccount).set({ status: 'passed', endDate: new Date() }).where(eq(schema.PhaseAccount.id, result.phaseAccountId!))
                 // Activate next phase
-                prisma.phaseAccount.update({
-                  where: { id: nextPhase.id },
-                  data: {
-                    status: 'active',
-                    startDate: new Date()
-                  }
-                }),
+                await tx.update(schema.PhaseAccount).set({ status: 'active', startDate: new Date() }).where(eq(schema.PhaseAccount.id, nextPhase.id))
                 // Update master account current phase
-                prisma.masterAccount.update({
-                  where: { id: result.masterAccountId },
-                  data: { currentPhase: nextPhaseNumber }
-                })
-              ])
+                await tx.update(schema.MasterAccount).set({ currentPhase: nextPhaseNumber }).where(eq(schema.MasterAccount.id, result.masterAccountId!))
+              })
 
               // Determine the display name for the next phase
               const autoNextPhaseName = isFundedPhase(masterAccountData.evaluationType, nextPhaseNumber)
@@ -1510,28 +1247,24 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
           } else {
             // This was the final evaluation phase - waiting for firm approval
             // Use pending_approval status until user confirms firm's decision
-            await prisma.$transaction([
-              prisma.phaseAccount.update({
-                where: { id: result.phaseAccountId },
-                data: { status: 'pending_approval', endDate: new Date() }
-              }),
+            await db.transaction(async (tx) => {
+              await tx.update(schema.PhaseAccount).set({ status: 'pending_approval', endDate: new Date() }).where(eq(schema.PhaseAccount.id, result.phaseAccountId!))
               // Create notification for user to take action
-              prisma.notification.create({
+              await tx.insert(schema.Notification).values({
+                userId: userId,
+                type: 'FUNDED_PENDING_APPROVAL',
+                title: 'Congratulations! Awaiting Firm Approval',
+                message: `Your ${masterAccountData.accountName} account has met the profit target! Please update when the firm confirms your funded status.`,
                 data: {
-                  userId: userId,
-                  type: 'FUNDED_PENDING_APPROVAL',
-                  title: 'Congratulations! Awaiting Firm Approval',
-                  message: `Your ${masterAccountData.accountName} account has met the profit target! Please update when the firm confirms your funded status.`,
-                  data: {
-                    masterAccountId: result.masterAccountId,
-                    phaseAccountId: result.phaseAccountId,
-                    accountName: masterAccountData.accountName,
-                    propFirmName: masterAccountData.propFirmName
-                  },
-                  actionRequired: true
-                }
+                  masterAccountId: result.masterAccountId,
+                  phaseAccountId: result.phaseAccountId,
+                  accountName: masterAccountData.accountName,
+                  propFirmName: masterAccountData.propFirmName
+                },
+                actionRequired: true,
+                updatedAt: new Date()
               })
-            ])
+            })
 
             result.evaluation = {
               status: 'pending_approval',
@@ -1543,45 +1276,34 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
             }
           }
 
-          // Invalidate cache so UI updates
           await invalidateUserCaches(userId)
         }
         // Check for FAILURE (breach detected)
         else if (evaluation.isFailed) {
           // Fetch account size for breach record
-          const phaseAccountData = await prisma.phaseAccount.findUnique({
-            where: { id: result.phaseAccountId },
-            include: { MasterAccount: { select: { accountSize: true } } }
+          const phaseAccountData = await db.query.PhaseAccount.findFirst({
+            where: (table, { eq }) => eq(table.id, result.phaseAccountId!),
+            with: { MasterAccount: { columns: { accountSize: true } } }
           })
 
-          await prisma.$transaction([
-            prisma.phaseAccount.update({
-              where: { id: result.phaseAccountId },
-              data: { status: 'failed', endDate: new Date() }
-            }),
-            prisma.masterAccount.update({
-              where: { id: result.masterAccountId },
-              data: {
-                status: 'failed'
-              }
-            }),
-            prisma.breachRecord.create({
-              data: {
-                id: crypto.randomUUID(),
-                phaseAccountId: result.phaseAccountId,
-                breachType: evaluation.drawdown.breachType || 'max_drawdown',
-                breachAmount: evaluation.drawdown.breachAmount || 0,
-                breachTime: evaluation.drawdown.breachTime || new Date(),
-                currentEquity: evaluation.drawdown.currentEquity,
-                accountSize: phaseAccountData?.MasterAccount.accountSize || 0,
-                dailyStartBalance: evaluation.drawdown.dailyStartBalance,
-                highWaterMark: evaluation.drawdown.highWaterMark,
-                notes: `Auto-detected breach during trade import. ${evaluation.drawdown.breachType?.replace('_', ' ')} exceeded by $${evaluation.drawdown.breachAmount?.toFixed(2)}`
-              }
+          await db.transaction(async (tx) => {
+            await tx.update(schema.PhaseAccount).set({ status: 'failed', endDate: new Date() }).where(eq(schema.PhaseAccount.id, result.phaseAccountId!))
+            await tx.update(schema.MasterAccount).set({ status: 'failed' }).where(eq(schema.MasterAccount.id, result.masterAccountId!))
+            await tx.insert(schema.BreachRecord).values({
+              id: crypto.randomUUID(),
+              phaseAccountId: result.phaseAccountId!,
+              breachType: evaluation.drawdown.breachType || 'max_drawdown',
+              breachAmount: evaluation.drawdown.breachAmount || 0,
+              breachTime: evaluation.drawdown.breachTime || new Date(),
+              currentEquity: evaluation.drawdown.currentEquity,
+              accountSize: phaseAccountData?.MasterAccount.accountSize || 0,
+              dailyStartBalance: evaluation.drawdown.dailyStartBalance,
+              highWaterMark: evaluation.drawdown.highWaterMark,
+              notes: `Auto-detected breach during trade import. ${evaluation.drawdown.breachType?.replace('_', ' ')} exceeded by $${evaluation.drawdown.breachAmount?.toFixed(2)}`,
+              updatedAt: new Date()
             })
-          ])
+          })
 
-          // Invalidate cache immediately so UI updates
           await invalidateUserCaches(userId)
 
           // Add evaluation result to response for user feedback
@@ -1607,7 +1329,6 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
       }
     }
 
-    // Invalidate caches after successful import
     await invalidateUserCaches(userId)
 
     // STEP 4: ACCOUNT DATE ADJUSTMENT CHECK
@@ -1627,15 +1348,15 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
         // Get account creation date
         let accountCreatedAt: Date | null = null
         if (isPropFirm && masterAccountId) {
-          const ma = await prisma.masterAccount.findUnique({
-            where: { id: masterAccountId },
-            select: { createdAt: true }
+          const ma = await db.query.MasterAccount.findFirst({
+            where: (table, { eq }) => eq(table.id, masterAccountId),
+            columns: { createdAt: true }
           })
           accountCreatedAt = ma?.createdAt || null
         } else if (regularAccountId) {
-          const ra = await prisma.account.findUnique({
-            where: { id: regularAccountId },
-            select: { createdAt: true }
+          const ra = await db.query.Account.findFirst({
+            where: (table, { eq }) => eq(table.id, regularAccountId),
+            columns: { createdAt: true }
           })
           accountCreatedAt = ra?.createdAt || null
         }
@@ -1644,23 +1365,16 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
           const autoAdjustAccountDate = await getRuntimeAutoAdjustAccountDate(userId)
 
           if (autoAdjustAccountDate) {
-            // AUTO ADJUST
             if (isPropFirm && masterAccountId) {
-              await prisma.masterAccount.update({
-                where: { id: masterAccountId },
-                data: { createdAt: earliestTradeDate }
-              })
+              await db.update(schema.MasterAccount).set({ createdAt: earliestTradeDate }).where(eq(schema.MasterAccount.id, masterAccountId))
             } else if (regularAccountId) {
-              await prisma.account.update({
-                where: { id: regularAccountId },
-                data: { createdAt: earliestTradeDate }
-              })
+              await db.update(schema.Account).set({ createdAt: earliestTradeDate }).where(eq(schema.Account.id, regularAccountId))
             }
 
             // Informational notification
             await NotificationService.send({
               userId,
-              type: NotificationType.SYSTEM,
+              type: 'SYSTEM',
               title: 'Account Date Adjusted',
               message: `The creation date for ${accountName} was automatically adjusted to ${earliestTradeDate.toLocaleDateString()} to match your first trade.`,
               data: {
@@ -1673,7 +1387,7 @@ export async function saveAndLinkTrades(accountId: string, trades: any[]) {
             // MANUAL ADJUST (Action Required)
             await NotificationService.send({
               userId,
-              type: NotificationType.SYSTEM,
+              type: 'SYSTEM',
               title: 'Adjust Account Date?',
               message: `Your first trade in ${accountName} is older than the account creation date. Would you like to adjust the account date to ${earliestTradeDate.toLocaleDateString()}?`,
               data: {
@@ -1700,14 +1414,12 @@ export async function checkPhaseProgression(accountId: string) {
   try {
     const userId = await getUserId()
 
-    // First check if this is a MasterAccount (prop firm account)
-    const masterAccount = await prisma.masterAccount.findUnique({
-      where: { id: accountId },
-      select: { id: true, accountName: true, accountSize: true }
+    const masterAccount = await db.query.MasterAccount.findFirst({
+      where: (table, { eq }) => eq(table.id, accountId),
+      columns: { id: true, accountName: true, accountSize: true }
     })
 
     if (masterAccount) {
-      // It's a prop firm account, get current active phase
       const currentPhase = await getCurrentActivePhase(accountId)
 
       if (!currentPhase) {
@@ -1718,19 +1430,16 @@ export async function checkPhaseProgression(accountId: string) {
         }
       }
 
-      // Calculate current progress
-      const phaseTrades = await prisma.trade.findMany({
-        where: { phaseAccountId: currentPhase.id },
-        select: { pnl: true, commission: true }
+      const phaseTrades = await db.query.Trade.findMany({
+        where: (table, { eq }) => eq(table.phaseAccountId, currentPhase.id),
+        columns: { pnl: true, commission: true }
       })
 
       const netProfit = phaseTrades.reduce((sum, trade) => sum + trade.pnl, 0)
 
-      // Check if profit target is reached (convert percentage to actual amount)
       const profitTargetAmount = (currentPhase.profitTargetPercent / 100) * masterAccount.accountSize
 
       if (profitTargetAmount && netProfit >= profitTargetAmount) {
-        // Progress to next phase
         return await progressAccountPhase(accountId, currentPhase)
       }
 
@@ -1743,20 +1452,18 @@ export async function checkPhaseProgression(accountId: string) {
       }
     }
 
-    // If not a prop firm account, check if it's a regular account
-    const regularAccount = await prisma.account.findFirst({
-      where: { id: accountId, userId },
-      select: { id: true, name: true, startingBalance: true }
+    const regularAccount = await db.query.Account.findFirst({
+      where: (table, { and, eq }) => and(eq(table.id, accountId), eq(table.userId, userId)),
+      columns: { id: true, name: true, startingBalance: true }
     })
 
     if (!regularAccount) {
       throw new Error('Account not found')
     }
 
-    // For regular accounts, calculate P&L from all trades
-    const accountTrades = await prisma.trade.findMany({
-      where: { accountId },
-      select: { pnl: true, commission: true }
+    const accountTrades = await db.query.Trade.findMany({
+      where: (table, { eq }) => eq(table.accountId, accountId),
+      columns: { pnl: true, commission: true }
     })
 
     const netProfit = accountTrades.reduce((sum, trade) => sum + trade.pnl, 0)
@@ -1778,35 +1485,25 @@ export async function progressAccountPhase(masterAccountId: string, currentPhase
   try {
     const userId = await getUserId()
 
-    // Mark current phase as completed
-    await prisma.phaseAccount.update({
-      where: { id: currentPhase.id },
-      data: {
-        status: 'passed',
-        endDate: new Date()
-      }
-    })
+    await db.update(schema.PhaseAccount).set({ status: 'passed', endDate: new Date() }).where(eq(schema.PhaseAccount.id, currentPhase.id))
 
-    // Determine next phase number
     let nextPhaseNumber: number
     let nextPhaseAccountNumber: string
 
     switch (currentPhase.phaseNumber) {
       case 1:
         nextPhaseNumber = 2
-        // Get phase 2 account number from user input or generate
-        const phase2Phase = await prisma.phaseAccount.findFirst({
-          where: { masterAccountId, phaseNumber: 2 },
-          select: { phaseId: true }
+        const phase2Phase = await db.query.PhaseAccount.findFirst({
+          where: (table, { and, eq }) => and(eq(table.masterAccountId, masterAccountId), eq(table.phaseNumber, 2)),
+          columns: { phaseId: true }
         })
         nextPhaseAccountNumber = phase2Phase?.phaseId || 'Not Set'
         break
       case 2:
-        nextPhaseNumber = 3 // Funded
-        // Get funded account number from user input or generate
-        const fundedPhase = await prisma.phaseAccount.findFirst({
-          where: { masterAccountId, phaseNumber: 3 },
-          select: { phaseId: true }
+        nextPhaseNumber = 3
+        const fundedPhase = await db.query.PhaseAccount.findFirst({
+          where: (table, { and, eq }) => and(eq(table.masterAccountId, masterAccountId), eq(table.phaseNumber, 3)),
+          columns: { phaseId: true }
         })
         nextPhaseAccountNumber = fundedPhase?.phaseId || 'Not Set'
         break
@@ -1818,29 +1515,17 @@ export async function progressAccountPhase(masterAccountId: string, currentPhase
       throw new Error(`Please set the account number for phase ${nextPhaseNumber} before progressing`)
     }
 
-    // Activate the next phase by updating its status and phaseId
-    const nextPhase = await prisma.phaseAccount.findFirst({
-      where: { masterAccountId, phaseNumber: nextPhaseNumber, status: 'pending' }
+    const nextPhase = await db.query.PhaseAccount.findFirst({
+      where: (table, { and, eq }) => and(eq(table.masterAccountId, masterAccountId), eq(table.phaseNumber, nextPhaseNumber), eq(table.status, 'pending'))
     })
 
     if (!nextPhase) {
       throw new Error(`Next phase (${nextPhaseNumber}) not found or not in pending status`)
     }
 
-    const updatedPhase = await prisma.phaseAccount.update({
-      where: { id: nextPhase.id },
-      data: {
-        status: 'active',
-        phaseId: nextPhaseAccountNumber,
-        startDate: new Date()
-      }
-    })
+    const updatedPhase = (await db.update(schema.PhaseAccount).set({ status: 'active', phaseId: nextPhaseAccountNumber, startDate: new Date() }).where(eq(schema.PhaseAccount.id, nextPhase.id)).returning())[0]
 
-    // Update master account current phase
-    await prisma.masterAccount.update({
-      where: { id: masterAccountId },
-      data: { currentPhase: nextPhaseNumber }
-    })
+    await db.update(schema.MasterAccount).set({ currentPhase: nextPhaseNumber }).where(eq(schema.MasterAccount.id, masterAccountId))
 
     return {
       success: true,
@@ -1859,9 +1544,9 @@ export async function getAccountHistory(accountId: string) {
     const userId = await getUserId()
 
     // Verify account ownership
-    const account = await prisma.account.findFirst({
-      where: { id: accountId, userId },
-      select: { id: true, name: true }
+    const account = await db.query.Account.findFirst({
+      where: (table, { and, eq }) => and(eq(table.id, accountId), eq(table.userId, userId)),
+      columns: { id: true, name: true }
     })
 
     if (!account) {
@@ -1870,37 +1555,35 @@ export async function getAccountHistory(accountId: string) {
 
     const breakEvenThreshold = await getRuntimeBreakEvenThreshold(userId)
 
-    // Get all phases with trade counts and statistics
-    const phases = await prisma.phaseAccount.findMany({
-      where: { masterAccountId: accountId },
-      orderBy: { startDate: 'asc' },
-      include: {
+    const phases = await db.query.PhaseAccount.findMany({
+      where: (table, { eq }) => eq(table.masterAccountId, accountId),
+      orderBy: (table, { asc }) => [asc(table.startDate)],
+      with: {
         Trade: {
-          select: TRADE_COUNT_SELECT,
-          orderBy: { createdAt: 'asc' }
+          columns: TRADE_COUNT_SELECT,
+          orderBy: (table, { asc }) => [asc(table.createdAt)]
         }
       }
     })
 
-    // Calculate total statistics
     const totalTrades = phases.reduce(
       (sum, phase) => sum + buildGroupedTradeCountSummary(phase.Trade as any).groupedTradeCount,
       0
     )
     const totalPnl = phases.reduce((sum, phase) =>
-      sum + phase.Trade.reduce((tradeSum, trade) => tradeSum + trade.pnl, 0), 0)
+      sum + phase.Trade.reduce((tradeSum, trade) => tradeSum + (trade.pnl || 0), 0), 0)
     const totalCommission = phases.reduce((sum, phase) =>
-      sum + phase.Trade.reduce((tradeSum, trade) => tradeSum + trade.commission, 0), 0)
+      sum + phase.Trade.reduce((tradeSum, trade) => tradeSum + Number(trade.commission || 0), 0), 0)
 
     const netProfit = totalPnl
     const winningTrades = phases.reduce((sum, phase) => (
       sum + phase.Trade.filter(
-        trade => classifyOutcome(trade.pnl, breakEvenThreshold) === 'win'
+        trade => classifyOutcome(trade.pnl || 0, breakEvenThreshold) === 'win'
       ).length
     ), 0)
     const losingTrades = phases.reduce((sum, phase) => (
       sum + phase.Trade.filter(
-        trade => classifyOutcome(trade.pnl, breakEvenThreshold) === 'loss'
+        trade => classifyOutcome(trade.pnl || 0, breakEvenThreshold) === 'loss'
       ).length
     ), 0)
     const tradableTrades = winningTrades + losingTrades
@@ -1950,20 +1633,16 @@ export async function getAccountHistory(accountId: string) {
   }
 }
 
-// Account Failure and Breach Detection with Static/Trailing Drawdown Support
-
 export async function checkAccountBreaches(accountId: string) {
   try {
     const userId = await getUserId()
 
-    // First check if this is a MasterAccount (prop firm account)
-    const masterAccount = await prisma.masterAccount.findUnique({
-      where: { id: accountId },
-      select: { id: true, accountName: true, accountSize: true }
+    const masterAccount = await db.query.MasterAccount.findFirst({
+      where: (table, { eq }) => eq(table.id, accountId),
+      columns: { id: true, accountName: true, accountSize: true }
     })
 
     if (masterAccount) {
-      // For prop firm accounts, return basic info without complex breach checking
       return {
         isFailed: false,
         reason: 'Prop firm accounts have different breach rules',
@@ -1971,17 +1650,15 @@ export async function checkAccountBreaches(accountId: string) {
       }
     }
 
-    // If not a prop firm account, check if it's a regular account
-    const regularAccount = await prisma.account.findFirst({
-      where: { id: accountId, userId },
-      select: { id: true, name: true, startingBalance: true }
+    const regularAccount = await db.query.Account.findFirst({
+      where: (table, { and, eq }) => and(eq(table.id, accountId), eq(table.userId, userId)),
+      columns: { id: true, name: true, startingBalance: true }
     })
 
     if (!regularAccount) {
       throw new Error('Account not found')
     }
 
-    // For regular accounts, return basic info without complex breach checking
     return {
       isFailed: false,
       reason: 'Regular accounts have no breach rules',
@@ -1996,29 +1673,17 @@ export async function failAccount(accountId: string, currentPhase: any, breachDe
   try {
     const userId = await getUserId()
 
-    // First check if this is a MasterAccount (prop firm account)
-    const masterAccount = await prisma.masterAccount.findUnique({
-      where: { id: accountId },
-      select: { id: true, accountName: true }
+    const masterAccount = await db.query.MasterAccount.findFirst({
+      where: (table, { eq }) => eq(table.id, accountId),
+      columns: { id: true, accountName: true }
     })
 
     if (masterAccount && currentPhase) {
       // Update the phase status to failed and master account status
-      await prisma.$transaction([
-        prisma.phaseAccount.update({
-          where: { id: currentPhase.id },
-          data: {
-            status: 'failed',
-            endDate: new Date()
-          }
-        }),
-        prisma.masterAccount.update({
-          where: { id: accountId },
-          data: {
-            status: 'failed'
-          }
-        })
-      ])
+      await db.transaction(async (tx) => {
+        await tx.update(schema.PhaseAccount).set({ status: 'failed', endDate: new Date() }).where(eq(schema.PhaseAccount.id, currentPhase.id))
+        await tx.update(schema.MasterAccount).set({ status: 'failed' }).where(eq(schema.MasterAccount.id, accountId))
+      })
 
       return {
         isFailed: true,
@@ -2041,14 +1706,8 @@ export async function getFailedAccountsHistory() {
   try {
     const userId = await getUserId()
 
-    // Get all failed accounts with their phases
-    const failedAccounts = await prisma.account.findMany({
-      where: {
-        userId: userId
-      },
-      include: {
-        // phases: true // phases field not available on Account model
-      }
+    const failedAccounts = await db.query.Account.findMany({
+      where: (table, { eq }) => eq(table.userId, userId)
     })
 
     return failedAccounts

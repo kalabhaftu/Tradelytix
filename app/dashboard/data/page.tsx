@@ -35,13 +35,11 @@ function DashboardContent() {
 
   return (
     <div className="w-full max-w-7xl mx-auto py-8 px-4 sm:px-6 pb-20 md:pb-8">
-      {/* Header */}
       <div className="mb-8">
         <PageHeader title="Data Management" className="gap-2" />
       </div>
 
       <div className="flex flex-col md:flex-row gap-8 items-start">
-        {/* Sidebar Navigation */}
         <div className="w-full md:w-64 shrink-0 flex md:flex-col overflow-x-auto md:overflow-x-visible pb-3 md:pb-0 gap-1 border-b md:border-b-0 md:border-r border-border/40 pr-0 md:pr-4 scrollbar-none">
           {categories.map((cat) => {
             const Icon = cat.icon
@@ -71,7 +69,6 @@ function DashboardContent() {
           })}
         </div>
 
-        {/* Tab Content Panel */}
         <div className="flex-1 min-w-0 w-full">
           <motion.div
             key={activeTab}

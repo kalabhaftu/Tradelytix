@@ -73,7 +73,6 @@ export function CacheManagement({ plain = false }: { plain?: boolean }) {
 
       setLastCleared(new Date())
 
-      // Reload page after a short delay
       setTimeout(() => {
         window.location.reload()
       }, 1500)
@@ -95,7 +94,6 @@ export function CacheManagement({ plain = false }: { plain?: boolean }) {
 
   const content = (
     <div className="space-y-6">
-      {/* Cache Statistics */}
       <div className="space-y-2">
         <h4 className="text-sm font-medium">Current Cache Status</h4>
         <div className="grid grid-cols-2 gap-4 text-sm">
@@ -118,7 +116,6 @@ export function CacheManagement({ plain = false }: { plain?: boolean }) {
         </div>
       </div>
 
-      {/* Information Alert */}
       <Alert className="border-border/40 bg-muted/15">
         <Info className="h-4 w-4" />
         <AlertDescription>
@@ -127,7 +124,6 @@ export function CacheManagement({ plain = false }: { plain?: boolean }) {
         </AlertDescription>
       </Alert>
 
-      {/* Last Cleared */}
       {lastCleared && (
         <div className="flex items-center gap-2 text-sm text-profit">
           <CheckCircle className="h-4 w-4" />
@@ -137,7 +133,6 @@ export function CacheManagement({ plain = false }: { plain?: boolean }) {
         </div>
       )}
 
-      {/* Clear Options */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
@@ -184,7 +179,6 @@ export function CacheManagement({ plain = false }: { plain?: boolean }) {
         </div>
       </div>
 
-      {/* Help Text */}
       <div className="text-xs text-muted-foreground/85 space-y-1">
         <p><strong>When to clear cache:</strong></p>
         <ul className="list-disc list-inside space-y-1 ml-2">

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
@@ -41,24 +41,23 @@ export async function GET(request: NextRequest) {
     })
 
     // Fetch trades in date range
-    const tradesWhere: any = {
-      userId: internalUserId,
-      entryDate: {
-        gte: startDate.includes('T') ? startDate : `${startDate}T00:00:00.000Z`,
-        lte: endDate.includes('T') ? endDate : `${endDate}T23:59:59.999Z`
-      }
-    }
-
-    if (accountId) {
-      tradesWhere.accountId = accountId
-    }
+    const tradesWhereStart = startDate.includes('T') ? startDate : `${startDate}T00:00:00.000Z`
+    const tradesWhereEnd = endDate.includes('T') ? endDate : `${endDate}T23:59:59.999Z`
 
     const breakEvenThreshold = await getRuntimeBreakEvenThreshold(internalUserId)
 
-    const trades = await prisma.trade.findMany({
-      where: tradesWhere,
-      orderBy: { entryDate: 'asc' },
-      select: {
+    const trades = await db.query.Trade.findMany({
+      where: (table, { eq, and, gte, lte }) => {
+        const conds = [
+          eq(table.userId, internalUserId),
+          gte(table.entryDate, tradesWhereStart),
+          lte(table.entryDate, tradesWhereEnd)
+        ]
+        if (accountId) conds.push(eq(table.accountId, accountId))
+        return and(...conds)
+      },
+      orderBy: (table, { asc }) => [asc(table.entryDate)],
+      columns: {
         id: true,
         entryId: true,
         instrument: true,
@@ -72,18 +71,13 @@ export async function GET(request: NextRequest) {
         quantity: true,
         entryPrice: true,
         closePrice: true,
-        comment: true, // Trade notes
+        comment: true,
         setup: true,
         selectedRules: true,
         ruleBroken: true,
         chartLinks: true,
         chartLinksList: true,
         modelId: true,
-        TradingModel: {
-          select: {
-            name: true
-          }
-        },
         marketBias: true,
         newsDay: true,
         selectedNews: true,
@@ -95,16 +89,18 @@ export async function GET(request: NextRequest) {
         orderType: true,
         entryTime: true,
         exitTime: true
+      },
+      with: {
+        TradingModel: {
+          columns: { name: true }
+        }
       }
     })
 
     // Fetch funded/active accounts status (MasterAccounts for prop firms)
-    const propFirmAccounts = await prisma.masterAccount.findMany({
-      where: {
-        userId: internalUserId,
-        isArchived: false
-      },
-      select: {
+    const propFirmAccounts = await db.query.MasterAccount.findMany({
+      where: (table, { eq }) => and(eq(table.userId, internalUserId), eq(table.isArchived, false)),
+      columns: {
         accountName: true,
         propFirmName: true,
         status: true,
@@ -114,27 +110,25 @@ export async function GET(request: NextRequest) {
     })
 
     // Fetch user's tags for context
-    const userTags = await prisma.tradeTag.findMany({
-      where: { userId: internalUserId },
-      select: { id: true, name: true }
+    const userTags = await db.query.TradeTag.findMany({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      columns: { id: true, name: true }
     })
 
     // Fetch user's trading models for context
-    const tradingModels = await prisma.tradingModel.findMany({
-      where: { userId: internalUserId },
-      select: { id: true, name: true }
+    const tradingModels = await db.query.TradingModel.findMany({
+      where: (table, { eq }) => eq(table.userId, internalUserId),
+      columns: { id: true, name: true }
     })
 
     // Fetch weekly reviews for context
-    const weeklyReviews = await prisma.weeklyReview.findMany({
-      where: {
-        userId: internalUserId,
-        startDate: {
-          gte: new Date(startDate),
-          lte: new Date(endDate)
-        }
-      },
-      select: {
+    const weeklyReviews = await db.query.WeeklyReview.findMany({
+      where: (table, { eq, and, gte, lte }) => and(
+        eq(table.userId, internalUserId),
+        gte(table.startDate, new Date(startDate)),
+        lte(table.startDate, new Date(endDate))
+      ),
+      columns: {
         startDate: true,
         expectation: true,
         actualOutcome: true,
@@ -156,7 +150,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ analysis })
   } catch (error) {
-    // Error generating AI analysis
     return NextResponse.json(
       { error: 'Failed to generate analysis' },
       { status: 500 }
@@ -213,7 +206,7 @@ async function generateAnalysis(
       pnl: getNetPnl(t),
       instrument: t.instrument,
       side: t.side,
-      duration: t.closeDate ? (new Date(t.closeDate).getTime() - new Date(t.entryDate).getTime()) / 1000 / 60 : 0 // duration in minutes
+      duration: t.closeDate ? (new Date(t.closeDate).getTime() - new Date(t.entryDate).getTime()) / 1000 / 60 : 0
     }))
 
   const tradeStats = {
@@ -351,7 +344,6 @@ async function generateAnalysis(
       biasPerformance[t.marketBias].pnl += netPnL
       if (getOutcome(t) === 'win') biasPerformance[t.marketBias].wins++
 
-      // Check if trade direction aligns with bias
       const isLong = t.side?.toUpperCase() === 'BUY' || t.side?.toLowerCase() === 'long'
       const isShort = t.side?.toUpperCase() === 'SELL' || t.side?.toLowerCase() === 'short'
 
@@ -429,12 +421,10 @@ async function generateAnalysis(
     'm': 'Monthly',
   }
 
-  // Count usage by timeframe type (entry is most important)
   analyzedTrades.forEach(t => {
     const netPnL = getNetPnl(t)
     const isWin = getOutcome(t) === 'win'
 
-    // Count entry timeframe (primary indicator)
     if ((t as any).entryTimeframe && timeframeStats[(t as any).entryTimeframe]) {
       timeframeStats[(t as any).entryTimeframe].trades++
       timeframeStats[(t as any).entryTimeframe].pnl += netPnL
@@ -442,10 +432,9 @@ async function generateAnalysis(
     }
   })
 
-  // Filter out unused timeframes
   const usedTimeframes = Object.entries(timeframeStats)
     .filter(([_, data]) => data.trades > 0)
-    .sort((a, b) => b[1].pnl - a[1].pnl) // Sort by P&L
+    .sort((a, b) => b[1].pnl - a[1].pnl)
 
   // Order Type Analysis
   const orderTypeStats: Record<string, { trades: number, pnl: number, wins: number }> = {
@@ -497,8 +486,6 @@ async function generateAnalysis(
     .filter(([_, data]) => data.trades > 0)
     .sort((a, b) => b[1].pnl - a[1].pnl)
 
-  // ========== ADVANCED BEHAVIORAL ANALYSIS ==========
-  // Calculate revenge trading patterns (trades after losses)
   function calculateAvgTradeAfterLoss(tradesList: typeof trades): { avg: number | null, count: number, winRate: number } {
     let sum = 0, count = 0, wins = 0
     for (let i = 1; i < tradesList.length; i++) {
@@ -534,7 +521,6 @@ async function generateAnalysis(
     return { maxStreak, avgAfterStreak: afterStreakCount > 0 ? afterStreakSum / afterStreakCount : null, tradesAfterStreak: afterStreakCount }
   }
 
-  // Calculate first trade of day performance
   function analyzeFirstTradePerformance(tradesList: typeof trades): { avgPnL: number | null, winRate: number, count: number } {
     const tradesByDate: Record<string, typeof trades[0][]> = {}
     tradesList.forEach(t => {
@@ -556,7 +542,6 @@ async function generateAnalysis(
     return { avgPnL: count > 0 ? sum / count : null, winRate: count > 0 ? (wins / count) * 100 : 0, count }
   }
 
-  // Calculate overtrading patterns (trades per day)
   function analyzeOvertradingPatterns(tradesList: typeof trades): { avgTradesPerDay: number, daysOver5Trades: number, pnlOnHighVolumeDay: number, pnlOnLowVolumeDay: number } {
     const tradesByDate: Record<string, { count: number, pnl: number }> = {}
     tradesList.forEach(t => {
@@ -578,7 +563,6 @@ async function generateAnalysis(
     }
   }
 
-  // Calculate risk management metrics
   function analyzeRiskMetrics(tradesList: typeof trades): { largestWin: number, largestLoss: number, avgRRR: number | null, tradesWithLargerLossThanAvg: number } {
     if (tradesList.length === 0) return { largestWin: 0, largestLoss: 0, avgRRR: null, tradesWithLargerLossThanAvg: 0 }
     
@@ -598,7 +582,6 @@ async function generateAnalysis(
     }
   }
 
-  // Calculate winning/losing streak patterns
   function analyzeStreakPatterns(tradesList: typeof trades): { maxWinStreak: number, maxLossStreak: number, currentStreak: { type: string, count: number } } {
     let maxWinStreak = 0, maxLossStreak = 0
     let currentWinStreak = 0, currentLossStreak = 0
@@ -690,14 +673,12 @@ async function generateAnalysis(
   const riskMetrics = analyzeRiskMetrics(analyzedTrades)
   const streakPatterns = analyzeStreakPatterns(analyzedTrades)
 
-  // Call AI API (XAI/Grok)
   try {
     const apiKey = process.env.XAI_API_KEY
     const baseUrl = process.env.XAI_BASE_URL || 'https://api.x.ai/v1'
     const model = process.env.XAI_MODEL || 'grok-4-1-fast-reasoning'
 
     if (!apiKey) {
-      // Fallback to rule-based analysis if no API key
       return generateRuleBasedAnalysis(journalSummary, tradeStats, emotionCounts, emotionPerformance)
     }
 
@@ -1027,7 +1008,6 @@ OUTPUT REQUIREMENTS:
     
     Analyze now. Be the coach they need, not the friend they want.`;
 
-
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -1072,12 +1052,10 @@ Your approach:
       return generateRuleBasedAnalysis(journalSummary, tradeStats, emotionCounts, emotionPerformance, tradeNotes)
     }
 
-    // Parse JSON response and remove emojis
     try {
       const jsonMatch = content.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0])
-        // Remove emojis from all strings using shared utility
         return cleanContent(parsed)
       }
       return generateRuleBasedAnalysis(journalSummary, tradeStats, emotionCounts, emotionPerformance, tradeNotes)
@@ -1088,7 +1066,6 @@ Your approach:
     return generateRuleBasedAnalysis(journalSummary, tradeStats, emotionCounts, emotionPerformance, tradeNotes)
   }
 }
-
 
 function generateRuleBasedAnalysis(
   journals: any[],
@@ -1101,7 +1078,6 @@ function generateRuleBasedAnalysis(
     ? (tradeStats.winningTrades / tradeStats.totalTrades) * 100
     : 0
 
-  // Find best and worst emotions
   const emotionsWithPerf = Object.entries(emotionPerformance)
     .filter(([_, perf]) => perf.trades > 0)
     .map(([emotion, perf]) => ({

@@ -24,7 +24,6 @@ export function PlatformTutorial({ selectedPlatform, setIsOpen }: PlatformTutori
     video.pause()
     video.currentTime = 0
 
-    // Handle new platform video
     if (selectedPlatform?.videoUrl) {
       // Load and play the new video
       video.load()
@@ -41,7 +40,6 @@ export function PlatformTutorial({ selectedPlatform, setIsOpen }: PlatformTutori
       }
     }
 
-    // Cleanup
     return () => {
       if (video) {
         video.pause()

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import archiver from 'archiver'
 import { PassThrough } from 'stream'
 import { USER_SETTINGS_SELECT, mergeUserSettings } from '@/lib/user-settings'
+import { eq, and, or, inArray } from 'drizzle-orm'
 
 // Helper to sanitize and transform data
 const sanitizeUser = (data: any) => {
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
       try {
         filters = await request.json()
       } catch (e) {
-        console.warn('Failed to parse export filters', e)
+        logger.warn('Failed to parse export filters', e)
       }
     }
 
@@ -92,75 +93,83 @@ export async function POST(request: NextRequest) {
       userGeoLogs,
       promoRedemptions
     ] = await Promise.all([
-      prisma.user.findUnique({ 
-        where: { id: internalUserId },
-        select: {
+      db.query.User.findFirst({ 
+        where: (table, { eq }) => eq(table.id, internalUserId),
+        columns: {
           id: true,
           firstName: true,
           lastName: true,
+        },
+        with: {
           settings: {
-            select: USER_SETTINGS_SELECT
+            columns: USER_SETTINGS_SELECT
           }
-        } as any
+        }
+      } as any),
+      db.query.Account.findMany({ where: (table, { eq }) => eq(table.userId, internalUserId) }),
+      db.query.MasterAccount.findMany({
+        where: (table, { eq }) => eq(table.userId, internalUserId),
+        with: { PhaseAccount: true }
       }),
-      prisma.account.findMany({ where: { userId: internalUserId } }),
-      prisma.masterAccount.findMany({
-        where: { userId: internalUserId },
-        include: { PhaseAccount: true }
-      }),
-      prisma.tradingModel.findMany({ where: { userId: internalUserId } }),
-      prisma.tradeTag.findMany({ where: { userId: internalUserId } }),
-      prisma.dailyNote.findMany({ where: { userId: internalUserId } }),
-      prisma.weeklyReview.findMany({ where: { userId: internalUserId } }),
-      prisma.trade.findMany({ where: { userId: internalUserId } }),
-      prisma.backtestTrade.findMany({ where: { userId: internalUserId } }),
-      prisma.dashboardTemplate.findMany({ where: { userId: internalUserId } }),
-      prisma.liveAccountTransaction.findMany({ where: { userId: internalUserId } }),
-      prisma.breachRecord.findMany({
-        where: { PhaseAccount: { MasterAccount: { userId: internalUserId } } },
-        include: {
+      db.query.TradingModel.findMany({ where: (table, { eq }) => eq(table.userId, internalUserId) }),
+      db.query.TradeTag.findMany({ where: (table, { eq }) => eq(table.userId, internalUserId) }),
+      db.query.DailyNote.findMany({ where: (table, { eq }) => eq(table.userId, internalUserId) }),
+      db.query.WeeklyReview.findMany({ where: (table, { eq }) => eq(table.userId, internalUserId) }),
+      db.query.Trade.findMany({ where: (table, { eq }) => eq(table.userId, internalUserId) }),
+      db.query.BacktestTrade.findMany({ where: (table, { eq }) => eq(table.userId, internalUserId) }),
+      db.query.DashboardTemplate.findMany({ where: (table, { eq }) => eq(table.userId, internalUserId) }),
+      db.query.LiveAccountTransaction.findMany({ where: (table, { eq }) => eq(table.userId, internalUserId) }),
+      db.query.BreachRecord.findMany({
+        where: (table, { eq }) => eq(table.phaseAccountId, internalUserId),
+        with: {
           PhaseAccount: {
-            select: {
+            columns: {
               phaseId: true,
               phaseNumber: true,
-              MasterAccount: { select: { accountName: true } },
+            },
+            with: {
+              MasterAccount: { columns: { accountName: true } },
             },
           },
         },
       }),
-      prisma.dailyAnchor.findMany({
-        where: { PhaseAccount: { MasterAccount: { userId: internalUserId } } },
-        include: {
+      db.query.DailyAnchor.findMany({
+        where: (table, { eq }) => eq(table.phaseAccountId, internalUserId),
+        with: {
           PhaseAccount: {
-            select: {
+            columns: {
               phaseId: true,
               phaseNumber: true,
-              MasterAccount: { select: { accountName: true } },
+            },
+            with: {
+              MasterAccount: { columns: { accountName: true } },
             },
           },
         },
       }),
-      prisma.payout.findMany({
-        where: { MasterAccount: { userId: internalUserId } },
-        include: {
-          MasterAccount: { select: { accountName: true } },
+      db.query.Payout.findMany({
+        where: (table, { eq }) => eq(table.masterAccountId, internalUserId),
+        with: {
+          MasterAccount: { columns: { accountName: true } },
           PhaseAccount: {
-            select: {
+            columns: {
               phaseId: true,
               phaseNumber: true,
-              MasterAccount: { select: { accountName: true } },
+            },
+            with: {
+              MasterAccount: { columns: { accountName: true } },
             },
           },
         },
       }),
-      prisma.journalTemplate.findMany({ where: { userId: internalUserId } }),
-      prisma.notification.findMany({ where: { userId: internalUserId } }),
-      prisma.weeklyAIReview.findMany({ where: { userId: internalUserId } }),
-      prisma.userGoal.findMany({ where: { userId: internalUserId } }),
-      prisma.sharedReport.findMany({ where: { userId: internalUserId } }),
-      prisma.feedback.findMany({ where: { userId: internalUserId } }),
-      prisma.userGeoLog.findMany({ where: { userId: internalUserId } }),
-      prisma.promoRedemption.findMany({ where: { userId: internalUserId } })
+      db.query.JournalTemplate.findMany({ where: (table, { eq }) => eq(table.userId, internalUserId) }),
+      db.query.Notification.findMany({ where: (table, { eq }) => eq(table.userId, internalUserId) }),
+      db.query.WeeklyAIReview.findMany({ where: (table, { eq }) => eq(table.userId, internalUserId) }),
+      db.query.UserGoal.findMany({ where: (table, { eq }) => eq(table.userId, internalUserId) }),
+      db.query.SharedReport.findMany({ where: (table, { eq }) => eq(table.userId, internalUserId) }),
+      db.query.Feedback.findMany({ where: (table, { eq }) => eq(table.userId, internalUserId) }),
+      db.query.UserGeoLog.findMany({ where: (table, { eq }) => eq(table.userId, internalUserId) }),
+      db.query.PromoRedemption.findMany({ where: (table, { eq }) => eq(table.userId, internalUserId) })
     ])
 
     const modelMap = new Map(
@@ -252,10 +261,10 @@ export async function POST(request: NextRequest) {
 
     // Log archive warnings/errors
     archive.on('warning', (err) => {
-      console.warn('Archive warning:', err)
+      logger.warn('Archive warning:', err)
     })
     archive.on('error', (err) => {
-      console.error('Archive error:', err)
+      logger.error('Archive error:', err)
       stream.destroy(err) // Kill the stream
     })
 
@@ -360,10 +369,9 @@ export async function POST(request: NextRequest) {
           await Promise.all(chunk.map(processBacktestImages))
         }
 
-        // Finalize
         await archive.finalize()
       } catch (error) {
-        console.error('Async archive processing error:', error)
+        logger.error('Async archive processing error:', error)
         stream.destroy(error as Error)
       }
     }
@@ -379,7 +387,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Export init error:', error)
+    logger.error('Export init error:', error)
     return NextResponse.json({ error: 'Export failed' }, { status: 500 })
   }
 }

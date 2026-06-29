@@ -12,8 +12,8 @@ interface ConsentSettings {
 export function ConsentBanner() {
   const [isVisible, setIsVisible] = useState(false)
   const [settings] = useState<ConsentSettings>({
-    functionality_storage: true, // Always true - essential for website function
-    security_storage: true, // Always true - essential for security
+    functionality_storage: true,
+    security_storage: true,
   })
 
   useEffect(() => {
@@ -34,7 +34,6 @@ export function ConsentBanner() {
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [])
 
-  // Add/remove data attribute when banner visibility changes
   useEffect(() => {
     if (isVisible) {
       document.body.setAttribute('data-consent-banner', 'visible')
@@ -42,7 +41,6 @@ export function ConsentBanner() {
       document.body.removeAttribute('data-consent-banner')
     }
     
-    // Cleanup on unmount
     return () => {
       document.body.removeAttribute('data-consent-banner')
     }

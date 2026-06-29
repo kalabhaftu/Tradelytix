@@ -3,7 +3,9 @@
  * Implements failure-first priority and proper trailing drawdown logic
  */
 
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq, and } from 'drizzle-orm'
 import { createRiskAlert } from '@/lib/services/notification-service'
 
 export interface DrawdownCalculation {
@@ -73,21 +75,20 @@ export class PhaseEvaluationEngine {
     this.log(`Starting evaluation for masterAccountId: ${masterAccountId}, phaseAccountId: ${phaseAccountId}`)
 
     // Get complete phase data
-    const phaseAccount = await prisma.phaseAccount.findFirst({
-      where: { id: phaseAccountId },
-      include: {
+    const phaseAccount = await db.query.PhaseAccount.findFirst({
+      where: eq(schema.PhaseAccount.id, phaseAccountId),
+      with: {
         MasterAccount: {
-          include: {
+          with: {
             User: true
           }
         },
         Trade: {
-          where: { phaseAccountId },
-          orderBy: { exitTime: 'asc' }
+          orderBy: (trade, { asc }) => [asc(trade.exitTime)]
         },
         DailyAnchor: {
-          orderBy: { date: 'desc' },
-          take: 1
+          orderBy: (anchor, { desc }) => [desc(anchor.date)],
+          limit: 1
         }
       }
     })
@@ -150,17 +151,16 @@ export class PhaseEvaluationEngine {
       // Historical daily drawdown breach detected
       // Create BreachRecord with descriptive notes
       try {
-        await prisma.breachRecord.create({
-          data: {
-            id: crypto.randomUUID(),
-            phaseAccountId,
-            breachType: 'daily_drawdown',
-            breachAmount: historicalBreachCheck.breachAmount || 0,
-            currentEquity: historicalBreachCheck.dayEndBalance,
-            accountSize: masterAccount.accountSize,
-            dailyStartBalance: historicalBreachCheck.dayStartBalance,
-            notes: `Daily drawdown breach on ${historicalBreachCheck.breachDate}. Lost $${historicalBreachCheck.dayLoss.toFixed(2)} on this day, exceeding the $${historicalBreachCheck.dailyLimit.toFixed(2)} daily limit by $${(historicalBreachCheck.breachAmount || 0).toFixed(2)}.`
-          }
+        await db.insert(schema.BreachRecord).values({
+          id: crypto.randomUUID(),
+          phaseAccountId,
+          breachType: 'daily_drawdown',
+          breachAmount: historicalBreachCheck.breachAmount || 0,
+          currentEquity: historicalBreachCheck.dayEndBalance,
+          accountSize: masterAccount.accountSize,
+          dailyStartBalance: historicalBreachCheck.dayStartBalance,
+          notes: `Daily drawdown breach on ${historicalBreachCheck.breachDate}. Lost $${historicalBreachCheck.dayLoss.toFixed(2)} on this day, exceeding the $${historicalBreachCheck.dailyLimit.toFixed(2)} daily limit by $${(historicalBreachCheck.breachAmount || 0).toFixed(2)}.`,
+          updatedAt: new Date()
         })
         this.log(`[EVAL] BreachRecord created for daily drawdown breach`)
       } catch (e) {
@@ -182,8 +182,8 @@ export class PhaseEvaluationEngine {
           maxDrawdownPercent: ((masterAccount.accountSize - currentEquity) / masterAccount.accountSize) * 100,
           isBreached: true,
           breachType: 'daily_drawdown',
-          breachAmount: historicalBreachCheck.breachAmount,
-          breachTime: historicalBreachCheck.breachTime
+          ...(historicalBreachCheck.breachAmount !== undefined && { breachAmount: historicalBreachCheck.breachAmount }),
+          ...(historicalBreachCheck.breachTime !== undefined && { breachTime: historicalBreachCheck.breachTime })
         },
         progress: this.calculateProgress(phaseAccount, currentPnL, trades),
         isFailed: true,
@@ -199,7 +199,7 @@ export class PhaseEvaluationEngine {
       trades,
       masterAccount.accountSize,
       phaseAccount.maxDrawdownPercent,
-      phaseAccount.maxDrawdownType
+      phaseAccount.maxDrawdownType || ''
     )
 
     if (historicalMaxDDCheck.isBreached) {
@@ -212,17 +212,16 @@ export class PhaseEvaluationEngine {
 
       // Create BreachRecord with descriptive notes
       try {
-        await prisma.breachRecord.create({
-          data: {
-            id: crypto.randomUUID(),
-            phaseAccountId,
-            breachType: 'max_drawdown',
-            breachAmount: historicalMaxDDCheck.breachAmount || 0,
-            currentEquity: historicalMaxDDCheck.lowestBalance,
-            accountSize: masterAccount.accountSize,
-            highWaterMark,
-            notes: `Historical max drawdown breach detected. Balance dipped to $${historicalMaxDDCheck.lowestBalance.toFixed(2)}, below the $${historicalMaxDDCheck.minAllowedBalance.toFixed(2)} limit by $${(historicalMaxDDCheck.breachAmount || 0).toFixed(2)}.`
-          }
+        await db.insert(schema.BreachRecord).values({
+          id: crypto.randomUUID(),
+          phaseAccountId,
+          breachType: 'max_drawdown',
+          breachAmount: historicalMaxDDCheck.breachAmount || 0,
+          currentEquity: historicalMaxDDCheck.lowestBalance,
+          accountSize: masterAccount.accountSize,
+          highWaterMark,
+          notes: `Historical max drawdown breach detected. Balance dipped to $${historicalMaxDDCheck.lowestBalance.toFixed(2)}, below the $${historicalMaxDDCheck.minAllowedBalance.toFixed(2)} limit by $${(historicalMaxDDCheck.breachAmount || 0).toFixed(2)}.`,
+          updatedAt: new Date()
         })
         this.log(`[EVAL] BreachRecord created for max drawdown breach`)
       } catch (e) {
@@ -244,8 +243,8 @@ export class PhaseEvaluationEngine {
           maxDrawdownPercent: (historicalMaxDDCheck.maxDrawdownUsed / masterAccount.accountSize) * 100,
           isBreached: true,
           breachType: 'max_drawdown',
-          breachAmount: historicalMaxDDCheck.breachAmount,
-          breachTime: historicalMaxDDCheck.breachTime
+          ...(historicalMaxDDCheck.breachAmount !== undefined && { breachAmount: historicalMaxDDCheck.breachAmount }),
+          ...(historicalMaxDDCheck.breachTime !== undefined && { breachTime: historicalMaxDDCheck.breachTime })
         },
         progress: this.calculateProgress(phaseAccount, currentPnL, trades),
         isFailed: true,
@@ -595,8 +594,8 @@ export class PhaseEvaluationEngine {
         minAllowedBalance,
         maxDrawdownUsed,
         maxDrawdownLimit,
-        breachAmount,
-        breachTime
+        ...(breachAmount !== undefined && { breachAmount }),
+        ...(breachTime !== undefined && { breachTime })
       }
     }
 
@@ -676,9 +675,9 @@ export class PhaseEvaluationEngine {
       maxDrawdownRemaining,
       maxDrawdownPercent,
       isBreached,
-      breachType,
-      breachAmount,
-      breachTime: isBreached ? new Date() : undefined
+      ...(breachType !== undefined && { breachType }),
+      ...(breachAmount !== undefined && { breachAmount }),
+      ...(isBreached && { breachTime: new Date() })
     }
   }
 
@@ -759,7 +758,7 @@ export class PhaseEvaluationEngine {
       minTradingDaysRequired,
       isEligibleForAdvancement,
       canPassPhase,
-      daysRemaining
+      ...(daysRemaining !== undefined && { daysRemaining })
     }
   }
 
@@ -779,11 +778,11 @@ export class PhaseEvaluationEngine {
 
 
     // STEP 1: Look for today's daily anchor
-    const todayAnchor = await prisma.dailyAnchor.findFirst({
-      where: {
-        phaseAccountId,
-        date: todayDate
-      }
+    const todayAnchor = await db.query.DailyAnchor.findFirst({
+      where: and(
+        eq(schema.DailyAnchor.phaseAccountId, phaseAccountId),
+        eq(schema.DailyAnchor.date, todayDate)
+      )
     })
 
     if (todayAnchor) {
@@ -794,13 +793,12 @@ export class PhaseEvaluationEngine {
 
     try {
       // Get phase account with all necessary data
-      const phaseAccount = await prisma.phaseAccount.findFirst({
-        where: { id: phaseAccountId },
-        include: {
+      const phaseAccount = await db.query.PhaseAccount.findFirst({
+        where: eq(schema.PhaseAccount.id, phaseAccountId),
+        with: {
           MasterAccount: true,
           Trade: {
-            where: { phaseAccountId },
-            orderBy: { exitTime: 'asc' }
+            orderBy: (trade, { asc }) => [asc(trade.exitTime)]
           }
         }
       })
@@ -817,17 +815,15 @@ export class PhaseEvaluationEngine {
       const anchorEquity = phaseAccount.MasterAccount.accountSize + tradesPnL
 
       // STEP 4: Try to create the missing anchor (atomic operation)
-      const newAnchor = await prisma.dailyAnchor.create({
-        data: {
-          id: crypto.randomUUID(),
-          phaseAccountId,
-          date: todayDate,
-          anchorEquity
-        }
-      })
+      const [newAnchor] = await db.insert(schema.DailyAnchor).values({
+        id: crypto.randomUUID(),
+        phaseAccountId,
+        date: todayDate,
+        anchorEquity
+      }).returning()
 
 
-      return newAnchor.anchorEquity
+      return newAnchor ? newAnchor.anchorEquity : fallbackBalance
 
     } catch (error) {
       // STEP 5: Ultimate fallback - use provided fallback balance
@@ -851,7 +847,7 @@ export class PhaseEvaluationEngine {
       const parts = new Intl.DateTimeFormat('en-CA', options).format(date)
       return parts // Returns YYYY-MM-DD format
     } catch (error) {
-      return date.toISOString().split('T')[0]
+      return date.toISOString().split('T')[0] as string
     }
   }
 }

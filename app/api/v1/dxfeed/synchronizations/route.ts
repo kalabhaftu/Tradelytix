@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from "next/server";
 import {
   getDxFeedSynchronizations,
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: cleaned });
   } catch (error) {
-    console.error("Error fetching DxFeed synchronizations:", error);
+    logger.error("Error fetching DxFeed synchronizations:", error);
     return NextResponse.json(
       {
         success: false,
@@ -66,7 +67,7 @@ export async function DELETE(request: NextRequest) {
       message: "Synchronization removed successfully",
     });
   } catch (error) {
-    console.error("Error deleting DxFeed synchronization:", error);
+    logger.error("Error deleting DxFeed synchronization:", error);
     return NextResponse.json(
       {
         success: false,

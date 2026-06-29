@@ -23,8 +23,7 @@ import {
   RefreshCcw
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-// PropFirmEngine import removed - no longer used
-// PropFirmAccountFilters import removed - no longer used
+
 
 interface PropFirmAccountStatus {
   id: string
@@ -40,7 +39,7 @@ interface PropFirmAccountStatus {
     profitTarget: number
     daysTraded: number
     minTradingDays: number
-    maxTradingDays?: number
+    maxTradingDays?: number | undefined
   }
   drawdown?: {
     currentEquity: number
@@ -89,7 +88,6 @@ export function RealtimeStatusIndicator({
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  // Fetch account status
   const fetchAccountStatus = useCallback(async (showRefreshing = false) => {
     if (!accountId) return
 
@@ -118,13 +116,13 @@ export function RealtimeStatusIndicator({
           profitTarget: data.currentPhase.profitTarget,
           daysTraded: data.currentPhase.daysTraded,
           minTradingDays: data.currentPhase.minTradingDays,
-          maxTradingDays: data.currentPhase.maxTradingDays,
+          ...(data.currentPhase.maxTradingDays !== undefined && { maxTradingDays: data.currentPhase.maxTradingDays }),
         } : undefined,
         drawdown: data.drawdown,
         progress: data.progress,
         statistics: data.statistics,
         lastUpdate: new Date(),
-      }
+      } as any
 
       setAccountStatus(status)
       setError(null)
@@ -137,7 +135,6 @@ export function RealtimeStatusIndicator({
     }
   }, [accountId])
 
-  // Manual refresh
   const handleRefresh = useCallback(() => {
     fetchAccountStatus(true)
   }, [fetchAccountStatus])
@@ -153,7 +150,6 @@ export function RealtimeStatusIndicator({
 
   }, [accountId, fetchAccountStatus]) // fetchAccountStatus is stable via useCallback
 
-  // Render loading state
   if (isLoading) {
     return (
       <Card className={cn('w-full', className)}>
@@ -167,7 +163,6 @@ export function RealtimeStatusIndicator({
     )
   }
 
-  // Render error state
   if (error || !accountStatus) {
     return (
       <Card className={cn('w-full border-destructive', className)}>
@@ -189,7 +184,6 @@ export function RealtimeStatusIndicator({
     )
   }
 
-  // Helper functions
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-foreground'
@@ -218,7 +212,6 @@ export function RealtimeStatusIndicator({
     return `${value.toFixed(decimals)}%`
   }
 
-  // Calculate key metrics
   const currentProfit = accountStatus.currentPhase ?
     accountStatus.currentPhase.currentEquity - accountStatus.currentPhase.startingBalance : 0
 
@@ -234,7 +227,6 @@ export function RealtimeStatusIndicator({
   const maxDrawdownPercent = accountStatus.drawdown && accountStatus.drawdown.maxDrawdownLimit > 0 ?
     (accountStatus.drawdown.maxDrawdownUsed / accountStatus.drawdown.maxDrawdownLimit) * 100 : 0
 
-  // Compact view
   if (compact) {
     return (
       <Card className={cn('w-full', className)}>
@@ -271,7 +263,6 @@ export function RealtimeStatusIndicator({
     )
   }
 
-  // Full detailed view
   return (
     <Card className={cn('w-full', className)}>
       <CardHeader className="pb-3">
@@ -305,7 +296,6 @@ export function RealtimeStatusIndicator({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Equity and Profit */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <div className="flex items-center space-x-1 mb-1">
@@ -330,7 +320,6 @@ export function RealtimeStatusIndicator({
           </div>
         </div>
 
-        {/* Profit Target Progress */}
         {accountStatus.currentPhase && accountStatus.currentPhase.phaseNumber < 3 && (
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -349,10 +338,8 @@ export function RealtimeStatusIndicator({
           </div>
         )}
 
-        {/* Drawdown Status */}
         {accountStatus.drawdown && (
           <div className="space-y-2">
-            {/* Daily Drawdown */}
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-muted-foreground">Daily Drawdown</span>
@@ -372,7 +359,6 @@ export function RealtimeStatusIndicator({
               />
             </div>
 
-            {/* Max Drawdown */}
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-muted-foreground">Max Drawdown</span>
@@ -392,7 +378,6 @@ export function RealtimeStatusIndicator({
               />
             </div>
 
-            {/* Breach Warning */}
             {accountStatus.drawdown.isBreached && (
               <div className="flex items-center space-x-2 p-2 bg-destructive/10 border border-destructive/20 rounded-md">
                 <AlertCircle className="h-4 w-4 text-destructive" />
@@ -404,7 +389,6 @@ export function RealtimeStatusIndicator({
           </div>
         )}
 
-        {/* Trading Progress */}
         {accountStatus.currentPhase && (
           <div className="grid grid-cols-2 gap-4 text-xs">
             <div>
@@ -423,7 +407,6 @@ export function RealtimeStatusIndicator({
           </div>
         )}
 
-        {/* Ready to Advance */}
         {accountStatus.progress?.readyToAdvance && (
           <div className="flex items-center space-x-2 p-2 bg-long/10 border border-long/20 rounded-md">
             <CheckCircle2 className="h-4 w-4 text-long" />
@@ -433,7 +416,6 @@ export function RealtimeStatusIndicator({
           </div>
         )}
 
-        {/* Last Update */}
         <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-2">
           <span>Last updated: {formatTimeInZone(lastRefresh, 'HH:mm')} NY</span>
           <div className="flex items-center space-x-1">

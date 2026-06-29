@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
+import { eq, and } from 'drizzle-orm'
 
 // PUT - Update a tag
 export async function PUT(
@@ -24,26 +26,17 @@ export async function PUT(
     const { name, color } = body
 
     // Verify tag ownership
-    const existingTag = await prisma.tradeTag.findFirst({
-      where: {
-        id,
-        userId
-      }
+    const existingTag = await db.query.TradeTag.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, id), eq(table.userId, userId))
     })
 
     if (!existingTag) {
       return NextResponse.json({ error: 'Tag not found' }, { status: 404 })
     }
 
-    // Check if new name conflicts with another tag
     if (name && name !== existingTag.name) {
-      const nameConflict = await prisma.tradeTag.findUnique({
-        where: {
-          name_userId: {
-            name,
-            userId
-          }
-        }
+      const nameConflict = await db.query.TradeTag.findFirst({
+        where: (table, { eq, and }) => and(eq(table.name, name), eq(table.userId, userId))
       })
 
       if (nameConflict) {
@@ -54,13 +47,10 @@ export async function PUT(
       }
     }
 
-    const updatedTag = await prisma.tradeTag.update({
-      where: { id },
-      data: {
-        ...(name && { name }),
-        ...(color && { color })
-      }
-    })
+    const updatedTag = (await db.update(schema.TradeTag).set({
+      ...(name && { name }),
+      ...(color && { color })
+    }).where(eq(schema.TradeTag.id, id)).returning())[0]
 
     return NextResponse.json({ tag: updatedTag })
   } catch (error) {
@@ -89,11 +79,8 @@ export async function DELETE(
     const { id } = params
 
     // Verify tag ownership
-    const existingTag = await prisma.tradeTag.findFirst({
-      where: {
-        id,
-        userId
-      }
+    const existingTag = await db.query.TradeTag.findFirst({
+      where: (table, { eq, and }) => and(eq(table.id, id), eq(table.userId, userId))
     })
 
     if (!existingTag) {
@@ -101,27 +88,17 @@ export async function DELETE(
     }
 
     // Remove tag from all trades that have this tag
-    const trades = await prisma.trade.findMany({
-      where: {
-        userId,
-        tags: {
-          has: id
-        }
-      }
+    const trades = await db.query.Trade.findMany({
+      where: (table, { eq }) => eq(table.userId, userId)
     })
 
     for (const trade of trades) {
       const updatedTags = (trade.tags || []).filter((tagId: string) => tagId !== id)
-      await prisma.trade.update({
-        where: { id: trade.id },
-        data: { tags: updatedTags }
-      })
+      await db.update(schema.Trade).set({ tags: updatedTags }).where(eq(schema.Trade.id, trade.id)).returning()
     }
 
     // Delete the tag
-    await prisma.tradeTag.delete({
-      where: { id }
-    })
+    await db.delete(schema.TradeTag).where(eq(schema.TradeTag.id, id)).returning()
 
     return NextResponse.json({ success: true })
   } catch (error) {

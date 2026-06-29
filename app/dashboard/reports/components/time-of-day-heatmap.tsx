@@ -35,6 +35,7 @@ export function TimeOfDayHeatmap({ trades }: TimeOfDayHeatmapProps) {
       if (dayIdx == null || dayIdx < 1 || dayIdx > 5) return // Skip weekends
 
       const dayName = DAYS[dayIdx - 1]
+      if (!dayName) return
       const hour = getNewYorkHour(rawDate)
       if (hour == null) return
       const pnl = getTradeNetPnl(trade)
@@ -61,8 +62,9 @@ export function TimeOfDayHeatmap({ trades }: TimeOfDayHeatmapProps) {
   const filteredHours = useMemo(() => {
     if (activeHours.size === 0) return []
     const sorted = Array.from(activeHours).sort((a, b) => a - b)
-    const min = Math.max(0, sorted[0] - 1)
-    const max = Math.min(23, sorted[sorted.length - 1] + 1)
+    if (sorted.length === 0) return []
+    const min = Math.max(0, (sorted[0] ?? 0) - 1)
+    const max = Math.min(23, (sorted[sorted.length - 1] ?? 23) + 1)
     return HOURS.filter(h => h >= min && h <= max)
   }, [activeHours])
 

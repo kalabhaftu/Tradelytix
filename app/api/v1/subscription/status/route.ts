@@ -1,12 +1,7 @@
-/**
- * GET /api/v1/subscription/status
- * Returns the current subscription status for the authenticated user.
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { getUserAccessStatus } from '@/lib/services/subscription-service'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
 import { logger } from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
@@ -16,9 +11,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: identity.internalUserId },
-      select: { role: true },
+    const user = await db.query.User.findFirst({
+      where: (table, { eq }) => eq(table.id, identity.internalUserId),
     })
 
     const access = await getUserAccessStatus(identity.internalUserId, user?.role)

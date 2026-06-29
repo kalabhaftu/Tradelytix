@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { z } from 'zod'
 import { randomUUID } from 'crypto'
 import { calculateWinRate, classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { getRuntimeBreakEvenThreshold } from '@/server/user-settings'
+import { and, eq, gte, lte, or } from 'drizzle-orm'
 
 const ruleCategorySchema = z.enum(['entry', 'target', 'confirmation', 'confluence', 'exit', 'risk', 'general'])
 
@@ -35,23 +37,31 @@ function buildTradeFilterWhere(params: URLSearchParams) {
   const accounts = boundedList(params.get('accounts'))
   const dateFrom = params.get('dateFrom')
   const dateTo = params.get('dateTo')
-  const where: Record<string, unknown> = {}
+  const conditions: any[] = []
 
   if (accounts.length > 0) {
-    where.OR = [
-      { accountNumber: { in: accounts } },
-      { phaseAccountId: { in: accounts } },
-    ]
+    conditions.push(
+      or(
+        eq(schema.Trade.accountNumber, accounts[0]),
+        eq(schema.Trade.phaseAccountId, accounts[0])
+      )
+    )
   }
 
   if (dateFrom || dateTo) {
-    where.entryDate = {
-      ...(dateFrom ? { gte: dateFrom.includes('T') ? dateFrom : `${dateFrom}T00:00:00.000Z` } : {}),
-      ...(dateTo ? { lte: dateTo.includes('T') ? dateTo : `${dateTo}T23:59:59.999Z` } : {}),
+    const dateConds = []
+    if (dateFrom) {
+      const fromVal = dateFrom.includes('T') ? dateFrom : `${dateFrom}T00:00:00.000Z`
+      dateConds.push(gte(schema.Trade.entryDate, fromVal))
     }
+    if (dateTo) {
+      const toVal = dateTo.includes('T') ? dateTo : `${dateTo}T23:59:59.999Z`
+      dateConds.push(lte(schema.Trade.entryDate, toVal))
+    }
+    if (dateConds.length > 0) conditions.push(and(...dateConds))
   }
 
-  return where
+  return conditions.length > 0 ? and(...conditions) : undefined
 }
 
 // GET - List all trading models for user
@@ -67,13 +77,13 @@ export async function GET(request: NextRequest) {
     const userId = identity.internalUserId
 
     const [models, breakEvenThreshold] = await Promise.all([
-      prisma.tradingModel.findMany({
-        where: { userId },
-        orderBy: { createdAt: 'desc' },
-        include: {
+      db.query.TradingModel.findMany({
+        where: (table, { eq }) => eq(table.userId, userId),
+        orderBy: (table, { desc }) => [desc(table.createdAt)],
+        with: {
           Trade: {
             where: buildTradeFilterWhere(request.nextUrl.searchParams),
-            select: {
+            columns: {
               pnl: true,
               selectedRules: true
             }
@@ -186,14 +196,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = tradingModelSchema.parse(body)
 
-    // Check if model with same name already exists
-    const existing = await prisma.tradingModel.findUnique({
-      where: {
-        userId_name: {
-          userId,
-          name: validated.name,
-        },
-      },
+    const existing = await db.query.TradingModel.findFirst({
+      where: (table, { and, eq }) => and(
+        eq(table.userId, userId),
+        eq(table.name, validated.name)
+      ),
     })
 
     if (existing) {
@@ -203,16 +210,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const model = await prisma.tradingModel.create({
-      data: {
-        id: randomUUID(),
-        userId,
-        name: validated.name,
-        rules: validated.rules,
-        setups: validated.setups,
-        notes: validated.notes,
-      },
-    })
+    const model = (await db.insert(schema.TradingModel).values({
+      id: randomUUID(),
+      userId,
+      name: validated.name,
+      rules: validated.rules,
+      setups: validated.setups,
+      notes: validated.notes,
+    }).returning())[0]
 
     return NextResponse.json({ success: true, model }, { status: 201 })
   } catch (error) {

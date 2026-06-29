@@ -121,7 +121,6 @@ export function MobileNavPadding({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
-      {/* Padding for mobile bottom nav */}
       <div className="h-20 lg:hidden" />
     </>
   )

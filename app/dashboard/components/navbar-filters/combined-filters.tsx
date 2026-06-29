@@ -258,7 +258,6 @@ export function CombinedFilters({
   const totalInstruments = availableInstruments.length
   const displayedCount = selectedInstruments.length === 0 ? totalInstruments : selectedInstruments.length
 
-  // Render menu view
   const renderMenuView = () => (
     <div className="w-full min-w-72 sm:min-w-96 max-w-sm sm:max-w-md p-3 sm:p-4 space-y-2">
       <div className="space-y-1 sm:space-y-2">
@@ -312,7 +311,6 @@ export function CombinedFilters({
     </div>
   )
 
-  // Render instrument filter view
   const renderInstrumentView = () => (
     <div className="w-full min-w-72 sm:min-w-96 max-w-sm sm:max-w-md p-3 sm:p-4 space-y-2 sm:space-y-3">
       <div className="flex items-center gap-2 mb-2">
@@ -450,7 +448,6 @@ export function CombinedFilters({
     </div>
   )
 
-  // Render date filter view
   const renderDateView = () => (
     <div className="w-full min-w-72 sm:min-w-80 max-w-sm sm:max-w-md p-3 sm:p-4 space-y-3 sm:space-y-4">
       <div className="flex items-center gap-2 mb-2">

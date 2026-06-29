@@ -21,7 +21,6 @@ const DayWinRate = React.memo(function DayWinRate({ size }: DayWinRateProps) {
   const { calendarData, statistics } = useData()
   const breakEvenThreshold = getBreakEvenThreshold(statistics?.breakEvenThreshold)
 
-  // Memoize expensive calculation
   const { dayWinRate, winningDays, losingDays, breakEvenDays } = React.useMemo(() => {
     const dayEntries = Object.entries(calendarData)
     const total = dayEntries.length

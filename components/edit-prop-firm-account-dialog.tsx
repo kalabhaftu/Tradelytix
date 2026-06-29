@@ -77,10 +77,8 @@ export function EditPropFirmAccountDialog({
 
   const formValues = watch()
 
-  // Local storage key for draft
   const draftKey = account?.id ? `draft-prop-firm-account-edit-${account.id}` : null
 
-  // Load draft from localStorage when account changes
   useEffect(() => {
     if (account && open && draftKey) {
       try {
@@ -90,7 +88,6 @@ export function EditPropFirmAccountDialog({
           setValue('accountName', draft.accountName)
           setHasUnsavedChanges(true)
         } else {
-          // No draft, use current account values
           setValue('accountName', account.accountName || account.name || account.displayName || '')
         }
       } catch (error) {
@@ -100,7 +97,6 @@ export function EditPropFirmAccountDialog({
     }
   }, [account, open, setValue, draftKey])
 
-  // Save draft to localStorage when form values change
   useEffect(() => {
     if (draftKey && isDirty && open) {
       try {
@@ -118,7 +114,6 @@ export function EditPropFirmAccountDialog({
       setShowUnsavedWarning(true)
       setPendingClose(true)
     } else {
-      // Clear draft when closing without saving
       if (draftKey && !forceClose) {
         try {
           localStorage.removeItem(draftKey)
@@ -182,7 +177,6 @@ export function EditPropFirmAccountDialog({
         description: 'Your prop firm account has been successfully updated.',
       })
 
-      // Clear draft after successful save
       if (draftKey) {
         try {
           localStorage.removeItem(draftKey)
@@ -191,7 +185,6 @@ export function EditPropFirmAccountDialog({
         }
       }
 
-      // Close dialog and trigger success callback
       reset()
       setHasUnsavedChanges(false)
       onOpenChange(false)
@@ -277,7 +270,6 @@ export function EditPropFirmAccountDialog({
         </DialogContent>
       </Dialog>
 
-      {/* Unsaved Changes Warning Dialog */}
       <AlertDialog open={showUnsavedWarning} onOpenChange={setShowUnsavedWarning}>
         <AlertDialogContent>
           <AlertDialogHeader>

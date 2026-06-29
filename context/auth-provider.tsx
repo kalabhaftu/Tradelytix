@@ -41,17 +41,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const syncInFlightRef = useRef<Map<string, Promise<boolean>>>(new Map())
   const lastRefreshKeyRef = useRef<string | null>(null)
 
-  // Get user store setters
   const setUser = useUserStore(state => state.setUser)
   const setSupabaseUser = useUserStore(state => state.setSupabaseUser)
   const resetUser = useUserStore(state => state.resetUser)
-  
-  // Get user from store for cache cleanup
   const user = useUserStore(state => state.user)
   
   // Auto-cleanup stale caches when app loads or user changes
   useAutoCacheCleanup({
-    userId: user?.id,
+    ...(user?.id && { userId: user.id }),
     enabled: true
   })
 
@@ -143,13 +140,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return syncPromise
   }, [])
 
-  // Check if auth status is still valid (cache for 30 seconds)
   const isAuthCheckValid = () => {
     if (!authCheckCache) return false
     return Date.now() - authCheckCache.timestamp < 30000 // 30 seconds
   }
 
-  // Perform auth check with caching
   const performAuthCheck = async (): Promise<boolean> => {
     if (isAuthCheckValid()) {
       return authCheckCache!.isAuthenticated
@@ -169,7 +164,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
         return true
       } else {
-        // Clear user state when not authenticated
         resetUser()
         setSession(null)
         setAuthCheckCache({
@@ -179,7 +173,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false
       }
     } catch (error) {
-      // Clear user state on error
       resetUser()
       setSession(null)
       setAuthCheckCache({
@@ -190,7 +183,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Force clear all auth state and cache
   const forceClearAuth = useCallback(() => {
     resetUser()
     setSession(null)
@@ -199,22 +191,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false)
     lastSyncedSessionRef.current = null
     
-    // Clear Zustand stores
     try {
       useTradesStore.getState().setTrades([])
     } catch (e) {}
 
-    // Clear React Query cache
     try {
       queryClient.clear()
     } catch (e) {}
 
-    // Clear SWR cache completely
     try {
       mutate(() => true, undefined, { revalidate: false })
     } catch (e) {}
 
-    // Clear any cached auth data
     localStorage.removeItem('tradelytix_user_data')
     // Clear Supabase auth tokens (they start with 'sb-')
     clearBrowserAuthStorage()
@@ -252,13 +240,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (shouldForceClear) {
       const reason = urlParams.get('deleted') === 'true' ? 'account deletion' : 'logout'
       forceClearAuth()
-      // Remove the parameter from URL
       const newUrl = window.location.pathname
       window.history.replaceState({}, '', newUrl)
       return
     }
 
-    // Initial session check
     const checkSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
@@ -300,10 +286,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Call initial session check
     checkSession()
 
-    // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: any, session: any) => {
         setSession(session)

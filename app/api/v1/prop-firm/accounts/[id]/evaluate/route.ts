@@ -1,15 +1,12 @@
-/**
- * Phase Evaluation API
- * POST /api/prop-firm/accounts/[id]/evaluate - Evaluate current phase status
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { PhaseEvaluationEngine } from '@/lib/prop-firm/phase-evaluation-engine'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { revalidateTag } from 'next/cache'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq, and, ne, asc } from 'drizzle-orm'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -33,17 +30,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // ID is pure masterAccountId (UUID), not composite
 
     // Verify the master account belongs to the user
-    const masterAccount = await prisma.masterAccount.findFirst({
-      where: {
-        id: masterAccountId,
-        userId: internalUserId,
-        status: { not: 'failed' }
-      },
-      include: {
+    const masterAccount = await db.query.MasterAccount.findFirst({
+      where: (table, { eq, ne }) => and(
+        eq(table.id, masterAccountId),
+        eq(table.userId, internalUserId),
+        ne(table.status, 'failed')
+      ),
+      with: {
         PhaseAccount: {
-          where: { status: 'active' },
-          orderBy: { phaseNumber: 'asc' },
-          take: 1
+          where: (table, { eq }) => eq(table.status, 'active'),
+          orderBy: (table, { asc }) => [asc(table.phaseNumber)],
+          limit: 1
         }
       }
     })
@@ -71,23 +68,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // If the phase failed, update the account status
     if (evaluation.isFailed) {
-      await prisma.$transaction(async (tx) => {
+      await db.transaction(async (tx) => {
         // Mark phase as failed
-        await tx.phaseAccount.update({
-          where: { id: activePhase.id },
-          data: {
-            status: 'failed',
-            endDate: new Date()
-          }
-        })
+        await tx.update(schema.PhaseAccount)
+          .set({ status: 'failed', endDate: new Date() })
+          .where(eq(schema.PhaseAccount.id, activePhase.id))
 
         // Mark master account as failed
-        await tx.masterAccount.update({
-          where: { id: masterAccountId },
-          data: {
-            status: 'failed'
-          }
-        })
+        await tx.update(schema.MasterAccount)
+          .set({ status: 'failed' })
+          .where(eq(schema.MasterAccount.id, masterAccountId))
       })
       
       // Invalidate cache when account status changes
@@ -134,16 +124,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // ID is pure masterAccountId (UUID), not composite
 
     // Get the current evaluation status without triggering updates
-    const masterAccount = await prisma.masterAccount.findFirst({
-      where: {
-        id: masterAccountId,
-        userId: internalUserId
-      },
-      include: {
+    const masterAccount = await db.query.MasterAccount.findFirst({
+      where: (table, { eq }) => and(
+        eq(table.id, masterAccountId),
+        eq(table.userId, internalUserId)
+      ),
+      with: {
         PhaseAccount: {
-          where: { status: 'active' },
-          orderBy: { phaseNumber: 'asc' },
-          take: 1
+          where: (table, { eq }) => eq(table.status, 'active'),
+          orderBy: (table, { asc }) => [asc(table.phaseNumber)],
+          limit: 1
         }
       }
     })

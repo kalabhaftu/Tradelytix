@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
@@ -17,9 +18,9 @@ export async function GET(request: NextRequest) {
     }
     const userId = identity.internalUserId
 
-    const tags = await prisma.tradeTag.findMany({
-      where: { userId },
-      orderBy: { name: 'asc' }
+    const tags = await db.query.TradeTag.findMany({
+      where: (table, { eq }) => eq(table.userId, userId),
+      orderBy: (table, { asc }) => [asc(table.name)]
     })
 
     return NextResponse.json({ tags }, {
@@ -55,14 +56,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if tag already exists
-    const existingTag = await prisma.tradeTag.findUnique({
-      where: {
-        name_userId: {
-          name,
-          userId
-        }
-      }
+    const existingTag = await db.query.TradeTag.findFirst({
+      where: (table, { and, eq }) => and(
+        eq(table.name, name),
+        eq(table.userId, userId)
+      )
     })
 
     if (existingTag) {
@@ -72,15 +70,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const tag = await prisma.tradeTag.create({
-      data: {
-        id: crypto.randomUUID(),
-        updatedAt: new Date(),
-        name,
-        color: color || '#3b82f6',
-        userId
-      }
-    })
+    const tag = (await db.insert(schema.TradeTag).values({
+      id: crypto.randomUUID(),
+      updatedAt: new Date(),
+      name,
+      color: color || '#3b82f6',
+      userId
+    }).returning())[0]
 
     return NextResponse.json({ tag })
   } catch (error) {
@@ -90,4 +86,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

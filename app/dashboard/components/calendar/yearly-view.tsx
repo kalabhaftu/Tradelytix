@@ -29,9 +29,6 @@ import {
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 
-// ============================================================================
-// Mini Month — compact heatmap with visible day numbers
-// ============================================================================
 function MiniMonth({
   monthDate,
   calendarData,
@@ -134,12 +131,10 @@ function MiniMonth({
                         classifyOutcome(data.pnl, breakEvenThreshold) === 'loss' &&
                         "bg-short/10 border-short/20 dark:bg-short/20 dark:border-short/35 text-short dark:text-slate-200",
 
-                      // Breakeven
                       hasTrades &&
                         classifyOutcome(data.pnl, breakEvenThreshold) === 'breakeven' &&
                         "bg-muted/40 border border-muted/50 text-foreground",
 
-                      // Today
                       isTodayDate &&
                         isCurrentMonth &&
                         "ring-1 ring-primary/60 ring-offset-1 ring-offset-background text-primary",
@@ -190,9 +185,6 @@ function MiniMonth({
   )
 }
 
-// ============================================================================
-// Yearly View — 12 mini months in responsive grid
-// ============================================================================
 export default function YearlyView({
   year,
   calendarData,

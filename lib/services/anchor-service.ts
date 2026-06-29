@@ -1,5 +1,6 @@
-import { prisma } from '@/lib/prisma'
-
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
+import { eq, and } from 'drizzle-orm'
 /**
  * Anchor Service
  * Handles creation of daily equity snapshots (anchors) for drawdown tracking.
@@ -16,13 +17,11 @@ export async function createDailyAnchor(phaseAccountId: string, timezone: string
   const anchorDate = new Date(dateString + 'T00:00:00.000Z')
 
   // Check if anchor already exists for today
-  const existingAnchor = await prisma.dailyAnchor.findUnique({
-    where: {
-      phaseAccountId_date: {
-        phaseAccountId,
-        date: anchorDate
-      }
-    }
+  const existingAnchor = await db.query.DailyAnchor.findFirst({
+    where: and(
+      eq(schema.DailyAnchor.phaseAccountId, phaseAccountId),
+      eq(schema.DailyAnchor.date, anchorDate)
+    )
   })
 
   if (existingAnchor) {
@@ -30,13 +29,12 @@ export async function createDailyAnchor(phaseAccountId: string, timezone: string
   }
 
   // Get phase account with trades
-  const phaseAccount = await prisma.phaseAccount.findFirst({
-    where: { id: phaseAccountId },
-    include: {
+  const phaseAccount = await db.query.PhaseAccount.findFirst({
+    where: eq(schema.PhaseAccount.id, phaseAccountId),
+    with: {
       MasterAccount: true,
       Trade: {
-        where: { phaseAccountId },
-        select: { pnl: true, commission: true }
+        columns: { pnl: true, commission: true }
       }
     }
   })
@@ -54,14 +52,12 @@ export async function createDailyAnchor(phaseAccountId: string, timezone: string
   const anchorEquity = (phaseAccount.accountSize || phaseAccount.MasterAccount.accountSize) + totalPnL
 
   // Create the anchor
-  const anchor = await prisma.dailyAnchor.create({
-    data: {
-      id: crypto.randomUUID(),
-      phaseAccountId,
-      date: anchorDate,
-      anchorEquity
-    }
-  })
+  const [anchor] = await db.insert(schema.DailyAnchor).values({
+    id: crypto.randomUUID(),
+    phaseAccountId,
+    date: anchorDate,
+    anchorEquity
+  }).returning()
 
   return { created: true, anchor }
 }
@@ -79,20 +75,16 @@ export async function createAllDailyAnchors() {
 
   try {
     // Get all active phase accounts
-    const activePhases = await prisma.phaseAccount.findMany({
-      where: {
-        status: 'active'
-      },
-      include: {
+    const activePhases = await db.query.PhaseAccount.findMany({
+      where: eq(schema.PhaseAccount.status, 'active'),
+      with: {
         MasterAccount: {
-          include: {
+          with: {
             User: {
-              select: {
-                id: true,
+              columns: { id: true },
+              with: {
                 settings: {
-                  select: {
-                    timezone: true
-                  }
+                  columns: { timezone: true }
                 }
               }
             }

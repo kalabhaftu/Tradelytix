@@ -1,3 +1,4 @@
+import logger from '@/lib/logger';
 import { z } from 'zod'
 import { assertProductionUrl, getAllowedOrigins } from '@/lib/security/origins'
 
@@ -160,7 +161,7 @@ function validateEnv() {
 
   if (nonCriticalErrors.length > 0) {
     const warningMsgs = nonCriticalErrors.map(err => `${err.path.join('.')}: ${err.message}`)
-    console.error(
+    logger.error(
       `\x1b[33m[Warning] Non-critical environment variables failed validation. The app will boot, but some features may be disabled:\n${warningMsgs.join('\n')}\x1b[0m`
     )
   }

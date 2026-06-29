@@ -3,7 +3,8 @@
 import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
-import { Trade } from '@prisma/client'
+import type { TradeType } from '@/lib/db/schema/trades';
+
 import { linkTradesToCurrentPhase, checkPhaseProgression, checkAccountBreaches } from '@/server/accounts'
 import ImportTypeSelection, { ImportType } from './import-type-selection'
 import FileUpload from './file-upload'
@@ -114,7 +115,6 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
      
           // Filter out empty trades
           newTrades = newTrades.filter(trade => {
-            // Check if all required fields are present and not empty
             return trade.accountNumber &&
               trade.instrument &&
               trade.quantity !== null && trade.quantity !== undefined &&
@@ -181,7 +181,6 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
             linkedCount: syncResult?.linkedCount || 0,
           }
         } catch (linkError: any) {
-          // Handle specific error cases with user-friendly messages
           const errorMessage = linkError?.message || String(linkError)
 
           if (errorMessage.includes('No active phase')) {
@@ -318,7 +317,6 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
     const currentStepIndex = platform.steps.findIndex(s => s.id === step)
     if (currentStepIndex === -1) return
 
-    // Handle PDF upload step
     if (step === 'upload-file' && importType === 'pdf') {
       if (files.length === 0) {
         setError("Please select a PDF file to continue")
@@ -328,7 +326,6 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
       return
     }
 
-    // Handle standard flow
     const nextStep = platform.steps[currentStepIndex + 1]
     if (!nextStep) {
       handleSave()
@@ -365,7 +362,6 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
 
     const Component = currentStep.component
 
-    // Handle special cases for components that need specific props
     if (Component === ImportTypeSelection) {
       return (
         <div className="flex flex-col gap-4 h-full">
@@ -390,8 +386,6 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
         />
       )
     }
-
-
 
     if (Component === HeaderSelection) {
       return (
@@ -452,7 +446,6 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
       )
     }
 
-    // Handle custom components
     if (platform.customComponent) {
       const CustomComponent = platform.customComponent
       return (
@@ -463,7 +456,6 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
       )
     }
     
-    // Handle custom card components
     if (platform.customCardComponent && Component === platform.customCardComponent) {
       return <platform.customCardComponent accountId={accountId} />
     }

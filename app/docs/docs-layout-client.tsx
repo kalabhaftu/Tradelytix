@@ -185,7 +185,7 @@ function DocsNav({
                 <div key={item.href} className="space-y-1">
                   <Link
                     href={item.href}
-                    onClick={onNavigate}
+                    {...(onNavigate !== undefined && { onClick: onNavigate as any })}
                     className={cn(
                       'group flex items-center gap-2 rounded-2xl px-3 py-2.5 text-sm transition-colors',
                       itemActive
@@ -208,7 +208,7 @@ function DocsNav({
                         <Link
                           key={subsection.href}
                           href={subsection.href}
-                          onClick={onNavigate}
+                          {...(onNavigate !== undefined && { onClick: onNavigate as any })}
                           className="block rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
                         >
                           {subsection.title}

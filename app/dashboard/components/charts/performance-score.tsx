@@ -24,10 +24,6 @@ import {
   TooltipTrigger as UiTooltipTrigger,
 } from "@/components/ui/tooltip"
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
 interface PerformanceScoreProps {
   size?: WidgetSize
 }
@@ -42,22 +38,12 @@ interface MetricData {
   target?: string
 }
 
-// ============================================================================
-// CONSTANTS - Tradezella Premium Styling
-// ============================================================================
-
 const COLORS = {
   profit: 'hsl(var(--chart-profit))',
   grid: 'hsl(var(--border))',
   amber: 'hsl(var(--chart-4))',
   red: 'hsl(var(--chart-loss))'
 } as const
-
-
-
-// ============================================================================
-// SCORE BADGE COMPONENT
-// ============================================================================
 
 function ScoreBadge({ score, hasData }: { score: number; hasData: boolean }) {
   const getScoreColor = (s: number) => {
@@ -89,14 +75,8 @@ function ScoreBadge({ score, hasData }: { score: number; hasData: boolean }) {
   )
 }
 
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
 export default function PerformanceScore({ size = 'small-long' }: PerformanceScoreProps) {
-  // ---------------------------------------------------------------------------
   // DATA HOOKS (PRESERVED - DO NOT MODIFY)
-  // ---------------------------------------------------------------------------
   const { data: scoreData, isLoading } = useWidgetData('performanceScore')
 
   if (isLoading) {
@@ -111,9 +91,6 @@ export default function PerformanceScore({ size = 'small-long' }: PerformanceSco
 
   const { chartData = [], overallScore = 0, hasData = false } = scoreData || {}
 
-  // ---------------------------------------------------------------------------
-  // SCORE COLOR UTILITIES
-  // ---------------------------------------------------------------------------
   const getScoreColor = (score: number) => {
     if (score >= 70) return 'text-long'
     if (score >= 40) return 'text-amber-500'
@@ -126,14 +103,8 @@ export default function PerformanceScore({ size = 'small-long' }: PerformanceSco
     return 'bg-short'
   }
 
-  // ---------------------------------------------------------------------------
-  // SIZE-RESPONSIVE VALUES
-  // ---------------------------------------------------------------------------
   const isCompact = size === 'small' || size === 'small-long'
 
-  // ---------------------------------------------------------------------------
-  // RENDER
-  // ---------------------------------------------------------------------------
   return (
     <WidgetCard title="Performance Score">
         {hasData ? (

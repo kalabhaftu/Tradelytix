@@ -1,13 +1,13 @@
+import logger from '@/lib/logger';
 /**
  * Console filter for development environment
  * Suppresses excessive warnings and noise while preserving important messages
  */
 
-// Store original console methods
 const originalConsole = {
-  log: console.log,
-  warn: console.warn,
-  error: console.error,
+  log: logger.info,
+  warn: logger.warn,
+  error: logger.error,
   info: console.info,
   debug: console.debug
 }
@@ -107,12 +107,10 @@ const IMPORTANT_PATTERNS = [
 ]
 
 function shouldSuppressMessage(message: string): boolean {
-  // Never suppress important messages
   if (IMPORTANT_PATTERNS.some(pattern => pattern.test(message))) {
     return false
   }
   
-  // Check if message matches any suppress pattern
   return SUPPRESS_PATTERNS.some(pattern => pattern.test(message))
 }
 
@@ -128,12 +126,10 @@ function createFilteredConsoleMethod(
       return originalMethod.apply(console, args)
     }
     
-    // In development, filter based on patterns
     if (!shouldSuppressMessage(message)) {
       return originalMethod.apply(console, args)
     }
     
-    // Optionally log suppressed messages to a different place for debugging
     if (process.env.VERBOSE_CONSOLE === 'true') {
       originalMethod.apply(console, [`[FILTERED ${level.toUpperCase()}]`, ...args])
     }
@@ -149,13 +145,12 @@ export function applyConsoleFilter() {
   // Only apply filtering in development
   if (process.env.NODE_ENV !== 'development') return
   
-  console.log = createFilteredConsoleMethod(originalConsole.log, 'log')
-  console.warn = createFilteredConsoleMethod(originalConsole.warn, 'warn')
+  logger.info = createFilteredConsoleMethod(originalConsole.log, 'log')
+  logger.warn = createFilteredConsoleMethod(originalConsole.warn, 'warn')
   console.info = createFilteredConsoleMethod(originalConsole.info, 'info')
   console.debug = createFilteredConsoleMethod(originalConsole.debug, 'debug')
   
-  // Don't filter errors as they're critical
-  // console.error remains unchanged
+  // logger.error remains unchanged
 }
 
 /**
@@ -164,9 +159,9 @@ export function applyConsoleFilter() {
 export function restoreConsole() {
   if (typeof window === 'undefined') return
   
-  console.log = originalConsole.log
-  console.warn = originalConsole.warn
-  console.error = originalConsole.error
+  logger.info = originalConsole.log
+  logger.warn = originalConsole.warn
+  logger.error = originalConsole.error
   console.info = originalConsole.info
   console.debug = originalConsole.debug
 }
@@ -175,7 +170,7 @@ export function restoreConsole() {
  * Temporarily disable console filtering
  */
 export function withOriginalConsole<T>(fn: () => T): T {
-  const wasFiltered = console.log !== originalConsole.log
+  const wasFiltered = logger.info !== originalConsole.log
   
   if (wasFiltered) {
     restoreConsole()

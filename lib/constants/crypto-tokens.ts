@@ -76,7 +76,8 @@ export function getTokenMeta(input: string): TokenMeta {
   const resolvedSymbol = resolveKnownTokenSymbol(input)
 
   if (resolvedSymbol) {
-    return TOKEN_META[resolvedSymbol]
+    const meta = TOKEN_META[resolvedSymbol]
+    if (meta) return meta
   }
 
   return {

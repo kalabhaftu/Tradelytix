@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { prisma } from '@/lib/prisma'
+import { db } from '@/lib/db/client'
+import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
+import { eq, and, asc } from 'drizzle-orm'
 
 const createTemplateSchema = z.object({
   name: z.string().trim().min(1).max(60),
@@ -45,10 +47,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const templates = await prisma.journalTemplate.findMany({
-      where: { userId: identity.internalUserId },
-      orderBy: [{ createdAt: 'asc' }],
-      select: {
+    const templates = await db.query.JournalTemplate.findMany({
+      where: (table, { eq }) => eq(table.userId, identity.internalUserId),
+      orderBy: (table, { asc }) => [asc(table.createdAt)],
+      columns: {
         id: true,
         name: true,
         content: true,
@@ -88,29 +90,17 @@ export async function POST(request: NextRequest) {
   const userId = identity.internalUserId
 
   try {
-    const existingByName = await prisma.journalTemplate.findUnique({
-      where: { userId_name: { userId, name } },
-      select: { id: true },
+    const existingByName = await db.query.JournalTemplate.findFirst({
+      where: (table, { eq, and }) => and(eq(table.userId, userId), eq(table.name, name)),
+      columns: { id: true },
     })
 
     if (existingByName) {
-      const updated = await prisma.journalTemplate.update({
-        where: { id: existingByName.id },
-        data: { content },
-        select: {
-          id: true,
-          name: true,
-          content: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      })
+      const updated = (await db.update(schema.JournalTemplate).set({ content }).where(eq(schema.JournalTemplate.id, existingByName.id)).returning())[0]
       return NextResponse.json({ template: updated, updated: true })
     }
 
-    const count = await prisma.journalTemplate.count({
-      where: { userId },
-    })
+    const count = await db.$count(schema.JournalTemplate, eq(schema.JournalTemplate.userId, userId))
 
     if (count >= MAX_CUSTOM_TEMPLATES) {
       return NextResponse.json(
@@ -119,20 +109,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const created = await prisma.journalTemplate.create({
-      data: {
-        userId,
-        name,
-        content,
-      },
-      select: {
-        id: true,
-        name: true,
-        content: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    })
+    const created = (await db.insert(schema.JournalTemplate).values({ userId, name, content }).returning())[0]
 
     return NextResponse.json({ template: created, created: true }, { status: 201 })
   } catch (error) {

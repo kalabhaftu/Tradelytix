@@ -6,6 +6,7 @@
 import { createClient } from '@/lib/supabase'
 import { STORAGE_BUCKETS } from '@/lib/constants/storage'
 import { buildTradeImagePath } from '@/lib/storage/paths'
+import logger from '@/lib/logger';
 
 export interface UploadResult {
   success: boolean
@@ -37,16 +38,14 @@ export class MediaUploadService {
   
   async uploadImage(file: File, options: UploadOptions): Promise<UploadResult> {
     try {
-      // Validate file size and MIME type
       const validation = this.validateFile(file, options)
       if (!validation.valid) {
-        return { success: false, error: validation.error }
+        return validation.error ? { success: false, error: validation.error } : { success: false }
       }
 
-      // Validate file content (magic bytes)
       const magicBytesValidation = await this.validateMagicBytes(file)
       if (!magicBytesValidation.valid) {
-        return { success: false, error: magicBytesValidation.error }
+        return magicBytesValidation.error ? { success: false, error: magicBytesValidation.error } : { success: false }
       }
 
       const supabaseResult = await this.uploadToSupabase(file, options)
@@ -64,7 +63,6 @@ export class MediaUploadService {
     const maxSize = options.maxSizeBytes || DEFAULT_MAX_SIZE
     const allowedTypes = options.allowedTypes || DEFAULT_ALLOWED_TYPES
 
-    // Size validation
     if (file.size > maxSize) {
       return { 
         valid: false, 
@@ -80,7 +78,6 @@ export class MediaUploadService {
       }
     }
 
-    // MIME type validation
     if (!allowedTypes.includes(file.type)) {
       return { 
         valid: false, 
@@ -107,7 +104,6 @@ export class MediaUploadService {
         return { valid: true }
       }
 
-      // Check if file starts with any of the valid signatures
       const isValid = signatures.some(signature =>
         signature.every((byte, index) => bytes[index] === byte)
       )
@@ -120,8 +116,7 @@ export class MediaUploadService {
       }
 
       return { valid: true }
-    } catch (error) {
-      // If we can't read the file, reject it
+    } catch {
       return {
         valid: false,
         error: 'Could not validate file content'
@@ -131,8 +126,7 @@ export class MediaUploadService {
 
   private async uploadToSupabase(file: File, options: UploadOptions): Promise<UploadResult> {
     try {
-      // Preserve original filename with uniqueness
-      const originalName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_') // Sanitize filename
+      const originalName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
       const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName
       const fileExtension = file.name.split('.').pop() || 'jpg'
       const timestamp = Date.now()
@@ -145,14 +139,12 @@ export class MediaUploadService {
       const filePath = buildTradeImagePath({
         folder: options.folder,
         userId: options.userId,
-        tradeId: options.tradeId,
+        ...(options.tradeId ? { tradeId: options.tradeId } : {}),
         fileName,
       })
 
-      // Try to get or create the appropriate bucket
       const bucketName = await this.ensureBucket()
       
-      // Upload file
       const { error: uploadError, data } = await this.supabase.storage
         .from(bucketName)
         .upload(filePath, file, {
@@ -164,7 +156,6 @@ export class MediaUploadService {
         return { success: false, error: 'Unable to upload file' }
       }
 
-      // Get public URL
       const { data: urlData } = this.supabase.storage
         .from(bucketName)
         .getPublicUrl(filePath)
@@ -205,11 +196,11 @@ export class MediaUploadService {
   //     const compressedFile = await imageCompression(file, options)
   //     
   //     // Log compression results
-  //     console.log(`Compressed: ${(file.size / 1024).toFixed(2)}KB → ${(compressedFile.size / 1024).toFixed(2)}KB`)
+  //     logger.info(`Compressed: ${(file.size / 1024).toFixed(2)}KB → ${(compressedFile.size / 1024).toFixed(2)}KB`)
   //     
   //     return compressedFile
   //   } catch (error) {
-  //     console.warn('Compression failed, using original:', error)
+  //     logger.warn('Compression failed, using original:', error)
   //     return file
   //   }
   // }
@@ -219,7 +210,6 @@ export class MediaUploadService {
   // Then upload compressedFile instead of file
 }
 
-// Export singleton instance
 export const uploadService = new MediaUploadService()
 
 

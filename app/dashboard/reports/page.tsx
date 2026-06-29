@@ -49,7 +49,7 @@ export default async function ReportsPage() {
   return (
     <ReportsPageClient
       initialReportData={initialReportData}
-      initialReportKey={initialReportKey}
+      {...(initialReportKey !== undefined && { initialReportKey })}
       initialPropFirmData={initialPropFirmData}
     />
   )

@@ -56,7 +56,9 @@ export async function GET(request: Request) {
         const clientIP = extractIP(request.headers)
         resolveInternalUserId(data.user.id).then(internalId => {
           if (internalId) captureUserGeo(internalId, clientIP)
-        }).catch(() => {})
+        }).catch((e) => {
+          logger.error({ error: e, userId: data.user.id }, 'Error updating geo log during auth callback')
+        })
 
         if (action === 'link') {
           return NextResponse.redirect(new URL('/dashboard/settings?linked=true', baseUrl))

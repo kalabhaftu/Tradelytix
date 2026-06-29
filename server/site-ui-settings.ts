@@ -12,11 +12,16 @@ const SITE_UI_SETTINGS_ID = 'global'
 const SITE_UI_SETTINGS_CACHE_TAG = 'site-ui-settings'
 
 async function loadSiteUiSettings(): Promise<SiteUiSettingsPayload> {
-  const [settings] = await db.select().from(SiteUiSettings).where(eq(SiteUiSettings.id, SITE_UI_SETTINGS_ID))
+  try {
+    const [settings] = await db.select().from(SiteUiSettings).where(eq(SiteUiSettings.id, SITE_UI_SETTINGS_ID))
 
-  return {
-    showDonateButton: settings?.showDonateButton ?? true,
-    showFeedbackButton: settings?.showFeedbackButton ?? true,
+    return {
+      showDonateButton: settings?.showDonateButton ?? true,
+      showFeedbackButton: settings?.showFeedbackButton ?? true,
+    }
+  } catch {
+    // During build-time prerendering there's no DB connection — return defaults
+    return { showDonateButton: true, showFeedbackButton: true }
   }
 }
 

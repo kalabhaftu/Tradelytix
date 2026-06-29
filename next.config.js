@@ -35,19 +35,6 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
 
-  // Turbopack configuration (moved from experimental.turbo)
-  turbopack: {
-    rules: {
-      '*.svg': {
-        loaders: ['@svgr/webpack'],
-        as: '*.js',
-      },
-    },
-    resolveAlias: {
-      'react': 'react',
-      'react-dom': 'react-dom',
-    },
-  },
 
   serverExternalPackages: [
     '@supabase/ssr',

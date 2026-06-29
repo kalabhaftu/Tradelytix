@@ -210,7 +210,7 @@ export function calculateMetricsFromTrades(
   trades: Trade[],
   breakEvenThresholdInput: number = DEFAULT_BREAK_EVEN_THRESHOLD
 ): ZellaScoreMetrics | null {
-  if (trades.length === 0) {
+  if (trades.length < 10) {
     return null
   }
 

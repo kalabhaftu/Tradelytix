@@ -112,6 +112,7 @@ function getMemoryLimiter(config: LimiterConfig): RateLimiterMemory {
 export const apiLimiter: LimiterConfig = { points: 100, duration: 60 }
 export const authLimiter: LimiterConfig = { points: 10, duration: 60, failClosed: true }
 export const aiLimiter: LimiterConfig = { points: 20, duration: 60 }
+export const aiReviewLimiter: LimiterConfig = { points: 1, duration: 86400 }
 export const importLimiter: LimiterConfig = { points: 10, duration: 60 }
 export const uploadLimiter: LimiterConfig = { points: 30, duration: 60 }
 export const webhookLimiter: LimiterConfig = { points: 20, duration: 60, failClosed: true }

@@ -24,10 +24,13 @@ const TradeWinRate = React.memo(function TradeWinRate({ size }: TradeWinRateProp
     nbWin,
     nbLoss,
     nbBe: nbBreakeven,
-    breakEvenThreshold
+    breakEvenThreshold,
+    formattedTrades
   } = useTradeStatistics()
   const { isPrivacyMode } = useDashboardDisplay()
   const threshold = getBreakEvenThreshold(breakEvenThreshold)
+  
+  const hasData = formattedTrades && formattedTrades.length > 0
 
   return (
     <WidgetCard isKpi>
@@ -56,17 +59,17 @@ const TradeWinRate = React.memo(function TradeWinRate({ size }: TradeWinRateProp
         {/* Main content: large value + segmented gauge */}
         <div className="flex items-center justify-between gap-3">
           <span className="text-[1.65rem] min-[768px]:text-[1.85rem] min-[1440px]:text-3xl font-bold tracking-tight text-foreground">
-            {isPrivacyMode ? '****%' : `${winRate.toFixed(2)}%`}
+            {!hasData ? <span className="text-muted-foreground text-xl">--</span> : isPrivacyMode ? '****%' : `${winRate.toFixed(2)}%`}
           </span>
 
           {/* Segmented gauge showing wins/breakeven/losses */}
           <CircularProgress
-            value={isPrivacyMode ? 0 : winRate}
+            value={!hasData ? 0 : isPrivacyMode ? 0 : winRate}
             size={80}
             strokeWidth={7}
             className="origin-right scale-[0.82] min-[768px]:scale-[0.9] min-[1440px]:scale-100"
             type="segmented-gauge"
-            segments={isPrivacyMode ? { wins: 0, breakeven: 0, losses: 0 } : { wins: nbWin, breakeven: nbBreakeven, losses: nbLoss }}
+            segments={!hasData ? { wins: 0, breakeven: 0, losses: 0 } : isPrivacyMode ? { wins: 0, breakeven: 0, losses: 0 } : { wins: nbWin, breakeven: nbBreakeven, losses: nbLoss }}
             showPercentage={false}
           />
         </div>

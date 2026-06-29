@@ -18,9 +18,11 @@ interface ProfitFactorProps {
 }
 
 const ProfitFactor = React.memo(function ProfitFactor({ size }: ProfitFactorProps) {
-  const { profitFactor, grossWin, grossLosses } = useTradeStatistics()
+  const { profitFactor, grossWin, grossLosses, formattedTrades } = useTradeStatistics()
   const { isPrivacyMode } = useDashboardDisplay()
   const safeProfitFactor = Number.isFinite(profitFactor) ? profitFactor : 0
+  
+  const hasData = formattedTrades && formattedTrades.length > 0
 
   const { progressValue, color } = React.useMemo(() => {
     // Convert profit factor to percentage for circular progress
@@ -60,15 +62,15 @@ const ProfitFactor = React.memo(function ProfitFactor({ size }: ProfitFactorProp
         {/* Main content: large value + bi-color gauge */}
         <div className="flex items-center justify-between gap-3">
           <span className="text-[1.65rem] min-[768px]:text-[1.85rem] min-[1440px]:text-3xl font-bold tracking-tight text-foreground">
-            {isPrivacyMode ? '****' : safeProfitFactor.toFixed(2)}
+            {!hasData ? <span className="text-muted-foreground text-xl">--</span> : isPrivacyMode ? '****' : safeProfitFactor.toFixed(2)}
           </span>
 
           {/* Bi-color full circle (green/red) */}
           <CircularProgress
-            value={progressValue}
+            value={!hasData ? 0 : progressValue}
             size={64}
             strokeWidth={6}
-            color={color}
+            color={!hasData ? 'hsl(var(--muted-foreground)/0.2)' : color}
             backgroundColor="hsl(var(--border))"
             type="circle"
             showPercentage={false}

@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db/client'
 import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentity } from '@/server/user-identity'
-import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
-import { logger } from '@/lib/logger'
+import { applyRateLimit, apiLimiter, aiReviewLimiter } from '@/lib/rate-limiter'
 import { cleanContent } from '@/lib/utils'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns'
@@ -64,7 +63,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const rateLimitRes = await applyRateLimit(request, apiLimiter)
+  const rateLimitRes = await applyRateLimit(request, aiReviewLimiter)
   if (rateLimitRes) return rateLimitRes
 
   const start = Date.now()
@@ -107,16 +106,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, data: existing, cached: true })
     }
 
-    // Fetch last week's trades
-    const trades = await db.query.Trade.findMany({
+    let trades = await db.query.Trade.findMany({
       where: (table, { eq, and, gte, lte }) => and(
         eq(table.userId, internalUserId),
         gte(table.entryDate, format(lastWeekStart, 'yyyy-MM-dd')),
         lte(table.entryDate, format(lastWeekEnd, 'yyyy-MM-dd') + 'T23:59:59.999Z')
       ),
-      orderBy: (table, { asc }) => [asc(table.entryDate)],
+      orderBy: (table, { desc }) => [desc(table.entryDate)],
       with: { TradingModel: true },
+      limit: 100,
     })
+    
+    trades = trades.reverse()
 
     // No trades last week → don't create a review
     if (trades.length === 0) {

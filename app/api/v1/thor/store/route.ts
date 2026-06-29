@@ -4,9 +4,22 @@ import * as schema from '@/lib/db/schema';
 import { saveTradesAction } from '@/server/database';
 import { eq, and, gte, lte, desc, count } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
+import { thorRateLimit } from '@/lib/security/ratelimit';
 
 // Common authentication function to use across all methods
 async function authenticateRequest(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') || req.ip || '127.0.0.1';
+  const { success } = await thorRateLimit.limit(ip);
+  if (!success) {
+    return {
+      authenticated: false,
+      error: {
+        message: 'Rate limit exceeded. Too many requests.',
+        status: 429
+      }
+    };
+  }
+
   const authHeader = req.headers.get('authorization');
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {

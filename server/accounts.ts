@@ -1,5 +1,5 @@
-import logger from '@/lib/logger';
 'use server'
+import logger from '@/lib/logger';
 
 import { getUserId, getUserIdSafe } from '@/server/auth'
 import type { TradeType } from '@/lib/db/schema/trades';

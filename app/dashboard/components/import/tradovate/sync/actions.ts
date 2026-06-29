@@ -932,6 +932,8 @@ async function buildTradesFromFillPairs(
   return trades
 }
 
+import { encrypt } from '@/lib/security/encryption';
+
 export async function storeTradovateToken(
   accessToken: string,
   expiresAt: string,
@@ -944,6 +946,8 @@ export async function storeTradovateToken(
       return { error: 'User not authenticated' }
     }
 
+    const encryptedToken = encrypt(accessToken);
+
     const existing = await db.query.Synchronization.findFirst({
       where: (table, { eq, and }) => and(
         eq(table.userId, internalUserId),
@@ -955,7 +959,7 @@ export async function storeTradovateToken(
     if (existing) {
       await db.update(schema.Synchronization)
         .set({
-          token: accessToken,
+          token: encryptedToken,
           tokenExpiresAt: new Date(expiresAt),
           lastSyncedAt: new Date(),
           updatedAt: new Date()
@@ -966,7 +970,7 @@ export async function storeTradovateToken(
         userId: internalUserId,
         service: 'tradovate',
         accountId: accountId,
-        token: accessToken,
+        token: encryptedToken,
         tokenExpiresAt: new Date(expiresAt),
         lastSyncedAt: new Date()
       })
@@ -978,6 +982,8 @@ export async function storeTradovateToken(
     return { error: 'Failed to store token' }
   }
 }
+
+import { decrypt } from '@/lib/security/encryption';
 
 export async function getTradovateToken(accountId: string = 'default') {
   try {
@@ -1005,9 +1011,11 @@ export async function getTradovateToken(accountId: string = 'default') {
       return { error: 'Token expired' }
     }
 
+    const decryptedToken = decrypt(syncData.token) || syncData.token;
+
     const includedFeeTypes = syncData.includedFeeTypes as Record<string, boolean> | null | undefined
     return {
-      accessToken: syncData.token,
+      accessToken: decryptedToken,
       expiresAt: syncData.tokenExpiresAt?.toISOString() || '',
       environment: 'demo',
       accountId: syncData.accountId,
@@ -1164,19 +1172,21 @@ export async function testCustomTradovateToken(
   }
 }
 
-async function updateLastSyncedAt(userId: string, accessToken: string) {
+async function updateLastSyncedAt(userId: string, accountId?: string) {
+  const conditions = [
+    eq(schema.Synchronization.userId, userId),
+    eq(schema.Synchronization.service, 'tradovate')
+  ];
+  if (accountId) conditions.push(eq(schema.Synchronization.accountId, accountId));
+
   return await db.update(schema.Synchronization)
     .set({ lastSyncedAt: new Date() })
-    .where(and(
-      eq(schema.Synchronization.userId, userId),
-      eq(schema.Synchronization.service, 'tradovate'),
-      eq(schema.Synchronization.token, accessToken)
-    ))
+    .where(and(...conditions))
 }
 
 export async function getTradovateTrades(
   accessToken: string,
-  options?: { userId?: string; includeAllFees?: boolean; includedFeeTypes?: TradovateIncludedFeeTypes }
+  options?: { userId?: string; accountId?: string; includeAllFees?: boolean; includedFeeTypes?: TradovateIncludedFeeTypes }
 ): Promise<TradovateTradesResult> {
   try {
     const includedFeeTypes: TradovateIncludedFeeTypes | boolean =
@@ -1193,7 +1203,7 @@ export async function getTradovateTrades(
     const fillPairs = await getFillPairs(accessToken)
     
     if (fillPairs.length === 0) {
-      await updateLastSyncedAt(userId, accessToken)
+      await updateLastSyncedAt(userId, options?.accountId)
       return { processedTrades: [], savedCount: 0, ordersCount: 0 }
     }
 
@@ -1268,7 +1278,7 @@ export async function getTradovateTrades(
 
     const processedTrades = await buildTradesFromFillPairs(fillPairs, contracts, fillsById, ordersById, accountsById, userId, tickDetails)
     
-    await updateLastSyncedAt(userId, accessToken)
+    await updateLastSyncedAt(userId, options?.accountId)
 
     if (processedTrades.length === 0) {
       return { processedTrades: [], savedCount: 0 }

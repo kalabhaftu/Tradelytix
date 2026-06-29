@@ -1,5 +1,5 @@
 import { inngest } from '../client'
-import { logger } from '@/lib/logger'
+import logger from '@/lib/logger'
 
 export const checkBreaches = inngest.createFunction(
   { id: 'check-prop-firm-breaches' },

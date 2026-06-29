@@ -211,7 +211,7 @@ class CacheManagerClass {
       try {
         callback(tags)
       } catch (error) {
-        logger.error('Error in cache invalidation callback:', error)
+        logger.error({ err: error }, 'Error in cache invalidation callback:')
       }
     }
   }

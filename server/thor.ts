@@ -1,5 +1,5 @@
-import logger from '@/lib/logger';
 'use server'
+import logger from '@/lib/logger';
 
 import { revalidatePath } from 'next/cache'
 import crypto from 'crypto'

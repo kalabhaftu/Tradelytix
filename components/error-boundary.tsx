@@ -69,7 +69,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
     this.props.onError?.(error, errorInfo)
 
-    logger.error('ErrorBoundary caught an error:', error, errorInfo)
+    logger.error({ err: error, errorInfo }, 'ErrorBoundary caught an error:')
   }
 
   handleRetry = (): void => {

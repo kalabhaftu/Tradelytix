@@ -111,7 +111,7 @@ export async function batchDeleteTrades(
       try {
         await deletePublicStorageUrls(imageUrls)
       } catch (error) {
-        logger.error('[Batch Delete Trades] Storage deletion failed:', error)
+        logger.error({ err: error }, '[Batch Delete Trades] Storage deletion failed:')
       }
     }
 

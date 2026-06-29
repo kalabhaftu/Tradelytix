@@ -5,7 +5,7 @@
       "schedule": "0 0 * * *"
     },
     {
-      "path": "/api/cron/daily-anchor",
+      "path": "/api/cron/daily-anchors",
       "schedule": "0 0 * * *"
     }
   ],

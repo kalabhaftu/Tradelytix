@@ -162,9 +162,9 @@ class DatabaseRealtimeManager {
           this.notifyStatus('error')
           // Only log if error details are available, and use logger.warn to avoid unhandled error
           if (err && err.message) {
-            logger.warn('[Realtime] Channel error:', err.message)
+            logger.warn({ err: new Error(err.message) }, '[Realtime] Channel error:')
           } else {
-            logger.warn('[Realtime] Channel error: Connection issue (details unavailable)')
+            logger.warn({ err: new Error('Connection issue') }, '[Realtime] Channel error:')
           }
           this.scheduleReconnect(tables, userId)
         } else if (status === 'TIMED_OUT') {
@@ -180,7 +180,7 @@ class DatabaseRealtimeManager {
     } catch (error) {
       // Use logger.warn to avoid unhandled error propagation
       const errorMessage = error instanceof Error ? error.message : 'Unknown connection error'
-      logger.warn('[Realtime] Failed to connect:', errorMessage)
+      logger.warn({ err: new Error(errorMessage) }, '[Realtime] Failed to connect:')
       this.notifyStatus('error')
       // Schedule reconnect attempt
       this.scheduleReconnect(tables, userId)
@@ -203,7 +203,7 @@ class DatabaseRealtimeManager {
       try {
         callback(change)
       } catch (error) {
-        logger.error('[Realtime] Callback error:', error)
+        logger.error({ err: error }, '[Realtime] Callback error:')
       }
     }
   }
@@ -213,7 +213,7 @@ class DatabaseRealtimeManager {
       try {
         callback(status)
       } catch (error) {
-        logger.error('[Realtime] Status callback error:', error)
+        logger.error({ err: error }, '[Realtime] Status callback error:')
       }
     }
   }

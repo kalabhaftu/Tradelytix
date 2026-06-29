@@ -30,7 +30,8 @@ export function ClientErrorReporter() {
       if (sentErrors.current.has(key)) return
       sentErrors.current.add(key)
 
-      logger.error(event.message || 'Unhandled Client Error', {
+      logger.error({
+        err: event.error || new Error(event.message || 'Unhandled Client Error'),
         stack: event.error?.stack,
         metadata: {
           filename: event.filename,
@@ -38,7 +39,7 @@ export function ClientErrorReporter() {
           colno: event.colno,
           userAgent: navigator.userAgent,
         },
-      }, 'CLIENT_BOUNDARY')
+      }, event.message || 'Unhandled Client Error')
     }
 
     const handleRejection = (event: PromiseRejectionEvent) => {
@@ -51,13 +52,14 @@ export function ClientErrorReporter() {
       if (sentErrors.current.has(key)) return
       sentErrors.current.add(key)
 
-      logger.error(message, {
+      logger.error({
+        err: error || new Error(message),
         stack: error?.stack,
         metadata: {
           type: 'unhandledrejection',
           userAgent: navigator.userAgent,
         },
-      }, 'CLIENT_PROMISE')
+      }, message)
     }
 
     window.addEventListener('error', handleError)

@@ -1,3 +1,3 @@
-import { Inngest, EventSchemas } from 'inngest'
+import { Inngest } from 'inngest'
 
 export const inngest = new Inngest({ id: 'tradelytix' })

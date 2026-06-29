@@ -160,7 +160,7 @@ export const PromptBox = React.forwardRef<HTMLTextAreaElement, PromptBoxProps>(
       };
 
       recognition.onerror = (event: { error: string }) => {
-        logger.error('Speech recognition error:', event.error);
+        logger.error({ err: new Error(event.error) }, 'Speech recognition error:');
         setIsRecording(false);
         recognitionRef.current = null;
       };

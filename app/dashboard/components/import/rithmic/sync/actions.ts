@@ -4,18 +4,27 @@ import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentity } from "@/server/user-identity"
 import { and, eq } from 'drizzle-orm'
 
+import { encrypt, decrypt } from '@/lib/security/encryption';
+
 export async function getRithmicSynchronizations() {
   const { internalUserId } = await getResolvedUserIdentity()
   const synchronizations = await db.query.Synchronization.findMany({
     where: (table, { eq, and }) => and(eq(table.userId, internalUserId), eq(table.service, "rithmic")),
   })
-  return synchronizations
+  
+  return synchronizations.map(sync => ({
+    ...sync,
+    token: decrypt(sync.token) || sync.token
+  }));
 }
 
 export async function setRithmicSynchronization(synchronization: any) {
   const { internalUserId } = await getResolvedUserIdentity()
+  const token = synchronization.token ? encrypt(synchronization.token) : synchronization.token;
+  
   await db.insert(schema.Synchronization).values({
     ...synchronization,
+    token,
     service: synchronization.service || 'rithmic',
     accountId: synchronization.accountId || '',
     lastSyncedAt: synchronization.lastSyncedAt || new Date(),
@@ -25,6 +34,7 @@ export async function setRithmicSynchronization(synchronization: any) {
     target: [schema.Synchronization.userId, schema.Synchronization.service, schema.Synchronization.accountId],
     set: {
       ...synchronization,
+      token,
       userId: internalUserId,
       includedFeeTypes: undefined,
     },

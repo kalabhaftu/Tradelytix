@@ -25,7 +25,7 @@ export class WidgetErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    logger.error('Widget error caught:', error, errorInfo);
+    logger.error({ err: error, errorInfo }, 'Widget error caught:');
   }
 
   public render() {

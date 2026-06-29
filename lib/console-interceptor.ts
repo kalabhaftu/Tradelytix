@@ -59,11 +59,11 @@ export function applyConsoleInterceptor() {
           .join(' ')
 
     if (level === 'error') {
-          logger.error(message, { originalArgs: args }, 'ConsoleInterceptor')
+          logger.error({ originalArgs: args as any }, message)
         } else if (level === 'warn') {
-          logger.warn(message, { originalArgs: args }, 'ConsoleInterceptor')
+          logger.warn({ originalArgs: args as any }, message)
         } else {
-          logger.info(message, { originalArgs: args }, 'ConsoleInterceptor')
+          logger.info({ originalArgs: args as any }, message)
         }
       } catch (err) {
         // If everything fails, use the original console to avoid losing the message entirely

@@ -1,5 +1,5 @@
 import { inngest } from '../client'
-import { logger } from '@/lib/logger'
+import logger from '@/lib/logger'
 import { db } from '@/lib/db/client'
 
 export const syncRithmicData = inngest.createFunction(

@@ -14,7 +14,7 @@ export default function OnboardingModal() {
       try {
         await changeIsFirstConnection(false)
       } catch (error) {
-        logger.error('Failed to update onboarding status', error, 'Onboarding')
+        logger.error({ err: error }, 'Failed to update onboarding status')
       }
     }
   }

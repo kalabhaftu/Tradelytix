@@ -193,7 +193,7 @@ export function LexicalEditor({
       PlaceholderNode
     ],
     onError: (error: Error) => {
-      logger.error('Lexical Editor Error', error, 'LEXICAL_EDITOR')
+      logger.error({ err: error }, 'Lexical Editor Error')
     },
   }
 

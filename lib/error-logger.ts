@@ -46,7 +46,7 @@ export async function logError(input: ErrorLogInput): Promise<void> {
     })
   } catch (err) {
     // Last resort — log to console if DB write fails
-    logger.error('[ErrorLogger] Failed to persist error log:', err)
+    logger.error({ err }, '[ErrorLogger] Failed to persist error log:')
   }
 }
 

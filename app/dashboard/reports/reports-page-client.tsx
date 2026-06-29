@@ -218,7 +218,7 @@ export default function ReportsPageClient({
 
     // SERVER-SIDE: Use React Query hook instead of client-side fetching + useMemo
     const { data: reportData, isLoading } = useReportStats(filterArgs, true, {
-        ...(initialReportData !== undefined && { initialData: initialReportData }),
+        ...(initialReportData !== undefined && { initialData: initialReportData as any }),
         ...(initialReportKey !== undefined && { initialDataKey: initialReportKey })
     })
 
@@ -969,7 +969,7 @@ export default function ReportsPageClient({
 
                         <TabsContent value="statement" className="focus-visible:outline-none">
                             {filteredTrades && filteredTrades.length > 0 && (
-                                <StatementView trades={filteredTrades} {...(dateRange !== undefined && { dateRange })} />
+                                <StatementView trades={filteredTrades} {...(dateRange !== undefined && { dateRange: dateRange as any })} />
                             )}
                         </TabsContent>
 

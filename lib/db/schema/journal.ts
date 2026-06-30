@@ -4,7 +4,7 @@ import { JournalEmotionEnum, WeeklyExpectationEnum } from './enums';
 import { Account, LiveAccountTransaction, MasterAccount, Payout, PhaseAccount } from './accounts';
 import { AdminFeatureFlag, AdminSharingPolicy, User, UserSettings, ImportJob, Notification, Feedback, UserGeoLog, SharedReport, Subscription, Synchronization } from './users';
 
-export const DailyNote = pgTable('daily_note', {
+export const DailyNote = pgTable('DailyNote', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   date: timestamp('date', { withTimezone: true, mode: 'date' }).notNull(),
@@ -18,7 +18,7 @@ export const DailyNote = pgTable('daily_note', {
 export type DailyNoteType = typeof DailyNote.$inferSelect;
 export type NewDailyNote = typeof DailyNote.$inferInsert;
 
-export const JournalTemplate = pgTable('journal_template', {
+export const JournalTemplate = pgTable('JournalTemplate', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   name: text('name').notNull(),
@@ -30,7 +30,7 @@ export const JournalTemplate = pgTable('journal_template', {
 export type JournalTemplateType = typeof JournalTemplate.$inferSelect;
 export type NewJournalTemplate = typeof JournalTemplate.$inferInsert;
 
-export const WeeklyReview = pgTable('weekly_review', {
+export const WeeklyReview = pgTable('WeeklyReview', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   startDate: timestamp('startDate', { withTimezone: true, mode: 'date' }).notNull(),

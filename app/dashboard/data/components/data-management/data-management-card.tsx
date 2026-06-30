@@ -35,7 +35,7 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import type { TradeType } from '@/lib/db/schema/trades';
+import type { TradeType as Trade } from '@/lib/db/schema/trades';
 
 import { AdvancedExportDialog } from './advanced-export-dialog'
 import { ImportDialog } from './import-dialog'

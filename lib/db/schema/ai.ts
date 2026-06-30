@@ -1,9 +1,9 @@
 import { relations } from 'drizzle-orm';
 import { pgTable, uuid, text, integer, boolean, timestamp, jsonb, doublePrecision, json } from 'drizzle-orm/pg-core';
-import { AdminFeatureFlag, AdminSharingPolicy, User, UserSettings, ImportJob, Notification, Feedback, UserGeoLog, SharedReport, Subscription, Synchronization } from './users';
-import { FeedbackReply, DonationAddress, SiteUiSettings, ErrorLog, PaymentRecord, PromoCode, PromoRedemption, FreeAccessInvite, AIChatMessage, AdminAISetting, AIChatUsageLog } from './misc';
+import { User } from './users';
 
-export const WeeklyAIReview = pgTable('weekly_a_i_review', {
+
+export const WeeklyAIReview = pgTable('WeeklyAIReview', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   weekStart: timestamp('weekStart', { withTimezone: true, mode: 'date' }).notNull(),
@@ -20,7 +20,7 @@ export const WeeklyAIReview = pgTable('weekly_a_i_review', {
 export type WeeklyAIReviewType = typeof WeeklyAIReview.$inferSelect;
 export type NewWeeklyAIReview = typeof WeeklyAIReview.$inferInsert;
 
-export const AIChat = pgTable('a_i_chat', {
+export const AIChat = pgTable('AIChat', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   title: text('title').default('New Conversation'),
@@ -39,7 +39,7 @@ export const AIChat = pgTable('a_i_chat', {
 export type AIChatType = typeof AIChat.$inferSelect;
 export type NewAIChat = typeof AIChat.$inferInsert;
 
-export const AISavedInsight = pgTable('a_i_saved_insight', {
+export const AISavedInsight = pgTable('AISavedInsight', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   title: text('title').notNull(),
@@ -73,4 +73,56 @@ export const AISavedInsightRelations = relations(AISavedInsight, ({ one, many })
     references: [User.id]
   }),
 }));
+
+export const AIChatMessage = pgTable('AIChatMessage', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  chatId: text('chatId').notNull(),
+  role: text('role').notNull(),
+  content: text('content').notNull(),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
+});
+
+export type AIChatMessageType = typeof AIChatMessage.$inferSelect;
+export type NewAIChatMessage = typeof AIChatMessage.$inferInsert;
+
+export const AdminAISetting = pgTable('AdminAISetting', {
+  id: text('id').primaryKey().default('global'),
+  enabled: boolean('enabled').default(true),
+  demoModeEnabled: boolean('demoModeEnabled').default(true),
+  freePlanAccess: boolean('freePlanAccess').default(false),
+  paidPlanAccess: boolean('paidPlanAccess').default(true),
+  adminAccess: boolean('adminAccess').default(true),
+  maxContextSize: integer('maxContextSize').default(32768),
+  maxMessagesPerDay: integer('maxMessagesPerDay').default(50),
+  maxTokensPerResponse: integer('maxTokensPerResponse').default(2048),
+  conversationRetentionDays: integer('conversationRetentionDays').default(30),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+});
+
+export type AdminAISettingType = typeof AdminAISetting.$inferSelect;
+export type NewAdminAISetting = typeof AdminAISetting.$inferInsert;
+
+export const AIChatUsageLog = pgTable('AIChatUsageLog', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('userId').notNull(),
+  chatId: text('chat_id'),
+  promptTokens: integer('promptTokens').default(0),
+  completionTokens: integer('completionTokens').default(0),
+  totalTokens: integer('totalTokens').default(0),
+  estimatedCost: doublePrecision('estimatedCost').default(0),
+  responseTimeMs: integer('responseTimeMs').default(0),
+  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
+});
+
+export type AIChatUsageLogType = typeof AIChatUsageLog.$inferSelect;
+export type NewAIChatUsageLog = typeof AIChatUsageLog.$inferInsert;
+
+export const AIChatMessageRelations = relations(AIChatMessage, ({ one, many }) => ({
+  Chat: one(AIChat, {
+    fields: [AIChatMessage.chatId],
+    references: [AIChat.id]
+  }),
+}));
+
 

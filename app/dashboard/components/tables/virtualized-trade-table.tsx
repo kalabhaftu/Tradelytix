@@ -1,7 +1,7 @@
 'use client'
 
 import React, { memo, useMemo } from 'react'
-import type { TradeType } from '@/lib/db/schema/trades';
+import type { TradeType as Trade } from '@/lib/db/schema/trades';
 
 import { Badge } from "@/components/ui/badge"
 import { cn, formatQuantity, classifyTrade } from "@/lib/utils"
@@ -13,9 +13,9 @@ import { List } from 'react-window'
 
 interface VirtualizedTradeTableProps {
   trades: Trade[]
-  onTradeClick?: (trade: Trade) => void
-  selectedTrades?: Set<string>
-  onTradeSelect?: (tradeId: string) => void
+  onTradeClick?: ((trade: Trade) => void) | undefined
+  selectedTrades?: Set<string> | undefined
+  onTradeSelect?: ((tradeId: string) => void) | undefined
 }
 
 const ROW_HEIGHT = 60 // Height of each row in pixels
@@ -24,8 +24,8 @@ const ROW_HEIGHT = 60 // Height of each row in pixels
 const TradeRow = memo(({ trade, isSelected, onTradeClick, onTradeSelect }: {
   trade: Trade
   isSelected: boolean
-  onTradeClick?: (trade: Trade) => void
-  onTradeSelect?: (tradeId: string) => void
+  onTradeClick?: ((trade: Trade) => void) | undefined
+  onTradeSelect?: ((tradeId: string) => void) | undefined
 }) => {
   const timezone = useUserStore((state) => state.timezone)
   const outcome = classifyTrade(trade.pnl)
@@ -144,8 +144,8 @@ const VirtualizedRow = memo(({
   style: React.CSSProperties
   trades: Trade[]
   selectedTrades: Set<string>
-  onTradeClick?: (trade: Trade) => void
-  onTradeSelect?: (tradeId: string) => void
+  onTradeClick?: ((trade: Trade) => void) | undefined
+  onTradeSelect?: ((tradeId: string) => void) | undefined
 }): React.ReactElement | null => {
   const trade = trades[index]
   if (!trade) return null

@@ -5,6 +5,7 @@ import { logActivity } from '@/lib/activity-logger'
 import { captureUserGeo, extractIP } from '@/server/geolocation'
 import { resolveInternalUserId } from '@/server/user-identity'
 import { getSafeRedirectPath } from '@/lib/security/redirects'
+import logger from '@/lib/logger'
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([

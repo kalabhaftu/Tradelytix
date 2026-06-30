@@ -2,7 +2,7 @@ import { relations } from 'drizzle-orm';
 import { pgTable, uuid, text, integer, boolean, timestamp, jsonb, doublePrecision, json } from 'drizzle-orm/pg-core';
 import { AdminFeatureFlag, AdminSharingPolicy, User, UserSettings, ImportJob, Notification, Feedback, UserGeoLog, SharedReport, Subscription, Synchronization } from './users';
 
-export const DashboardTemplate = pgTable('dashboard_template', {
+export const DashboardTemplate = pgTable('DashboardTemplate', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   name: text('name').notNull(),
@@ -16,7 +16,7 @@ export const DashboardTemplate = pgTable('dashboard_template', {
 export type DashboardTemplateType = typeof DashboardTemplate.$inferSelect;
 export type NewDashboardTemplate = typeof DashboardTemplate.$inferInsert;
 
-export const AdminWidgetSetting = pgTable('admin_widget_setting', {
+export const AdminWidgetSetting = pgTable('AdminWidgetSetting', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   widgetType: text('widgetType').notNull().unique(),
   label: text('label'),
@@ -35,7 +35,7 @@ export const AdminWidgetSetting = pgTable('admin_widget_setting', {
 export type AdminWidgetSettingType = typeof AdminWidgetSetting.$inferSelect;
 export type NewAdminWidgetSetting = typeof AdminWidgetSetting.$inferInsert;
 
-export const AdminDashboardPreset = pgTable('admin_dashboard_preset', {
+export const AdminDashboardPreset = pgTable('AdminDashboardPreset', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   name: text('name').notNull().unique(),
   segment: text('segment').default('all'),

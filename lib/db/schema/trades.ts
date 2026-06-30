@@ -5,7 +5,7 @@ import { Account, LiveAccountTransaction, MasterAccount, Payout, PhaseAccount } 
 import { TradingModel, ActivityLog, UserGoal } from './playbook';
 import { AdminFeatureFlag, AdminSharingPolicy, User, UserSettings, ImportJob, Notification, Feedback, UserGeoLog, SharedReport, Subscription, Synchronization } from './users';
 
-export const Trade = pgTable('trade', {
+export const Trade = pgTable('Trade', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   accountNumber: text('accountNumber').notNull(),
   quantity: doublePrecision('quantity').default(0),
@@ -75,7 +75,7 @@ export const Trade = pgTable('trade', {
 export type TradeType = typeof Trade.$inferSelect;
 export type NewTrade = typeof Trade.$inferInsert;
 
-export const TradeExecution = pgTable('trade_execution', {
+export const TradeExecution = pgTable('TradeExecution', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   tradeId: text('tradeId').notNull(),
   userId: text('userId').notNull(),
@@ -97,7 +97,7 @@ export const TradeExecution = pgTable('trade_execution', {
 export type TradeExecutionType = typeof TradeExecution.$inferSelect;
 export type NewTradeExecution = typeof TradeExecution.$inferInsert;
 
-export const TradeTag = pgTable('trade_tag', {
+export const TradeTag = pgTable('TradeTag', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   name: text('name').notNull(),
   color: text('color').default('#3b82f6'),

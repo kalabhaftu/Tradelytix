@@ -3,7 +3,7 @@ import { pgTable, uuid, text, integer, boolean, timestamp, jsonb, doublePrecisio
 import { BacktestDirectionEnum, BacktestOutcomeEnum, BacktestSessionEnum, BacktestModelEnum } from './enums';
 import { AdminFeatureFlag, AdminSharingPolicy, User, UserSettings, ImportJob, Notification, Feedback, UserGeoLog, SharedReport, Subscription, Synchronization } from './users';
 
-export const BacktestTrade = pgTable('backtest_trade', {
+export const BacktestTrade = pgTable('BacktestTrade', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   pair: text('pair').notNull(),

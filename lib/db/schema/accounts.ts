@@ -6,7 +6,7 @@ import { DailyNote, JournalTemplate, WeeklyReview } from './journal';
 import { Trade, TradeExecution, TradeTag } from './trades';
 import { BreachRecord, DailyAnchor } from './prop-firm';
 
-export const Account = pgTable('account', {
+export const Account = pgTable('Account', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   number: text('number').notNull(),
   name: text('name'),
@@ -22,7 +22,7 @@ export const Account = pgTable('account', {
 export type AccountType = typeof Account.$inferSelect;
 export type NewAccount = typeof Account.$inferInsert;
 
-export const LiveAccountTransaction = pgTable('live_account_transaction', {
+export const LiveAccountTransaction = pgTable('LiveAccountTransaction', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   accountId: text('accountId').notNull(),
   userId: text('userId').notNull(),
@@ -35,7 +35,7 @@ export const LiveAccountTransaction = pgTable('live_account_transaction', {
 export type LiveAccountTransactionType = typeof LiveAccountTransaction.$inferSelect;
 export type NewLiveAccountTransaction = typeof LiveAccountTransaction.$inferInsert;
 
-export const MasterAccount = pgTable('master_account', {
+export const MasterAccount = pgTable('MasterAccount', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   accountName: text('accountName').notNull(),
@@ -52,7 +52,7 @@ export const MasterAccount = pgTable('master_account', {
 export type MasterAccountType = typeof MasterAccount.$inferSelect;
 export type NewMasterAccount = typeof MasterAccount.$inferInsert;
 
-export const Payout = pgTable('payout', {
+export const Payout = pgTable('Payout', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   masterAccountId: text('masterAccountId').notNull(),
   phaseAccountId: text('phaseAccountId').notNull(),
@@ -70,7 +70,7 @@ export const Payout = pgTable('payout', {
 export type PayoutType = typeof Payout.$inferSelect;
 export type NewPayout = typeof Payout.$inferInsert;
 
-export const PhaseAccount = pgTable('phase_account', {
+export const PhaseAccount = pgTable('PhaseAccount', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   masterAccountId: text('masterAccountId').notNull(),
   phaseNumber: integer('phaseNumber').notNull(),

@@ -3,7 +3,7 @@ import { pgTable, uuid, text, integer, boolean, timestamp, jsonb, doublePrecisio
 import { BreachTypeEnum } from './enums';
 import { Account, LiveAccountTransaction, MasterAccount, Payout, PhaseAccount } from './accounts';
 
-export const BreachRecord = pgTable('breach_record', {
+export const BreachRecord = pgTable('BreachRecord', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   phaseAccountId: text('phaseAccountId').notNull(),
   breachType: BreachTypeEnum('breachType').notNull(),
@@ -21,7 +21,7 @@ export const BreachRecord = pgTable('breach_record', {
 export type BreachRecordType = typeof BreachRecord.$inferSelect;
 export type NewBreachRecord = typeof BreachRecord.$inferInsert;
 
-export const DailyAnchor = pgTable('daily_anchor', {
+export const DailyAnchor = pgTable('DailyAnchor', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   phaseAccountId: text('phaseAccountId').notNull(),
   date: timestamp('date', { withTimezone: true, mode: 'date' }).notNull(),

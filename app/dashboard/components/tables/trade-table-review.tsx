@@ -24,7 +24,7 @@ import { formatTradePrice } from '@/lib/trading/precision'
 import { useTableConfigStore } from '@/store/table-config-store'
 import { useUserStore } from '@/store/user-store'
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, BarChart3, Info, Tag, Cable } from 'lucide-react'
-import type { TradeType } from '@/lib/db/schema/trades';
+import type { TradeType as Trade } from '@/lib/db/schema/trades';
 
 import { useTags, TradeTag } from '@/hooks/use-tags'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -661,7 +661,7 @@ export function TradeTableReview() {
       tableRef.current?.resetRowSelection()
       setSelectedTrades([])
     } catch (error) {
-      logger.error('Failed to bulk tag trades:', error)
+      logger.error({ err: error }, 'Failed to bulk tag trades:')
     }
   }, [selectedTrades, appendTagsToTrades])
 

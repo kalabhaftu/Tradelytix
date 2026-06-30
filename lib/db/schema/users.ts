@@ -7,10 +7,10 @@ import { DailyNote, JournalTemplate, WeeklyReview } from './journal';
 import { DashboardTemplate, AdminWidgetSetting, AdminDashboardPreset } from './dashboard';
 import { Trade, TradeExecution, TradeTag } from './trades';
 import { TradingModel, ActivityLog, UserGoal } from './playbook';
-import { WeeklyAIReview, AIChat, AISavedInsight } from './ai';
-import { FeedbackReply, DonationAddress, SiteUiSettings, ErrorLog, PaymentRecord, PromoCode, PromoRedemption, FreeAccessInvite, AIChatMessage, AdminAISetting, AIChatUsageLog } from './misc';
+import { WeeklyAIReview, AIChat, AISavedInsight, AIChatMessage, AdminAISetting, AIChatUsageLog } from './ai';
+import { FeedbackReply, DonationAddress, SiteUiSettings, ErrorLog, PaymentRecord, PromoCode, PromoRedemption, FreeAccessInvite } from './misc';
 
-export const AdminFeatureFlag = pgTable('admin_feature_flag', {
+export const AdminFeatureFlag = pgTable('AdminFeatureFlag', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   key: text('key').notNull().unique(),
   label: text('label').notNull(),
@@ -26,7 +26,7 @@ export const AdminFeatureFlag = pgTable('admin_feature_flag', {
 export type AdminFeatureFlagType = typeof AdminFeatureFlag.$inferSelect;
 export type NewAdminFeatureFlag = typeof AdminFeatureFlag.$inferInsert;
 
-export const AdminSharingPolicy = pgTable('admin_sharing_policy', {
+export const AdminSharingPolicy = pgTable('AdminSharingPolicy', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   key: text('key').unique().default('default'),
   publicSharingEnabled: boolean('publicSharingEnabled').default(true),
@@ -39,7 +39,7 @@ export const AdminSharingPolicy = pgTable('admin_sharing_policy', {
 export type AdminSharingPolicyType = typeof AdminSharingPolicy.$inferSelect;
 export type NewAdminSharingPolicy = typeof AdminSharingPolicy.$inferInsert;
 
-export const User = pgTable('user', {
+export const User = pgTable('User', {
   id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
   auth_user_id: text('auth_user_id').notNull().unique(),
@@ -56,7 +56,7 @@ export const User = pgTable('user', {
 export type UserType = typeof User.$inferSelect;
 export type NewUser = typeof User.$inferInsert;
 
-export const UserSettings = pgTable('user_settings', {
+export const UserSettings = pgTable('UserSettings', {
   userId: text('userId').primaryKey(),
   timezone: text('timezone').default('America/New_York'),
   theme: text('theme').default('system'),
@@ -77,7 +77,7 @@ export const UserSettings = pgTable('user_settings', {
 export type UserSettingsType = typeof UserSettings.$inferSelect;
 export type NewUserSettings = typeof UserSettings.$inferInsert;
 
-export const ImportJob = pgTable('import_job', {
+export const ImportJob = pgTable('ImportJob', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   status: ImportJobStatusEnum('status').default('queued'),
@@ -102,7 +102,7 @@ export const ImportJob = pgTable('import_job', {
 export type ImportJobType = typeof ImportJob.$inferSelect;
 export type NewImportJob = typeof ImportJob.$inferInsert;
 
-export const Notification = pgTable('notification', {
+export const Notification = pgTable('Notification', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   type: NotificationTypeEnum('type').notNull(),
@@ -121,7 +121,7 @@ export type NotificationRow = typeof Notification.$inferSelect;
 export type NotificationType = (typeof NotificationTypeEnum.enumValues)[number];
 export type NewNotification = typeof Notification.$inferInsert;
 
-export const Feedback = pgTable('feedback', {
+export const Feedback = pgTable('Feedback', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id'),
   name: text('name'),
@@ -143,7 +143,7 @@ export const Feedback = pgTable('feedback', {
 export type FeedbackType = typeof Feedback.$inferSelect;
 export type NewFeedback = typeof Feedback.$inferInsert;
 
-export const UserGeoLog = pgTable('user_geo_log', {
+export const UserGeoLog = pgTable('UserGeoLog', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   country: text('country'),
@@ -159,7 +159,7 @@ export const UserGeoLog = pgTable('user_geo_log', {
 export type UserGeoLogType = typeof UserGeoLog.$inferSelect;
 export type NewUserGeoLog = typeof UserGeoLog.$inferInsert;
 
-export const SharedReport = pgTable('shared_report', {
+export const SharedReport = pgTable('SharedReport', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   slug: text('slug').notNull().unique(),
@@ -178,7 +178,7 @@ export const SharedReport = pgTable('shared_report', {
 export type SharedReportType = typeof SharedReport.$inferSelect;
 export type NewSharedReport = typeof SharedReport.$inferInsert;
 
-export const Subscription = pgTable('subscription', {
+export const Subscription = pgTable('Subscription', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull().unique(),
   status: SubscriptionStatusEnum('status').default('unpaid'),
@@ -196,7 +196,7 @@ export const Subscription = pgTable('subscription', {
 export type SubscriptionType = typeof Subscription.$inferSelect;
 export type NewSubscription = typeof Subscription.$inferInsert;
 
-export const Synchronization = pgTable('synchronization', {
+export const Synchronization = pgTable('Synchronization', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   service: text('service').notNull(),

@@ -2,9 +2,9 @@ import { relations } from 'drizzle-orm';
 import { pgTable, uuid, text, integer, boolean, timestamp, jsonb, doublePrecision, json } from 'drizzle-orm/pg-core';
 import { ErrorSourceEnum, ErrorLevelEnum, PromoTypeEnum, PromoApplicabilityEnum, FreeAccessTypeEnum } from './enums';
 import { AdminFeatureFlag, AdminSharingPolicy, User, UserSettings, ImportJob, Notification, Feedback, UserGeoLog, SharedReport, Subscription, Synchronization } from './users';
-import { WeeklyAIReview, AIChat, AISavedInsight } from './ai';
 
-export const FeedbackReply = pgTable('feedback_reply', {
+
+export const FeedbackReply = pgTable('FeedbackReply', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   feedbackId: text('feedbackId').notNull(),
   message: text('message').notNull(),
@@ -14,7 +14,7 @@ export const FeedbackReply = pgTable('feedback_reply', {
 export type FeedbackReplyType = typeof FeedbackReply.$inferSelect;
 export type NewFeedbackReply = typeof FeedbackReply.$inferInsert;
 
-export const DonationAddress = pgTable('donation_address', {
+export const DonationAddress = pgTable('DonationAddress', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   token: text('token').notNull(),
   network: text('network').notNull(),
@@ -28,7 +28,7 @@ export const DonationAddress = pgTable('donation_address', {
 export type DonationAddressType = typeof DonationAddress.$inferSelect;
 export type NewDonationAddress = typeof DonationAddress.$inferInsert;
 
-export const SiteUiSettings = pgTable('site_ui_settings', {
+export const SiteUiSettings = pgTable('SiteUiSettings', {
   id: text('id').primaryKey(),
   showDonateButton: boolean('showDonateButton').default(true),
   showFeedbackButton: boolean('showFeedbackButton').default(true),
@@ -39,7 +39,7 @@ export const SiteUiSettings = pgTable('site_ui_settings', {
 export type SiteUiSettingsType = typeof SiteUiSettings.$inferSelect;
 export type NewSiteUiSettings = typeof SiteUiSettings.$inferInsert;
 
-export const ErrorLog = pgTable('error_log', {
+export const ErrorLog = pgTable('ErrorLog', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   source: ErrorSourceEnum('source').notNull(),
   level: ErrorLevelEnum('level').default('ERROR'),
@@ -55,7 +55,7 @@ export const ErrorLog = pgTable('error_log', {
 export type ErrorLogType = typeof ErrorLog.$inferSelect;
 export type NewErrorLog = typeof ErrorLog.$inferInsert;
 
-export const PaymentRecord = pgTable('payment_record', {
+export const PaymentRecord = pgTable('PaymentRecord', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   subscriptionId: text('subscriptionId').notNull(),
@@ -84,7 +84,7 @@ export const PaymentRecord = pgTable('payment_record', {
 export type PaymentRecordType = typeof PaymentRecord.$inferSelect;
 export type NewPaymentRecord = typeof PaymentRecord.$inferInsert;
 
-export const PromoCode = pgTable('promo_code', {
+export const PromoCode = pgTable('PromoCode', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   code: text('code').notNull().unique(),
   type: PromoTypeEnum('type').notNull(),
@@ -104,7 +104,7 @@ export const PromoCode = pgTable('promo_code', {
 export type PromoCodeType = typeof PromoCode.$inferSelect;
 export type NewPromoCode = typeof PromoCode.$inferInsert;
 
-export const PromoRedemption = pgTable('promo_redemption', {
+export const PromoRedemption = pgTable('PromoRedemption', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   promoCodeId: text('promoCodeId').notNull(),
   userId: text('userId').notNull(),
@@ -114,7 +114,7 @@ export const PromoRedemption = pgTable('promo_redemption', {
 export type PromoRedemptionType = typeof PromoRedemption.$inferSelect;
 export type NewPromoRedemption = typeof PromoRedemption.$inferInsert;
 
-export const FreeAccessInvite = pgTable('free_access_invite', {
+export const FreeAccessInvite = pgTable('FreeAccessInvite', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   email: text('email').notNull().unique(),
   type: FreeAccessTypeEnum('type').notNull(),
@@ -132,50 +132,6 @@ export const FreeAccessInvite = pgTable('free_access_invite', {
 
 export type FreeAccessInviteType = typeof FreeAccessInvite.$inferSelect;
 export type NewFreeAccessInvite = typeof FreeAccessInvite.$inferInsert;
-
-export const AIChatMessage = pgTable('a_i_chat_message', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  chatId: text('chatId').notNull(),
-  role: text('role').notNull(),
-  content: text('content').notNull(),
-  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-});
-
-export type AIChatMessageType = typeof AIChatMessage.$inferSelect;
-export type NewAIChatMessage = typeof AIChatMessage.$inferInsert;
-
-export const AdminAISetting = pgTable('admin_a_i_setting', {
-  id: text('id').primaryKey().default('global'),
-  enabled: boolean('enabled').default(true),
-  demoModeEnabled: boolean('demoModeEnabled').default(true),
-  freePlanAccess: boolean('freePlanAccess').default(false),
-  paidPlanAccess: boolean('paidPlanAccess').default(true),
-  adminAccess: boolean('adminAccess').default(true),
-  maxContextSize: integer('maxContextSize').default(32768),
-  maxMessagesPerDay: integer('maxMessagesPerDay').default(50),
-  maxTokensPerResponse: integer('maxTokensPerResponse').default(2048),
-  conversationRetentionDays: integer('conversationRetentionDays').default(30),
-  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
-});
-
-export type AdminAISettingType = typeof AdminAISetting.$inferSelect;
-export type NewAdminAISetting = typeof AdminAISetting.$inferInsert;
-
-export const AIChatUsageLog = pgTable('a_i_chat_usage_log', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  userId: text('userId').notNull(),
-  chatId: text('chat_id'),
-  promptTokens: integer('promptTokens').default(0),
-  completionTokens: integer('completionTokens').default(0),
-  totalTokens: integer('totalTokens').default(0),
-  estimatedCost: doublePrecision('estimatedCost').default(0),
-  responseTimeMs: integer('responseTimeMs').default(0),
-  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-});
-
-export type AIChatUsageLogType = typeof AIChatUsageLog.$inferSelect;
-export type NewAIChatUsageLog = typeof AIChatUsageLog.$inferInsert;
 
 export const FeedbackReplyRelations = relations(FeedbackReply, ({ one, many }) => ({
   Feedback: one(Feedback, {
@@ -212,10 +168,4 @@ export const FreeAccessInviteRelations = relations(FreeAccessInvite, ({ one, man
   Subscription: many(Subscription),
 }));
 
-export const AIChatMessageRelations = relations(AIChatMessage, ({ one, many }) => ({
-  Chat: one(AIChat, {
-    fields: [AIChatMessage.chatId],
-    references: [AIChat.id]
-  }),
-}));
 

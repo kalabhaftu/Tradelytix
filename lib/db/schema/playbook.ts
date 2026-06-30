@@ -3,7 +3,7 @@ import { pgTable, uuid, text, integer, boolean, timestamp, jsonb, doublePrecisio
 import { AdminFeatureFlag, AdminSharingPolicy, User, UserSettings, ImportJob, Notification, Feedback, UserGeoLog, SharedReport, Subscription, Synchronization } from './users';
 import { Trade, TradeExecution, TradeTag } from './trades';
 
-export const TradingModel = pgTable('trading_model', {
+export const TradingModel = pgTable('TradingModel', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   name: text('name').notNull(),
@@ -17,7 +17,7 @@ export const TradingModel = pgTable('trading_model', {
 export type TradingModelType = typeof TradingModel.$inferSelect;
 export type NewTradingModel = typeof TradingModel.$inferInsert;
 
-export const ActivityLog = pgTable('activity_log', {
+export const ActivityLog = pgTable('ActivityLog', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   action: text('action').notNull(),
@@ -31,7 +31,7 @@ export const ActivityLog = pgTable('activity_log', {
 export type ActivityLogType = typeof ActivityLog.$inferSelect;
 export type NewActivityLog = typeof ActivityLog.$inferInsert;
 
-export const UserGoal = pgTable('user_goal', {
+export const UserGoal = pgTable('UserGoal', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('userId').notNull(),
   title: text('title').notNull(),

@@ -39,7 +39,6 @@ const nextConfig = {
   serverExternalPackages: [
     '@supabase/ssr',
     '@supabase/supabase-js',
-    '@prisma/instrumentation',
     '@opentelemetry/instrumentation',
   ],
 

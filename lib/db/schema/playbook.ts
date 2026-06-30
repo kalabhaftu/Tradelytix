@@ -22,9 +22,9 @@ export const ActivityLog = pgTable('ActivityLog', {
   userId: text('userId').notNull(),
   action: text('action').notNull(),
   entity: text('entity').notNull(),
-  entityId: text('entity_id'),
+  entityId: text('entityId'),
   metadata: jsonb('metadata'),
-  ipAddress: text('ip_address'),
+  ipAddress: text('ipAddress'),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
 });
 
@@ -41,9 +41,9 @@ export const UserGoal = pgTable('UserGoal', {
   currentValue: doublePrecision('currentValue').default(0),
   period: text('period').notNull(),
   startDate: timestamp('startDate', { withTimezone: true, mode: 'date' }).notNull(),
-  endDate: timestamp('end_date', { withTimezone: true, mode: 'date' }),
+  endDate: timestamp('endDate', { withTimezone: true, mode: 'date' }),
   isCompleted: boolean('isCompleted').default(false),
-  completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),
+  completedAt: timestamp('completedAt', { withTimezone: true, mode: 'date' }),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
   updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
 });

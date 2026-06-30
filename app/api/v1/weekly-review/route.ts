@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db/client'
 import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentity } from '@/server/user-identity'
-import { applyRateLimit, apiLimiter, aiReviewLimiter } from '@/lib/rate-limiter'
+import { applyRateLimit, apiLimiter, aiReviewLimiter, consumeRateLimitKey } from '@/lib/rate-limiter'
 import { cleanContent } from '@/lib/utils'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns'
@@ -63,13 +63,27 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const rateLimitRes = await applyRateLimit(request, aiReviewLimiter)
+  const rateLimitRes = await applyRateLimit(request, apiLimiter)
   if (rateLimitRes) return rateLimitRes
 
   const start = Date.now()
 
   try {
     const { internalUserId } = await getResolvedUserIdentity()
+
+    const { allowed } = await consumeRateLimitKey(`ai-review:${internalUserId}`, aiReviewLimiter)
+    if (!allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Too many requests',
+          details: 'You can only generate one AI review per 24 hours.',
+          code: 'RATE_LIMIT_EXCEEDED',
+          retryable: true,
+        },
+        { status: 429 }
+      )
+    }
 
     // Calculate last week's window (Mon–Sun)
     let clientDate: string | null = null

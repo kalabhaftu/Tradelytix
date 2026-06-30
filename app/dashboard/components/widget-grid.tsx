@@ -76,6 +76,7 @@ import type { WidgetType } from '../types/dashboard'
 import WidgetLibraryDialog from './widget-library-dialog'
 import KpiWidgetSelector from './kpi-widget-selector'
 import { EmptyAccountState } from './empty-account-state'
+import { EmptyTradeState } from './empty-trade-state'
 import { TemplateAwareDashboardSkeleton } from '@/components/ui/dashboard-skeleton'
 import { WidgetErrorBoundary } from './widget-wrapper'
 import { WIDGET_GRID_DEFAULTS } from '../config/widget-dimensions'
@@ -345,14 +346,18 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
     updateLayout([...updatedKpi, ...otherWidgets])
   }, [currentLayout, kpiWidgets, updateLayout])
 
-  // Show empty state
-  const showEmptyState = !isEditMode &&
-    !isLoading &&
-    accountNumbers.length === 0 &&
-    (!accountFilterSettings?.selectedPhaseAccountIds || accountFilterSettings.selectedPhaseAccountIds.length === 0) &&
-    accounts && accounts.length > 0
+  // Show empty states
+  const hasAccounts = accounts && accounts.length > 0
+  const hasNoSelectedAccounts = accountNumbers.length === 0 && (!accountFilterSettings?.selectedPhaseAccountIds || accountFilterSettings.selectedPhaseAccountIds.length === 0)
+  
+  const showEmptyTradeState = !isEditMode && !isLoading && (!hasAccounts || (!hasNoSelectedAccounts && (!formattedTrades || formattedTrades.length === 0)))
+  const showEmptyAccountState = !isEditMode && !isLoading && hasAccounts && hasNoSelectedAccounts && !showEmptyTradeState
 
-  if (showEmptyState) {
+  if (showEmptyTradeState) {
+    return <EmptyTradeState />
+  }
+
+  if (showEmptyAccountState) {
     return <EmptyAccountState />
   }
 
@@ -501,8 +506,10 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
             rowHeight={ROW_HEIGHT}
             margin={GRID_MARGIN}
             containerPadding={[8, 8]}
-            dragConfig={{ enabled: isEditMode, handle: '.widget-drag-handle' }}
-            resizeConfig={{ enabled: isEditMode, handles: ['s', 'w', 'e', 'n', 'sw', 'nw', 'se', 'ne'] }}
+            isDraggable={isEditMode && containerWidth >= 768}
+            isResizable={isEditMode && containerWidth >= 768}
+            draggableHandle=".widget-drag-handle"
+            resizeHandles={['s', 'w', 'e', 'n', 'sw', 'nw', 'se', 'ne']}
             compactor={verticalCompactor}
             onLayoutChange={handleLayoutChange as any}
           >

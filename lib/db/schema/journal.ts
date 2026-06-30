@@ -11,7 +11,7 @@ export const DailyNote = pgTable('DailyNote', {
   note: text('note').notNull(),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
   updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
-  accountId: text('account_id'),
+  accountId: text('accountId'),
   emotion: JournalEmotionEnum('emotion'),
 });
 
@@ -35,10 +35,10 @@ export const WeeklyReview = pgTable('WeeklyReview', {
   userId: text('userId').notNull(),
   startDate: timestamp('startDate', { withTimezone: true, mode: 'date' }).notNull(),
   endDate: timestamp('endDate', { withTimezone: true, mode: 'date' }).notNull(),
-  calendarImage: text('calendar_image'),
+  calendarImage: text('calendarImage'),
   expectation: WeeklyExpectationEnum('expectation'),
-  actualOutcome: WeeklyExpectationEnum('actual_outcome'),
-  isCorrect: boolean('is_correct'),
+  actualOutcome: WeeklyExpectationEnum('actualOutcome'),
+  isCorrect: boolean('isCorrect'),
   notes: text('notes'),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
   updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),

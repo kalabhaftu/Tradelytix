@@ -26,7 +26,7 @@ export const AdminWidgetSetting = pgTable('AdminWidgetSetting', {
   deprecated: boolean('deprecated').default(false),
   status: text('status').default('stable'),
   premiumOnly: boolean('premiumOnly').default(false),
-  roleGate: text('role_gate'),
+  roleGate: text('roleGate'),
   metadata: jsonb('metadata'),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
   updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),

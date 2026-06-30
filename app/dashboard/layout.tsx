@@ -11,6 +11,7 @@ import { QuickAddFAB } from "@/components/quick-add-fab";
 import { getInitBootstrapData } from "@/server/init-bootstrap";
 import { checkSubscriptionAccess } from "@/lib/services/subscription-guard-service";
 import { getSiteUiSettings } from "@/server/site-ui-settings";
+import { createDailyAnchor } from "@/lib/services/anchor-service";
 
 import { SyncContextWrapper } from "./components/sync-context-wrapper";
 import { TourWrapper } from "./components/tour-wrapper";
@@ -27,6 +28,18 @@ export default async function RootLayout({ children }: { children: ReactElement 
     const access = await checkSubscriptionAccess(initialBootstrapData.user.id)
     if (!access.hasAccess && access.redirectTo) {
       redirect(access.redirectTo)
+    }
+
+    try {
+      const timezone = initialBootstrapData.user?.timezone || initialBootstrapData.user?.settings?.timezone || 'UTC'
+      const activePropFirmAccounts = initialBootstrapData.accounts.filter(
+        (a: any) => a.accountType === 'prop-firm' && a.status === 'active'
+      )
+      await Promise.all(
+        activePropFirmAccounts.map((acc: any) => createDailyAnchor(acc.id, timezone))
+      )
+    } catch (e) {
+      console.error('Error lazily creating daily anchors:', e)
     }
   } else if (!initialBootstrapData.isAuthenticated) {
     redirect("/login")

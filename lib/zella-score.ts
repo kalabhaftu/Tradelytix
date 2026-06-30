@@ -215,6 +215,10 @@ export function calculateMetricsFromTrades(
   }
 
   const groupedTrades = groupTradesByExecution(trades as any)
+  if (groupedTrades.length < 10) {
+    return null
+  }
+
   const breakEvenThreshold = getBreakEvenThreshold(breakEvenThresholdInput)
 
   const wins = groupedTrades.filter((t: any) => {

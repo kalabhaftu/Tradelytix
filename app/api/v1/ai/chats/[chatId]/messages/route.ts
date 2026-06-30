@@ -210,8 +210,9 @@ async function resolveDataContext(userId: string, chat: any) {
 
   // Build context text
   if (tradesList.length > 0) {
-    contextText += `### TRADING HISTORY (${tradesList.length} trades in range):\n`
-    contextText += tradesList.map(t => {
+    const recentTrades = tradesList.slice(-50)
+    contextText += `### TRADING HISTORY (Showing last ${recentTrades.length} of ${tradesList.length} trades in range):\n`
+    contextText += recentTrades.map(t => {
       return `- Date: ${t.entryDate}, Symbol: ${t.instrument}, Side: ${t.side}, Net PnL: $${t.pnl}, Hold Time: ${t.timeInPosition} mins, Quantity: ${t.quantity}, Setup Tag: ${t.setup || 'None'}, Rule Broken: ${t.ruleBroken ? 'Yes' : 'No'}`
     }).join('\n') + '\n\n'
     

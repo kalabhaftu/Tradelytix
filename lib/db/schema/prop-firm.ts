@@ -11,9 +11,9 @@ export const BreachRecord = pgTable('BreachRecord', {
   breachTime: timestamp('breachTime', { withTimezone: true, mode: 'date' }).defaultNow(),
   currentEquity: doublePrecision('currentEquity').notNull(),
   accountSize: doublePrecision('accountSize').notNull(),
-  dailyStartBalance: doublePrecision('daily_start_balance'),
-  highWaterMark: doublePrecision('high_water_mark'),
-  tradeId: text('trade_id'),
+  dailyStartBalance: doublePrecision('dailyStartBalance'),
+  highWaterMark: doublePrecision('highWaterMark'),
+  tradeId: text('tradeId'),
   notes: text('notes'),
   updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
 });

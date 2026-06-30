@@ -4,12 +4,16 @@ import { db } from '@/lib/db/client'
 import * as schema from '@/lib/db/schema'
 import { eq, and, count } from 'drizzle-orm'
 import { revalidateTag } from 'next/cache'
+import { Resend } from 'resend'
 
-type NotificationType = 'FUNDED_PENDING_APPROVAL' | 'FUNDED_APPROVED' | 'FUNDED_DECLINED' | 'PHASE_TRANSITION_PENDING' | 'PAYOUT_APPROVED' | 'PAYOUT_REJECTED' | 'SYSTEM' | 'RISK_ALERT' | 'IMPORT_STATUS' | 'WEEKLY_PERFORMANCE' | 'STRATEGY_DEVIATION' | 'SYSTEM_ANNOUNCEMENT' | 'TRADE_STATUS' | 'RISK_DAILY_LOSS_80' | 'RISK_DAILY_LOSS_95' | 'RISK_MAX_DRAWDOWN_80' | 'RISK_MAX_DRAWDOWN_95' | 'IMPORT_PROCESSING' | 'IMPORT_COMPLETE' | 'STRATEGY_SESSION_VIOLATION' | 'FEEDBACK_REPLY' | 'PAYMENT_DUE_SOON' | 'PAYMENT_DUE_TODAY' | 'PAYMENT_OVERDUE' | 'SUBSCRIPTION_EXPIRED' | 'PAYMENT_RECEIVED' | 'PAYMENT_FAILED' | 'ACCESS_RESTORED' | 'ADMIN_FREE_ACCESS_GRANTED' | 'ADMIN_FREE_ACCESS_REVOKED';
+const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy')
+
+type NotificationType = 'FUNDED_PENDING_APPROVAL' | 'FUNDED_APPROVED' | 'FUNDED_DECLINED' | 'PHASE_TRANSITION_PENDING' | 'PAYOUT_APPROVED' | 'PAYOUT_REJECTED' | 'SYSTEM' | 'RISK_ALERT' | 'IMPORT_STATUS' | 'WEEKLY_PERFORMANCE' | 'STRATEGY_DEVIATION' | 'SYSTEM_ANNOUNCEMENT' | 'TRADE_STATUS' | 'RISK_DAILY_LOSS_80' | 'RISK_DAILY_LOSS_95' | 'RISK_MAX_DRAWDOWN_80' | 'RISK_MAX_DRAWDOWN_95' | 'RISK_BREACH' | 'IMPORT_PROCESSING' | 'IMPORT_COMPLETE' | 'STRATEGY_SESSION_VIOLATION' | 'FEEDBACK_REPLY' | 'PAYMENT_DUE_SOON' | 'PAYMENT_DUE_TODAY' | 'PAYMENT_OVERDUE' | 'SUBSCRIPTION_EXPIRED' | 'PAYMENT_RECEIVED' | 'PAYMENT_FAILED' | 'ACCESS_RESTORED' | 'ADMIN_FREE_ACCESS_GRANTED' | 'ADMIN_FREE_ACCESS_REVOKED';
 
 type NotificationPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
 const NotificationType = {
+  RISK_BREACH: 'RISK_BREACH' as NotificationType,
   RISK_DAILY_LOSS_95: 'RISK_DAILY_LOSS_95' as NotificationType,
   RISK_DAILY_LOSS_80: 'RISK_DAILY_LOSS_80' as NotificationType,
   RISK_MAX_DRAWDOWN_95: 'RISK_MAX_DRAWDOWN_95' as NotificationType,
@@ -135,8 +139,14 @@ export async function createRiskAlert(
     let priority: NotificationPriority
     let title: string
 
+    const isBreach = currentPercentage >= 100
+
     if (riskType === 'daily_loss') {
-        if (currentPercentage >= 95) {
+        if (isBreach) {
+            type = NotificationType.RISK_BREACH
+            priority = NotificationPriority.CRITICAL
+            title = 'ACCOUNT BREACH: Daily Loss Limit Exceeded'
+        } else if (currentPercentage >= 95) {
             type = NotificationType.RISK_DAILY_LOSS_95
             priority = NotificationPriority.CRITICAL
             title = 'CRITICAL: Daily Loss Limit at 95%'
@@ -146,7 +156,11 @@ export async function createRiskAlert(
             title = 'WARNING: Daily Loss Limit at 80%'
         }
     } else {
-        if (currentPercentage >= 95) {
+        if (isBreach) {
+            type = NotificationType.RISK_BREACH
+            priority = NotificationPriority.CRITICAL
+            title = 'ACCOUNT BREACH: Max Drawdown Limit Exceeded'
+        } else if (currentPercentage >= 95) {
             type = NotificationType.RISK_MAX_DRAWDOWN_95
             priority = NotificationPriority.CRITICAL
             title = 'CRITICAL: Max Drawdown at 95%'
@@ -157,7 +171,29 @@ export async function createRiskAlert(
         }
     }
 
-    const message = `Your account "${metadata.accountName}" has used ${currentPercentage.toFixed(1)}% of the ${riskType === 'daily_loss' ? 'daily loss' : 'max drawdown'} limit. Current: $${metadata.used.toFixed(2)} / Limit: $${metadata.limit.toFixed(2)}`
+    const message = isBreach 
+        ? `Your account "${metadata.accountName}" has breached the ${riskType === 'daily_loss' ? 'daily loss' : 'max drawdown'} limit. Current: $${metadata.used.toFixed(2)} / Limit: $${metadata.limit.toFixed(2)}`
+        : `Your account "${metadata.accountName}" has used ${currentPercentage.toFixed(1)}% of the ${riskType === 'daily_loss' ? 'daily loss' : 'max drawdown'} limit. Current: $${metadata.used.toFixed(2)} / Limit: $${metadata.limit.toFixed(2)}`
+
+    if (isBreach) {
+        try {
+            const user = await db.query.User.findFirst({
+                where: eq(schema.User.id, userId)
+            })
+            if (user && user.email) {
+                const breachTypeStr = riskType === 'daily_loss' ? 'Daily Loss Limit' : 'Max Drawdown Limit'
+                await resend.emails.send({
+                    from: 'Alerts <alerts@tradelytix.app>',
+                    to: [user.email],
+                    subject: `Prop Firm Rule Breach Detected: ${metadata.accountName}`,
+                    html: `<p>Your prop firm account <strong>${metadata.accountName}</strong> has breached the ${breachTypeStr}.</p>
+                           <p>Current: $${metadata.used.toFixed(2)} / Limit: $${metadata.limit.toFixed(2)} (${currentPercentage.toFixed(1)}%)</p>`
+                })
+            }
+        } catch (error) {
+            console.error('Failed to send breach email', error)
+        }
+    }
 
     return await createOrUpdateNotification(userId, {
         type,

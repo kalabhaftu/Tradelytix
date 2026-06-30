@@ -1,38 +1,20 @@
-const SENTRY_DSN = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN
+import * as Sentry from '@sentry/nextjs'
 
-export async function initSentryServer() {
-  if (process.env.NODE_ENV !== 'production' || !SENTRY_DSN) {
-    return
-  }
-
-  const Sentry = await import('@sentry/nextjs')
-
-  Sentry.init({
-    dsn: SENTRY_DSN,
-
-    // Performance monitoring
-    tracesSampleRate: 0.1,
-
-    // Environment
-    environment: process.env.NODE_ENV || 'development',
-
-    // Don't report outside production
-    enabled: true,
-
-    // Avoid Prisma/OpenTelemetry instrumentation unless we explicitly opt in later.
-    skipOpenTelemetrySetup: true,
-    integrations(defaultIntegrations) {
-      return defaultIntegrations.filter((integration) => integration.name !== 'Prisma')
-    },
-
-    // Filter sensitive data
-    beforeSend(event) {
-      if (event.request?.headers) {
-        delete event.request.headers['Authorization']
-        delete event.request.headers['Cookie']
-      }
-
-      return event
-    },
-  })
-}
+Sentry.init({
+  dsn: process.env.SENTRY_DSN ?? process.env.NEXT_PUBLIC_SENTRY_DSN,
+  environment: process.env.NODE_ENV,
+  enabled: process.env.NODE_ENV === 'production',
+  tracesSampleRate: 0.2,
+  enableLogs: true,
+  skipOpenTelemetrySetup: true,
+  integrations(defaults) {
+    return defaults.filter((i) => i.name !== 'Prisma')
+  },
+  beforeSend(event) {
+    if (event.request?.headers) {
+      delete event.request.headers['authorization']
+      delete event.request.headers['cookie']
+    }
+    return event
+  },
+})

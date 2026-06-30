@@ -311,3 +311,7 @@ build-output.log
 
 # Firebase Service Account Credentials
 config/firebase-admin.json
+
+# Sentry Config File
+.env.sentry-build-plugin
+app/sentry-example-page/page.tsx

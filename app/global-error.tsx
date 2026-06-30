@@ -1,5 +1,6 @@
 'use client'
 
+import * as Sentry from '@sentry/nextjs'
 import logger from '@/lib/logger';
 
 import React from 'react'
@@ -13,6 +14,7 @@ interface GlobalErrorProps {
 
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
     React.useEffect(() => {
+        Sentry.captureException(error)
         logger.error({ event: 'system_error', error: error }, 'Global Error Boundary caught:')
     }, [error])
 

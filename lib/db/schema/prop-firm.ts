@@ -15,7 +15,7 @@ export const BreachRecord = pgTable('BreachRecord', {
   highWaterMark: doublePrecision('highWaterMark'),
   tradeId: text('tradeId'),
   notes: text('notes'),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type BreachRecordType = typeof BreachRecord.$inferSelect;

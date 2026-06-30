@@ -11,7 +11,7 @@ export const TradingModel = pgTable('TradingModel', {
   setups: jsonb('setups').default('[]'),
   notes: text('notes'),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type TradingModelType = typeof TradingModel.$inferSelect;
@@ -45,7 +45,7 @@ export const UserGoal = pgTable('UserGoal', {
   isCompleted: boolean('isCompleted').default(false),
   completedAt: timestamp('completedAt', { withTimezone: true, mode: 'date' }),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type UserGoalType = typeof UserGoal.$inferSelect;

@@ -22,7 +22,7 @@ export const DonationAddress = pgTable('DonationAddress', {
   isActive: boolean('isActive').default(true),
   sortOrder: integer('sortOrder').default(0),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type DonationAddressType = typeof DonationAddress.$inferSelect;
@@ -33,7 +33,7 @@ export const SiteUiSettings = pgTable('SiteUiSettings', {
   showDonateButton: boolean('showDonateButton').default(true),
   showFeedbackButton: boolean('showFeedbackButton').default(true),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type SiteUiSettingsType = typeof SiteUiSettings.$inferSelect;
@@ -78,7 +78,7 @@ export const PaymentRecord = pgTable('PaymentRecord', {
   promoCodeId: text('promoCodeId'),
   discountAmount: doublePrecision('discountAmount').default(0),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type PaymentRecordType = typeof PaymentRecord.$inferSelect;
@@ -98,7 +98,7 @@ export const PromoCode = pgTable('PromoCode', {
   appliesToPlan: text('appliesToPlan').default('pro'),
   createdBy: text('createdBy'),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type PromoCodeType = typeof PromoCode.$inferSelect;
@@ -127,7 +127,7 @@ export const FreeAccessInvite = pgTable('FreeAccessInvite', {
   registeredAt: timestamp('registeredAt', { withTimezone: true, mode: 'date' }),
   registeredUserId: text('registeredUserId'),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type FreeAccessInviteType = typeof FreeAccessInvite.$inferSelect;

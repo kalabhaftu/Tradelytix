@@ -10,7 +10,7 @@ export const DailyNote = pgTable('DailyNote', {
   date: timestamp('date', { withTimezone: true, mode: 'date' }).notNull(),
   note: text('note').notNull(),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
   accountId: text('accountId'),
   emotion: JournalEmotionEnum('emotion'),
 });
@@ -24,7 +24,7 @@ export const JournalTemplate = pgTable('JournalTemplate', {
   name: text('name').notNull(),
   content: jsonb('content').notNull(),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type JournalTemplateType = typeof JournalTemplate.$inferSelect;
@@ -41,7 +41,7 @@ export const WeeklyReview = pgTable('WeeklyReview', {
   isCorrect: boolean('isCorrect'),
   notes: text('notes'),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type WeeklyReviewType = typeof WeeklyReview.$inferSelect;

@@ -33,7 +33,7 @@ export const AIChat = pgTable('AIChat', {
   customTo: timestamp('customTo', { withTimezone: true, mode: 'date' }),
   dataSources: text('dataSources').array().notNull(),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type AIChatType = typeof AIChat.$inferSelect;
@@ -46,7 +46,7 @@ export const AISavedInsight = pgTable('AISavedInsight', {
   content: text('content').notNull(),
   category: text('category').default('insight'),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type AISavedInsightType = typeof AISavedInsight.$inferSelect;
@@ -97,7 +97,7 @@ export const AdminAISetting = pgTable('AdminAISetting', {
   maxTokensPerResponse: integer('maxTokensPerResponse').default(2048),
   conversationRetentionDays: integer('conversationRetentionDays').default(30),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type AdminAISettingType = typeof AdminAISetting.$inferSelect;

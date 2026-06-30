@@ -10,7 +10,7 @@ export const DashboardTemplate = pgTable('DashboardTemplate', {
   isActive: boolean('isActive').default(false),
   layout: jsonb('layout').default('[]'),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type DashboardTemplateType = typeof DashboardTemplate.$inferSelect;
@@ -29,7 +29,7 @@ export const AdminWidgetSetting = pgTable('AdminWidgetSetting', {
   roleGate: text('roleGate'),
   metadata: jsonb('metadata'),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type AdminWidgetSettingType = typeof AdminWidgetSetting.$inferSelect;
@@ -44,7 +44,7 @@ export const AdminDashboardPreset = pgTable('AdminDashboardPreset', {
   active: boolean('active').default(true),
   recommended: boolean('recommended').default(false),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type AdminDashboardPresetType = typeof AdminDashboardPreset.$inferSelect;

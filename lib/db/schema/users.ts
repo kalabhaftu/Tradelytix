@@ -20,7 +20,7 @@ export const AdminFeatureFlag = pgTable('AdminFeatureFlag', {
   roleGate: text('roleGate'),
   cohort: text('cohort'),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type AdminFeatureFlagType = typeof AdminFeatureFlag.$inferSelect;
@@ -33,7 +33,7 @@ export const AdminSharingPolicy = pgTable('AdminSharingPolicy', {
   defaultExpirationDays: integer('defaultExpirationDays'),
   requireExpiration: boolean('requireExpiration').default(false),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type AdminSharingPolicyType = typeof AdminSharingPolicy.$inferSelect;
@@ -71,7 +71,7 @@ export const UserSettings = pgTable('UserSettings', {
   autoAdjustAccountDate: boolean('autoAdjustAccountDate').default(false),
   webhookToken: text('webhookToken').unique(),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type UserSettingsType = typeof UserSettings.$inferSelect;
@@ -96,7 +96,7 @@ export const ImportJob = pgTable('ImportJob', {
   startedAt: timestamp('startedAt', { withTimezone: true, mode: 'date' }),
   completedAt: timestamp('completedAt', { withTimezone: true, mode: 'date' }),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type ImportJobType = typeof ImportJob.$inferSelect;
@@ -114,7 +114,7 @@ export const Notification = pgTable('Notification', {
   invalidationKey: text('invalidationKey'),
   priority: NotificationPriorityEnum('priority').default('MEDIUM'),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type NotificationRow = typeof Notification.$inferSelect;
@@ -137,7 +137,7 @@ export const Feedback = pgTable('Feedback', {
   city: text('city'),
   region: text('region'),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type FeedbackType = typeof Feedback.$inferSelect;
@@ -172,7 +172,7 @@ export const SharedReport = pgTable('SharedReport', {
   viewCount: integer('viewCount').default(0),
   expiresAt: timestamp('expiresAt', { withTimezone: true, mode: 'date' }),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type SharedReportType = typeof SharedReport.$inferSelect;
@@ -190,7 +190,7 @@ export const Subscription = pgTable('Subscription', {
   promoCodeId: text('promoCodeId'),
   freeAccessId: text('freeAccessId'),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type SubscriptionType = typeof Subscription.$inferSelect;
@@ -203,7 +203,7 @@ export const Synchronization = pgTable('Synchronization', {
   accountId: text('accountId').notNull(),
   lastSyncedAt: timestamp('lastSyncedAt', { withTimezone: true, mode: 'date' }).notNull(),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
   token: text('token'),
   tokenExpiresAt: timestamp('tokenExpiresAt', { withTimezone: true, mode: 'date' }),
   dailySyncTime: timestamp('dailySyncTime', { withTimezone: true, mode: 'date' }),

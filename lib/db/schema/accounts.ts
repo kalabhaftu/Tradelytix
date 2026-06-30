@@ -14,7 +14,7 @@ export const Account = pgTable('Account', {
   startingBalance: doublePrecision('startingBalance').default(0),
   userId: text('userId').notNull(),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
   isArchived: boolean('isArchived').default(false),
   isConfigured: boolean('isConfigured').default(false),
 });
@@ -64,7 +64,7 @@ export const Payout = pgTable('Payout', {
   rejectedDate: timestamp('rejectedDate', { withTimezone: true, mode: 'date' }),
   notes: text('notes'),
   rejectionReason: text('rejectionReason'),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type PayoutType = typeof Payout.$inferSelect;

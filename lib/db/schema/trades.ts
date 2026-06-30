@@ -91,7 +91,7 @@ export const TradeExecution = pgTable('TradeExecution', {
   rawSymbol: text('rawSymbol'),
   metadata: jsonb('metadata'),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type TradeExecutionType = typeof TradeExecution.$inferSelect;
@@ -103,7 +103,7 @@ export const TradeTag = pgTable('TradeTag', {
   color: text('color').default('#3b82f6'),
   userId: text('userId').notNull(),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
 });
 
 export type TradeTagType = typeof TradeTag.$inferSelect;

@@ -30,7 +30,7 @@ export const BacktestTrade = pgTable('BacktestTrade', {
   dateExecuted: timestamp('dateExecuted', { withTimezone: true, mode: 'date' }).notNull(),
   backtestDate: timestamp('backtestDate', { withTimezone: true, mode: 'date' }),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
   riskPoints: doublePrecision('riskPoints').default(0),
   rewardPoints: doublePrecision('rewardPoints').default(0),
 });

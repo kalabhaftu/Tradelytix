@@ -1,15 +1,11 @@
 import crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
-// In production, this should be a 32-byte string set via env variable.
-// For development fallback, we use a deterministic hash of a fallback string, but throw in prod if missing.
+// The encryption key must be a 32-byte string set via env variable.
 function getEncryptionKey(): Buffer {
   const secret = process.env.ENCRYPTION_KEY;
   if (!secret) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('ENCRYPTION_KEY is required in production');
-    }
-    return crypto.createHash('sha256').update('tradelytix-dev-fallback-key').digest();
+    throw new Error('ENCRYPTION_KEY environment variable is required. Please set it in your environment/Vercel dashboard.');
   }
   
   if (Buffer.byteLength(secret) === 32) {

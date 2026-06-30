@@ -29,7 +29,7 @@ import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { getTradeNetPnl, normalizePnlDisplayMode } from '@/lib/metrics/pnl'
-import { eq, and, or, inArray, desc } from 'drizzle-orm'
+import { eq, and, or, inArray, desc, gte, lte, lt, ilike, arrayOverlaps, isNotNull, SQL } from 'drizzle-orm'
 
 const MAX_ANALYTICS_TRADE_LIMIT = 5000
 const MAX_TABLE_PAGE_LIMIT = 500
@@ -152,10 +152,10 @@ export async function GET(request: NextRequest) {
     const tagIds = boundedList(params.get('tags'))
     
     // Build Drizzle where clause — ALL filtering server-side
-    const whereClause: any = { userId: internalUserId }
+    const whereConditions: SQL[] = [eq(schema.Trade.userId, internalUserId)]
 
     if (params.get('liveOnly') === 'true') {
-      whereClause.tradeIdentityKey = { not: null }
+      whereConditions.push(isNotNull(schema.Trade.tradeIdentityKey))
     }
     
     if (accountNumbers.length > 0) {
@@ -189,56 +189,58 @@ export async function GET(request: NextRequest) {
         num => !resolvedAccountIds.includes(num) && !resolvedPhaseAccountIds.includes(num)
       )
 
-      whereClause.OR = [
-        { accountId: { in: resolvedAccountIds } },
-        { phaseAccountId: { in: resolvedPhaseAccountIds } },
-        {
-          AND: [
-            { accountId: null },
-            { phaseAccountId: null },
-            { accountNumber: { in: [...resolvedAccountNumbers, ...resolvedPhaseIds, ...rawNumbers] } }
-          ]
-        }
-      ]
+      const accountOrConditions = []
+      if (resolvedAccountIds.length > 0) {
+        accountOrConditions.push(inArray(schema.Trade.accountId, resolvedAccountIds))
+      }
+      if (resolvedPhaseAccountIds.length > 0) {
+        accountOrConditions.push(inArray(schema.Trade.phaseAccountId, resolvedPhaseAccountIds))
+      }
+      
+      const numberValues = [...resolvedAccountNumbers, ...resolvedPhaseIds, ...rawNumbers]
+      if (numberValues.length > 0) {
+        accountOrConditions.push(
+          and(
+            inArray(schema.Trade.accountNumber, numberValues)
+          )!
+        )
+      }
+
+      if (accountOrConditions.length > 0) {
+        whereConditions.push(or(...accountOrConditions)!)
+      }
     }
     
     if (tradeDate) {
-      if (!whereClause.AND) whereClause.AND = []
-      whereClause.AND.push({
-        OR: [
-          {
-            closeDate: {
-              gte: `${tradeDate}T00:00:00.000Z`,
-              lte: `${tradeDate}T23:59:59.999Z`,
-            }
-          },
-          {
-            closeDate: '',
-            entryDate: {
-              gte: `${tradeDate}T00:00:00.000Z`,
-              lte: `${tradeDate}T23:59:59.999Z`,
-            }
-          }
-        ]
-      })
+      whereConditions.push(
+        or(
+          and(
+            gte(schema.Trade.closeDate, `${tradeDate}T00:00:00.000Z`),
+            lte(schema.Trade.closeDate, `${tradeDate}T23:59:59.999Z`)
+          ),
+          and(
+            eq(schema.Trade.closeDate, ''),
+            gte(schema.Trade.entryDate, `${tradeDate}T00:00:00.000Z`),
+            lte(schema.Trade.entryDate, `${tradeDate}T23:59:59.999Z`)
+          )
+        )!
+      )
     } else if (dateFrom || dateTo) {
-      whereClause.entryDate = {}
       if (dateFrom) {
-        whereClause.entryDate.gte = dateFrom.includes('T') ? dateFrom : `${dateFrom}T00:00:00.000Z`
+        whereConditions.push(gte(schema.Trade.entryDate, dateFrom.includes('T') ? dateFrom : `${dateFrom}T00:00:00.000Z`))
       }
       if (dateTo) {
-        whereClause.entryDate.lte = dateTo.includes('T') ? dateTo : `${dateTo}T23:59:59.999Z`
+        whereConditions.push(lte(schema.Trade.entryDate, dateTo.includes('T') ? dateTo : `${dateTo}T23:59:59.999Z`))
       }
     }
 
     if (instruments.length > 0) {
-      whereClause.instrument = { in: instruments }
+      whereConditions.push(inArray(schema.Trade.instrument, instruments))
     }
     
     if (pnlMin !== undefined || pnlMax !== undefined) {
-      whereClause.pnl = {}
-      if (pnlMin !== undefined) whereClause.pnl.gte = pnlMin
-      if (pnlMax !== undefined) whereClause.pnl.lte = pnlMax
+      if (pnlMin !== undefined) whereConditions.push(gte(schema.Trade.pnl, pnlMin))
+      if (pnlMax !== undefined) whereConditions.push(lte(schema.Trade.pnl, pnlMax))
     }
     
     if (timeRange) {
@@ -255,35 +257,35 @@ export async function GET(request: NextRequest) {
       }
       const range = timeRanges[timeRange]
       if (range) {
-        whereClause.timeInPosition = { gte: range[0], lt: range[1] }
+        whereConditions.push(gte(schema.Trade.timeInPosition, range[0]))
+        whereConditions.push(lt(schema.Trade.timeInPosition, range[1]))
       }
     }
     
     if (tagIds.length > 0) {
-      if (!whereClause.AND) whereClause.AND = []
-      whereClause.AND.push({ tags: { hasSome: tagIds } })
+      whereConditions.push(arrayOverlaps(schema.Trade.tags, tagIds))
     }
 
     if (side) {
-      if (!whereClause.AND) whereClause.AND = []
-      whereClause.AND.push({ side: { equals: side, mode: 'insensitive' } })
+      whereConditions.push(ilike(schema.Trade.side, side))
     }
 
     if (search) {
-      if (!whereClause.AND) whereClause.AND = []
-      whereClause.AND.push({
-        OR: [
-          { instrument: { contains: search, mode: 'insensitive' } },
-          { symbol: { contains: search, mode: 'insensitive' } },
-          { comment: { contains: search, mode: 'insensitive' } },
-        ]
-      })
+      whereConditions.push(
+        or(
+          ilike(schema.Trade.instrument, `%${search}%`),
+          ilike(schema.Trade.symbol, `%${search}%`),
+          ilike(schema.Trade.comment, `%${search}%`)
+        )!
+      )
     }
     
+    const finalWhere = and(...whereConditions)
+
     // PERF: Fetch trades (slim select) + accounts (both regular and prop firm) in parallel
     const useDirectPagination = !needsAnalytics && pageLimit !== null && weekday === null && hour === null && !outcome
     const tradeQuery = {
-      where: whereClause,
+      where: finalWhere,
       orderBy: (table: any, { desc }: any) => [desc(table.entryDate)],
       limit: useDirectPagination ? pageLimit : limit,
       ...(useDirectPagination ? { offset: pageOffset } : {}),
@@ -293,7 +295,7 @@ export async function GET(request: NextRequest) {
 
     const rawTrades = await db.query.Trade.findMany(tradeQuery)
     const totalForDirectPagination = useDirectPagination
-      ? await db.$count(schema.Trade, whereClause)
+      ? await db.$count(schema.Trade, finalWhere)
       : null
     const userSettings = await db.query.UserSettings.findFirst({
       where: (table, { eq }) => eq(table.userId, internalUserId),

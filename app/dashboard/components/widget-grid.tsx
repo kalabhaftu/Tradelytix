@@ -350,10 +350,13 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
 
   // Show empty states
   const hasAccounts = accounts && accounts.length > 0
-  const hasNoSelectedAccounts = accountNumbers.length === 0 && (!accountFilterSettings?.selectedPhaseAccountIds || accountFilterSettings.selectedPhaseAccountIds.length === 0)
-  
+  const settingsReady = !isLoadingAccountFilterSettings
+  const hasNoSelectedAccounts = settingsReady
+    && accountNumbers.length === 0
+    && (!accountFilterSettings?.selectedPhaseAccountIds || accountFilterSettings.selectedPhaseAccountIds.length === 0)
+
   const showEmptyTradeState = !isEditMode && !isLoading && !hasAccounts
-  const showEmptyAccountState = !isEditMode && !isLoading && hasAccounts && hasNoSelectedAccounts && !showEmptyTradeState
+  const showEmptyAccountState = !isEditMode && !isLoading && settingsReady && hasAccounts && hasNoSelectedAccounts && !showEmptyTradeState
 
   if (showEmptyTradeState) {
     return <EmptyTradeState />

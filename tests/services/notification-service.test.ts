@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import * as NotificationService from '@/lib/services/notification-service'
-import { NotificationType, NotificationPriority } from '@prisma/client'
+import type { NotificationType, NotificationPriority } from '@/lib/db/schema/users'
 
 // Mock db client
 vi.mock('@/lib/db/client', () => ({

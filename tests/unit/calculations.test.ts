@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { calculateStatistics, groupTradesByExecution } from '@/lib/utils'
 import { calculateMetricsFromTrades } from '@/lib/zella-score'
 import { classifyOutcome } from '@/lib/metrics/outcome'
-import type { Trade } from '@prisma/client'
+import type { TradeType as Trade } from '@/lib/db/schema/trades'
 
 // Helper to create mock trades
 function createMockTrade(overrides: Partial<Trade> = {}): Trade {

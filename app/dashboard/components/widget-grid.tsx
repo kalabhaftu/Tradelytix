@@ -554,7 +554,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
 
                   {/* Widget content */}
                   <div className="h-full w-full overflow-hidden">
-                    <WidgetErrorBoundary widgetId={widget.i} title={config.name}>
+                    <WidgetErrorBoundary widgetId={widget.i} title={config.type}>
                       {config.getComponent({ size: widget.size as any })}
                     </WidgetErrorBoundary>
                   </div>

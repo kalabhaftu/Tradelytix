@@ -119,6 +119,7 @@ export const Notification = pgTable('Notification', {
 
 export type NotificationRow = typeof Notification.$inferSelect;
 export type NotificationType = (typeof NotificationTypeEnum.enumValues)[number];
+export type NotificationPriority = (typeof NotificationPriorityEnum.enumValues)[number];
 export type NewNotification = typeof Notification.$inferInsert;
 
 export const Feedback = pgTable('Feedback', {

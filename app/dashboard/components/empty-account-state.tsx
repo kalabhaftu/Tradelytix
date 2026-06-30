@@ -2,7 +2,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Filter, TrendingUp, BarChart3 } from "lucide-react"
+import { Filter, TrendingUp, BarChart3, PlugZap, UploadCloud } from "lucide-react"
+import Link from "next/link"
 
 interface EmptyAccountStateProps {
   onOpenAccountSelector?: () => void
@@ -33,14 +34,46 @@ export function EmptyAccountState({ onOpenAccountSelector }: EmptyAccountStatePr
             </div>
           </div>
           
-          <Button 
-            onClick={onOpenAccountSelector}
-            className="w-full mt-4"
-            size="lg"
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Select Accounts
-          </Button>
+          <div className="grid gap-3 mt-6">
+            <Button 
+              onClick={() => {
+                if (onOpenAccountSelector) {
+                  onOpenAccountSelector()
+                } else {
+                  window.dispatchEvent(new Event('open-account-selector'))
+                }
+              }}
+              className="w-full"
+              size="lg"
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Select Accounts
+            </Button>
+            
+            <div className="relative my-2">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border/50" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">Or add a new account</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Link href="/dashboard/accounts" passHref className="w-full">
+                <Button size="default" variant="outline" className="w-full bg-muted/30">
+                  <PlugZap className="mr-2 h-4 w-4 text-primary" />
+                  Sync Broker
+                </Button>
+              </Link>
+              <Link href="/dashboard/import" passHref className="w-full">
+                <Button size="default" variant="outline" className="w-full bg-muted/30">
+                  <UploadCloud className="mr-2 h-4 w-4 text-primary" />
+                  Import
+                </Button>
+              </Link>
+            </div>
+          </div>
           
           <p className="text-xs text-center text-muted-foreground mt-4">
             Tip: Click the filter icon in the navigation bar to manage account selections

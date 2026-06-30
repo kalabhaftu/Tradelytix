@@ -48,7 +48,7 @@ export function TradeTableMobileCard({
     : 'Open'
 
   const isProfitable = trade.pnl >= 0
-  const positionTime = parsePositionTime(trade.timeInPosition)
+  const positionTime = parsePositionTime(trade.timeInPosition ?? 0)
   const tradeRInfo = getTradeRMultipleInfo(trade)
 
   return (
@@ -155,7 +155,7 @@ export function TradeTableMobileCard({
         {trade.commission !== 0 && (
           <div>
             <p className="text-muted-foreground text-xs">Commission</p>
-            <p className="font-medium">{formatValue(trade.commission, { kind: 'money' })}</p>
+            <p className="font-medium">{formatValue(trade.commission ?? 0, { kind: 'money' })}</p>
           </div>
         )}
       </div>

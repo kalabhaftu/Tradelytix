@@ -121,8 +121,8 @@ export function AccountEquityChart({
 
     if (allEvents.length === 0) return []
 
-    const firstDate = allEvents[0].date
-    const lastDate = allEvents[allEvents.length - 1].date
+    const firstDate = allEvents[0]!.date
+    const lastDate = allEvents[allEvents.length - 1]!.date
     const dailyPoints: ChartDataPoint[] = []
     const resetDateObj = resetDate ? new Date(resetDate) : null
 
@@ -178,7 +178,7 @@ export function AccountEquityChart({
           drawdownLevel: maxDrawdownLevel,
           balanceFormatted: `$${runningBalance.toLocaleString()}`,
           isPayout: !!payoutEvent,
-          payoutStatus: (payoutEvent as ChartEvent | undefined)?.payoutStatus,
+          ...(payoutEvent?.payoutStatus && { payoutStatus: payoutEvent.payoutStatus }),
           isAfterReset
         })
 
@@ -276,7 +276,8 @@ export function AccountEquityChart({
           <ChartTooltip
             content={({ active, payload }) => {
               if (active && payload && payload.length) {
-                const data = payload[0].payload;
+                const data = payload[0]?.payload;
+                if (!data) return null;
                 return (
                   <div className="bg-background p-2 border rounded shadow-sm">
                     <p className="text-sm font-medium">

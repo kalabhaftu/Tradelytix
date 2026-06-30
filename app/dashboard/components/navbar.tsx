@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { useData } from "@/context/data-provider"
 import { useAuth } from "@/context/auth-provider"
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ImportButton from './import/import-button'
 import { NotificationCenter } from '@/components/notifications/notification-center'
 
@@ -58,6 +58,18 @@ export default function Navbar() {
   const { forceClearAuth } = useAuth()
 
   useKeyboardShortcuts()
+
+  useEffect(() => {
+    const handleOpenAccountSelector = () => {
+      if (isMobile) {
+        setMobileAccountsOpen(true)
+      } else {
+        setAccountPopoverOpen(true)
+      }
+    }
+    window.addEventListener('open-account-selector', handleOpenAccountSelector)
+    return () => window.removeEventListener('open-account-selector', handleOpenAccountSelector)
+  }, [isMobile])
 
   const handleLogout = async () => {
     localStorage.clear()

@@ -345,7 +345,7 @@ export default function PlaybookPage() {
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
                 <CustomDateRangePicker
-                  {...(playbookDateRange ? { selected: playbookDateRange } : {})}
+                  {...(playbookDateRange ? { selected: playbookDateRange as any } : {})}
                   onSelect={(range) => {
                     if (range?.from) setPlaybookDateRange({ from: range.from, to: range.to ?? range.from })
                     else setPlaybookDateRange(undefined)

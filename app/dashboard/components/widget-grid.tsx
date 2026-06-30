@@ -112,7 +112,7 @@ function LazyMobileWidget({ children, minHeight, height, isEditMode }: { childre
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        if (entry?.isIntersecting) {
           setIsIntersecting(true)
           observer.disconnect()
         }
@@ -283,9 +283,9 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
     if (!config) return
 
     const slotToUse = targetSlot
-    const defaults = WIDGET_GRID_DEFAULTS[widgetType as WidgetType] || WIDGET_GRID_DEFAULTS.default
+    const defaults = WIDGET_GRID_DEFAULTS[widgetType as WidgetType] || WIDGET_GRID_DEFAULTS.default || { defaultW: 3, defaultH: 3 }
 
-    let x = 0, y = 1, w = defaults.defaultW, h = defaults.defaultH
+    let x = 0, y = 1, w = defaults.defaultW || 3, h = defaults.defaultH || 3
 
     if (config.kpiRowOnly && slotToUse?.slotIndex !== undefined) {
       x = slotToUse.slotIndex
@@ -335,7 +335,9 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
 
     const reorderedKpi = [...kpiWidgets]
     const [moved] = reorderedKpi.splice(dragIndex, 1)
-    reorderedKpi.splice(dropIndex, 0, moved)
+    if (moved) {
+      reorderedKpi.splice(dropIndex, 0, moved)
+    }
 
     const updatedKpi = reorderedKpi.map((widget, index) => ({
       ...widget,
@@ -350,7 +352,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
   const hasAccounts = accounts && accounts.length > 0
   const hasNoSelectedAccounts = accountNumbers.length === 0 && (!accountFilterSettings?.selectedPhaseAccountIds || accountFilterSettings.selectedPhaseAccountIds.length === 0)
   
-  const showEmptyTradeState = !isEditMode && !isLoading && (!hasAccounts || (!hasNoSelectedAccounts && (!formattedTrades || formattedTrades.length === 0)))
+  const showEmptyTradeState = !isEditMode && !isLoading && !hasAccounts
   const showEmptyAccountState = !isEditMode && !isLoading && hasAccounts && hasNoSelectedAccounts && !showEmptyTradeState
 
   if (showEmptyTradeState) {
@@ -490,7 +492,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
                       <X className="h-3 w-3" />
                     </Button>
                   )}
-                  <LazyMobileWidget height={mobileHeight} minHeight={minHeight} isEditMode={isEditMode}>
+                  <LazyMobileWidget {...(mobileHeight !== undefined ? { height: mobileHeight } : {})} minHeight={minHeight} isEditMode={isEditMode}>
                     {config.getComponent({ size: widget.size as any })}
                   </LazyMobileWidget>
                 </div>
@@ -512,6 +514,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
             resizeHandles={['s', 'w', 'e', 'n', 'sw', 'nw', 'se', 'ne']}
             compactor={verticalCompactor}
             onLayoutChange={handleLayoutChange as any}
+            {...({} as any)}
           >
           {gridWidgets.map(widget => {
             const config = WIDGET_REGISTRY[widget.type as WidgetType]
@@ -548,7 +551,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
 
                   {/* Widget content */}
                   <div className="h-full w-full overflow-hidden">
-                    <WidgetErrorBoundary widgetId={widget.i} title={config.title}>
+                    <WidgetErrorBoundary widgetId={widget.i} title={config.name}>
                       {config.getComponent({ size: widget.size as any })}
                     </WidgetErrorBoundary>
                   </div>

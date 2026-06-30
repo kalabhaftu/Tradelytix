@@ -42,10 +42,15 @@ export function TimeOfDayHeatmap({ trades }: TimeOfDayHeatmapProps) {
 
       activeHours.add(hour)
 
-      if (!grid[dayName][hour]) grid[dayName][hour] = { pnl: 0, trades: 0, wins: 0 }
-      grid[dayName][hour].pnl += pnl
-      grid[dayName][hour].trades++
-      if (pnl > 0) grid[dayName][hour].wins++
+      let cell = grid[dayName]?.[hour]
+      if (!cell) {
+        cell = { pnl: 0, trades: 0, wins: 0 }
+        if (!grid[dayName]) grid[dayName] = {}
+        grid[dayName][hour] = cell
+      }
+      cell.pnl += pnl
+      cell.trades++
+      if (pnl > 0) cell.wins++
     })
 
     // Find max absolute PnL for color scaling

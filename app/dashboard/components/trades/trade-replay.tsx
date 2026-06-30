@@ -190,7 +190,7 @@ export default function TradeReplay({ trade, onClose }: TradeReplayProps) {
 
         // Robust ResizeObserver that handles exact container dimensions
         const resizeObserver = new ResizeObserver((entries) => {
-            if (!isMounted || !entries[0].contentRect || !chartRef.current) return
+            if (!isMounted || !entries[0]?.contentRect || !chartRef.current) return
             const { width, height } = entries[0].contentRect
             // Only resize if dimensions are valid and changed
             if (width > 0 && height > 0) {

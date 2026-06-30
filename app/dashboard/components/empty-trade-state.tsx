@@ -2,10 +2,14 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { PlugZap, UploadCloud, LineChart } from "lucide-react"
+import { PlugZap, UploadCloud, LineChart, Filter } from "lucide-react"
 import Link from "next/link"
 
-export function EmptyTradeState() {
+interface EmptyTradeStateProps {
+  onOpenAccountSelector?: () => void
+}
+
+export function EmptyTradeState({ onOpenAccountSelector }: EmptyTradeStateProps) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 lg:p-8 animate-in fade-in zoom-in duration-500">
       <div className="max-w-2xl w-full text-center space-y-8">
@@ -18,18 +22,33 @@ export function EmptyTradeState() {
             Your Trading Journey Starts Here
           </h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            You don&apos;t have any trades yet. Connect your broker for automatic syncing, or import your trades manually to unlock powerful analytics and insights.
+            You don&apos;t have any trades yet. Select a different account, connect your broker for automatic syncing, or import your trades manually.
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-4 pt-4 max-w-lg mx-auto">
-          <Link href="/dashboard/accounts" passHref>
+        <div className="grid sm:grid-cols-3 gap-4 pt-4 max-w-2xl mx-auto">
+          <Button 
+            onClick={() => {
+              if (onOpenAccountSelector) {
+                onOpenAccountSelector()
+              } else {
+                window.dispatchEvent(new Event('open-account-selector'))
+              }
+            }}
+            size="lg" 
+            variant="outline"
+            className="w-full h-14 text-base font-semibold border-primary/20 hover:bg-muted/50 transition-all group"
+          >
+            <Filter className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform text-primary" />
+            Select Account
+          </Button>
+          <Link href="/dashboard/accounts" passHref className="">
             <Button size="lg" className="w-full h-14 text-base font-semibold shadow-lg hover:shadow-primary/25 transition-all group">
               <PlugZap className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
               Connect Broker
             </Button>
           </Link>
-          <Link href="/dashboard/import" passHref>
+          <Link href="/dashboard/import" passHref className="">
             <Button size="lg" variant="outline" className="w-full h-14 text-base font-semibold hover:bg-muted/50 transition-all group border-primary/20">
               <UploadCloud className="mr-2 h-5 w-5 group-hover:-translate-y-1 transition-transform text-primary" />
               Import Trades

@@ -388,10 +388,14 @@ export function GoalsPageClient() {
       toast.error('Title and target value are required')
       return
     }
+    
+    const { startDate, endDate, targetValue, ...rest } = form
+    
     createMutation.mutate({
-      ...form,
-      targetValue: parseFloat(form.targetValue),
-      ...(form.endDate && { endDate: form.endDate }),
+      ...rest,
+      targetValue: parseFloat(targetValue),
+      ...(startDate && { startDate }),
+      ...(endDate && { endDate }),
     })
   }, [form, createMutation])
 

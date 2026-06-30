@@ -135,7 +135,7 @@ export function AddEditModelModal({ isOpen, onClose, onSave, model, mode }: AddE
     const updatedRule = { ...newRules[index] }
     // @ts-ignore
     updatedRule[field] = value
-    newRules[index] = updatedRule
+    newRules[index] = updatedRule as Rule
     setRules(newRules)
   }
 

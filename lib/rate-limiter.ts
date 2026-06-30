@@ -116,8 +116,11 @@ export async function consumeRateLimitKey(
   key: string,
   limiter: LimiterConfig
 ): Promise<{ allowed: boolean; remaining: number }> {
-  if (!isKvAvailable() && shouldFailClosed(limiter)) {
-    return { allowed: false, remaining: 0 }
+  if (!isKvAvailable()) {
+    if (shouldFailClosed(limiter)) {
+      return { allowed: false, remaining: 0 }
+    }
+    return { allowed: true, remaining: limiter.points }
   }
 
   try {
@@ -145,8 +148,11 @@ export async function applyRateLimit(
 ): Promise<NextResponse | null> {
   const identifier = getRateLimitIdentifier(req)
 
-  if (!isKvAvailable() && shouldFailClosed(limiter)) {
-    return rateLimitUnavailableResponse()
+  if (!isKvAvailable()) {
+    if (shouldFailClosed(limiter)) {
+      return rateLimitUnavailableResponse()
+    }
+    return null
   }
 
   try {

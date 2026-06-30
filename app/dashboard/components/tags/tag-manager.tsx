@@ -67,7 +67,7 @@ export function TagManager({ isOpen, onClose, onRefresh }: TagManagerProps) {
 
     setIsCreating(true)
     try {
-      await createTag(newTagName, selectedColor)
+      await createTag(newTagName, selectedColor || '')
       setNewTagName('')
       setSelectedColor(DEFAULT_COLORS[0])
       toast.success('Tag created successfully')

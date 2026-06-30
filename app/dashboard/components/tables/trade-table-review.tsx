@@ -145,8 +145,8 @@ const buildGroupedTrades = (trades: ExtendedTrade[]) => {
       if (!group.trades) group.trades = []
       group.trades.push(cloneTradeForGroup(trade))
       group.pnl += trade.pnl || 0
-      group.commission += trade.commission || 0
-      group.quantity += trade.quantity || 0
+      group.commission = (group.commission || 0) + (trade.commission || 0)
+      group.quantity = (group.quantity || 0) + (trade.quantity || 0)
       if (trade.closeDate && (!group.closeDate || new Date(trade.closeDate) > new Date(group.closeDate))) {
         group.closeDate = trade.closeDate
       }
@@ -365,7 +365,7 @@ const useTradeTableColumns = ({
     {
       accessorKey: 'commission',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Comm." tableId="trade-table" className="justify-end px-0" />,
-      cell: ({ row }) => <div className="text-right font-mono text-muted-foreground tabular-nums">{formatValue(row.original.commission, { kind: 'money' })}</div>,
+      cell: ({ row }) => <div className="text-right font-mono text-muted-foreground tabular-nums">{formatValue(row.original.commission ?? 0, { kind: 'money' })}</div>,
       size: 90,
     },
     {
@@ -384,10 +384,10 @@ const useTradeTableColumns = ({
 
         return (
           <div className="flex items-center justify-center space-x-1.5">
-            <Button variant='secondary' size='sm' className="h-7 px-2 text-[11px]" data-tour="view-trade-btn" onClick={() => onViewDetails(trade)}>
+            <Button variant='secondary' size='sm' className="h-7 px-2 text-[11px]" data-tour="view-trade-btn" onClick={() => onViewDetails(trade as ExtendedTrade)}>
               View
             </Button>
-            <Button variant='ghost' size='sm' className="h-7 px-2 text-[11px]" data-tour="edit-trade-btn" onClick={() => onEditTrade(tradeToEdit)}>
+            <Button variant='ghost' size='sm' className="h-7 px-2 text-[11px]" data-tour="edit-trade-btn" onClick={() => onEditTrade(tradeToEdit as ExtendedTrade)}>
               Edit
             </Button>
           </div>

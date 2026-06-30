@@ -57,6 +57,8 @@ export function decryptString(payload: string): string {
     if (parts.length !== 3) return payload; // Not our format
     
     const [ivHex, authTagHex, encryptedHex] = parts;
+    if (!ivHex || !authTagHex || !encryptedHex) return payload;
+
     const key = getEncryptionKey();
     const iv = Buffer.from(ivHex, 'hex');
     const authTag = Buffer.from(authTagHex, 'hex');
@@ -64,7 +66,7 @@ export function decryptString(payload: string): string {
     const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
     decipher.setAuthTag(authTag);
     
-    let decrypted = decipher.update(encryptedHex, 'hex', 'utf8');
+    let decrypted: string = decipher.update(encryptedHex, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     
     return decrypted;

@@ -26,6 +26,16 @@ const normalizedSiteUrl = rawSiteUrl.startsWith('http') ? rawSiteUrl : `https://
 const socialImage = `/opengraph-image.png?v=${SOCIAL_PREVIEW_VERSION}`
 const twitterImage = `/twitter-image.png?v=${SOCIAL_PREVIEW_VERSION}`
 
+export const viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: 'white' },
+    { media: '(prefers-color-scheme: dark)', color: 'black' },
+  ],
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+}
+
 export const metadata: Metadata = {
   metadataBase: new URL(normalizedSiteUrl),
   title: SITE_NAME,

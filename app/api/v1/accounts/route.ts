@@ -169,20 +169,33 @@ export async function GET(request: NextRequest) {
     const propPhaseIdsToFetch = paginated.filter(a => a.accountType === 'prop-firm').map(a => a.id)
     const propNumbersToFetch = paginated.filter(a => a.accountType === 'prop-firm').map(a => a.number)
     
-    const relevantTrades = await db.query.Trade.findMany({
-      where: (table, { eq, or, inArray }) => or(
-        inArray(table.accountNumber, [...liveNumbersToFetch, ...propNumbersToFetch]),
-        inArray(table.phaseAccountId, propPhaseIdsToFetch)
-      )
-    })
+    const tradeConditions = []
+    
+    const accountNumbersForTrades = [...liveNumbersToFetch, ...propNumbersToFetch]
+    if (accountNumbersForTrades.length > 0) {
+      tradeConditions.push(inArray(schema.Trade.accountNumber, accountNumbersForTrades))
+    }
+    
+    if (propPhaseIdsToFetch.length > 0) {
+      tradeConditions.push(inArray(schema.Trade.phaseAccountId, propPhaseIdsToFetch))
+    }
+
+    const relevantTrades = tradeConditions.length > 0 
+      ? await db.query.Trade.findMany({
+          where: (table, { or }) => or(...tradeConditions)
+        })
+      : []
 
     const relevantIds = paginated.map(p => p.id)
+
     
     let relevantTransactions: any[] = []
     try {
-      relevantTransactions = await db.query.Transaction.findMany({
-         where: (table, { inArray }) => inArray(table.accountId, relevantIds)
-      })
+      if (relevantIds.length > 0) {
+        relevantTransactions = await db.query.LiveAccountTransaction.findMany({
+           where: (table, { inArray }) => inArray(table.accountId, relevantIds)
+        })
+      }
     } catch {
        // Ignore if not present
     }

@@ -1,66 +1,32 @@
 import logger from '@/lib/logger';
 import { createHash } from 'crypto'
-import { RateLimiterMemory } from 'rate-limiter-flexible'
 import { NextRequest, NextResponse } from 'next/server'
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
 
-/**
- * Rate limiter with @vercel/kv persistence when available,
- * falling back to in-memory when KV is not configured.
- *
- * In serverless (Vercel), memory-based limiters reset per cold start.
- * KV-backed limiters persist across all instances.
- */
+// ─── Redis client initialization ───
+let customRedis: Redis | null = null
 
-import { createClient } from '@vercel/kv'
-
-let customKv: ReturnType<typeof createClient> | null = null
-
-function getKvClient() {
-  if (!customKv) {
-    customKv = createClient({
-      url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '',
-      token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '',
+function getRedisClient() {
+  if (!customRedis) {
+    customRedis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || '',
+      token: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || '',
     })
   }
-  return customKv
+  return customRedis
 }
 
 // ─── KV availability check ───
 function isKvAvailable(): boolean {
   return !!(
-    (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) ||
-    (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+    (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) ||
+    (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
   )
 }
 
-// ─── KV-backed rate limiter (atomic increment with TTL) ───
-async function kvConsume(key: string, points: number, duration: number): Promise<{ success: boolean; remaining: number }> {
-  try {
-    const client = getKvClient()
-    const now = Math.floor(Date.now() / 1000)
-    const windowKey = `rl:${key}:${Math.floor(now / duration)}`
-
-    const current = await client.incr(windowKey)
-
-    // Set expiry on first hit of this window
-    if (current === 1) {
-      await client.expire(windowKey, duration)
-    }
-
-    if (current > points) {
-      return { success: false, remaining: 0 }
-    }
-
-    return { success: true, remaining: points - current }
-  } catch {
-    // KV error — allow request through (fail-open)
-    return { success: true, remaining: points }
-  }
-}
-
-
 // ─── Limiter config type ───
-interface LimiterConfig {
+export interface LimiterConfig {
   points: number
   duration: number
   failClosed?: boolean
@@ -77,9 +43,7 @@ function shouldFailClosed(limiter: LimiterConfig) {
 function rateLimitUnavailableResponse() {
   logger.error({ event: 'system_error', error: {
     has_KV_URL: !!process.env.KV_REST_API_URL,
-    has_KV_TOKEN: !!process.env.KV_REST_API_TOKEN,
     has_UPSTASH_URL: !!process.env.UPSTASH_REDIS_REST_URL,
-    has_UPSTASH_TOKEN: !!process.env.UPSTASH_REDIS_REST_TOKEN,
     ALLOW_IN_MEMORY: process.env.ALLOW_IN_MEMORY_RATE_LIMITS_IN_PRODUCTION,
     NODE_ENV: process.env.NODE_ENV
   } }, '[Rate Limiter] Fail-closed triggered. Environment variables status:')
@@ -94,16 +58,24 @@ function rateLimitUnavailableResponse() {
   )
 }
 
+// ─── Ephemeral Cache (Memory Fallback for @upstash/ratelimit) ───
+const ephemeralCache = new Map()
 
-// ─── In-memory fallback instances (used when KV is unavailable) ───
-const memoryLimiters = new Map<string, RateLimiterMemory>()
+// ─── Upstash Limiter Instances ───
+const ratelimiterInstances = new Map<string, Ratelimit>()
 
-function getMemoryLimiter(config: LimiterConfig): RateLimiterMemory {
+function getUpstashLimiter(config: LimiterConfig): Ratelimit {
   const cacheKey = `${config.points}:${config.duration}`
-  let limiter = memoryLimiters.get(cacheKey)
+  let limiter = ratelimiterInstances.get(cacheKey)
+  
   if (!limiter) {
-    limiter = new RateLimiterMemory({ points: config.points, duration: config.duration })
-    memoryLimiters.set(cacheKey, limiter)
+    limiter = new Ratelimit({
+      redis: getRedisClient(),
+      limiter: Ratelimit.slidingWindow(config.points, `${config.duration} s`),
+      ephemeralCache: ephemeralCache,
+      analytics: false,
+    })
+    ratelimiterInstances.set(cacheKey, limiter)
   }
   return limiter
 }
@@ -144,21 +116,20 @@ export async function consumeRateLimitKey(
   key: string,
   limiter: LimiterConfig
 ): Promise<{ allowed: boolean; remaining: number }> {
-  if (isKvAvailable()) {
-    const result = await kvConsume(key, limiter.points, limiter.duration)
-    return { allowed: result.success, remaining: result.remaining }
-  }
-
-  if (shouldFailClosed(limiter)) {
+  if (!isKvAvailable() && shouldFailClosed(limiter)) {
     return { allowed: false, remaining: 0 }
   }
 
-  const memLimiter = getMemoryLimiter(limiter)
   try {
-    const result = await memLimiter.consume(key)
-    return { allowed: true, remaining: result.remainingPoints }
-  } catch {
-    return { allowed: false, remaining: 0 }
+    const upstashLimiter = getUpstashLimiter(limiter)
+    const { success, remaining } = await upstashLimiter.limit(key)
+    return { allowed: success, remaining }
+  } catch (error) {
+    // Fail-open if Redis error and not failClosed
+    if (shouldFailClosed(limiter)) {
+      return { allowed: false, remaining: 0 }
+    }
+    return { allowed: true, remaining: limiter.points }
   }
 }
 
@@ -166,8 +137,7 @@ export async function consumeRateLimitKey(
  * Apply rate limiting to a request.
  * Returns null if allowed, or a 429 response if rate limited.
  *
- * Uses @vercel/kv when KV_REST_API_URL is configured (persistent across instances).
- * Falls back to in-memory rate limiting otherwise (per-instance, resets on cold start).
+ * Uses @upstash/ratelimit for distributed rate limiting.
  */
 export async function applyRateLimit(
   req: NextRequest,
@@ -175,10 +145,15 @@ export async function applyRateLimit(
 ): Promise<NextResponse | null> {
   const identifier = getRateLimitIdentifier(req)
 
-  // Try KV-backed rate limiting first (persistent across serverless instances)
-  if (isKvAvailable()) {
-    const result = await kvConsume(identifier, limiter.points, limiter.duration)
-    if (!result.success) {
+  if (!isKvAvailable() && shouldFailClosed(limiter)) {
+    return rateLimitUnavailableResponse()
+  }
+
+  try {
+    const upstashLimiter = getUpstashLimiter(limiter)
+    const { success, limit, remaining, reset } = await upstashLimiter.limit(identifier)
+
+    if (!success) {
       return NextResponse.json(
         {
           success: false,
@@ -191,44 +166,22 @@ export async function applyRateLimit(
           status: 429,
           headers: {
             'Retry-After': String(limiter.duration),
-            'X-RateLimit-Limit': String(limiter.points),
-            'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': String(Date.now() + (limiter.duration * 1000)),
+            'X-RateLimit-Limit': String(limit),
+            'X-RateLimit-Remaining': String(remaining),
+            'X-RateLimit-Reset': String(reset),
           },
         }
       )
     }
-    return null
-  }
 
-  if (shouldFailClosed(limiter)) {
-    return rateLimitUnavailableResponse()
-  }
-
-  // Fallback: in-memory rate limiting
-  const memLimiter = getMemoryLimiter(limiter)
-  try {
-    await memLimiter.consume(identifier)
     return null
-  } catch {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Too many requests',
-        details: 'Please wait a moment before trying again',
-        code: 'RATE_LIMIT_EXCEEDED',
-        retryable: true,
-      },
-      {
-        status: 429,
-        headers: {
-          'Retry-After': String(limiter.duration),
-          'X-RateLimit-Limit': String(limiter.points),
-          'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': String(Date.now() + (limiter.duration * 1000)),
-        },
-      }
-    )
+  } catch (error) {
+    // Log error but fail-open unless explicitly fail-closed
+    logger.warn({ error }, 'Rate limiter error, falling back to open limit')
+    if (shouldFailClosed(limiter)) {
+      return rateLimitUnavailableResponse()
+    }
+    return null
   }
 }
 

@@ -397,7 +397,7 @@ export async function GET(request: NextRequest) {
         .map((account: any) => account.id)
         .filter(Boolean)
       if (liveAccountIds.length > 0) {
-        relevantTransactions = await db.query.Transaction.findMany({
+        relevantTransactions = await db.query.LiveAccountTransaction.findMany({
           where: (table, { and, inArray }) => and(
             eq(table.userId, internalUserId),
             inArray(table.accountId, liveAccountIds)

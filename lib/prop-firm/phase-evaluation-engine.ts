@@ -167,6 +167,25 @@ export class PhaseEvaluationEngine {
         this.logError('Failed to create BreachRecord', e)
       }
 
+      // Send breach notification
+      try {
+        const userId = masterAccount.userId
+        await createRiskAlert(
+          userId,
+          phaseAccountId,
+          'daily_loss',
+          100, // breach is 100%+
+          {
+            accountName: masterAccount.accountName,
+            currentBalance: historicalBreachCheck.dayEndBalance,
+            limit: historicalBreachCheck.dailyLimit,
+            used: historicalBreachCheck.dayLoss
+          }
+        )
+      } catch (notificationError) {
+        this.logError('Failed to send breach notification', notificationError)
+      }
+
       return {
         drawdown: {
           currentEquity,
@@ -226,6 +245,25 @@ export class PhaseEvaluationEngine {
         this.log(`[EVAL] BreachRecord created for max drawdown breach`)
       } catch (e) {
         this.logError('Failed to create BreachRecord', e)
+      }
+
+      // Send breach notification
+      try {
+        const userId = masterAccount.userId
+        await createRiskAlert(
+          userId,
+          phaseAccountId,
+          'max_drawdown',
+          100, // breach is 100%+
+          {
+            accountName: masterAccount.accountName,
+            currentBalance: historicalMaxDDCheck.lowestBalance,
+            limit: historicalMaxDDCheck.maxDrawdownLimit,
+            used: historicalMaxDDCheck.maxDrawdownUsed
+          }
+        )
+      } catch (notificationError) {
+        this.logError('Failed to send breach notification', notificationError)
       }
 
       return {
@@ -347,6 +385,26 @@ export class PhaseEvaluationEngine {
         breachAmount: drawdown.breachAmount,
         profitTargetMet: progress.profitTargetPercent >= 100
       })
+
+      // Send breach notification
+      try {
+        const userId = masterAccount.userId
+        await createRiskAlert(
+          userId,
+          phaseAccountId,
+          drawdown.breachType === 'daily_drawdown' ? 'daily_loss' : 'max_drawdown',
+          100, // breach is 100%+
+          {
+            accountName: masterAccount.accountName,
+            currentBalance: currentEquity,
+            limit: drawdown.breachType === 'daily_drawdown' ? drawdown.dailyDrawdownLimit : drawdown.maxDrawdownLimit,
+            used: drawdown.breachType === 'daily_drawdown' ? drawdown.dailyDrawdownUsed : drawdown.maxDrawdownUsed
+          }
+        )
+        this.log(`Risk alert sent: Account Breached`)
+      } catch (notificationError) {
+        this.logError('Failed to send breach notification', notificationError)
+      }
 
       return {
         drawdown,

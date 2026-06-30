@@ -96,12 +96,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       // 3. Get all phase trades once, then build grouped execution stats consistently
       db.query.Trade.findMany({
         where: (table, { exists, eq }) => exists(
-          db.query.PhaseAccount.findMany({
-            where: (pa, { eq }) => and(
-              eq(pa.id, table.phaseAccountId),
-              eq(pa.masterAccountId, masterAccountId)
+          db.select({ id: schema.PhaseAccount.id })
+            .from(schema.PhaseAccount)
+            .where(
+              and(
+                eq(schema.PhaseAccount.id, table.phaseAccountId),
+                eq(schema.PhaseAccount.masterAccountId, masterAccountId)
+              )
             )
-          })
         ),
         columns: TRADE_COUNT_SELECT as any,
         orderBy: (table, { asc }) => [asc(table.exitTime)]
@@ -551,12 +553,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       // Delete daily anchors
       await tx.delete(schema.DailyAnchor).where(
         exists(
-          db.query.PhaseAccount.findMany({
-            where: (pa, { eq }) => and(
-              eq(pa.id, schema.DailyAnchor.phaseAccountId),
-              eq(pa.masterAccountId, masterAccountId)
+          db.select({ id: schema.PhaseAccount.id })
+            .from(schema.PhaseAccount)
+            .where(
+              and(
+                eq(schema.PhaseAccount.id, schema.DailyAnchor.phaseAccountId),
+                eq(schema.PhaseAccount.masterAccountId, masterAccountId)
+              )
             )
-          })
         )
       )
 

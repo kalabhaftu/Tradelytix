@@ -409,7 +409,11 @@ export function calculatePerformanceScoreResult(
   trades: Partial<TradeType>[],
   breakEvenThreshold: number = DEFAULT_BREAK_EVEN_THRESHOLD
 ) {
-  if (!trades || trades.length < 10) {
+  if (!trades || trades.length === 0) {
+    return { hasData: false, reason: 'no_data', message: 'Import trades to see your score.' }
+  }
+
+  if (trades.length < 10) {
     return { hasData: false, reason: 'not_enough_data', message: 'Not enough data. Minimum 10 trades required.' }
   }
 

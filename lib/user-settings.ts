@@ -134,6 +134,7 @@ export function extractUserSettingsWriteData(
     widgetStyle: normalized.widgetStyle,
     chartStyle: normalized.chartStyle,
     autoAdjustAccountDate: normalized.autoAdjustAccountDate,
+    updatedAt: new Date()
   }
 }
 
@@ -171,6 +172,8 @@ export function buildUserSettingsUpdateData(
   if ('autoAdjustAccountDate' in source && source.autoAdjustAccountDate !== undefined) {
     update.autoAdjustAccountDate = source.autoAdjustAccountDate
   }
+
+  update.updatedAt = new Date()
 
   return update
 }

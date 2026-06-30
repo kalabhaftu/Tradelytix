@@ -79,13 +79,17 @@ export async function POST(request: NextRequest) {
 
     const settingsData = {
       userId: identity.internalUserId,
-      accountFilterSettings: JSON.stringify(settings)
+      accountFilterSettings: JSON.stringify(settings),
+      updatedAt: new Date()
     }
     await db.insert(schema.UserSettings)
       .values(settingsData)
       .onConflictDoUpdate({
         target: schema.UserSettings.userId,
-        set: { accountFilterSettings: settingsData.accountFilterSettings }
+        set: { 
+          accountFilterSettings: settingsData.accountFilterSettings,
+          updatedAt: new Date()
+        }
       })
 
     return NextResponse.json({

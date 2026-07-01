@@ -327,68 +327,67 @@ export function AccountSelector({ onSave }: AccountSelectorProps) {
   const totalAccounts = filteredAccountsList.length
 
   return (
-    <div className="w-full min-w-[280px] sm:min-w-[300px] max-w-[400px] sm:max-w-[450px] p-3 sm:p-4 space-y-3">
-      <div className="space-y-2">
-        <h4 className="font-semibold text-sm sm:text-base">Account Filter</h4>
-        <p className="text-xs sm:text-sm text-muted-foreground">
-          Filter dashboard by accounts. Persists across sessions.
-        </p>
-      </div>
-
-      <div className="relative">
-        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search accounts..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 h-8 sm:h-9 text-sm"
-          disabled={isLoading}
-        />
-      </div>
-
-      {/* Quick Actions */}
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleSelectAll}
-          disabled={isLoading}
-          className="flex-1 h-8 sm:h-9 text-xs sm:text-sm"
-        >
-          Select All
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleActiveOnly}
-          disabled={activeAccounts.length === 0}
-          className="flex-1 h-8 sm:h-9 text-xs sm:text-sm"
-        >
-          Active Only
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleClearAll}
-          disabled={selectedAccounts.size === 0}
-          className="flex-1 h-8 sm:h-9 text-xs sm:text-sm"
-        >
-          Clear
-        </Button>
-      </div>
-
-      {/* Selection Count */}
-      {selectedAccounts.size > 0 && (
-        <div className="text-xs text-muted-foreground text-center">
-          {getSelectedMasterAccountCount} account{getSelectedMasterAccountCount !== 1 ? 's' : ''} selected
+    <div className="w-full min-w-[280px] sm:min-w-[300px] max-w-[400px] sm:max-w-[450px] flex flex-col max-h-[min(85vh,520px)]">
+      {/* Header: title + search + quick actions — fixed, never scrolls */}
+      <div className="p-3 sm:p-4 pb-2 space-y-3 flex-shrink-0 border-b">
+        <div className="space-y-1">
+          <h4 className="font-semibold text-sm sm:text-base">Account Filter</h4>
+          <p className="text-xs text-muted-foreground">Filter dashboard by accounts. Persists across sessions.</p>
         </div>
-      )}
 
-      <Separator />
+        <div className="relative">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search accounts..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 h-8 sm:h-9 text-sm"
+            disabled={isLoading}
+          />
+        </div>
 
-      {/* Account List */}
-      <ScrollArea className="h-[220px] sm:h-[260px]">
-        <div className="pr-3">
+        {/* Quick Actions */}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSelectAll}
+            disabled={isLoading}
+            className="flex-1 h-8 sm:h-9 text-xs sm:text-sm"
+          >
+            Select All
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleActiveOnly}
+            disabled={activeAccounts.length === 0}
+            className="flex-1 h-8 sm:h-9 text-xs sm:text-sm"
+          >
+            Active Only
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleClearAll}
+            disabled={selectedAccounts.size === 0}
+            className="flex-1 h-8 sm:h-9 text-xs sm:text-sm"
+          >
+            Clear
+          </Button>
+        </div>
+
+        {/* Selection Count */}
+        {selectedAccounts.size > 0 && (
+          <div className="text-xs text-muted-foreground text-center">
+            {getSelectedMasterAccountCount} account{getSelectedMasterAccountCount !== 1 ? 's' : ''} selected
+          </div>
+        )}
+      </div>
+
+      {/* Account List — flex-1 so it takes remaining space; min-h-0 allows shrinking */}
+      <ScrollArea className="flex-1 min-h-0 px-3 sm:px-4">
+        <div className="pb-2">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center space-y-3">
               <div className="space-y-2 w-full px-4">
@@ -507,10 +506,8 @@ export function AccountSelector({ onSave }: AccountSelectorProps) {
         </div>
       </ScrollArea>
 
-      <Separator />
-
-      {/* Apply Button */}
-      <div className="space-y-2">
+      {/* Apply Button — flex-shrink-0 so it sticks to the bottom regardless of list length */}
+      <div className="flex-shrink-0 p-3 sm:p-4 border-t space-y-2">
         <Button
           className="w-full h-9 sm:h-10"
           onClick={handleApplySelection}

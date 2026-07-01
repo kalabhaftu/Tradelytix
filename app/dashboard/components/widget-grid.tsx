@@ -154,8 +154,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
   const isMobile = useIsMobile()
   const { isEditMode, currentLayout, updateLayout } = useTemplateEditStore()
   const { activeTemplate, isLoading } = useTemplates()
-  const { accountNumbers, formattedTrades, isLoadingAccountFilterSettings, accountFilterSettings } = useData()
-  const { accounts } = useAccounts()
+  const { accountNumbers, formattedTrades, isLoadingAccountFilterSettings, accountFilterSettings, accounts: contextAccounts } = useData()
   const [showWidgetLibrary, setShowWidgetLibrary] = useState(false)
   const [showKpiSelector, setShowKpiSelector] = useState(false)
   const { width: containerWidth, containerRef: gridContainerRef, mounted: gridMounted } = useGridContainerWidth(isMobile)
@@ -348,8 +347,9 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
     updateLayout([...updatedKpi, ...otherWidgets])
   }, [currentLayout, kpiWidgets, updateLayout])
 
-  // Show empty states
-  const hasAccounts = accounts && accounts.length > 0
+  // hasAccounts: true if the user has any accounts in context (already loaded) OR has trades
+  // Use contextAccounts first, fall back to checking if trades exist (imported trades don't need a live broker)
+  const hasAccounts = (contextAccounts && contextAccounts.length > 0) || formattedTrades.length > 0
   const settingsReady = !isLoadingAccountFilterSettings
   const hasNoSelectedAccounts = settingsReady
     && accountNumbers.length === 0

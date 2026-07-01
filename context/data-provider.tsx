@@ -374,8 +374,8 @@ export const DataProvider: React.FC<{
   }, [initialBootstrapData, setAccounts, setIsLoading, setTrades, setUser, isDemoMode])
 
   const loadData = useCallback(async () => {
-    if (isLoading) return
     if (activeLoadPromiseRef.current) return activeLoadPromiseRef.current
+
     
     activeLoadPromiseRef.current = (async () => {
       try {
@@ -501,7 +501,7 @@ export const DataProvider: React.FC<{
     })();
 
     return activeLoadPromiseRef.current
-  }, [dashboardLayout, initialBootstrapData, isLoading, setAccounts, setDashboardLayout, setIsLoading, setSupabaseUser, setTrades, setUser]);
+  }, [dashboardLayout, initialBootstrapData, setAccounts, setDashboardLayout, setIsLoading, setSupabaseUser, setTrades, setUser]);
 
   useEffect(() => {
     if (isDemoMode) {

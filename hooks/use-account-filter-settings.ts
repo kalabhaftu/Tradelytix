@@ -57,18 +57,27 @@ export function useAccountFilterSettings(): UseAccountFilterSettingsResult {
       }
       return fetchAccountFilterSettings()
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    placeholderData: () => {
+    staleTime: 1000 * 60 * 5, // 5 minutes — no network call if cache is fresh
+    gcTime: 1000 * 60 * 10,   // keep in memory 10 minutes
+    // initialData seeds the query as if the fetch already succeeded.
+    // Unlike placeholderData, this makes isLoading=false immediately
+    // so the empty state never flashes while the API call is in flight.
+    initialData: () => {
+      if (typeof window === 'undefined') return undefined
       try {
-        const cached = localStorage.getItem(isDemo ? 'settings-cache-demo' : 'settings-cache')
+        const key = isDemo ? 'settings-cache-demo' : 'settings-cache'
+        const cached = localStorage.getItem(key)
         if (cached) {
           const parsed = JSON.parse(cached)
-          return parsed || DEFAULT_FILTER_SETTINGS
+          if (parsed && typeof parsed === 'object') return parsed as AccountFilterSettings
         }
-      } catch {
-        // ignore
-      }
-      return DEFAULT_FILTER_SETTINGS
+      } catch {}
+      return undefined
+    },
+    initialDataUpdatedAt: () => {
+      // Treat initialData as stale immediately so a background refresh still happens,
+      // but it won't block rendering or show isLoading=true.
+      return 0
     },
   })
 

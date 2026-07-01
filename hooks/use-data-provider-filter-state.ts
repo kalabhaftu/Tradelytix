@@ -27,7 +27,22 @@ export interface DataProviderHourFilter {
 
 export function useDataProviderFilterState(timezone: string | undefined) {
   const [instruments, setInstruments] = useState<string[]>([])
-  const [accountNumbers, setAccountNumbers] = useState<string[]>([])
+  // Initialize synchronously from localStorage so the first render already has the
+  // saved selection — this eliminates the flash where accountNumbers=[] before the
+  // data-provider useEffect fires to restore saved settings.
+  const [accountNumbers, setAccountNumbers] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return []
+    try {
+      const key = window.location.pathname.startsWith('/demo') ? 'settings-cache-demo' : 'settings-cache'
+      const cached = localStorage.getItem(key)
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        const ids = parsed?.selectedPhaseAccountIds
+        if (Array.isArray(ids) && ids.length > 0) return ids
+      }
+    } catch {}
+    return []
+  })
   const [dateRange, setDateRange] = useState<DataProviderDateRange | undefined>(undefined)
   const [pnlRange, setPnlRange] = useState<DataProviderPnlRange>({ min: undefined, max: undefined })
   const [timeRange, setTimeRange] = useState<DataProviderTimeRange>({ range: null })

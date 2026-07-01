@@ -1,56 +1,40 @@
-'use client'
+'use client';
 
-import { Button } from "@/components/ui/button"
-import { PlugZap, UploadCloud, Filter } from "lucide-react"
-import Link from "next/link"
+import { PlugZap } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 interface EmptyTradeStateProps {
-  onOpenAccountSelector?: () => void
+  onOpenAccountSelector?: () => void;
 }
 
 export function EmptyTradeState({ onOpenAccountSelector }: EmptyTradeStateProps) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 lg:p-8">
-      <div className="max-w-2xl w-full text-center space-y-8">
-        <div className="space-y-4">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-            Connect Your Account to Get Started
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            No account connected yet. Sync your broker directly, import a trade history file, or select an existing account to view your data.
-          </p>
-        </div>
+  const handleSelectAccount = () => {
+    if (onOpenAccountSelector) {
+      onOpenAccountSelector();
+    } else {
+      window.dispatchEvent(new Event('open-account-selector'));
+    }
+  };
 
-        <div className="grid sm:grid-cols-3 gap-4 pt-4 max-w-2xl mx-auto">
-          <Button
-            onClick={() => {
-              if (onOpenAccountSelector) {
-                onOpenAccountSelector()
-              } else {
-                window.dispatchEvent(new Event('open-account-selector'))
-              }
-            }}
-            size="lg"
-            variant="outline"
-            className="w-full h-14 text-base font-semibold border-primary/20 hover:bg-muted/50 transition-colors"
-          >
-            <Filter className="mr-2 h-5 w-5 text-primary" />
-            Select Account
-          </Button>
-          <Link href="/dashboard/accounts" passHref className="">
-            <Button size="lg" className="w-full h-14 text-base font-semibold transition-colors">
-              <PlugZap className="mr-2 h-5 w-5" />
-              Connect Broker
-            </Button>
-          </Link>
-          <Link href="/dashboard/import" passHref className="">
-            <Button size="lg" variant="outline" className="w-full h-14 text-base font-semibold hover:bg-muted/50 transition-colors border-primary/20">
-              <UploadCloud className="mr-2 h-5 w-5 text-primary" />
-              Import Trades
-            </Button>
-          </Link>
-        </div>
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+      <div className="mb-5 flex items-center justify-center rounded-full bg-muted p-4">
+        <PlugZap className="h-8 w-8 text-muted-foreground" />
+      </div>
+      <h3 className="mb-2 text-xl font-semibold tracking-tight">Connect Your Account</h3>
+      <p className="mb-8 max-w-sm text-sm text-muted-foreground">
+        No trades found. Connect your broker for automatic sync, import a trade history file, or select a different account.
+      </p>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Button variant="outline" onClick={handleSelectAccount}>Select Account</Button>
+        <Button asChild>
+          <Link href="/dashboard/accounts">Connect Broker</Link>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link href="/dashboard/import">Import Trades</Link>
+        </Button>
       </div>
     </div>
-  )
+  );
 }

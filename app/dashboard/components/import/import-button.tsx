@@ -123,7 +123,7 @@ export default function ImportButton() {
   const [selectedAccountId, setSelectedAccountId] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState<boolean>(false)
-  const [processedTrades, setProcessedTrades] = useState<Trade[]>([])
+  const [processedTrades, setProcessedTrades] = useState<TradeType[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [saveProgress, setSaveProgress] = useState<number>(0)
   // uploadIconRef removed

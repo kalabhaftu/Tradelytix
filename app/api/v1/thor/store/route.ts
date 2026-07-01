@@ -8,7 +8,7 @@ import { thorRateLimit } from '@/lib/security/ratelimit';
 
 // Common authentication function to use across all methods
 async function authenticateRequest(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for') || req.ip || '127.0.0.1';
+  const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
   const { success } = await thorRateLimit.limit(ip);
   if (!success) {
     return {
@@ -37,7 +37,7 @@ async function authenticateRequest(req: NextRequest) {
   try {
     // Verify the token by finding the user
     const user = await db.query.User.findFirst({
-      where: (table, { eq }) => eq(table.thorToken, token)
+      where: eq(schema.User.thorToken as any, token)
     });
     
     if (!user) {
@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (error) {
-    logger.error('[thor/store] Error processing request:', error)
+    logger.error('[thor/store] Error processing request: ' + error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -225,7 +225,7 @@ export async function GET(req: NextRequest) {
     }, { status: 200 });
     
   } catch (error) {
-    logger.error('[thor/store] Error retrieving trades:', error);
+    logger.error('[thor/store] Error retrieving trades: ' + error);
     return NextResponse.json({ 
       error: 'Failed to retrieve trades', 
       details: error instanceof Error ? error.message : 'Unknown error' 
@@ -271,7 +271,7 @@ export async function DELETE(req: NextRequest) {
     }, { status: 200 });
     
   } catch (error) {
-    logger.error('[thor/store] Error deleting trades:', error);
+    logger.error('[thor/store] Error deleting trades: ' + error);
     return NextResponse.json({ 
       error: 'Failed to delete trades', 
       details: error instanceof Error ? error.message : 'Unknown error' 

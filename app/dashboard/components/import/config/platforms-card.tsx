@@ -54,7 +54,7 @@ export interface PlatformConfig {
   processorComponent?: ComponentType<{
     csvData: string[][]
     headers: string[]
-    setProcessedTrades: React.Dispatch<React.SetStateAction<Trade[]>>
+    setProcessedTrades: React.Dispatch<React.SetStateAction<TradeType[]>>
     accountNumber: string
   }>
   tutorialLink?: string
@@ -73,7 +73,7 @@ const processStandardCsv = (data: string[][]): ProcessedData => {
   if (data.length === 0) {
     throw new Error("The CSV file appears to be empty or invalid.")
   }
-  const headers = data[0].filter(header => header && header.trim() !== '')
+  const headers = data[0]!.filter(header => header && header.trim() !== '')
   return { headers, processedData: data.slice(1) };
 }
 
@@ -84,7 +84,7 @@ const processMatchTraderCsv = (data: string[][]): ProcessedData => {
   
   // Match Trader CSV has a known header format
   const expectedHeaders = ['ID', 'Symbol', 'Open time', 'Volume', 'Side', 'Close time', 'Open price', 'Close Price', 'Stop loss', 'Take profit', 'Swap', 'Commission', 'Profit', 'Reason']
-  const headers = data[0].filter(header => header && header.trim() !== '')
+  const headers = data[0]!.filter(header => header && header.trim() !== '')
   
   // Verify this is a Match Trader CSV by checking for key columns (case-insensitive)
   const normalizedHeaders = headers.map(h => h.toLowerCase().trim())
@@ -105,7 +105,7 @@ const processExnessCsv = (data: string[][]): ProcessedData => {
   }
   
   // Exness CSV has a known header format
-  const headers = data[0].filter(header => header && header.trim() !== '')
+  const headers = data[0]!.filter(header => header && header.trim() !== '')
   
   // Verify this is an Exness CSV by checking for key columns
   const hasRequiredHeaders = ['ticket', 'opening_time_utc', 'closing_time_utc', 'type', 'lots', 'symbol', 'opening_price', 'closing_price'].every(

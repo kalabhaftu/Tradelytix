@@ -13,7 +13,7 @@ import { formatTimestamp, formatDateToTimestamp } from '@/lib/date-utils'
 import { createTradeWithDefaults } from '@/lib/trade-factory'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { DEFAULT_INCLUDED_FEE_TYPES, type TradovateIncludedFeeTypes } from './fee-types'
-import { logger } from '@/lib/logger';
+import { logger as baseLogger } from '@/lib/logger';
 
 // Helper function to format dates in the required format: 2025-06-05T08:38:40+00:00
 function formatDateForAPI(date: Date): string {
@@ -48,17 +48,17 @@ const DEBUG_MODE = process.env.NODE_ENV === 'development' || process.env.TRADOVA
 const logger = {
   debug: (message: string, data?: any) => {
     if (DEBUG_MODE) {
-      logger.info(`[TRADOVATE-DEBUG] ${message}`, data)
+      baseLogger.info(`[TRADOVATE-DEBUG] ${message}`, data)
     }
   },
   info: (message: string, data?: any) => {
-    logger.info(`[TRADOVATE] ${message}`, data)
+    baseLogger.info(`[TRADOVATE] ${message}`, data)
   },
   warn: (message: string, error?: any) => {
-    logger.warn(`[TRADOVATE] ${message}`, error)
+    baseLogger.warn(`[TRADOVATE] ${message}`, error)
   },
   error: (message: string, error?: any) => {
-    logger.error(`[TRADOVATE] ${message}`, error)
+    baseLogger.error(`[TRADOVATE] ${message}`, error)
   }
 }
 
@@ -169,7 +169,7 @@ function getTotalFeeFromFillFee(fee: TradovateFillFee, includedFeeTypes: Tradova
 }
 
 interface TradovateTradesResult {
-  processedTrades?: Trade[]
+  processedTrades?: TradeType[]
   savedCount?: number
   ordersCount?: number
   error?: string
@@ -188,7 +188,7 @@ async function getContractById(accessToken: string, contractId: number): Promise
     })
     
     if (!response.ok) {
-      logger.warn(`Failed to fetch contract ${contractId}:`, response.status, response.statusText)
+      logger.warn(`Failed to fetch contract ${contractId}: ${response.status} ${response.statusText}`)
       return null
     }
     
@@ -303,7 +303,7 @@ async function getFillPairs(accessToken: string): Promise<TradovateFillPair[]> {
     })
     
     if (!response.ok) {
-      logger.warn(`Failed to fetch fill pairs:`, response.status, response.statusText)
+      logger.warn(`Failed to fetch fill pairs: ${response.status} ${response.statusText}`)
       return []
     }
     
@@ -539,7 +539,7 @@ export async function getTradovateUsername(accessToken: string): Promise<string>
   }
 
   const user = data.data[0]
-  if (!user.name) {
+  if (!user || !user.name) {
     throw new Error('User name not found in response')
   }
 
@@ -589,7 +589,7 @@ export async function getPropfirmName(accessToken: string): Promise<string> {
 
   const organizations = await response.json() as { id: number; name: string }[]
   if (organizations && organizations.length > 0) {
-    return organizations[0].name
+    return organizations[0]!.name
   }
   throw new Error('No organization found')
 }
@@ -810,10 +810,10 @@ async function buildTradesFromFillPairs(
   accountsById: Map<number, TradovateAccount>,
   userId: string,
   tickDetails: TickDetails[]
-): Promise<Trade[]> {
+): Promise<TradeType[]> {
   logger.info(`Building trades from ${fillPairs.length} fill pairs for user ${userId}`)
 
-  const trades: Trade[] = []
+  const trades: TradeType[] = []
 
   for (const fillPair of fillPairs) {
     try {
@@ -848,7 +848,7 @@ async function buildTradesFromFillPairs(
       let contractSymbol = 'Unknown'
       const monthCodeMatch = rawCode.match(/^([A-Z]+?)[FGHJKMNQUVXZ][0-9]+$/i)
       if (monthCodeMatch) {
-        contractSymbol = monthCodeMatch[1].toUpperCase()
+        contractSymbol = monthCodeMatch[1]!.toUpperCase()
       } else if (rawCode) {
         const lettersOnly = rawCode.replace(/[^A-Z]/g, '')
         contractSymbol = lettersOnly.slice(0, 2) || 'Unknown'

@@ -69,7 +69,7 @@ function buildChartData(account: any, data: any, refs: ReturnType<typeof getRefe
 function getYAxisConfig(chartData: any[], refs: ReturnType<typeof getReferenceValues>) {
   // The Y-axis must show exact meaningful values
   const balances = chartData.map((p) => Number(p.balance || 0)).filter((v) => !isNaN(v) && v > 0)
-  const currentBalance = balances.length > 0 ? balances[balances.length - 1] : refs.accountSize
+  const currentBalance = balances.length > 0 ? balances[balances.length - 1]! : refs.accountSize
 
   // Gather all reference values that MUST be shown:
   const keyRefs = [

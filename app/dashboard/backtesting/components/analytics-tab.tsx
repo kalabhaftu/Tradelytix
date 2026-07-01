@@ -37,10 +37,10 @@ export function AnalyticsTab({ backtests }: AnalyticsTabProps) {
       if (!acc[b.session]) {
         acc[b.session] = { total: 0, wins: 0, losses: 0, totalPnl: 0 }
       }
-      acc[b.session].total++
-      if (b.outcome === 'WIN') acc[b.session].wins++
-      if (b.outcome === 'LOSS') acc[b.session].losses++
-      acc[b.session].totalPnl += (b.pnl || 0)
+      acc[b.session]!.total++
+      if (b.outcome === 'WIN') acc[b.session]!.wins++
+      if (b.outcome === 'LOSS') acc[b.session]!.losses++
+      acc[b.session]!.totalPnl += (b.pnl || 0)
       return acc
     }, {} as Record<string, { total: number; wins: number; losses: number; totalPnl: number }>)
 
@@ -49,10 +49,10 @@ export function AnalyticsTab({ backtests }: AnalyticsTabProps) {
       if (!acc[b.direction]) {
         acc[b.direction] = { total: 0, wins: 0, losses: 0, totalPnl: 0 }
       }
-      acc[b.direction].total++
-      if (b.outcome === 'WIN') acc[b.direction].wins++
-      if (b.outcome === 'LOSS') acc[b.direction].losses++
-      acc[b.direction].totalPnl += (b.pnl || 0)
+      acc[b.direction]!.total++
+      if (b.outcome === 'WIN') acc[b.direction]!.wins++
+      if (b.outcome === 'LOSS') acc[b.direction]!.losses++
+      acc[b.direction]!.totalPnl += (b.pnl || 0)
       return acc
     }, {} as Record<string, { total: number; wins: number; losses: number; totalPnl: number }>)
 
@@ -61,23 +61,23 @@ export function AnalyticsTab({ backtests }: AnalyticsTabProps) {
       if (!acc[b.pair]) {
         acc[b.pair] = { total: 0, wins: 0, losses: 0, totalPnl: 0, avgRR: 0, totalWinPips: 0, totalLossPips: 0 }
       }
-      acc[b.pair].total++
+      acc[b.pair]!.total++
       if (b.outcome === 'WIN') {
-        acc[b.pair].wins++
-        acc[b.pair].totalWinPips += (b.pnl || 0)
+        acc[b.pair]!.wins++
+        acc[b.pair]!.totalWinPips += (b.pnl || 0)
       }
       if (b.outcome === 'LOSS') {
-        acc[b.pair].losses++
-        acc[b.pair].totalLossPips += Math.abs(b.pnl || 0)
+        acc[b.pair]!.losses++
+        acc[b.pair]!.totalLossPips += Math.abs(b.pnl || 0)
       }
-      acc[b.pair].totalPnl += (b.pnl || 0)
-      acc[b.pair].avgRR += (b.riskRewardRatio || 0)
+      acc[b.pair]!.totalPnl += (b.pnl || 0)
+      acc[b.pair]!.avgRR += (b.riskRewardRatio || 0)
       return acc
     }, {} as Record<string, { total: number; wins: number; losses: number; totalPnl: number; avgRR: number; totalWinPips: number; totalLossPips: number }>)
 
     // Calculate avg RR, avg win, and avg loss for each pair - safe division
     Object.keys(byPair).forEach(pair => {
-      byPair[pair].avgRR = byPair[pair].total > 0 ? byPair[pair].avgRR / byPair[pair].total : 0
+      byPair[pair]!.avgRR = byPair[pair]!.total > 0 ? byPair[pair]!.avgRR / byPair[pair]!.total : 0
     })
 
     // By Day of Week - with safe P&L calculation
@@ -86,10 +86,10 @@ export function AnalyticsTab({ backtests }: AnalyticsTabProps) {
       if (!acc[day]) {
         acc[day] = { total: 0, wins: 0, losses: 0, totalPnl: 0 }
       }
-      acc[day].total++
-      if (b.outcome === 'WIN') acc[day].wins++
-      if (b.outcome === 'LOSS') acc[day].losses++
-      acc[day].totalPnl += (b.pnl || 0)
+      acc[day]!.total++
+      if (b.outcome === 'WIN') acc[day]!.wins++
+      if (b.outcome === 'LOSS') acc[day]!.losses++
+      acc[day]!.totalPnl += (b.pnl || 0)
       return acc
     }, {} as Record<string, { total: number; wins: number; losses: number; totalPnl: number }>)
 
@@ -100,10 +100,10 @@ export function AnalyticsTab({ backtests }: AnalyticsTabProps) {
       if (!acc[model][b.session]) {
         acc[model][b.session] = { total: 0, wins: 0, losses: 0, totalPnl: 0 }
       }
-      acc[model][b.session].total++
-      if (b.outcome === 'WIN') acc[model][b.session].wins++
-      if (b.outcome === 'LOSS') acc[model][b.session].losses++
-      acc[model][b.session].totalPnl += (b.pnl || 0)
+      acc[model]![b.session]!.total++
+      if (b.outcome === 'WIN') acc[model]![b.session]!.wins++
+      if (b.outcome === 'LOSS') acc[model]![b.session]!.losses++
+      acc[model]![b.session]!.totalPnl += (b.pnl || 0)
       return acc
     }, {} as Record<string, Record<string, { total: number; wins: number; losses: number; totalPnl: number }>>)
 
@@ -528,7 +528,7 @@ export function AnalyticsTab({ backtests }: AnalyticsTabProps) {
             {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
               .filter(day => analytics.byDayOfWeek[day])
               .map(day => {
-                const stats = analytics.byDayOfWeek[day]
+                const stats = analytics.byDayOfWeek[day]!
                 const winRate = (stats.wins / stats.total) * 100
                 return (
                   <div key={day} className="space-y-2">

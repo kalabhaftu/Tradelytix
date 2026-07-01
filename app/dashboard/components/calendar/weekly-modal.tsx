@@ -1,6 +1,6 @@
 'use client'
-
 import { Spinner } from '@/components/ui/spinner'
+import type { TradeType } from '@/lib/db/schema/trades'
 
 import { CalendarData } from "@/app/dashboard/types/calendar"
 import {
@@ -278,7 +278,7 @@ export function WeeklyModal({
     }
 
     // CRITICAL: Group trades to show correct execution count
-    const groupedTrades = groupTradesByExecution(trades as Trade[]) as GroupedTrade[]
+    const groupedTrades = groupTradesByExecution(trades as TradeType[]) as GroupedTrade[]
 
     const longNumber = groupedTrades.filter(trade => (trade as any).side?.toLowerCase() === 'long' || (trade as any).side?.toUpperCase() === 'BUY').length
     const shortNumber = groupedTrades.filter(trade => (trade as any).side?.toLowerCase() === 'short' || (trade as any).side?.toUpperCase() === 'SELL').length
@@ -399,7 +399,7 @@ export function WeeklyModal({
     let cumulative = 0
 
     return sortedDates.map((date) => {
-      cumulative += dailyData[date]
+      cumulative += dailyData[date] ?? 0
       return {
         date,
         balance: cumulative,
@@ -559,7 +559,7 @@ export function WeeklyModal({
         // Construct public URL for weekly-calendars bucket with organized path
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
         if (supabaseUrl && user?.id) {
-          imageUrl = `${supabaseUrl}/storage/v1/object/public/weekly-calendars/${user.id}/${weekStartDate}/${files[0].name}`
+          imageUrl = `${supabaseUrl}/storage/v1/object/public/weekly-calendars/${user.id}/${weekStartDate}/${files[0]!.name}`
         }
       }
 

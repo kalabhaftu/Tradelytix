@@ -1,11 +1,10 @@
 import { redis } from './client'
-import { CACHE_KEYS } from './keys'
+import { CacheKeys } from './keys'
 
 export async function invalidateUserCache(userId: string) {
-  const scoreKey = CACHE_KEYS.zellaScore(userId)
-  const dashboardKey = CACHE_KEYS.dashboardMetrics(userId)
+  const userAccountsKey = CacheKeys.userAccounts(userId)
   
-  await redis.del(scoreKey, dashboardKey)
+  await redis.del(userAccountsKey)
   
   // Note: For wildcard deletions (like trades:list:userId:*), 
   // you can use the SCAN command or store related keys in a Set.

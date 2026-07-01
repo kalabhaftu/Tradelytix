@@ -83,7 +83,7 @@ export async function POST(
       message: 'Account creation date adjusted successfully'
     })
   } catch (error) {
-    logger.error('Adjust account date error:', error)
+    logger.error('Adjust account date error: ' + (error instanceof Error ? error.message : String(error)))
     return NextResponse.json(
       { success: false, error: 'Failed to adjust account date' },
       { status: 500 }

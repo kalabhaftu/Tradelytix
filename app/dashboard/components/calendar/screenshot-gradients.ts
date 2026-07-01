@@ -44,8 +44,8 @@ function shufflePresetIds() {
 
   for (let i = presetIds.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1))
-    const current = presetIds[i]
-    presetIds[i] = presetIds[j]
+    const current = presetIds[i]!
+    presetIds[i] = presetIds[j]!
     presetIds[j] = current
   }
 
@@ -57,7 +57,7 @@ export function getNextRandomCalendarGradientPreset() {
     randomizedPresetQueue = shufflePresetIds()
   }
 
-  const nextPresetId = randomizedPresetQueue.shift() ?? PRESETS[0].id
+  const nextPresetId = randomizedPresetQueue.shift() ?? PRESETS[0]!.id
   return PRESETS.find((preset) => preset.id === nextPresetId) ?? PRESETS[0]
 }
 

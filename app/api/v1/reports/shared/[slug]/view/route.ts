@@ -38,9 +38,9 @@ export async function POST(request: NextRequest, { params }: Props) {
       return createSuccessResponse({ viewCount: report.viewCount, counted: false })
     }
 
-    const updated = (await db.update(schema.SharedReport).set({ viewCount: report.viewCount + 1 }).where(eq(schema.SharedReport.slug, slug)).returning({ viewCount: schema.SharedReport.viewCount }))[0]
+    const updated = (await db.update(schema.SharedReport).set({ viewCount: (report.viewCount || 0) + 1 }).where(eq(schema.SharedReport.slug, slug)).returning({ viewCount: schema.SharedReport.viewCount }))[0]
 
-    const response = createSuccessResponse({ viewCount: updated.viewCount, counted: true })
+    const response = createSuccessResponse({ viewCount: updated!.viewCount, counted: true })
     response.cookies.set(cookieName, '1', {
       httpOnly: true,
       sameSite: 'lax',
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest, { params }: Props) {
     })
     return response
   } catch (error) {
-    logger.error('Shared report view count failed', { slug }, 'api')
+    logger.error('Shared report view count failed' + ' : ' + error)
     return createErrorResponse('Internal server error', 500)
   }
 }

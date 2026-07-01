@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: { notifications, unreadCount } })
   } catch (error: any) {
-    logger.error('GET /api/v1/notifications', { error: error?.message }, 'api')
+    logger.error('GET /api/v1/notifications' + ' : ' + error)
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -82,22 +82,22 @@ export async function POST(request: NextRequest) {
               body: message,
             },
             data: {
-              type: type,
-              notificationId: notification.id,
+              type: String(type),
+              notificationId: String(notification?.id || ''),
               ...(data ? { payload: JSON.stringify(data) } : {}),
             },
           }).catch((pushError: any) => {
-            logger.error('FCM messaging send fail', { error: pushError?.message }, 'api')
+            logger.error('FCM messaging send fail' + ' : ' + pushError)
           })
         }
       }
     } catch (pushError: any) {
-      logger.error('Failed to send push notification', { error: pushError?.message }, 'api')
+      logger.error('Failed to send push notification' + ' : ' + pushError)
     }
 
     return NextResponse.json({ success: true, data: notification })
   } catch (error: any) {
-    logger.error('POST /api/v1/notifications', { error: error?.message }, 'api')
+    logger.error('POST /api/v1/notifications' + ' : ' + error)
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -118,7 +118,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'All notifications marked as read' })
   } catch (error: any) {
-    logger.error('PATCH /api/v1/notifications', { error: error?.message }, 'api')
+    logger.error('PATCH /api/v1/notifications' + ' : ' + error)
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -137,7 +137,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'All notifications cleared' })
   } catch (error: any) {
-    logger.error('DELETE /api/v1/notifications', { error: error?.message }, 'api')
+    logger.error('DELETE /api/v1/notifications' + ' : ' + error)
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

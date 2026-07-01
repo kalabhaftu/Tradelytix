@@ -13,7 +13,7 @@ import { logger } from '@/lib/logger';
 
 const formatPnl = (pnl: string | undefined): { pnl: number, error?: string } => {
     if (typeof pnl !== 'string' || pnl.trim() === '') {
-        logger.warn('Invalid PNL value:', pnl);
+        logger.warn('Invalid PNL value: ' + pnl);
         return { pnl: 0, error: 'Invalid PNL value' };
     }
 
@@ -26,7 +26,7 @@ const formatPnl = (pnl: string | undefined): { pnl: number, error?: string } => 
     const numericValue = parseFloat(formattedPnl.replace(/[$,]/g, ''));
 
     if (isNaN(numericValue)) {
-        logger.warn('Unable to parse PNL value:', pnl);
+        logger.warn('Unable to parse PNL value: ' + pnl);
         return { pnl: 0, error: 'Unable to parse PNL value' };
     }
 
@@ -35,7 +35,7 @@ const formatPnl = (pnl: string | undefined): { pnl: number, error?: string } => 
 
 const convertTimeInPosition = (time: string | undefined): number | undefined => {
     if (typeof time !== 'string' || time.trim() === '') {
-        logger.warn('Invalid time value:', time);
+        logger.warn('Invalid time value: ' + time);
         return 0;
     }
     if (/^\d+\.\d+$/.test(time)) {
@@ -45,8 +45,8 @@ const convertTimeInPosition = (time: string | undefined): number | undefined => 
     const timeInPosition = time;
     const minutesMatch = timeInPosition.match(/(\d+)min/);
     const secondsMatch = timeInPosition.match(/(\d+)sec/);
-    const minutes = minutesMatch ? parseInt(minutesMatch[1], 10) : 0;
-    const seconds = secondsMatch ? parseInt(secondsMatch[1], 10) : 0;
+    const minutes = minutesMatch ? parseInt(minutesMatch[1] || '0', 10) : 0;
+    const seconds = secondsMatch ? parseInt(secondsMatch[1] || '0', 10) : 0;
     const timeInSeconds = (minutes * 60) + seconds;
     return timeInSeconds;
 }
@@ -67,9 +67,9 @@ const newMappings: { [key: string]: string } = {
 interface PlatformProcessorProps {
     csvData: string[][]
     headers: string[]
-    setProcessedTrades: React.Dispatch<React.SetStateAction<Trade[]>>
+    setProcessedTrades: React.Dispatch<React.SetStateAction<TradeType[]>>
     accountNumber: string
-    processedTrades?: Trade[]
+    processedTrades?: TradeType[]
     accountNumbers?: string[]
 }
 
@@ -94,19 +94,19 @@ export default function TradovateProcessor({ headers, csvData, processedTrades =
     }, [existingTrades, accountNumbers])
 
     const processTrades = useCallback(() => {
-        const newTrades: Trade[] = [];
+        const newTrades: TradeType[] = [];
         const missingCommissionsTemp: { [key: string]: boolean } = {};
 
         csvData.forEach(row => {
-            const item: Partial<Trade> = {};
+            const item: Partial<TradeType> = {};
             let quantity = 0;
             headers.forEach((header, index) => {
                 if (newMappings[header]) {
-                    const key = newMappings[header] as keyof Trade;
+                    const key = newMappings[header] as keyof TradeType;
                     const cellValue = row[index];
                     switch (key) {
                         case 'quantity':
-                            quantity = parseFloat(cellValue) || 0;
+                            quantity = parseFloat(cellValue || '0') || 0;
                             item[key] = quantity;
                             break;
                         case 'pnl':
@@ -117,7 +117,7 @@ export default function TradovateProcessor({ headers, csvData, processedTrades =
                             item[key] = pnl
                             break;
                         case 'timeInPosition':
-                            item[key] = convertTimeInPosition(cellValue);
+                            (item as Record<string, any>)[key] = convertTimeInPosition(cellValue) ?? 0;
                             break;
                         case 'entryDate':
                         case 'closeDate':
@@ -127,42 +127,40 @@ export default function TradovateProcessor({ headers, csvData, processedTrades =
                                     
                                     if (!datePart || !timePart) {
                                         logger.error(`Invalid date format: ${cellValue}`);
-                                        item[key] = undefined;
+                                        (item as Record<string, any>)[key] = '';
                                         break;
                                     }
 
-                                    const [month, day, year] = datePart.split('/').map(Number);
-                                    const [hours, minutes, seconds] = timePart.split(':').map(Number);
+                                    const [month = 0, day = 0, year = 0] = datePart.split('/').map(Number);
+                                    const [hours = 0, minutes = 0, seconds = 0] = timePart.split(':').map(Number);
                                     
                                     if ([year, month, day, hours, minutes, seconds].some(n => isNaN(n))) {
-                                        logger.error(`Invalid date components:`, {
-                                            year, month, day, hours, minutes, seconds
-                                        });
-                                        item[key] = undefined;
+                                        logger.error(`Invalid date components: ${JSON.stringify({ year, month, day, hours, minutes, seconds })}`);
+                                        (item as Record<string, any>)[key] = '';
                                         break;
                                     }
 
                                     const localDate = new Date(year, month - 1, day, hours, minutes, seconds);
                                     
                                     if (isNaN(localDate.getTime())) {
-                                        logger.error(`Invalid date created:`, localDate);
-                                        item[key] = undefined;
+                                        logger.error(`Invalid date created: ${localDate}`);
+                                        (item as Record<string, any>)[key] = '';
                                         break;
                                     }
 
                                     const utcDate = new Date(localDate.toISOString());
-                                    item[key] = utcDate.toISOString().replace('Z', '+00:00');
+                                    item[key] = utcDate.toISOString().replace('Z', '+00:00') as any;
 
                                 } catch (error) {
-                                    logger.error(`Error parsing date: ${cellValue}`, error);
-                                    item[key] = undefined;
+                                    logger.error(`Error parsing date: ${cellValue} ${error instanceof Error ? error.message : String(error)}`);
+                                    (item as Record<string, any>)[key] = '';
                                 }
                             } else {
-                                item[key] = undefined;
+                                (item as Record<string, any>)[key] = '';
                             }
                             break;
                         default:
-                            item[key] = cellValue as any;
+                            (item as Record<string, any>)[key] = cellValue;
                     }
                 }
             });
@@ -179,7 +177,7 @@ export default function TradovateProcessor({ headers, csvData, processedTrades =
             if (item.instrument) {
                 item.instrument = item.instrument.slice(0, -2)
                 if (existingCommissions[item.instrument]) {
-                    item.commission = existingCommissions[item.instrument] * item.quantity!
+                    item.commission = existingCommissions[item.instrument]! * item.quantity!
                 } else {
                     missingCommissionsTemp[item.instrument] = true
                 }
@@ -192,14 +190,14 @@ export default function TradovateProcessor({ headers, csvData, processedTrades =
                 item.closeDate = tempDate;
 
                 const tempPrice = item.entryPrice;
-                item.entryPrice = item.closePrice;
-                item.closePrice = tempPrice;
+                item.entryPrice = item.closePrice || '';
+                item.closePrice = tempPrice || '';
             } else {
                 item.side = 'long'
             }
 
-            item.id = generateTradeHash(item as Trade).toString();
-            newTrades.push(item as Trade);
+            item.id = generateTradeHash(item as TradeType).toString();
+            newTrades.push(item as TradeType);
         })
 
         setProcessedTrades(newTrades);
@@ -224,7 +222,7 @@ export default function TradovateProcessor({ headers, csvData, processedTrades =
                 if (missingCommissions.hasOwnProperty(trade.instrument)) {
                     return {
                         ...trade,
-                        commission: missingCommissions[trade.instrument] * trade.quantity
+                        commission: missingCommissions[trade.instrument]! * trade.quantity
                     };
                 }
                 return trade;

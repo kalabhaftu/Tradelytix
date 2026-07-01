@@ -33,7 +33,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: updated })
   } catch (error: any) {
-    logger.error('PATCH /api/v1/notifications/[id]', { error: error?.message }, 'api')
+    logger.error({ error: error?.message, context: 'api' }, 'PATCH /api/v1/notifications/[id]')
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -64,7 +64,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'Notification deleted' })
   } catch (error: any) {
-    logger.error('DELETE /api/v1/notifications/[id]', { error: error?.message }, 'api')
+    logger.error({ error: error?.message, context: 'api' }, 'DELETE /api/v1/notifications/[id]')
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

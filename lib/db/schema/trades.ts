@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, uuid, text, integer, boolean, timestamp, jsonb, doublePrecision, json } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, integer, boolean, timestamp, jsonb, doublePrecision, json, index } from 'drizzle-orm/pg-core';
 import { MarketBiasEnum, TradeOutcomeEnum, TradeExecutionKindEnum } from './enums';
 import { Account, LiveAccountTransaction, MasterAccount, Payout, PhaseAccount } from './accounts';
 import { TradingModel, ActivityLog, UserGoal } from './playbook';
@@ -70,6 +70,13 @@ export const Trade = pgTable('Trade', {
   mae: doublePrecision('mae'),
   mfe: doublePrecision('mfe'),
   setup: text('setup'),
+}, (table) => {
+  return {
+    userIdIdx: index('trade_user_id_idx').on(table.userId),
+    accountIdIdx: index('trade_account_id_idx').on(table.accountId),
+    entryDateIdx: index('trade_entry_date_idx').on(table.entryDate),
+    outcomeIdx: index('trade_outcome_idx').on(table.outcome),
+  };
 });
 
 export type TradeType = typeof Trade.$inferSelect;
@@ -92,6 +99,10 @@ export const TradeExecution = pgTable('TradeExecution', {
   metadata: jsonb('metadata'),
   createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
   updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow().notNull().$onUpdateFn(() => new Date()),
+}, (table) => {
+  return {
+    tradeIdIdx: index('trade_execution_trade_id_idx').on(table.tradeId),
+  };
 });
 
 export type TradeExecutionType = typeof TradeExecution.$inferSelect;

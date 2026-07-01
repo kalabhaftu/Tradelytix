@@ -40,7 +40,7 @@ export function PlatformItem({
             ? "border-primary/40 bg-primary/5 shadow-md shadow-primary/5 scale-[1.01] translate-x-0.5" 
             : "border-border/40 bg-card/40 backdrop-blur-sm hover:border-primary/20 hover:bg-muted/30 hover:translate-x-0.5"
         )}
-        disabled={platform.isDisabled || platform.isComingSoon}
+        disabled={Boolean(platform.isDisabled || platform.isComingSoon)}
       >
         <div className="flex items-center justify-center h-10 w-10 bg-background/80 rounded-xl border border-border/50 shadow-sm p-1.5 shrink-0 transition-transform duration-200 group-hover:scale-105">
           {platform.logo.path && (

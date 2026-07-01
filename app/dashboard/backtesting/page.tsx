@@ -33,7 +33,7 @@ async function getBacktests(): Promise<BacktestTrade[]> {
         outcome: bt.outcome,
         session: bt.session,
         model: bt.model,
-        customModel: bt.customModel || undefined,
+        customModel: bt.customModel || "",
         riskRewardRatio: bt.riskRewardRatio,
         riskPoints: bt.riskPoints,
         rewardPoints: bt.rewardPoints,
@@ -57,7 +57,7 @@ async function getBacktests(): Promise<BacktestTrade[]> {
         backtestDate: bt.backtestDate || undefined,
         createdAt: bt.createdAt,
         updatedAt: bt.updatedAt,
-      }))
+      } as BacktestTrade))
     } catch (dbError) {
       clearTimeout(timeoutId)
       throw dbError

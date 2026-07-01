@@ -86,7 +86,7 @@ export function TradovateCredentialsManager() {
         toast.success(`Account ${accountId} deleted`);
       } catch (error) {
         toast.error(`Failed to delete account ${accountId}`);
-        logger.error("Delete error:", error);
+        logger.error("Delete error: " + (error instanceof Error ? error.message : String(error)));
       }
     },
     [],
@@ -127,7 +127,7 @@ export function TradovateCredentialsManager() {
       toast.success("Accounts reloaded successfully");
     } catch (error) {
       toast.error("Failed to reload accounts");
-      logger.error("Reload error:", error);
+      logger.error("Reload error: " + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsReloading(false);
     }
@@ -156,7 +156,7 @@ export function TradovateCredentialsManager() {
       // Convert local time to UTC on client side
       let utcTimeString: string | null = null;
       if (dailySyncTime) {
-        const [hours, minutes] = dailySyncTime.split(':').map(Number);
+        const [hours = 0, minutes = 0] = dailySyncTime.split(':').map(Number);
         const localDate = new Date();
         localDate.setHours(hours, minutes, 0, 0);
         utcTimeString = localDate.toISOString();
@@ -176,7 +176,7 @@ export function TradovateCredentialsManager() {
       }
     } catch (error) {
       toast.error("Failed to update daily sync time");
-      logger.error("Update sync time error:", error);
+      logger.error("Update sync time error: " + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsSavingTime(false);
     }

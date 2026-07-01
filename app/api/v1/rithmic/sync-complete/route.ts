@@ -3,6 +3,7 @@ import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { db } from '@/lib/db/client'
 import * as schema from '@/lib/db/schema'
 import { logger } from '@/lib/logger'
+import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 
 export async function POST(request: NextRequest) {
   const rl = await applyRateLimit(request, apiLimiter)
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
       lastSyncedAt: now.toISOString(),
     })
   } catch (error: any) {
-    logger.error('POST /api/v1/rithmic/sync-complete', { error: error?.message }, 'api')
+    logger.error({ error: error?.message, layer: 'api' }, 'POST /api/v1/rithmic/sync-complete')
     return NextResponse.json(
       {
         success: false,

@@ -461,11 +461,11 @@ export async function GET(request: NextRequest) {
     })
     Object.entries(CacheHeaders.privateShort).forEach(([k, v]) => response.headers.set(k, v))
 
-    logger.info('GET /api/v1/trades', { latencyMs: Date.now() - start, total: trades.length }, 'api')
+    logger.info({ latencyMs: Date.now() - start, total: trades.length, layer: 'api' }, 'GET /api/v1/trades')
     return response
 
   } catch (error: any) {
-    logger.error('GET /api/v1/trades failed', { error: error?.message, latencyMs: Date.now() - start }, 'api')
+    logger.error({ error: error?.message, latencyMs: Date.now() - start, layer: 'api' }, 'GET /api/v1/trades failed')
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

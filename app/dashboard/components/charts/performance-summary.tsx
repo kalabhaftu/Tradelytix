@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 interface StatItemProps {
   label: string
   value: string
-  negative?: boolean
+  negative?: boolean | undefined
 }
 
 function StatItem({ label, value, negative }: StatItemProps) {

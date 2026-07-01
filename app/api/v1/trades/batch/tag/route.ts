@@ -32,10 +32,11 @@ export async function POST(request: NextRequest) {
         inArray(schema.Trade.id, tradeIds),
         eq(schema.Trade.userId, identity.internalUserId)
       ))
+      .returning({ id: schema.Trade.id })
 
-    return NextResponse.json({ success: true, updated: result.rowCount })
+    return NextResponse.json({ success: true, updated: result.length })
   } catch (error: any) {
-    logger.error('Failed to batch tag trades', error, 'Batch Tag')
+    logger.error({ error, layer: 'Batch Tag' }, 'Failed to batch tag trades')
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }

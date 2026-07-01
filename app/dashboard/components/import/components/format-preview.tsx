@@ -28,6 +28,7 @@ import {
 } from "@tanstack/react-table";
 import React from "react";
 import { experimental_useObject as useObject } from '@ai-sdk/react'
+import { Trade } from '@/types/trade-extended'
 import { tradeSchema } from '@/app/api/v1/ai/format-trades/schema'
 import { z } from 'zod'
 import { Badge } from "@/components/ui/badge";
@@ -44,8 +45,8 @@ import { calculateWinRate, classifyOutcome, getBreakEvenThreshold } from "@/lib/
 
 interface FormatPreviewProps {
   trades: string[][];
-  processedTrades: Trade[];
-  setProcessedTrades: (trades: Trade[]) => void;
+  processedTrades: TradeType[];
+  setProcessedTrades: (trades: TradeType[]) => void;
   setIsLoading: (isLoading: boolean) => void;
   isLoading: boolean;
   headers: string[];
@@ -54,8 +55,7 @@ interface FormatPreviewProps {
 
 function transformHeaders(headers: string[], mappings: { [key: string]: string }): string[] {
   return headers.map(header => {
-    const mappingKey = Object.keys(mappings).find(key => key === header);
-    return mappingKey ? mappings[mappingKey] : header;
+    return mappings[header] ?? header;
   });
 }
 
@@ -173,7 +173,7 @@ export function FormatPreview({
     return Math.round((processedTrades.length / validTrades.length) * 100);
   }, [processedTrades.length, validTrades.length]);
 
-  const columns = useMemo<ColumnDef<Partial<Trade>>[]>(() => [
+  const columns = useMemo<ColumnDef<Partial<TradeType>>[]>(() => [
     {
       accessorKey: "entryDate",
       header: "Entry Date",

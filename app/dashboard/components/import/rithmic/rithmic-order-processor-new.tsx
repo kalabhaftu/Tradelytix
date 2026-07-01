@@ -49,11 +49,11 @@ function parseDate(dateString: string): Date {
   if (ddmmyyyyMatch) {
     const [_, day, month, year, hours, minutes] = ddmmyyyyMatch
     return new Date(
-      parseInt(year),
-      parseInt(month) - 1,
-      parseInt(day),
-      parseInt(hours),
-      parseInt(minutes)
+      parseInt(year!),
+      parseInt(month!) - 1,
+      parseInt(day!),
+      parseInt(hours!),
+      parseInt(minutes!)
     )
   }
 
@@ -73,9 +73,9 @@ function cleanCsvData(csvData: string[][], headers: string[]): [string[][], stri
     return acc;
   }, []);
 
-  const cleanHeaders = nonEmptyColumnIndices.map(i => headers[i]);
+  const cleanHeaders = nonEmptyColumnIndices.map(i => headers[i] as string);
   const cleanData = csvData.map(row =>
-    nonEmptyColumnIndices.map(i => row[i] || '')
+    nonEmptyColumnIndices.map(i => (row[i] || '') as string)
   );
 
   return [cleanData, cleanHeaders];
@@ -84,9 +84,9 @@ function cleanCsvData(csvData: string[][], headers: string[]): [string[][], stri
 interface PlatformProcessorProps {
   csvData: string[][]
   headers: string[]
-  setProcessedTrades: React.Dispatch<React.SetStateAction<Trade[]>>
+  setProcessedTrades: React.Dispatch<React.SetStateAction<TradeType[]>>
   accountNumber: string
-  processedTrades?: Trade[]
+  processedTrades?: TradeType[]
 }
 
 export default function RithmicOrderProcessor({ csvData, headers, processedTrades = [], setProcessedTrades, accountNumber }: PlatformProcessorProps) {
@@ -112,7 +112,7 @@ export default function RithmicOrderProcessor({ csvData, headers, processedTrade
     }
     
     const [whole, fraction] = priceString.split("'")
-    return parseInt(whole) + (fraction ? parseInt(fraction) / 32 : 0)
+    return parseInt(whole!) + (fraction ? parseInt(fraction) / 32 : 0)
   }
 
   const calculatePnL = (entryOrders: Order[], exitOrders: Order[], contractSpec: ContractSpec, side: 'Long' | 'Short'): number => {
@@ -136,7 +136,7 @@ export default function RithmicOrderProcessor({ csvData, headers, processedTrade
   const processOrders = useCallback(() => {
     const [cleanData, cleanHeaders] = cleanCsvData(csvData, headers);
     
-    const localProcessedTrades: Trade[] = [];
+    const localProcessedTrades: TradeType[] = [];
     const incompleteTradesArray: IncompleteTrade[] = [];
 
     const ordersByAccount = cleanData.reduce((acc, row) => {
@@ -155,12 +155,12 @@ export default function RithmicOrderProcessor({ csvData, headers, processedTrade
       const sortedAccountOrders = accountOrders.sort((a, b) => {
         const timeIndex = getHeaderIndex('update time')
         if (timeIndex === -1) return 0
-        return parseDate(a[timeIndex]).getTime() - parseDate(b[timeIndex]).getTime()
+        return parseDate(a[timeIndex] || '').getTime() - parseDate(b[timeIndex] || '').getTime()
       });
 
       sortedAccountOrders.forEach((row) => {
         if (row.length !== cleanHeaders.length) {
-          logger.warn('Row length mismatch:', row);
+          logger.warn('Row length mismatch: ' + JSON.stringify(row));
           return;
         }
 
@@ -173,20 +173,20 @@ export default function RithmicOrderProcessor({ csvData, headers, processedTrade
         const missingFields = requiredFields.filter(field => !order[field]);
         
         if (missingFields.length > 0) {
-          logger.warn(`Missing required fields: ${missingFields.join(', ')}`, order);
+          logger.warn(`Missing required fields: ${missingFields.join(', ')} - order: ${JSON.stringify(order)}`);
           return;
         }
 
-        const symbol = order["Symbol"].slice(0, -2)
-        const quantity = parseInt(order["Qty Filled"])
-        const price = parsePrice(order["Avg Fill Price"])
-        const side = order["Buy/Sell"]
+        const symbol = order["Symbol"]?.slice(0, -2) || ''
+        const quantity = parseInt(order["Qty Filled"] || '0')
+        const price = parsePrice(order["Avg Fill Price"] || '')
+        const side = order["Buy/Sell"] || ''
         const timestamp = order[cleanHeaders.find(header => 
           header.toLowerCase().includes('update time')
-        ) || '']
-        const commissionRate = parseFloat(order["Commission Fill Rate"]) || 0
+        ) || ''] || ''
+        const commissionRate = parseFloat(order["Commission Fill Rate"] || '0') || 0
         const orderCommission = commissionRate * quantity
-        const orderId = order["Order Number"]
+        const orderId = order["Order Number"] || ''
         
         const contractSpec = tickDetails.find(detail => detail.ticker === symbol) || { tickSize: 0.25, tickValue: 1.25 }
 
@@ -209,7 +209,7 @@ export default function RithmicOrderProcessor({ csvData, headers, processedTrade
             if (openPosition.quantity <= 0) {
               const pnl = calculatePnL(openPosition.entryOrders, openPosition.exitOrders, contractSpec, openPosition.side)
 
-              const trade: Partial<Trade> = {
+              const trade: Partial<TradeType> = {
                 id: `${openPosition.entryOrders.map(o => o.orderId).join('-')}-${openPosition.exitOrders.map(o => o.orderId).join('-')}`,
                 accountNumber: accNum,
                 quantity: openPosition.originalQuantity,
@@ -232,7 +232,7 @@ export default function RithmicOrderProcessor({ csvData, headers, processedTrade
                 tags: []
               }
 
-              localProcessedTrades.push(trade as Trade)
+              localProcessedTrades.push(trade as TradeType)
 
               if (openPosition.quantity < 0) {
                 openPositions[symbol] = {

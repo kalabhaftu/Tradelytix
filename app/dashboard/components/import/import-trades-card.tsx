@@ -57,7 +57,7 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
   const [accountNumber, setAccountNumber] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState<boolean>(false)
-  const [processedTrades, setProcessedTrades] = useState<Trade[]>([])
+  const [processedTrades, setProcessedTrades] = useState<TradeType[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
   const user = useUserStore(state => state.user)
@@ -83,12 +83,12 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
         description: "Checking for duplicates and saving trades...",
         duration: 3000,
       })
-      let newTrades: Trade[] = []
+      let newTrades: TradeType[] = []
           newTrades = processedTrades.map(trade => {
             // Clean up the trade object to remove undefined values
             const cleanTrade = Object.fromEntries(
               Object.entries(trade).filter(([_, value]) => value !== undefined)
-            ) as Partial<Trade>
+            ) as Partial<TradeType>
             
             return {
               ...cleanTrade,
@@ -110,7 +110,7 @@ export default function ImportTradesCard({ accountId }: ImportTradesCardProps) {
               comment: cleanTrade.comment || null,
               groupId: cleanTrade.groupId || null,
               createdAt: cleanTrade.createdAt || new Date(),
-            } as Trade
+            } as TradeType
           })
      
           // Filter out empty trades

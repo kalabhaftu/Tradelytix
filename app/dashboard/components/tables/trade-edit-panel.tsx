@@ -47,7 +47,7 @@ import { parseTradeChartLinks, serializeTradeChartLinks } from '@/lib/trade-core
 interface TradeEditPanelProps {
   trade: ExtendedTrade
   onClose: () => void
-  onSave: (updatedTrade: Partial<Trade>) => Promise<void>
+  onSave: (updatedTrade: Partial<TradeType>) => Promise<void>
 }
 
 const editTradeSchema = z.object({
@@ -388,7 +388,7 @@ export function TradeEditPanel({ trade, onClose, onSave }: TradeEditPanelProps) 
             <div className="py-4 max-w-5xl mx-auto">
               <TabsContent value="details" className="mt-0 space-y-6 px-1">
                 <TradeNotesTab
-                  control={control}
+                  control={control as any}
                   cardPreviewImage={watchedValues.cardPreviewImage || null}
                   cardPreviewTransform={watchedValues.cardPreviewTransform ?? null}
                   onPreviewTransformChange={(transform) => {

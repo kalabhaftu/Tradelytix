@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const synchronizations = await getRithmicSynchronizations();
     return NextResponse.json({ success: true, data: synchronizations });
   } catch (error) {
-    logger.error("Error fetching Rithmic synchronizations:", error);
+    logger.error({ error }, "Error fetching Rithmic synchronizations:");
     return NextResponse.json(
       {
         success: false,
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       message: "Synchronization updated successfully",
     });
   } catch (error) {
-    logger.error("Error setting Rithmic synchronization:", error);
+    logger.error({ error }, "Error setting Rithmic synchronization:");
     return NextResponse.json(
       {
         success: false,
@@ -67,7 +67,7 @@ export async function DELETE(request: NextRequest) {
       message: "Synchronization removed successfully",
     });
   } catch (error) {
-    logger.error("Error deleting Rithmic synchronization:", error);
+    logger.error({ error }, "Error deleting Rithmic synchronization:");
     return NextResponse.json(
       {
         success: false,

@@ -38,9 +38,9 @@ export async function GET(request: NextRequest) {
               country: country || null,
               city: city || null,
               ipAddress: headerList.get('x-forwarded-for') || 'hidden'
-            }).returning().then((rows) => rows[0]).catch((err: unknown) => logger.error('Geo logging failed', err, 'Init'))
+            }).returning().then((rows) => rows[0]).catch((err: unknown) => logger.error('Geo logging failed' + ' : ' + err))
           }
-        }).catch((err: unknown) => logger.error('Geo logging failed on ip', err, 'Init'))
+        }).catch((err: unknown) => logger.error('Geo logging failed on ip' + ' : ' + err))
       }
     }
 
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    logger.error('/api/v1/init failed', error, 'Init API')
+    logger.error('/api/v1/init failed' + ' : ' + error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

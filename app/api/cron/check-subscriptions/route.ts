@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     logger.info('[Cron] Running subscription checks')
     const results = await runSubscriptionChecks()
 
-    logger.info('[Cron] Subscription check completed', results)
+    logger.info('[Cron] Subscription check completed: ' + JSON.stringify(results))
 
     return NextResponse.json({
       success: true,
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
-    logger.error('[Cron] Subscription check failed', error)
+    logger.error('[Cron] Subscription check failed: ' + (error instanceof Error ? error.message : String(error)))
     return NextResponse.json(
       { success: false, error: 'Subscription check failed', timestamp: new Date().toISOString() },
       { status: 500 }

@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
     } as any)
 
     const trade = await db.transaction(async (tx) => {
-      const createdTrade = (await tx.insert(schema.Trade).values(tradePayload as any).returning())[0]
+      const createdTrade = (await tx.insert(schema.Trade).values(tradePayload as any).returning())[0]!
 
       await tx.insert(schema.TradeExecution).values(
         buildSyntheticExecutionsFromTrade(tradePayload as any) as any
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, trade })
   } catch (error) {
-    logger.error('Quick add trade error:', error, 'api')
+    logger.error({ error, layer: 'api' }, 'Quick add trade error:')
     return NextResponse.json(
       { error: 'Failed to add trade' },
       { status: 500 }

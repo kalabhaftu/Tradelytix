@@ -3,6 +3,7 @@ import { db } from '@/lib/db/client'
 import * as schema from '@/lib/db/schema'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter, aiReviewLimiter, consumeRateLimitKey } from '@/lib/rate-limiter'
+import { logger } from '@/lib/logger'
 import { cleanContent } from '@/lib/utils'
 import { classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns'
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: reviews })
   } catch (error: any) {
-    logger.error('GET /api/v1/weekly-review failed', { error: error?.message }, 'api')
+    logger.error({ error: error?.message, layer: 'api' }, 'GET /api/v1/weekly-review failed')
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -170,9 +171,9 @@ export async function POST(request: NextRequest) {
     const pnlByInstrument: Record<string, { pnl: number; trades: number; wins: number }> = {}
     trades.forEach(t => {
       if (!pnlByInstrument[t.instrument]) pnlByInstrument[t.instrument] = { pnl: 0, trades: 0, wins: 0 }
-      pnlByInstrument[t.instrument].pnl += getNetPnl(t)
-      pnlByInstrument[t.instrument].trades++
-      if (getOutcome(t) === 'win') pnlByInstrument[t.instrument].wins++
+      pnlByInstrument[t.instrument]!.pnl += getNetPnl(t)
+      pnlByInstrument[t.instrument]!.trades++
+      if (getOutcome(t) === 'win') pnlByInstrument[t.instrument]!.wins++
     })
 
     // Streak analysis
@@ -350,14 +351,14 @@ RULES:
       type: 'WEEKLY_PERFORMANCE',
       title: `Weekly Report: ${format(lastWeekStart, 'MMM d')} – ${format(lastWeekEnd, 'MMM d')} | Grade: ${aiResult.grade || '?'}`,
       message: (aiResult.weekSummary || '').slice(0, 500),
-      data: { reviewId: review.id },
+      data: { reviewId: review!.id },
       actionRequired: false,
     })
 
-    logger.info('POST /api/v1/weekly-review', { latencyMs: Date.now() - start, grade: aiResult.grade }, 'api')
+    logger.info({ latencyMs: Date.now() - start, grade: aiResult.grade, layer: 'api' }, 'POST /api/v1/weekly-review')
     return NextResponse.json({ success: true, data: review })
   } catch (error: any) {
-    logger.error('POST /api/v1/weekly-review failed', { error: error?.message, latencyMs: Date.now() - start }, 'api')
+    logger.error({ error: error?.message, latencyMs: Date.now() - start, layer: 'api' }, 'POST /api/v1/weekly-review failed')
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

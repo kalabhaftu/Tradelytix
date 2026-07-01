@@ -73,7 +73,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     
     if (isFunded && currentPhase) {
       // Calculate basic eligibility
-      const fundedDate = currentPhase.startDate
+      const fundedDate = currentPhase.startDate || new Date()
       const daysSinceFunded = Math.floor((Date.now() - fundedDate.getTime()) / (1000 * 60 * 60 * 24))
       
       // Calculate net profit since funded
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           sum + getTradeNetPnl({
             pnl: trade.pnl ?? undefined,
             commission: trade.commission ?? undefined,
-          }),
+          } as any),
         0
       )
       

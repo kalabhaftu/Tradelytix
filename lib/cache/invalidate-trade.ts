@@ -1,20 +1,19 @@
-import { redis } from './client'
-import { CACHE_KEYS } from './keys'
+import { invalidateAccountCache } from './helpers'
+import { db } from '../db/client'
 
-export async function invalidateTradesCache(userId: string) {
-  const scoreKey = CACHE_KEYS.zellaScore(userId)
-  const dashboardKey = CACHE_KEYS.dashboardMetrics(userId)
+export async function invalidateTradesCache(userId: string, accountId?: string | null) {
+  if (accountId) {
+    await invalidateAccountCache(userId, accountId)
+    return
+  }
+
+  // If no account ID is provided, invalidate all accounts for the user
+  const accounts = await db.query.Account.findMany({
+    where: (table, { eq }) => eq(table.userId, userId),
+    columns: { id: true }
+  })
   
-  await redis.del(scoreKey, dashboardKey)
-
-  // Invalidate any paginated trade lists using wildcard scan
-  const prefix = `trades:list:${userId}:*`
-  let cursor = 0
-  do {
-    const [nextCursor, keys] = await redis.scan(cursor, { match: prefix, count: 100 })
-    if (keys.length > 0) {
-      await redis.del(...keys)
-    }
-    cursor = Number(nextCursor)
-  } while (cursor !== 0)
+  await Promise.all(
+    accounts.map(acc => invalidateAccountCache(userId, acc.id))
+  )
 }

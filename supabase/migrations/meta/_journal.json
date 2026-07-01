@@ -8,6 +8,13 @@
       "when": 1782731523455,
       "tag": "0000_wealthy_vindicator",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782919696657,
+      "tag": "0001_eminent_mad_thinker",
+      "breakpoints": true
     }
   ]
 }

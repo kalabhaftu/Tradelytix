@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       ...results
     })
   } catch (error) {
-    logger.error('[Maintenance Cron] Execution failed', error)
+    logger.error('[Maintenance Cron] Execution failed: ' + (error instanceof Error ? error.message : String(error)))
     return NextResponse.json({
       success: false,
       error: 'Maintenance failed',

@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    logger.error('[Cron] Phase evaluation failed', error)
+    logger.error('[Cron] Phase evaluation failed: ' + (error instanceof Error ? error.message : String(error)))
     return NextResponse.json({
       success: false,
       error: 'Evaluation failed',

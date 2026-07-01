@@ -9,7 +9,7 @@ export const maxDuration = 30;
 
 // Initialize xAI provider (OpenAI-compatible)
 const xai = createOpenAI({
-  apiKey: process.env.XAI_API_KEY,
+  apiKey: process.env.XAI_API_KEY || '',
   baseURL: process.env.XAI_BASE_URL || 'https://api.x.ai/v1',
 });
 

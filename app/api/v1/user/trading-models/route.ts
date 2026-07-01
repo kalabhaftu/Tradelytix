@@ -42,8 +42,8 @@ function buildTradeFilterWhere(params: URLSearchParams) {
   if (accounts.length > 0) {
     conditions.push(
       or(
-        eq(schema.Trade.accountNumber, accounts[0]),
-        eq(schema.Trade.phaseAccountId, accounts[0])
+        eq(schema.Trade.accountNumber, accounts[0]!),
+        eq(schema.Trade.phaseAccountId, accounts[0]!)
       )
     )
   }
@@ -133,9 +133,9 @@ export async function GET(request: NextRequest) {
         const selectedRules = Array.isArray(trade.selectedRules) ? trade.selectedRules : []
         modelRules.forEach((rule: any) => {
           const text = typeof rule === 'string' ? rule : rule.text
-          ruleAdherence[text].total++
+          ruleAdherence[text]!.total++
           if (selectedRules.includes(text)) {
-            ruleAdherence[text].followed++
+            ruleAdherence[text]!.followed++
           }
         })
       })
@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, models: formattedModels })
   } catch (error) {
-    logger.error('Failed to fetch trading models', error, 'Trading Models')
+    logger.error('Failed to fetch trading models' + ' : ' + error)
     return NextResponse.json(
       { error: 'Failed to fetch models' },
       { status: 500 }

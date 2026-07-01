@@ -133,10 +133,10 @@ export default function ManualTradeFormCard({ accountId, accountNumber: propFirm
     resolver: zodResolver(tradeFormSchema),
     mode: 'onChange',
     defaultValues: {
-      entryDate: new Date().toISOString().split('T')[0],
-      entryTime: new Date().toTimeString().split(' ')[0].slice(0, 5),
-      closeDate: new Date().toISOString().split('T')[0],
-      closeTime: new Date().toTimeString().split(' ')[0].slice(0, 5),
+      entryDate: new Date().toISOString().split('T')[0] || '',
+      entryTime: new Date().toTimeString().split(' ')[0]?.slice(0, 5) || '',
+      closeDate: new Date().toISOString().split('T')[0] || '',
+      closeTime: new Date().toTimeString().split(' ')[0]?.slice(0, 5) || '',
       quantity: 1,
       commission: 0,
       pnl: 0,
@@ -337,7 +337,7 @@ export default function ManualTradeFormCard({ accountId, accountNumber: propFirm
         <CardTitle className="text-base">Add Single Trade</CardTitle>
       </CardHeader>
       <CardContent>
-        <form id="manual-trade-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form id="manual-trade-form" onSubmit={handleSubmit(onSubmit as any)} className="space-y-4">
         {/* Phase Validation Error */}
         {phaseValidationError && (
           <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
@@ -595,7 +595,7 @@ export default function ManualTradeFormCard({ accountId, accountNumber: propFirm
                 name="session"
                 control={control}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value || ''}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select session" />
                     </SelectTrigger>
@@ -617,7 +617,7 @@ export default function ManualTradeFormCard({ accountId, accountNumber: propFirm
                 name="bias"
                 control={control}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value || ''}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select bias" />
                     </SelectTrigger>
@@ -639,7 +639,7 @@ export default function ManualTradeFormCard({ accountId, accountNumber: propFirm
                 name="tradeType"
                 control={control}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value || ''}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
@@ -661,7 +661,7 @@ export default function ManualTradeFormCard({ accountId, accountNumber: propFirm
                 name="emotionalState"
                 control={control}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value ?? ""}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select emotion" />
                     </SelectTrigger>

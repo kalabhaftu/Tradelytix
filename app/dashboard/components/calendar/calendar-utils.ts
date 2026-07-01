@@ -15,12 +15,12 @@ export interface DailyStats {
     isBreakEven: boolean
 }
 
-export function calculateRMultiple(trade: Trade): number {
+export function calculateRMultiple(trade: TradeType): number {
     return calculateTradeRMultiple(trade as any)
 }
 
 export function calculateDailyStats(
-    trades: Trade[],
+    trades: TradeType[],
     thresholdInput: number = DEFAULT_BREAK_EVEN_THRESHOLD
 ): DailyStats {
     const threshold = getBreakEvenThreshold(thresholdInput)

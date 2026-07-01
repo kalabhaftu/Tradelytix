@@ -57,7 +57,7 @@ export async function DELETE(request: NextRequest) {
           const { deletePublicStorageUrls } = await import('@/server/storage-admin')
           await deletePublicStorageUrls(imageUrls)
         } catch (err) {
-          logger.error('Failed to cleanup storage during user account deletion:', err)
+          logger.error('Failed to cleanup storage during user account deletion: ' + (err instanceof Error ? err.message : String(err)))
         }
       }
 

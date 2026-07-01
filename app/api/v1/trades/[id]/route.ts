@@ -47,12 +47,12 @@ export async function GET(
         // If it's a full URL, try to extract the path.
         if (path.includes('/trade-images/')) {
           const parts = path.split('/trade-images/')
-          path = parts[parts.length - 1]
+          path = parts[parts.length - 1]!
         }
         
         // Remove query params if it's an old signed URL
         if (path.includes('?')) {
-          path = path.split('?')[0]
+          path = path.split('?')[0]!
         }
 
         const { data } = await supabase.storage.from('trade-images').createSignedUrl(path, 3600) // 1 hour
@@ -64,7 +64,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, trade })
   } catch (error: any) {
-    logger.error('GET /api/v1/trades/[id] failed', { error: error?.message }, 'api')
+    logger.error({ error: error?.message, layer: 'api' }, 'GET /api/v1/trades/[id] failed')
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
@@ -90,11 +90,11 @@ export async function PATCH(
 
     const updated = (await db.update(schema.Trade).set(body).where(eq(schema.Trade.id, id)).returning())[0]
 
-    await invalidateTradesCache(identity.internalUserId)
+    await invalidateTradesCache(identity.internalUserId, existing.accountId)
 
     return NextResponse.json({ success: true, trade: updated })
   } catch (error: any) {
-    logger.error('PATCH /api/v1/trades/[id] failed', { error: error?.message }, 'api')
+    logger.error({ error: error?.message, layer: 'api' }, 'PATCH /api/v1/trades/[id] failed')
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
@@ -119,11 +119,11 @@ export async function DELETE(
 
     await db.delete(schema.Trade).where(eq(schema.Trade.id, id))
     
-    await invalidateTradesCache(identity.internalUserId)
+    await invalidateTradesCache(identity.internalUserId, existing.accountId)
 
     return NextResponse.json({ success: true, message: 'Trade deleted successfully' })
   } catch (error: any) {
-    logger.error('DELETE /api/v1/trades/[id] failed', { error: error?.message }, 'api')
+    logger.error({ error: error?.message, layer: 'api' }, 'DELETE /api/v1/trades/[id] failed')
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

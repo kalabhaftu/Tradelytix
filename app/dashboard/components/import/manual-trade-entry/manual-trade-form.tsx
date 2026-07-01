@@ -181,10 +181,10 @@ export default function ManualTradeForm({ setIsOpen, onClose, onBack }: ManualTr
     resolver: zodResolver(tradeFormSchema),
     mode: 'onChange',
     defaultValues: {
-      entryDate: new Date().toISOString().split('T')[0],
-      entryTime: new Date().toTimeString().split(' ')[0].slice(0, 5),
-      closeDate: new Date().toISOString().split('T')[0],
-      closeTime: new Date().toTimeString().split(' ')[0].slice(0, 5),
+      entryDate: new Date().toISOString().split('T')[0] || '',
+      entryTime: new Date().toTimeString().split(' ')[0]?.slice(0, 5) || '',
+      closeDate: new Date().toISOString().split('T')[0] || '',
+      closeTime: new Date().toTimeString().split(' ')[0]?.slice(0, 5) || '',
       quantity: 1,
       commission: 0,
       pnl: 0,
@@ -390,7 +390,7 @@ export default function ManualTradeForm({ setIsOpen, onClose, onBack }: ManualTr
                   name="accountNumber"
                   control={control}
                   render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
                       <SelectTrigger className="h-11">
                         <SelectValue placeholder={unifiedAccounts.length === 0 ? "No active accounts" : "Select account"} />
                       </SelectTrigger>
@@ -693,7 +693,7 @@ export default function ManualTradeForm({ setIsOpen, onClose, onBack }: ManualTr
                   name="tradeType"
                   control={control}
                   render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
                       <SelectTrigger className="h-11">
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
@@ -820,7 +820,7 @@ export default function ManualTradeForm({ setIsOpen, onClose, onBack }: ManualTr
           <div>
             <h2 className="text-lg font-semibold">Add Single Trade</h2>
             <p className="text-sm text-muted-foreground">
-              Step {currentStep} of {TOTAL_STEPS}: {stepInfo[currentStep - 1].title}
+              Step {currentStep} of {TOTAL_STEPS}: {stepInfo[currentStep - 1]!.title}
             </p>
           </div>
         </div>
@@ -862,7 +862,7 @@ export default function ManualTradeForm({ setIsOpen, onClose, onBack }: ManualTr
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
-        <form id="manual-trade-form" onSubmit={handleSubmit(onSubmit)}>
+        <form id="manual-trade-form" onSubmit={handleSubmit(onSubmit as any)} className="h-full flex flex-col">
           {renderStepContent()}
         </form>
       </div>

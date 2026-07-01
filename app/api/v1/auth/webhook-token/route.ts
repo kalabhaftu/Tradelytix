@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       token,
     })
   } catch (err) {
-    logger.error('Failed to get webhook token', err, 'Webhook Token GET')
+    logger.error('Failed to get webhook token: ' + (err instanceof Error ? err.message : String(err)))
     return NextResponse.json({ error: 'Failed to fetch webhook token' }, { status: 500 })
   }
 }
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ token })
   } catch (err) {
-    logger.error('Failed to regenerate webhook token', err, 'Webhook Token POST')
+    logger.error('Failed to regenerate webhook token: ' + (err instanceof Error ? err.message : String(err)))
     return NextResponse.json({ error: 'Failed to regenerate webhook token' }, { status: 500 })
   }
 }

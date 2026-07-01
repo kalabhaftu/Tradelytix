@@ -134,8 +134,22 @@ export async function signOut() {
   redirect('/?logout=true')
 }
 
+import { z } from 'zod'
+
+const EmailSchema = z.string().email("Please enter a valid email address")
+
 export async function signInWithEmail(email: string, next: string | null = null) {
-  const normalizedEmail = email.trim().toLowerCase()
+  const parsed = EmailSchema.safeParse(email)
+  if (!parsed.success) {
+    return {
+      error: 'Invalid email address provided.',
+      rateLimited: false,
+      isExistingUser: false,
+      emailSent: false
+    }
+  }
+
+  const normalizedEmail = parsed.data.trim().toLowerCase()
   const emailLimit = await consumeRateLimitKey(getEmailRateLimitKey(normalizedEmail), emailOtpLimiter)
 
   if (!emailLimit.allowed) {

@@ -16,7 +16,7 @@ import {
 interface UniversalProcessorProps {
   csvData: string[][]
   headers: string[]
-  setProcessedTrades: React.Dispatch<React.SetStateAction<Trade[]>>
+  setProcessedTrades: React.Dispatch<React.SetStateAction<TradeType[]>>
   accountNumber: string
 }
 import { 
@@ -126,7 +126,7 @@ export default function UniversalProcessor({
           updatedAt: new Date(),
         }))
         
-        setProcessedTrades(formattedTrades as Trade[])
+        setProcessedTrades(formattedTrades as TradeType[])
         setProcessingResult({
           success: true,
           trades: formattedTrades,
@@ -189,7 +189,7 @@ export default function UniversalProcessor({
       }
     }
     
-    setProcessedTrades(result.trades as Trade[])
+    setProcessedTrades(result.trades as TradeType[])
   }, [csvData, headers, setProcessedTrades, isUsingAI, processWithAI])
 
   useEffect(() => {
@@ -197,7 +197,7 @@ export default function UniversalProcessor({
   }, [processTrades])
 
   const processedTrades = useMemo(() => {
-    const trades = (processingResult?.trades as Trade[]) || []
+    const trades = (processingResult?.trades as TradeType[]) || []
     return trades.map((trade) => ({
       ...trade,
       id: crypto.randomUUID(),
@@ -209,7 +209,7 @@ export default function UniversalProcessor({
       commission: toFiniteNumber(trade.commission, 0),
       quantity: toFiniteNumber(trade.quantity, 1),
       timeInPosition: toFiniteNumber(trade.timeInPosition, 0),
-    })) as Trade[]
+    })) as TradeType[]
   }, [accountNumber, processingResult?.trades])
 
   useEffect(() => {

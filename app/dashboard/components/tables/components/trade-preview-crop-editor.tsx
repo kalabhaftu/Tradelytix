@@ -126,7 +126,7 @@ export function TradePreviewCropEditor({
           transform={transform}
           unoptimized
           loading="eager"
-          onError={onError ? () => onError() : undefined}
+          {...(onError ? { onError: () => onError() } : {})}
         />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-background/85 via-background/35 to-transparent px-3 py-2">
           <div className="flex items-center gap-1.5 rounded-full border border-border/50 bg-background/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -157,7 +157,7 @@ export function TradePreviewCropEditor({
             min={MIN_TRADE_PREVIEW_ZOOM}
             max={MAX_TRADE_PREVIEW_ZOOM}
             step={0.05}
-            onValueChange={([zoom]) => updateTransform({ zoom })}
+            onValueChange={([zoom]) => updateTransform({ zoom: zoom! })}
             disabled={disabled}
             aria-label="Preview zoom"
           />

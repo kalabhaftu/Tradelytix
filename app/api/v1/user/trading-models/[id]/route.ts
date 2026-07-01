@@ -70,7 +70,7 @@ export async function PATCH(
     // If name is being changed, check for duplicates
     if (validated.name && validated.name !== existing.name) {
       const duplicate = await db.query.TradingModel.findFirst({
-        where: (table, { and, eq }) => and(eq(table.userId, userId), eq(table.name, validated.name)),
+        where: and(eq(schema.TradingModel.userId, userId), eq(schema.TradingModel.name, validated.name!)),
       })
 
       if (duplicate) {

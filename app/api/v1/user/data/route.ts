@@ -75,7 +75,7 @@ export async function DELETE(request: NextRequest) {
         const { deletePublicStorageUrls } = await import('@/server/storage-admin')
         await deletePublicStorageUrls(imageUrls)
       } catch (err) {
-        logger.error('Storage cleanup failed during user data wipe', err, 'User Data Wipe')
+        logger.error({ error: err, layer: 'User Data Wipe' }, 'Storage cleanup failed during user data wipe')
       }
     }
 
@@ -158,15 +158,12 @@ export async function DELETE(request: NextRequest) {
         target: schema.UserSettings.userId,
         set: { accountFilterSettings: null }
       })
-    }, {
-      timeout: 60000, // 60 second timeout for large deletions
-      maxWait: 65000
     })
 
     // Invalidate all caches (use internal user ID for consistency with other cache keys)
-    revalidateTag(`trades-${internalUserId}`, 'max')
-    revalidateTag(`accounts-${internalUserId}`, 'max')
-    revalidateTag(`user-data-${internalUserId}`, 'max')
+    revalidateTag(`trades-${internalUserId}`)
+    revalidateTag(`accounts-${internalUserId}`)
+    revalidateTag(`user-data-${internalUserId}`)
 
     return NextResponse.json({
       success: true,
@@ -174,7 +171,7 @@ export async function DELETE(request: NextRequest) {
     })
 
   } catch (error) {
-    logger.error('Delete all user data failed', error, 'User Data Delete')
+    logger.error({ error, layer: 'User Data Delete' }, 'Delete all user data failed')
     return NextResponse.json(
       { success: false, error: 'Failed to delete data. Please try again.' },
       { status: 500 }

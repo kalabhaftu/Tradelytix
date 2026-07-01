@@ -7,6 +7,8 @@ import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { logActivity, getClientIp } from '@/lib/activity-logger'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger';
+import { withCache } from '@/lib/cache/helpers'
+import { CacheKeys, CacheTTL } from '@/lib/cache/keys'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -25,63 +27,71 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { id: accountId } = await params
     const internalUserId = identity.internalUserId
 
-    const account = await db.query.Account.findFirst({
-      where: (table, { eq, and }) => and(eq(table.id, accountId), eq(table.userId, internalUserId)),
-    })
+    const data = await withCache(
+      CacheKeys.accountMetrics(accountId),
+      CacheTTL.accountMetrics,
+      async () => {
+        const account = await db.query.Account.findFirst({
+          where: (table, { eq, and }) => and(eq(table.id, accountId), eq(table.userId, internalUserId)),
+        })
 
-    if (!account) {
+        if (!account) return null
+
+        const trades = await db.query.Trade.findMany({
+          where: (table, { eq }) => eq(table.accountId, account.id),
+          columns: TRADE_COUNT_SELECT,
+          orderBy: (table, { desc }) => [desc(table.entryDate)]
+        })
+
+        const transactions = await db.query.LiveAccountTransaction.findMany({
+          where: (table, { eq }) => eq(table.accountId, account.id),
+          columns: {
+            amount: true,
+          }
+        })
+
+        const profitLoss = trades.reduce(
+          (sum: number, trade: { pnl: number; commission: number | null }) => sum + trade.pnl,
+          0
+        )
+
+        const totalTransactions = transactions.reduce(
+          (sum: number, tx: { amount: number }) => sum + tx.amount,
+          0
+        )
+
+        const currentEquity = (account.startingBalance ?? 0) + profitLoss + totalTransactions
+        const lastTradeDate = trades.length > 0 ? trades[0]?.entryDate : null
+        const tradeCounts = buildGroupedTradeCountSummary(trades as any)
+
+        return {
+          id: account.id,
+          number: account.number,
+          name: account.name,
+          broker: account.broker,
+          accountType: 'live',
+          displayName: account.name || account.number,
+          startingBalance: account.startingBalance,
+          currentEquity,
+          profitLoss,
+          status: 'active',
+          tradeCount: tradeCounts.groupedTradeCount,
+          lastTradeDate,
+          createdAt: account.createdAt,
+        }
+      }
+    )
+
+    if (!data) {
       return NextResponse.json(
         { success: false, error: 'Account not found' },
         { status: 404 }
       )
     }
 
-    const trades = await db.query.Trade.findMany({
-      where: (table, { eq }) => eq(table.accountId, account.id),
-      columns: TRADE_COUNT_SELECT,
-      orderBy: (table, { desc }) => [desc(table.entryDate)]
-    })
-
-    const transactions = await db.query.LiveAccountTransaction.findMany({
-      where: (table, { eq }) => eq(table.accountId, account.id),
-      columns: {
-        amount: true,
-      }
-    })
-
-    const profitLoss = trades.reduce(
-      (sum: number, trade: { pnl: number; commission: number | null }) => {
-        return sum + trade.pnl
-      },
-      0
-    )
-
-    const totalTransactions = transactions.reduce(
-      (sum: number, tx: { amount: number }) => sum + tx.amount,
-      0
-    )
-
-    const currentEquity = (account.startingBalance ?? 0) + profitLoss + totalTransactions
-    const lastTradeDate = trades.length > 0 ? trades[0]?.entryDate : null
-    const tradeCounts = buildGroupedTradeCountSummary(trades as any)
-
     return NextResponse.json({
       success: true,
-      data: {
-        id: account.id,
-        number: account.number,
-        name: account.name,
-        broker: account.broker,
-        accountType: 'live',
-        displayName: account.name || account.number,
-        startingBalance: account.startingBalance,
-        currentEquity,
-        profitLoss,
-        status: 'active',
-        tradeCount: tradeCounts.groupedTradeCount,
-        lastTradeDate,
-        createdAt: account.createdAt,
-      }
+      data
     })
   } catch {
     return NextResponse.json(
@@ -254,7 +264,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         const { deletePublicStorageUrls } = await import('@/server/storage-admin')
         await deletePublicStorageUrls(imageUrls)
       } catch (err) {
-        logger.error('Failed to delete account trade images from storage:', err)
+        logger.error('Failed to delete account trade images from storage: ' + (err instanceof Error ? err.message : String(err)))
         // We continue with DB deletion even if storage cleanup fails
       }
     }

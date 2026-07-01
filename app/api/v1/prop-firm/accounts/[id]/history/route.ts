@@ -108,7 +108,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
     })
   } catch (error: any) {
-    logger.error('GET /api/v1/prop-firm/accounts/[id]/history', { error: error?.message }, 'api')
+    logger.error({ error: error?.message, context: 'api' }, 'GET /api/v1/prop-firm/accounts/[id]/history')
     return NextResponse.json(
       { success: false, error: 'Failed to fetch account history' },
       { status: 500 }

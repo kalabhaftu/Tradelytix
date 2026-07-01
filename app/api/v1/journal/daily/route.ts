@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ journal })
   } catch (error: any) {
-    logger.error('GET /api/v1/journal/daily', { error: error?.message }, 'api')
+    logger.error({ error: error?.message, context: 'api' }, 'GET /api/v1/journal/daily')
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ journal }, { status: 201 })
   } catch (error: any) {
-    logger.error('POST /api/v1/journal/daily', { error: error?.message }, 'api')
+    logger.error({ error: error?.message, context: 'api' }, 'POST /api/v1/journal/daily')
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

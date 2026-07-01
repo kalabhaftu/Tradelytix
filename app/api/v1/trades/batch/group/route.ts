@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db/client'
 import * as schema from '@/lib/db/schema'
-import { and, inArray } from 'drizzle-orm'
+import { and, inArray, eq } from 'drizzle-orm'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { applyRateLimit, apiLimiter } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, groupId, updated: result.length })
   } catch (error: any) {
-    logger.error('Failed to batch group trades', error, 'Batch Group')
+    logger.error({ error, layer: 'Batch Group' }, 'Failed to batch group trades')
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
   }
 }

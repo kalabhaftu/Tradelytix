@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
     const propPhaseIdsToFetch = paginated.filter(a => a.accountType === 'prop-firm').map(a => a.id)
     const propNumbersToFetch = paginated.filter(a => a.accountType === 'prop-firm').map(a => a.number)
     
-    const tradeConditions = []
+    const tradeConditions: any[] = []
     
     const accountNumbersForTrades = [...liveNumbersToFetch, ...propNumbersToFetch]
     if (accountNumbersForTrades.length > 0) {

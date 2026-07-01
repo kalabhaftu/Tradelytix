@@ -35,7 +35,7 @@ export async function PUT(
 
     return NextResponse.json({ journal })
   } catch (error: any) {
-    logger.error('PUT /api/v1/journal/daily/[id]', { error: error?.message }, 'api')
+    logger.error({ error: error?.message, context: 'api' }, 'PUT /api/v1/journal/daily/[id]')
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -61,7 +61,7 @@ export async function DELETE(
     await db.delete(schema.DailyNote).where(eq(schema.DailyNote.id, id))
     return NextResponse.json({ success: true })
   } catch (error: any) {
-    logger.error('DELETE /api/v1/journal/daily/[id]', { error: error?.message }, 'api')
+    logger.error({ error: error?.message, context: 'api' }, 'DELETE /api/v1/journal/daily/[id]')
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

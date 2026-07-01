@@ -140,7 +140,7 @@ export function EditBacktestDialog({
         updatedAt: new Date(),
       }
 
-      await onSave(updateData)
+      await onSave(updateData as any)
 
       toast.success('Backtest updated', {
         description: 'Your backtest has been successfully updated.',
@@ -446,11 +446,11 @@ export function EditBacktestDialog({
                           {hasImage ? (
                             <div className="relative aspect-video group">
                               <Image
-                                src={images[idx]}
+                                src={images[idx]!}
                                 alt={`Screenshot ${idx + 1}`}
                                 fill
                                 className="object-cover rounded cursor-pointer"
-                                onClick={() => setFullscreenImage(images[idx])}
+                                onClick={() => setFullscreenImage(images[idx]!)}
                               />
                               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
                                 <Button
@@ -466,7 +466,7 @@ export function EditBacktestDialog({
                                   type="button"
                                   variant="secondary"
                                   size="sm"
-                                  onClick={() => setFullscreenImage(images[idx])}
+                                  onClick={() => setFullscreenImage(images[idx]!)}
                                 >
                                   View
                                 </Button>

@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       message: "Sync completed",
     });
   } catch (error) {
-    logger.error("Error performing DxFeed sync:", error);
+    logger.error("Error performing DxFeed sync: " + (error instanceof Error ? error.message : String(error)));
     return NextResponse.json(
       { success: false, message: "Failed to perform DxFeed sync" },
       { status: 500 }

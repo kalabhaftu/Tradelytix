@@ -15,12 +15,7 @@ const nextConfig = {
     typedRoutes: true,
   },
 
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+
 
   serverExternalPackages: [
     '@supabase/ssr',
@@ -57,6 +52,65 @@ const nextConfig = {
 
   trailingSlash: false,
   pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
+
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'geolocation=(), microphone=(), camera=(), payment=()',
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains; preload',
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL} wss://*.supabase.co https://api.anthropic.com https://o*.ingest.sentry.io`,
+              "style-src 'self' 'unsafe-inline'",
+              `img-src 'self' data: blob: ${process.env.NEXT_PUBLIC_SUPABASE_URL}`,
+              "font-src 'self'",
+              "object-src 'none'",
+              "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "worker-src 'self' blob:",
+            ].join('; '),
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+        ],
+      },
+      {
+        source: '/api/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate',
+          },
+        ],
+      },
+    ]
+  },
 }
 
 if (typeof process !== 'undefined') {

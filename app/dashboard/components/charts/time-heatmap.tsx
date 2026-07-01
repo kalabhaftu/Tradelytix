@@ -43,7 +43,7 @@ export default function TimeHeatmap() {
     const grid: Record<string, Record<number, HeatmapCell>> = {}
     DAYS.forEach(d => {
       grid[d] = {}
-      HOURS.forEach(h => { grid[d][h] = { pnl: 0, count: 0 } })
+      HOURS.forEach(h => { grid[d]![h] = { pnl: 0, count: 0 } })
     })
 
     for (const trade of (formattedTrades || [])) {
@@ -52,11 +52,14 @@ export default function TimeHeatmap() {
       const dayNum = date.getDay() // 0=Sun, 1=Mon...5=Fri
       if (dayNum === 0 || dayNum === 6) continue
       const dayName = DAYS[dayNum - 1]
+      if (!dayName) continue
       const hour = getNewYorkHour(trade.entryDate)
       if (hour == null) continue
+      const dName = dayName as string
+      const hNum = hour as number
       const pnl = getTradeNetPnl(trade)
-      grid[dayName][hour].pnl += pnl
-      grid[dayName][hour].count += 1
+      grid[dName]![hNum]!.pnl += pnl
+      grid[dName]![hNum]!.count += 1
     }
 
     return grid
@@ -65,14 +68,14 @@ export default function TimeHeatmap() {
   const maxAbs = React.useMemo(() => {
     let max = 0
     DAYS.forEach(d => HOURS.forEach(h => {
-      const abs = Math.abs(heatmapData[d][h].pnl)
+      const abs = Math.abs(heatmapData[d]![h]!.pnl)
       if (abs > max) max = abs
     }))
     return max
   }, [heatmapData])
 
   const activeHours = React.useMemo(() => {
-    return HOURS.filter(h => DAYS.some(d => heatmapData[d][h].count > 0))
+    return HOURS.filter(h => DAYS.some(d => heatmapData[d]![h]!.count > 0))
   }, [heatmapData])
 
   if (activeHours.length === 0) {
@@ -112,7 +115,7 @@ export default function TimeHeatmap() {
                   <span className="text-[9px] font-bold text-muted-foreground/50">{day}</span>
                 </div>
                 {activeHours.map(h => {
-                  const cell = heatmapData[day][h]
+                  const cell = heatmapData[day]![h]!
                   const color = getColor(cell.pnl, maxAbs)
                   const avgPnl = cell.count > 0 ? cell.pnl / cell.count : 0
                   return (

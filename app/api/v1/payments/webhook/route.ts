@@ -34,17 +34,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
-    logger.info('Verified NOWPayments webhook', {
+    logger.info('Verified NOWPayments webhook' + ' : ' + JSON.stringify({
       status: payload.payment_status,
       hasOrderId: Boolean(payload.order_id),
-    })
+    }))
 
     const result = await handleIpnWebhook(payload)
     const status = typeof result.status === 'number' ? result.status : 200
 
     return NextResponse.json({ success: status < 400, ...result }, { status })
   } catch (error) {
-    logger.error('NOWPayments webhook processing failed', { error })
+    logger.error('NOWPayments webhook processing failed' + ' : ' + error)
     return NextResponse.json({ success: false, error: 'Internal processing error' }, { status: 500 })
   }
 }

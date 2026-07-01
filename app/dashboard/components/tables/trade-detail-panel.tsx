@@ -37,12 +37,12 @@ import { getPnlDisplayLabel, getTradeGrossPnl, getTradeNetPnl, getTradePnlByMode
 import { parseTradeChartLinks } from '@/lib/trade-core'
 
 interface TradeDetailPanelProps {
-  trade: Trade
+  trade: TradeType
   onClose: () => void
   basePath: string // '/dashboard/journal' or '/dashboard/table'
 }
 
-async function downloadImage(imageUrl: string, trade: Trade, imageIndex: number) {
+async function downloadImage(imageUrl: string, trade: TradeType, imageIndex: number) {
   try {
     const response = await fetch(imageUrl)
     if (!response.ok) throw new Error('Failed to fetch image')
@@ -302,8 +302,8 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
                 {tradeData.swap != null && tradeData.swap !== 0 && (
                   <span>Swap: <span className="font-mono font-semibold text-foreground">{formatCurrency(tradeData.swap)}</span></span>
                 )}
-                {trade.timeInPosition > 0 && (
-                  <span>Duration: <span className="font-mono font-semibold text-foreground">{Math.floor(trade.timeInPosition / 60)}m {Math.floor(trade.timeInPosition % 60)}s</span></span>
+                {(trade.timeInPosition || 0) > 0 && (
+                  <span>Duration: <span className="font-mono font-semibold text-foreground">{Math.floor((trade.timeInPosition || 0) / 60)}m {Math.floor((trade.timeInPosition || 0) % 60)}s</span></span>
                 )}
               </div>
             </section>
@@ -317,7 +317,7 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
                   {[
                     { label: 'Entry Time', value: formatTimeInZone(trade.entryDate, 'MMM dd, HH:mm', timezone) },
                     { label: 'Exit Time', value: formatTimeInZone(trade.closeDate, 'MMM dd, HH:mm', timezone) },
-                    { label: 'Duration', value: `${Math.floor(trade.timeInPosition / 60)}m ${Math.floor(trade.timeInPosition % 60)}s` },
+                    { label: 'Duration', value: `${Math.floor((trade.timeInPosition || 0) / 60)}m ${Math.floor((trade.timeInPosition || 0) % 60)}s` },
                   ].map(({ label, value }) => (
                     <div key={label} className="flex justify-between items-center py-2.5 border-b border-border/20 last:border-0">
                       <span className="text-xs text-muted-foreground">{label}</span>

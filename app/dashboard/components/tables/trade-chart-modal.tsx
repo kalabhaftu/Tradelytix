@@ -142,8 +142,8 @@ export function TradeChartModal({ isOpen, onClose, trade }: TradeChartModalProps
                 exitTime,
                 entryPrice,
                 exitPrice,
-                stopLoss: trade.stopLoss ? parseFloat(String(trade.stopLoss)) : undefined,
-                takeProfit: trade.takeProfit ? parseFloat(String(trade.takeProfit)) : undefined,
+                ...(trade.stopLoss ? { stopLoss: parseFloat(String(trade.stopLoss)) } : {}),
+                ...(trade.takeProfit ? { takeProfit: parseFloat(String(trade.takeProfit)) } : {}),
                 side,
                 pnl: trade.pnl,
                 symbol

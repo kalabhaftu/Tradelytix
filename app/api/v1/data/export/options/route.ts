@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    logger.error('[API] /api/v1/data/export/options error:', error)
+    logger.error('[API] /api/v1/data/export/options error: ' + (error instanceof Error ? error.message : String(error)))
     return NextResponse.json(
       { success: false, error: 'Failed to load export options' },
       { status: 500 }

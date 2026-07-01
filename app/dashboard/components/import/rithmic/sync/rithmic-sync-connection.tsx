@@ -72,7 +72,7 @@ export function RithmicSyncConnection({ setIsOpen }: RithmicSyncConnectionProps)
         throw new Error(data.message)
       }
     } catch (error) {
-      logger.error('Failed to fetch server configurations:', error)
+      logger.error('Failed to fetch server configurations: ' + (error instanceof Error ? error.message : String(error)))
     }
   }, [])
   
@@ -137,7 +137,7 @@ export function RithmicSyncConnection({ setIsOpen }: RithmicSyncConnectionProps)
       })
     } catch (error: unknown) {
       if (!(error instanceof Error && error.message.includes('Rate limit exceeded'))) {
-        logger.error('Connection error:', error)
+        logger.error('Connection error: ' + (error instanceof Error ? error.message : String(error)))
       }
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -271,7 +271,7 @@ export function RithmicSyncConnection({ setIsOpen }: RithmicSyncConnectionProps)
         const mergedAllAccounts = allAccounts || existingCredentials.some(cred => cred.allAccounts)
 
         const dataToSave = {
-          id: existingCredentials[0].id,
+          id: existingCredentials[0]!.id,
           credentials: {
             username: credentials.username,
             password: credentials.password,
@@ -377,7 +377,7 @@ export function RithmicSyncConnection({ setIsOpen }: RithmicSyncConnectionProps)
         tokenExpiresAt: null
       })
     } catch (error) {
-      logger.error('Failed to save synchronization data:', error)
+      logger.error('Failed to save synchronization data: ' + (error instanceof Error ? error.message : String(error)))
       toast.error("Failed to save synchronization data", {
         description: "The connection succeeded, but synchronization metadata could not be saved to the database.",
       })
@@ -385,7 +385,7 @@ export function RithmicSyncConnection({ setIsOpen }: RithmicSyncConnectionProps)
 
     const accountsToSync = allAccounts ? availableAccounts.map(acc => acc.account_id) : selectedAccounts
     const startDate = calculateStartDate(accountsToSync)
-    logger.info('Connecting to WebSocket:', wsUrl)
+    logger.info('Connecting to WebSocket: ' + wsUrl)
     connect(wsUrl, token, accountsToSync, startDate)
   }, [
     token,

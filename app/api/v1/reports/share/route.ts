@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     const parsed = shareReportSchema.safeParse(body)
 
     if (!parsed.success) {
-      logger.warn('Reports share validation failed', { fields: parsed.error.flatten().fieldErrors }, 'api')
+      logger.warn('Reports share validation failed' + ' : ' + JSON.stringify({ fields: parsed.error.flatten().fieldErrors }))
       return createErrorResponse('Validation failed', 400, parsed.error.flatten(), 'VALIDATION_ERROR')
     }
 
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
       outcome: payload.outcome || undefined,
       strategy: payload.strategy || undefined,
       ruleBroken: normalizeRuleBroken(payload.ruleBroken),
-    })
+    } as any)
 
     const snapshotPayload = JSON.parse(JSON.stringify({
       version: 2,
@@ -137,9 +137,9 @@ export async function POST(req: NextRequest) {
     }).returning())[0]
 
     const appUrl = await getWebsiteURL()
-    return createSuccessResponse({ slug, url: new URL(`/reports/shared/${slug}`, appUrl).toString(), id: shared.id })
+    return createSuccessResponse({ slug, url: new URL(`/reports/shared/${slug}`, appUrl).toString(), id: shared!.id })
   } catch (err) {
-    logger.error('Reports share creation failed', {}, 'api')
+    logger.error('Reports share creation failed' + ' : ' + err)
     return createErrorResponse('Internal server error', 500)
   }
 }
@@ -167,7 +167,7 @@ export async function GET(req: NextRequest) {
     })
     return createSuccessResponse({ reports })
   } catch (err) {
-    logger.error('Reports share list failed', {}, 'api')
+    logger.error('Reports share list failed' + ' : ' + err)
     return createErrorResponse('Internal server error', 500)
   }
 }
@@ -202,7 +202,7 @@ export async function DELETE(req: NextRequest) {
 
     return createSuccessResponse({ deleted: true })
   } catch (err) {
-    logger.error('Reports share deletion failed', {}, 'api')
+    logger.error('Reports share deletion failed' + ' : ' + err)
     return createErrorResponse('Internal server error', 500)
   }
 }

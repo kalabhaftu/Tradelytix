@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       where: (table, { eq }) => eq(table.id, identity.internalUserId),
     })
 
-    const access = await getUserAccessStatus(identity.internalUserId, user?.role)
+    const access = await getUserAccessStatus(identity.internalUserId, user?.role ?? undefined)
 
     return NextResponse.json({
       success: true,
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    logger.error('Subscription status check failed', error, 'Subscription Status')
+    logger.error({ error, layer: 'Subscription Status' }, 'Subscription status check failed')
     return NextResponse.json({ success: false, error: 'Failed to check status' }, { status: 500 })
   }
 }

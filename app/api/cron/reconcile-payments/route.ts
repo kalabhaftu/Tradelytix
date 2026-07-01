@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
-    logger.error('[Cron] Payment reconciliation failed', error)
+    logger.error('[Cron] Payment reconciliation failed: ' + (error instanceof Error ? error.message : String(error)))
     return NextResponse.json(
       { success: false, error: 'Payment reconciliation failed', timestamp: new Date().toISOString() },
       { status: 500 }

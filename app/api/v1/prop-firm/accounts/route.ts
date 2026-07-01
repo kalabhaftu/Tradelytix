@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
 
       const phase1 = (await tx.insert(schema.PhaseAccount).values({
         id: crypto.randomUUID(),
-        masterAccountId: masterAccount.id,
+        masterAccountId: masterAccount!.id,
         phaseNumber: 1,
         phaseId: validatedData.phase1AccountId,
         status: 'active',
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
       if (validatedData.evaluationType === 'Two Step') {
         phase2 = (await tx.insert(schema.PhaseAccount).values({
           id: crypto.randomUUID(),
-          masterAccountId: masterAccount.id,
+          masterAccountId: masterAccount!.id,
           phaseNumber: 2,
           phaseId: null,
           status: 'pending',
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       
       const fundedPhase = (await tx.insert(schema.PhaseAccount).values({
         id: crypto.randomUUID(),
-        masterAccountId: masterAccount.id,
+        masterAccountId: masterAccount!.id,
         phaseNumber: fundedPhaseNumber,
         phaseId: null,
         status: validatedData.evaluationType === 'Instant' ? 'active' : 'pending',
@@ -135,11 +135,11 @@ export async function POST(request: NextRequest) {
       if (validatedData.evaluationType === 'Instant') {
         await tx.update(schema.PhaseAccount)
           .set({ phaseId: validatedData.phase1AccountId })
-          .where(eq(schema.PhaseAccount.id, fundedPhase.id))
+          .where(eq(schema.PhaseAccount.id, fundedPhase!.id))
         
         await tx.update(schema.MasterAccount)
           .set({ currentPhase: fundedPhaseNumber })
-          .where(eq(schema.MasterAccount.id, masterAccount.id))
+          .where(eq(schema.MasterAccount.id, masterAccount!.id))
       }
 
       return {
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    revalidateTag(`accounts-${internalUserId}`, 'max')
+    revalidateTag(`accounts-${internalUserId}`)
     
     return NextResponse.json({
       success: true,
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    logger.error('[API] Failed to create master account:', error)
+    logger.error('[API] Failed to create master account: ' + error)
     return NextResponse.json(
       { 
         success: false, 

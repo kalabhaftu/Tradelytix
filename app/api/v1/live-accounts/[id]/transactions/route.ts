@@ -89,15 +89,15 @@ export async function POST(
       })
 
       const totalPnL = trades.reduce(
-        (sum: number, trade: { pnl: number; commission: number }) =>
-          sum + trade.pnl,
+        (sum: number, trade: any) =>
+          sum + Number(trade.pnl || 0),
         0
       )
       const totalTransactions = transactions.reduce(
         (sum: number, tx: { amount: number }) => sum + tx.amount,
         0
       )
-      const currentBalance = account.startingBalance + totalPnL + totalTransactions
+      const currentBalance = Number(account.startingBalance || 0) + totalPnL + totalTransactions
 
       if (currentBalance < numericAmount) {
         return NextResponse.json(

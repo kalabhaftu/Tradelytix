@@ -157,7 +157,7 @@ export async function getMarketData(
                     return { data: cachedData }
                 }
             } catch (cacheError) {
-                logger.warn('Cache lookup failed:', cacheError)
+                logger.warn('Cache lookup failed: ' + (cacheError instanceof Error ? cacheError.message : String(cacheError)))
             }
 
             let lastError = ''

@@ -126,7 +126,7 @@ export function DataTableColumnHeader<TData, TValue>({
                 <Switch
                   id="toggle-mode"
                   checked={toggleValue}
-                  onCheckedChange={onToggleChange}
+                  {...(onToggleChange ? { onCheckedChange: onToggleChange } : {})}
                 />
               </div>
             </>

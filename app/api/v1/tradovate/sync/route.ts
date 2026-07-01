@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     // Use account-level fee config from DB (stored in sync record)
     const syncResult = await getTradovateTrades(tokenResult.accessToken, {
-      includedFeeTypes: tokenResult.includedFeeTypes,
+      includedFeeTypes: tokenResult.includedFeeTypes as any,
     });
     if (syncResult.error) {
       return NextResponse.json(
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       message: "Sync completed",
     });
   } catch (error) {
-    logger.error("Error performing Tradovate sync:", error);
+    logger.error({ error }, "Error performing Tradovate sync:");
     return NextResponse.json(
       { success: false, message: "Failed to perform Tradovate sync" },
       { status: 500 }

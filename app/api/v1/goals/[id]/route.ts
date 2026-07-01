@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }).where(eq(schema.UserGoal.id, id)).returning())[0]
     return NextResponse.json({ goal: updated })
   } catch (err) {
-    logger.error('Failed to update goal', err, 'Goals PATCH')
+    logger.error('Failed to update goal: ' + (err instanceof Error ? err.message : String(err)))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -56,7 +56,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     await db.delete(schema.UserGoal).where(eq(schema.UserGoal.id, id))
     return NextResponse.json({ success: true })
   } catch (err) {
-    logger.error('Failed to delete goal', err, 'Goals DELETE')
+    logger.error('Failed to delete goal: ' + (err instanceof Error ? err.message : String(err)))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

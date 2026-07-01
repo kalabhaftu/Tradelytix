@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       dailySyncs
     });
   } catch (error) {
-    logger.error('Cron job error:', error);
+    logger.error('Cron job error: ' + (error instanceof Error ? error.message : String(error)));
     return NextResponse.json({ error: 'Cron job failed' }, { status: 500 });
   }
 }
@@ -112,7 +112,7 @@ async function renewUserToken(synchronization: any): Promise<boolean> {
 
     return true;
   } catch (error) {
-    logger.error(`[CRON] Error renewing token for account ${synchronization.accountId}:`, error);
+    logger.error(`[CRON] Error renewing token for account ${synchronization.accountId}: ${error instanceof Error ? error.message : String(error)}`);
     // On unexpected error, also expire the token to force re-auth
     await db.update(schema.Synchronization).set({ token: null, tokenExpiresAt: null }).where(eq(schema.Synchronization.id, synchronization.id));
     return false;
@@ -135,14 +135,14 @@ async function performDailySync(synchronization: any): Promise<boolean> {
     });
     
     if (result.error) {
-      logger.error(`[CRON] Failed to sync trades for account ${synchronization.accountId}:`, result.error);
+      logger.error(`[CRON] Failed to sync trades for account ${synchronization.accountId}: ${result.error}`);
       return false;
     }
     
     logger.info(`[CRON] Successfully synced ${result.savedCount || 0} trades for account ${synchronization.accountId}`);
     return true;
   } catch (error) {
-    logger.error(`[CRON] Error during daily sync for account ${synchronization.accountId}:`, error);
+    logger.error(`[CRON] Error during daily sync for account ${synchronization.accountId}: ${error instanceof Error ? error.message : String(error)}`);
     return false;
   }
 }

@@ -134,7 +134,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       ? 'Funded'
       : `Phase ${nextPhaseNumber}`
 
-    revalidateTag(`accounts-${internalUserId}`, 'max')
+    revalidateTag(`accounts-${internalUserId}`)
 
     return NextResponse.json({
       success: true,
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       message: `Successfully advanced to ${nextPhaseName}`,
     })
   } catch (error) {
-    logger.error('Phase advance error', error, 'Prop-firm Advance')
+    logger.error({ error, context: 'Prop-firm Advance' }, 'Phase advance error')
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

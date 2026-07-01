@@ -34,16 +34,16 @@ export async function POST(request: NextRequest) {
       cancelledAt: new Date(),
     }).where(eq(schema.Subscription.id, subscription.id)).returning())[0]
 
-    revalidateTag(`notifications-${identity.internalUserId}`, 'max')
-    revalidateTag(`accounts-${identity.internalUserId}`, 'max')
-    revalidateTag(`user-data-${identity.internalUserId}`, 'max')
+    revalidateTag(`notifications-${identity.internalUserId}`)
+    revalidateTag(`accounts-${identity.internalUserId}`)
+    revalidateTag(`user-data-${identity.internalUserId}`)
 
     return NextResponse.json({
       success: true,
       message: 'Subscription cancelled successfully',
     })
   } catch (error) {
-    logger.error('Cancel payment failed', error, 'Payment Cancel')
+    logger.error({ error, context: 'Payment Cancel' }, 'Cancel payment failed')
     return NextResponse.json(
       { success: false, error: 'Failed to cancel subscription' },
       { status: 500 }

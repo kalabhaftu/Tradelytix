@@ -252,7 +252,7 @@ export default function AccountsPage() {
       total: pagination?.total || serverAccounts.length,
       live: serverAccounts.filter(a => a.accountType === 'live').length,
       propFirm: serverAccounts.filter(a => a.accountType === 'prop-firm').length,
-      funded: serverAccounts.filter(a => a.accountType === 'prop-firm' && isAccountFunded(a)).length,
+      funded: serverAccounts.filter(a => a.accountType === 'prop-firm' && isAccountFunded(a as any)).length,
       totalEquity,
       pnl,
       totalTrades
@@ -628,7 +628,7 @@ export default function AccountsPage() {
               animate={{ opacity: 1, y: 0 }}
               className="mb-6"
             >
-              <AccountLeaderboard accounts={serverAccounts} />
+              <AccountLeaderboard accounts={serverAccounts as any} />
             </motion.div>
           )}
 
@@ -664,12 +664,12 @@ export default function AccountsPage() {
                       transition={{ delay: index * 0.02, duration: 0.2 }}
                     >
                       <AccountCard
-                        account={account}
-                        allAccounts={serverAccounts}
-                        onView={() => handleViewAccount(account)}
-                        onEdit={() => handleEditAccount(account)}
-                        onDelete={() => handleDeleteAccount(account)}
-                        onArchive={() => handleArchiveAccount(account)}
+                        account={account as any}
+                        allAccounts={serverAccounts as any}
+                        onView={() => handleViewAccount(account as any)}
+                        onEdit={() => handleEditAccount(account as any)}
+                        onDelete={() => handleDeleteAccount(account as any)}
+                        onArchive={() => handleArchiveAccount(account as any)}
                       />
                     </motion.div>
                   ))}
@@ -1039,12 +1039,12 @@ function AccountLeaderboard({ accounts }: { accounts: Account[] }) {
             <div className="flex items-center gap-1.5 text-xs">
               <ArrowUp className="h-3 w-3 text-long" />
               <span className="text-muted-foreground text-[10px]">Best:</span>
-              <span className="font-semibold truncate max-w-[120px]">{best.displayName || best.name || best.number}</span>
+              <span className="font-semibold truncate max-w-[120px]">{best?.displayName || best?.name || best?.number}</span>
             </div>
             <div className="flex items-center gap-1.5 text-xs">
               <ArrowDown className="h-3 w-3 text-short" />
               <span className="text-muted-foreground text-[10px]">Worst:</span>
-              <span className="font-semibold truncate max-w-[120px]">{worst.displayName || worst.name || worst.number}</span>
+              <span className="font-semibold truncate max-w-[120px]">{worst?.displayName || worst?.name || worst?.number}</span>
             </div>
           </div>
         )}

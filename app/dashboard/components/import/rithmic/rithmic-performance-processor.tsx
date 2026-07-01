@@ -25,42 +25,42 @@ const newMappings: { [key: string]: string } = {
 interface PlatformProcessorProps {
     csvData: string[][]
     headers: string[]
-    setProcessedTrades: React.Dispatch<React.SetStateAction<Trade[]>>
+    setProcessedTrades: React.Dispatch<React.SetStateAction<TradeType[]>>
     accountNumber: string
-    processedTrades?: Trade[]
+    processedTrades?: TradeType[]
 }
 
 export default function RithmicPerformanceProcessor({ headers, csvData, processedTrades = [], setProcessedTrades, accountNumber }: PlatformProcessorProps) {
 
     const processTrades = useCallback(() => {
-        const newTrades: Trade[] = [];
+        const newTrades: TradeType[] = [];
         const fallbackAccountNumber = accountNumber || 'default-account';
 
         csvData.forEach(row => {
-            const item: Partial<Trade> = {};
+            const item: Partial<TradeType> = {};
             let quantity = 0;
             headers.forEach((header, index) => {
                 const mappingKey = Object.keys(newMappings).find(key => header.includes(key));
                 if (mappingKey) {
-                    const key = newMappings[mappingKey] as keyof Trade;
+                    const key = newMappings[mappingKey] as keyof TradeType;
                     const cellValue = row[index];
                     switch (key) {
                         case 'quantity':
-                            quantity = parseFloat(cellValue) || 0;
+                            quantity = parseFloat(cellValue || '0') || 0;
                             item[key] = quantity;
                             break;
                         case 'pnl':
-                            const pnl = parseFloat(cellValue) || 0;
+                            const pnl = parseFloat(cellValue || '0') || 0;
                             item[key] = pnl;
                             break;
                         case 'commission':
-                            item[key] = parseFloat(cellValue) || 0;
+                            item[key] = parseFloat(cellValue || '0') || 0;
                             break;
                         case 'timeInPosition':
-                            item[key] = parseFloat(cellValue) || 0;
+                            item[key] = parseFloat(cellValue || '0') || 0;
                             break;
                         default:
-                            item[key] = cellValue as any;
+                            (item as Record<string, any>)[key] = cellValue;
                     }
                 }
             });
@@ -91,7 +91,7 @@ export default function RithmicPerformanceProcessor({ headers, csvData, processe
                 item.accountNumber = fallbackAccountNumber;
             }
             item.id = `${item.entryId}-${item.closeId}`;
-            newTrades.push(item as Trade);
+            newTrades.push(item as TradeType);
         });
 
         setProcessedTrades(newTrades);

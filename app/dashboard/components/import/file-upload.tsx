@@ -97,7 +97,10 @@ export default function FileUpload({
     setParsedFiles(prevFiles => prevFiles.filter((_, i) => i !== index))
     setUploadProgress(prev => {
       const newProgress = { ...prev }
-      delete newProgress[uploadedFiles[index].name]
+      const fileName = uploadedFiles[index]?.name
+      if (fileName) {
+        delete newProgress[fileName]
+      }
       return newProgress
     })
   }
@@ -135,8 +138,9 @@ export default function FileUpload({
 
       // Find current step index and move to next step
       const currentStepIndex = platform.steps.findIndex(step => step.id === 'upload-file')
-      if (currentStepIndex !== -1 && currentStepIndex < platform.steps.length - 1) {
-        setStep(platform.steps[currentStepIndex + 1].id)
+      const nextStep = platform.steps[currentStepIndex + 1]
+      if (currentStepIndex !== -1 && nextStep) {
+        setStep(nextStep.id)
       }
       
       setError(null)

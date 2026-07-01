@@ -60,7 +60,7 @@ export function DxFeedCredentialsManager() {
         toast.success(`Account ${accountId} deleted`)
       } catch (error) {
         toast.error(`Failed to delete account ${accountId}`)
-        logger.error('Delete error:', error)
+        logger.error({ error: error instanceof Error ? error : new Error(String(error)), layer: 'ui' }, 'Delete error')
       }
     },
     [deleteAccount],
@@ -104,7 +104,7 @@ export function DxFeedCredentialsManager() {
       toast.success("Accounts reloaded successfully")
     } catch (error) {
       toast.error("Failed to reload accounts")
-      logger.error('Reload error:', error)
+      logger.error({ error: error instanceof Error ? error : new Error(String(error)), layer: 'ui' }, 'Reload error')
     } finally {
       setIsReloading(false)
     }
@@ -134,7 +134,9 @@ export function DxFeedCredentialsManager() {
 
       let utcTimeString: string | null = null
       if (dailySyncTime) {
-        const [hours, minutes] = dailySyncTime.split(':').map(Number)
+        const parts = dailySyncTime.split(':')
+        const hours = parts[0] ? Number(parts[0]) : 0
+        const minutes = parts[1] ? Number(parts[1]) : 0
         const localDate = new Date()
         localDate.setHours(hours, minutes, 0, 0)
         utcTimeString = localDate.toISOString()
@@ -151,7 +153,7 @@ export function DxFeedCredentialsManager() {
       }
     } catch (error) {
       toast.error("Failed to update daily sync time")
-      logger.error('Update sync time error:', error)
+      logger.error({ error: error instanceof Error ? error : new Error(String(error)), layer: 'ui' }, 'Update sync time error')
     } finally {
       setIsSavingTime(false)
     }

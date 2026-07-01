@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
   if (!parsed.success) {
     if (process.env.NODE_ENV !== "production") {
-      logger.error("Session restore schema validation failed:", parsed.error.format(), "Body received:", body)
+      logger.error("Session restore schema validation failed: " + JSON.stringify(parsed.error.format()) + " Body received: " + JSON.stringify(body))
     }
     return NextResponse.json({ authenticated: false, error: "invalid_tokens" }, { status: 400 })
   }

@@ -557,7 +557,7 @@ export function CreatePropFirmDialog({ open, onOpenChange, onSuccess }: PropFirm
                             name="phase2MaxDrawdownType"
                             control={control}
                             render={({ field }) => (
-                              <Select onValueChange={field.onChange} value={field.value}>
+                              <Select onValueChange={field.onChange} {...(field.value ? { value: field.value } : {})}>
                                 <SelectTrigger className="h-9 mt-1">
                                   <SelectValue />
                                 </SelectTrigger>

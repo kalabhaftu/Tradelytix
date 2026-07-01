@@ -441,7 +441,7 @@ ${dataContext}`
     }))
 
     // Add latest prompt if it wasn't in history yet
-    if (formattedMessages.length === 0 || formattedMessages[formattedMessages.length - 1].content !== prompt) {
+    if (formattedMessages.length === 0 || formattedMessages[formattedMessages.length - 1]?.content !== prompt) {
       formattedMessages.push({ role: 'user', content: prompt })
     }
 

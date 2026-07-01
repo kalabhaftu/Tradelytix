@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'FCM token updated successfully' })
   } catch (error: any) {
-    logger.error('POST /api/v1/user/fcm-token', { error: error?.message }, 'api')
+    logger.error('POST /api/v1/user/fcm-token' + ' : ' + error)
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

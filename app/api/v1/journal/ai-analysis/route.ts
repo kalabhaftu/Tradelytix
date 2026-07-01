@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const journals = await listDailyJournalEntries(internalUserId, {
       startDate,
       endDate,
-      accountId: accountId || undefined,
+      ...(accountId ? { accountId } : {}),
       sortOrder: 'asc',
     })
 
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch funded/active accounts status (MasterAccounts for prop firms)
     const propFirmAccounts = await db.query.MasterAccount.findMany({
-      where: (table, { eq }) => and(eq(table.userId, internalUserId), eq(table.isArchived, false)),
+      where: (table, { eq, and }) => and(eq(table.userId, internalUserId), eq(table.isArchived, false)),
       columns: {
         accountName: true,
         propFirmName: true,
@@ -239,12 +239,13 @@ async function generateAnalysis(
   const pnlByInstrument: Record<string, { trades: number, pnl: number, wins: number }> = {}
   analyzedTrades.forEach(t => {
     const netPnL = getNetPnl(t)
-    if (!pnlByInstrument[t.instrument]) {
-      pnlByInstrument[t.instrument] = { trades: 0, pnl: 0, wins: 0 }
+    const inst = t.instrument || 'Unknown'
+    if (!pnlByInstrument[inst]) {
+      pnlByInstrument[inst] = { trades: 0, pnl: 0, wins: 0 }
     }
-    pnlByInstrument[t.instrument].trades++
-    pnlByInstrument[t.instrument].pnl += netPnL
-    if (getOutcome(t) === 'win') pnlByInstrument[t.instrument].wins++
+    pnlByInstrument[inst]!.trades++
+    pnlByInstrument[inst]!.pnl += netPnL
+    if (getOutcome(t) === 'win') pnlByInstrument[inst]!.wins++
   })
 
   // Sort instruments by P&L
@@ -260,9 +261,9 @@ async function generateAnalysis(
     if (!pnlByStrategy[strategy]) {
       pnlByStrategy[strategy] = { trades: 0, pnl: 0, wins: 0 }
     }
-    pnlByStrategy[strategy].trades++
-    pnlByStrategy[strategy].pnl += netPnL
-    if (getOutcome(t) === 'win') pnlByStrategy[strategy].wins++
+    pnlByStrategy[strategy]!.trades++
+    pnlByStrategy[strategy]!.pnl += netPnL
+    if (getOutcome(t) === 'win') pnlByStrategy[strategy]!.wins++
   })
 
   // P&L by weekday
@@ -278,8 +279,8 @@ async function generateAnalysis(
   analyzedTrades.forEach(t => {
     const dayOfWeek = new Date(t.entryDate).toLocaleDateString('en-US', { weekday: 'long' })
     const netPnL = getNetPnl(t)
-    pnlByWeekday[dayOfWeek].trades++
-    pnlByWeekday[dayOfWeek].pnl += netPnL
+    pnlByWeekday[dayOfWeek]!.trades++
+    pnlByWeekday[dayOfWeek]!.pnl += netPnL
   })
 
   // P&L by hour of day
@@ -290,8 +291,8 @@ async function generateAnalysis(
     if (!pnlByHour[hour]) {
       pnlByHour[hour] = { trades: 0, pnl: 0 }
     }
-    pnlByHour[hour].trades++
-    pnlByHour[hour].pnl += netPnL
+    pnlByHour[hour]!.trades++
+    pnlByHour[hour]!.pnl += netPnL
   })
 
   // Find best/worst hours
@@ -318,8 +319,8 @@ async function generateAnalysis(
         emotionPerformance[j.emotion] = { trades: 0, totalPnL: 0 }
       }
 
-      emotionPerformance[j.emotion].trades += dayTrades.length
-      emotionPerformance[j.emotion].totalPnL += dayTrades.reduce(
+      emotionPerformance[j.emotion]!.trades += dayTrades.length
+      emotionPerformance[j.emotion]!.totalPnL += dayTrades.reduce(
         (sum, t) => sum + getNetPnl(t),
         0
       )
@@ -340,15 +341,15 @@ async function generateAnalysis(
     if (t.marketBias) {
       tradesWithBias++
       const netPnL = getNetPnl(t)
-      biasPerformance[t.marketBias].trades++
-      biasPerformance[t.marketBias].pnl += netPnL
-      if (getOutcome(t) === 'win') biasPerformance[t.marketBias].wins++
+      biasPerformance[t.marketBias]!.trades++
+      biasPerformance[t.marketBias]!.pnl += netPnL
+      if (getOutcome(t) === 'win') biasPerformance[t.marketBias]!.wins++
 
       const isLong = t.side?.toUpperCase() === 'BUY' || t.side?.toLowerCase() === 'long'
       const isShort = t.side?.toUpperCase() === 'SELL' || t.side?.toLowerCase() === 'short'
 
       if ((t.marketBias === 'BULLISH' && isLong) || (t.marketBias === 'BEARISH' && isShort)) {
-        biasPerformance[t.marketBias].alignedWithSide++
+        biasPerformance[t.marketBias]!.alignedWithSide++
         tradesAlignedWithBias++
       }
     }
@@ -388,10 +389,10 @@ async function generateAnalysis(
         if (!newsEventsTrade[newsId]) {
           newsEventsTrade[newsId] = { trades: 0, pnl: 0, wins: 0, tradedDuring: 0 }
         }
-        newsEventsTrade[newsId].trades++
-        newsEventsTrade[newsId].pnl += netPnL
-        if (getOutcome(t) === 'win') newsEventsTrade[newsId].wins++
-        if (t.newsTraded) newsEventsTrade[newsId].tradedDuring++
+        newsEventsTrade[newsId]!.trades++
+        newsEventsTrade[newsId]!.pnl += netPnL
+        if (getOutcome(t) === 'win') newsEventsTrade[newsId]!.wins++
+        if (t.newsTraded) newsEventsTrade[newsId]!.tradedDuring++
       })
     }
   })
@@ -426,9 +427,9 @@ async function generateAnalysis(
     const isWin = getOutcome(t) === 'win'
 
     if ((t as any).entryTimeframe && timeframeStats[(t as any).entryTimeframe]) {
-      timeframeStats[(t as any).entryTimeframe].trades++
-      timeframeStats[(t as any).entryTimeframe].pnl += netPnL
-      if (isWin) timeframeStats[(t as any).entryTimeframe].wins++
+      timeframeStats[(t as any).entryTimeframe]!.trades++
+      timeframeStats[(t as any).entryTimeframe]!.pnl += netPnL
+      if (isWin) timeframeStats[(t as any).entryTimeframe]!.wins++
     }
   })
 
@@ -524,9 +525,9 @@ async function generateAnalysis(
   function analyzeFirstTradePerformance(tradesList: typeof trades): { avgPnL: number | null, winRate: number, count: number } {
     const tradesByDate: Record<string, typeof trades[0][]> = {}
     tradesList.forEach(t => {
-      const dateKey = new Date(t.entryDate).toISOString().split('T')[0]
+      const dateKey = new Date(t.entryDate).toISOString().split('T')[0] || ''
       if (!tradesByDate[dateKey]) tradesByDate[dateKey] = []
-      tradesByDate[dateKey].push(t)
+      tradesByDate[dateKey]!.push(t)
     })
     
     let sum = 0, count = 0, wins = 0
@@ -545,10 +546,10 @@ async function generateAnalysis(
   function analyzeOvertradingPatterns(tradesList: typeof trades): { avgTradesPerDay: number, daysOver5Trades: number, pnlOnHighVolumeDay: number, pnlOnLowVolumeDay: number } {
     const tradesByDate: Record<string, { count: number, pnl: number }> = {}
     tradesList.forEach(t => {
-      const dateKey = new Date(t.entryDate).toISOString().split('T')[0]
+      const dateKey = new Date(t.entryDate).toISOString().split('T')[0] || ''
       if (!tradesByDate[dateKey]) tradesByDate[dateKey] = { count: 0, pnl: 0 }
-      tradesByDate[dateKey].count++
-      tradesByDate[dateKey].pnl += getNetPnl(t)
+      tradesByDate[dateKey]!.count++
+      tradesByDate[dateKey]!.pnl += getNetPnl(t)
     })
     
     const tradingDays = Object.keys(tradesByDate).length
@@ -865,8 +866,8 @@ OUTPUT REQUIREMENTS:
           const winRate = data.trades > 0 ? ((data.wins / data.trades) * 100).toFixed(1) : 0
           return `- ${timeframeLabelMap[tf]}: ${data.trades} trades, $${data.pnl.toFixed(2)} P&L, ${winRate}% WR`
         }).join('\n')}
-    ${usedTimeframes.length > 1 && usedTimeframes[0][1].pnl > 0 && usedTimeframes[usedTimeframes.length - 1][1].pnl < 0 ?
-          `[INSIGHT] Best timeframe: ${timeframeLabelMap[usedTimeframes[0][0]]} (+$${usedTimeframes[0][1].pnl.toFixed(2)}). Worst: ${timeframeLabelMap[usedTimeframes[usedTimeframes.length - 1][0]]} ($${usedTimeframes[usedTimeframes.length - 1][1].pnl.toFixed(2)}). Stick to what works!` : ''}
+    ${usedTimeframes.length > 1 && (usedTimeframes[0]?.[1]?.pnl ?? 0) > 0 && (usedTimeframes[usedTimeframes.length - 1]?.[1]?.pnl ?? 0) < 0 ?
+          `[INSIGHT] Best timeframe: ${timeframeLabelMap[usedTimeframes[0]![0]]} (+$${usedTimeframes[0]![1]!.pnl.toFixed(2)}). Worst: ${timeframeLabelMap[usedTimeframes[usedTimeframes.length - 1]![0]]} ($${usedTimeframes[usedTimeframes.length - 1]![1]!.pnl.toFixed(2)}). Stick to what works!` : ''}
     ` : ''}
 
     ${usedOrderTypes.length > 0 ? `**Order Type Performance**:
@@ -875,8 +876,8 @@ OUTPUT REQUIREMENTS:
             const label = type === 'market' ? 'Market Orders' : 'Limit Orders'
             return `- ${label}: ${data.trades} trades, $${data.pnl.toFixed(2)} P&L, ${winRate}% WR`
           }).join('\n')}
-    ${usedOrderTypes.length === 2 && usedOrderTypes[0][1].pnl > 0 && usedOrderTypes[1][1].pnl < 0 ?
-          `[INSIGHT] ${usedOrderTypes[0][0] === 'market' ? 'Market orders' : 'Limit orders'} are working better (+$${usedOrderTypes[0][1].pnl.toFixed(2)}) vs ${usedOrderTypes[1][0] === 'market' ? 'market' : 'limit'} ($${usedOrderTypes[1][1].pnl.toFixed(2)}).` : ''}
+    ${usedOrderTypes.length === 2 && (usedOrderTypes[0]?.[1]?.pnl ?? 0) > 0 && (usedOrderTypes[1]?.[1]?.pnl ?? 0) < 0 ?
+          `[INSIGHT] ${usedOrderTypes[0]![0] === 'market' ? 'Market orders' : 'Limit orders'} are working better (+$${usedOrderTypes[0]![1]!.pnl.toFixed(2)}) vs ${usedOrderTypes[1]![0] === 'market' ? 'market' : 'limit'} ($${usedOrderTypes[1]![1]!.pnl.toFixed(2)}).` : ''}
     ` : ''}
 
     ${usedSessions.length > 0 ? `**Trading Session Performance**:
@@ -884,8 +885,8 @@ OUTPUT REQUIREMENTS:
             const winRate = data.trades > 0 ? ((data.wins / data.trades) * 100).toFixed(1) : 0
             return `- ${session}: ${data.trades} trades, $${data.pnl.toFixed(2)} P&L, ${winRate}% WR`
           }).join('\n')}
-    ${usedSessions.length > 1 && usedSessions[0][1].pnl > 0 && usedSessions[usedSessions.length - 1][1].pnl < 0 ?
-          `[INSIGHT] Best session: ${usedSessions[0][0]} (+$${usedSessions[0][1].pnl.toFixed(2)}). Worst: ${usedSessions[usedSessions.length - 1][0]} ($${usedSessions[usedSessions.length - 1][1].pnl.toFixed(2)}). Focus on your best times!` : ''}
+    ${usedSessions.length > 1 && (usedSessions[0]?.[1]?.pnl ?? 0) > 0 && (usedSessions[usedSessions.length - 1]?.[1]?.pnl ?? 0) < 0 ?
+          `[INSIGHT] Best session: ${usedSessions[0]![0]} (+$${usedSessions[0]![1]!.pnl.toFixed(2)}). Worst: ${usedSessions[usedSessions.length - 1]![0]} ($${usedSessions[usedSessions.length - 1]![1]!.pnl.toFixed(2)}). Focus on your best times!` : ''}
     ` : ''}
 
     **Daily Journal Entries** (READ EVERY WORD - The vibe is in here):

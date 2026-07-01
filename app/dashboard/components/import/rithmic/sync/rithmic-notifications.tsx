@@ -20,9 +20,9 @@ interface Notification {
     current: number
     total: number
     ordersProcessed: number
-    currentDate?: string
-    currentDayNumber?: number
-  }
+    currentDate?: string | undefined
+    currentDayNumber?: number | undefined
+  } | undefined
 }
 
 function formatYYYYMMDD(dateStr: string): string {
@@ -65,7 +65,7 @@ export function RithmicSyncNotifications() {
       setNotifications(prev => ({
         ...prev,
         progress: {
-          ...prev.progress,
+          ...prev.progress!,
           type: 'info',
           message: `Processing account ${currentAccount}...`,
           timestamp: Date.now(),
@@ -82,7 +82,7 @@ export function RithmicSyncNotifications() {
       setNotifications(prev => ({
         ...prev,
         progress: {
-          ...prev.progress,
+          ...prev.progress!,
           message: 'No active ingestion running',
           timestamp: Date.now(),
           progress: {
@@ -103,7 +103,7 @@ export function RithmicSyncNotifications() {
           setNotifications(prev => ({
             ...prev,
             progress: {
-              ...prev.progress,
+              ...prev.progress!,
               type: 'success',
               message: 'Rithmic ingestion completed successfully',
               timestamp: Date.now()
@@ -117,14 +117,14 @@ export function RithmicSyncNotifications() {
           setNotifications(prev => ({
             ...prev,
             progress: {
-              ...prev.progress,
+              ...prev.progress!,
               type: 'info',
               message: `Processing date ${formatYYYYMMDD(date)}...`,
               timestamp: Date.now(),
               progress: {
                 current: parseInt(current),
                 total: parseInt(total),
-                ordersProcessed: prev.progress.progress?.ordersProcessed || 0,
+                ordersProcessed: prev.progress?.progress?.ordersProcessed || 0,
                 currentDate: date,
                 currentDayNumber: parseInt(current)
               }
@@ -135,13 +135,13 @@ export function RithmicSyncNotifications() {
         setNotifications(prev => ({
           ...prev,
           progress: {
-            ...prev.progress,
+            ...prev.progress!,
             timestamp: Date.now(),
             progress: {
-              ...prev.progress.progress!,
-              ordersProcessed: (prev.progress.progress?.ordersProcessed || 0) + 1,
-              current: prev.progress.progress?.current || 0,
-              total: prev.progress.progress?.total || 0
+              ...prev.progress!.progress!,
+              ordersProcessed: (prev.progress?.progress?.ordersProcessed || 0) + 1,
+              current: prev.progress?.progress?.current || 0,
+              total: prev.progress?.progress?.total || 0
             }
           }
         }))
@@ -152,14 +152,14 @@ export function RithmicSyncNotifications() {
           setNotifications(prev => ({
             ...prev,
             progress: {
-              ...prev.progress,
+              ...prev.progress!,
               type: 'info',
               message: `Processing account ${accountId}...`,
               timestamp: Date.now(),
               progress: {
                 current: parseInt(current),
                 total: parseInt(total),
-                ordersProcessed: prev.progress.progress?.ordersProcessed || 0,
+                ordersProcessed: prev.progress?.progress?.ordersProcessed || 0,
                 currentDate: date,
                 currentDayNumber: parseInt(current)
               }
@@ -176,9 +176,12 @@ export function RithmicSyncNotifications() {
       setNotifications(prev => {
         const updated = { ...prev }
         Object.keys(updated).forEach(key => {
-          if (updated[key].timestamp < fiveMinutesAgo) {
+          const notif = updated[key]
+          if (!notif) return
+          if ((notif.timestamp || 0) < fiveMinutesAgo) {
             updated[key] = {
-              ...updated[key],
+              ...notif,
+              id: notif.id || key,
               type: 'info',
               message: 'No active ingestion running',
               progress: {
@@ -186,7 +189,7 @@ export function RithmicSyncNotifications() {
                 total: 0,
                 ordersProcessed: 0
               }
-            }
+            } as Notification
           }
         })
         return updated
@@ -196,11 +199,11 @@ export function RithmicSyncNotifications() {
     return () => clearInterval(interval)
   }, [])
 
-  if (isComplete || notifications.progress.message === 'No active ingestion running') {
+  if (isComplete || notifications.progress?.message === 'No active ingestion running') {
     return null
   }
 
-  const progress = notifications.progress.progress
+  const progress = notifications.progress?.progress
   const totalAccountsToProcess = selectedAccounts.length || processingStats.totalAccountsAvailable || 1
   const currentAccountIndex = currentAccount ? selectedAccounts.indexOf(currentAccount) + 1 : 0
   
@@ -213,9 +216,9 @@ export function RithmicSyncNotifications() {
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-md w-full">
       <Alert
-        key={notifications.progress.id}
+        key={notifications.progress?.id || 'progress'}
         className={cn(
-          notifications.progress.type === 'success' && "border-green-500",
+          notifications.progress?.type === 'success' && "border-green-500",
           isCollapsed && "w-16 h-16 p-0 ml-auto"
         )}
       >
@@ -255,8 +258,8 @@ export function RithmicSyncNotifications() {
             </div>
           ) : (
             <>
-              {notifications.progress.type === 'success' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
-              {notifications.progress.type === 'info' && <Info className="h-4 w-4 text-blue-500" />}
+              {notifications.progress?.type === 'success' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+              {notifications.progress?.type === 'info' && <Info className="h-4 w-4 text-blue-500" />}
               <div className="space-y-1 w-full">
                 <div className="flex items-center justify-between">
                   <AlertTitle>Rithmic Ingestion</AlertTitle>
@@ -273,7 +276,7 @@ export function RithmicSyncNotifications() {
                   </div>
                 </div>
                 <AlertDescription>
-                  <div>{notifications.progress.message}</div>
+                  <div>{notifications.progress?.message}</div>
                   {progress && progress.total > 0 && (
                     <div className="mt-2 space-y-2">
                       <Progress 

@@ -33,10 +33,10 @@ export function SyncCountdown({ lastSyncTime, isAutoSyncing, credentialId }: Syn
         
         if (!hasTriggeredSyncRef.current && credentialId && !isAutoSyncing) {
           hasTriggeredSyncRef.current = true
-          logger.info('Countdown reached Ready state, triggering immediate sync check for credential:', credentialId)
+          logger.info('Countdown reached Ready state, triggering immediate sync check for credential: ' + credentialId)
 
           performSyncForCredential(credentialId).catch(error => {
-            logger.error('Error triggering immediate sync:', error)
+            logger.error('Error triggering immediate sync: ' + (error instanceof Error ? error.message : String(error)))
           })
         }
         return

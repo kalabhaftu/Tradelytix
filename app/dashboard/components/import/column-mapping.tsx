@@ -70,7 +70,7 @@ export default function ColumnMapping({ headers, csvData, mappings, setMappings,
         if (object) {
           Object.entries(object).forEach(([destinationColumn, header]) => {
             // If this header exists in our CSV and isn't already mapped
-            if (headers.includes(header) && !Object.values(prev).includes(destinationColumn)) {
+            if (header && headers.includes(header) && !Object.values(prev).includes(destinationColumn)) {
               newMappings[header] = destinationColumn;
             }
           });
@@ -174,7 +174,7 @@ export default function ColumnMapping({ headers, csvData, mappings, setMappings,
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="cursor-help ml-1 opacity-70 hover:opacity-100">
-                        {columnConfig[field].required ? (
+                        {columnConfig[field]?.required ? (
                           <AlertTriangle className="h-3 w-3 text-destructive inline-block align-middle" />
                         ) : (
                           <Info className="h-3 w-3 text-warning inline-block align-middle" />
@@ -182,7 +182,7 @@ export default function ColumnMapping({ headers, csvData, mappings, setMappings,
                       </span>
                     </TooltipTrigger>
                     <TooltipContent className="text-xs">
-                      <p>{columnConfig[field].required ? "Required field" : "Optional field"}</p>
+                      <p>{columnConfig[field]?.required ? "Required field" : "Optional field"}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -243,7 +243,7 @@ export default function ColumnMapping({ headers, csvData, mappings, setMappings,
                              column === 'closeReason' ? 'Close Reason' :
                              column === 'symbol' ? 'Symbol' :
                              column}
-                            {columnConfig[column].required && (
+                            {columnConfig[column]?.required && (
                               <span className="text-destructive font-bold text-xs">*</span>
                             )}
                           </span>

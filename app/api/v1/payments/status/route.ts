@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: payload })
   } catch (error) {
-    logger.error('Payment status check failed', error, 'Payment Status')
+    logger.error({ error, context: 'Payment Status' }, 'Payment status check failed')
     return NextResponse.json({ success: false, error: 'Failed to check status' }, { status: 500 })
   }
 }

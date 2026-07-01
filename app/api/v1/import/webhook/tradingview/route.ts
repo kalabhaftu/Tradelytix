@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
     const closeIso = closeDate.toISOString()
     const tradeIdentityKey = `tv-${symbol}-${entryIso}-${tradeId}`
 
-    await (db.insert(schema.Trade).values({
+    await db.insert(schema.Trade).values({
       id: tradeId,
       userId: userSettings.userId,
       accountId: defaultAccount.id,
@@ -145,11 +145,11 @@ export async function POST(req: NextRequest) {
       comment: payload.comment || 'Imported via TradingView webhook',
       tradeIdentityKey,
       timeInPosition: Math.max(0, Math.floor((closeDate.getTime() - entryDate.getTime()) / 1000)),
-    }).returning())[0]
+    } as any)
 
     return createSuccessResponse({ tradeId }, `Trade imported: ${symbol} ${payload.side}`)
   } catch (err: any) {
-    logger.error('TradingView webhook import failed', { error: err?.message }, 'api')
+    logger.error('TradingView webhook import failed: ' + (err instanceof Error ? err.message : String(err)))
     return createErrorResponse('Internal server error', 500)
   }
 }

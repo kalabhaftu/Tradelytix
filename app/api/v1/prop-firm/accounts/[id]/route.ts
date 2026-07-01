@@ -10,7 +10,7 @@ import { logger } from '@/lib/logger'
 import { getTradeNetPnl } from '@/lib/metrics/pnl'
 import { getRuntimeBreakEvenThreshold } from '@/server/user-settings'
 import { isFundedPhaseForEvaluation } from '@/lib/prop-firm/reporting'
-import { eq, and, inArray, desc, asc } from 'drizzle-orm'
+import { eq, and, inArray, desc, asc, exists } from 'drizzle-orm'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -411,7 +411,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     })
 
   } catch (error: any) {
-    logger.error('GET /api/v1/prop-firm/accounts/[id]', { error: error?.message }, 'api')
+    logger.error({ error: error?.message, context: 'api' }, 'GET /api/v1/prop-firm/accounts/[id]')
     return NextResponse.json(
       {
         success: false,

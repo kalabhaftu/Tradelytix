@@ -147,9 +147,9 @@ export default function AccountSelection({
           return account
         })
         
-        setAccountsWithPhases(accountsWithPhaseData)
+        setAccountsWithPhases(accountsWithPhaseData as any)
       } catch (error) {
-        setAccountsWithPhases(accounts) // Fallback to accounts without phase formatting
+        setAccountsWithPhases((accounts || []) as any) // Fallback to accounts without phase formatting
       } finally {
         setIsLoadingPhases(false)
       }

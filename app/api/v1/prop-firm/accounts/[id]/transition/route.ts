@@ -137,7 +137,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       : `Phase ${nextPhaseNumber}`
 
     // Invalidate cache so UI updates on refresh
-    revalidateTag(`accounts-${internalUserId}`, 'max')
+    revalidateTag(`accounts-${internalUserId}`)
     // NOTE: Real-time refresh is handled client-side via polling or manual refresh
     // triggerDataRefresh cannot be used here as it's a client-only module
 
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     })
 
   } catch (error) {
-    logger.error('Phase transition error:', error)
+    logger.error({ error }, 'Phase transition error:')
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(

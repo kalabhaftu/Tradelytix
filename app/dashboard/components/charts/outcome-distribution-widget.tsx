@@ -63,6 +63,7 @@ export default function OutcomeDistributionWidget() {
                 content={({ active, payload }) => {
                   if (!active || !payload?.length) return null
                   const item = payload[0]
+                  if (!item) return null
                   return (
                     <div className="bg-card border border-border p-2.5 rounded-lg shadow-md">
                       <div className="text-[10px] font-bold text-muted-foreground/70 mb-1">{item.name}</div>

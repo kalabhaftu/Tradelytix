@@ -61,13 +61,13 @@ export function PropFirmWidgetAccountSelector({ accounts, selectedMasterAccountI
   if (accounts.length === 1) {
     return (
       <span className="max-w-[15rem] truncate rounded-lg border border-border/40 bg-muted/20 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-        {getLabel(accounts[0])}
+        {getLabel(accounts[0]!)}
       </span>
     )
   }
 
   return (
-    <Select value={selectedMasterAccountId || undefined} onValueChange={onChange}>
+    <Select {...(selectedMasterAccountId ? { value: selectedMasterAccountId } : {})} onValueChange={onChange}>
       <SelectTrigger className={cn('h-8 w-[15rem] rounded-lg border-border/40 bg-muted/15 text-xs', className)}>
         <SelectValue placeholder="Choose challenge" />
       </SelectTrigger>

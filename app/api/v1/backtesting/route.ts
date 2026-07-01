@@ -241,7 +241,7 @@ export async function DELETE(request: NextRequest) {
       try {
         await deletePublicStorageUrls(imageUrls)
       } catch (error) {
-        logger.error('Storage deletion failed for backtest', error, 'Delete Backtest')
+        logger.error('Storage deletion failed for backtest: ' + (error instanceof Error ? error.message : String(error)))
       }
     }
 

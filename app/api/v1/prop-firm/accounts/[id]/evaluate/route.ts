@@ -81,7 +81,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       })
       
       // Invalidate cache when account status changes
-      revalidateTag(`accounts-${internalUserId}`, 'max')
+      revalidateTag(`accounts-${internalUserId}`)
     }
 
     return NextResponse.json({
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     })
 
   } catch (error: any) {
-    logger.error('POST /api/v1/prop-firm/accounts/[id]/evaluate', { error: error?.message }, 'api')
+    logger.error({ error: error?.message, context: 'api' }, 'POST /api/v1/prop-firm/accounts/[id]/evaluate')
     return NextResponse.json(
       { 
         success: false, 

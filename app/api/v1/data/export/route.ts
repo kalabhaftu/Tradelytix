@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       try {
         filters = await request.json()
       } catch (e) {
-        logger.warn('Failed to parse export filters', e)
+        logger.warn('Failed to parse export filters: ' + (e instanceof Error ? e.message : String(e)))
       }
     }
 
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       promoRedemptions
     ] = await Promise.all([
       db.query.User.findFirst({ 
-        where: (table, { eq }) => eq(table.id, internalUserId),
+        where: (table: any, { eq }: any) => eq(table.id, internalUserId),
         columns: {
           id: true,
           firstName: true,
@@ -261,10 +261,10 @@ export async function POST(request: NextRequest) {
 
     // Log archive warnings/errors
     archive.on('warning', (err) => {
-      logger.warn('Archive warning:', err)
+      logger.warn('Archive warning: ' + (err instanceof Error ? err.message : String(err)))
     })
     archive.on('error', (err) => {
-      logger.error('Archive error:', err)
+      logger.error('Archive error: ' + (err instanceof Error ? err.message : String(err)))
       stream.destroy(err) // Kill the stream
     })
 
@@ -371,7 +371,7 @@ export async function POST(request: NextRequest) {
 
         await archive.finalize()
       } catch (error) {
-        logger.error('Async archive processing error:', error)
+        logger.error('Async archive processing error: ' + (error instanceof Error ? error.message : String(error)))
         stream.destroy(error as Error)
       }
     }
@@ -387,7 +387,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    logger.error('Export init error:', error)
+    logger.error('Export init error: ' + (error instanceof Error ? error.message : String(error)))
     return NextResponse.json({ error: 'Export failed' }, { status: 500 })
   }
 }

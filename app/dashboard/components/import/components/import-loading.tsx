@@ -93,8 +93,8 @@ export function ImportLoading() {
     }
   }, [])
 
-  const currentQuote = tradingQuotes[currentQuoteIndex]
-  const IconComponent = icons[currentQuoteIndex % icons.length]
+  const currentQuote = (tradingQuotes[currentQuoteIndex] || tradingQuotes[0]) || { text: "Importing...", author: "System" }
+  const IconComponent = (icons[currentQuoteIndex % icons.length] || icons[0]) as React.ElementType
 
   return (
     <div className="flex flex-col items-center justify-center h-full w-full p-2 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 lg:space-y-4 max-h-[80vh] overflow-hidden">
@@ -177,13 +177,14 @@ export function ImportLoading() {
           transition={{ duration: 0.5 }}
           className="hidden xl:block max-w-lg text-center space-y-1.5 relative px-4"
         >
-          <div className="absolute -inset-4 bg-muted/20 blur-xl rounded-lg" />
-          <blockquote className="relative text-sm font-medium italic text-foreground/90">
-            &ldquo;{currentQuote.text}&rdquo;
-          </blockquote>
-          <cite className="relative text-xs text-muted-foreground not-italic">
-            — {currentQuote.author}
-          </cite>
+          <div className="space-y-1 sm:space-y-1.5 max-w-[280px] sm:max-w-sm lg:max-w-md mx-auto relative z-10">
+            <p className="text-sm sm:text-base lg:text-lg italic text-foreground/80 leading-relaxed font-medium">
+              "{currentQuote?.text}"
+            </p>
+            <p className="text-xs sm:text-sm text-foreground/60 font-semibold tracking-wide uppercase">
+              — {currentQuote?.author}
+            </p>
+          </div>
         </motion.div>
       </AnimatePresence>
 

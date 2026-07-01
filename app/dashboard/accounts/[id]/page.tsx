@@ -235,12 +235,12 @@ export default function LiveAccountDetailPage() {
         if (!prev) return null
         return {
           ...prev,
-          name: storeAccount.name || undefined,
-          broker: storeAccount.broker || undefined,
-          displayName: (storeAccount as any).displayName || storeAccount.name || storeAccount.number,
-          startingBalance: storeAccount.startingBalance,
+          name: storeAccount.name || prev.name || "",
+          broker: storeAccount.broker || prev.broker || "",
+          displayName: (storeAccount as any).displayName || storeAccount.name || storeAccount.number || "",
+          startingBalance: storeAccount.startingBalance ?? prev.startingBalance ?? 0,
           status: storeAccount.status || 'active',
-        }
+        } as LiveAccountData
       })
     }
   }, [storeAccounts, accountId])

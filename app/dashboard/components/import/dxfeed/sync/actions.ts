@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+import { logger as appLogger } from '@/lib/logger';
 'use server'
 
 import { saveTradesAction } from '@/server/database'
@@ -32,18 +32,18 @@ const DXFEED_HISTORY_LOOKBACK_DAYS = Math.max(
   Number(process.env.DXFEED_HISTORY_LOOKBACK_DAYS ?? '364'),
 )
 
-const logger = {
+const dxLogger = {
   debug: (message: string, data?: any) => {
-    if (IS_DEV) logger.info(`[DXFEED-DEBUG] ${message}`, data ?? '')
+    if (IS_DEV) appLogger.info({ layer: 'dxfeed', ...data }, `[DXFEED-DEBUG] ${message}`)
   },
   info: (message: string) => {
-    logger.info(`[DXFEED] ${message}`)
+    appLogger.info({ layer: 'dxfeed' }, `[DXFEED] ${message}`)
   },
   warn: (message: string) => {
-    logger.warn(`[DXFEED] ${message}`)
+    appLogger.warn({ layer: 'dxfeed' }, `[DXFEED] ${message}`)
   },
   error: (message: string, error?: unknown) => {
-    logger.error(`[DXFEED] ${message}`, error instanceof Error ? error.message : '')
+    appLogger.error({ error: error instanceof Error ? error : new Error(String(error)), layer: 'dxfeed' }, `[DXFEED] ${message}`)
   },
 }
 
@@ -77,7 +77,7 @@ function parseHistoricalHostFromTradingWss(wssUrl?: string | null): string {
     const parsed = new URL(wssUrl)
     return `https://${parsed.hostname}`
   } catch {
-    logger.warn('Failed to parse trading websocket URL')
+    dxLogger.warn('Failed to parse trading websocket URL')
     return ''
   }
 }
@@ -142,7 +142,7 @@ export async function authenticateDxFeed(
       connectOnlyTrading: true,
     }
 
-    logger.info('Sending auth request')
+    dxLogger.info('Sending auth request')
 
     const response = await fetch(DXFEED_AUTH_URL, {
       method: 'POST',
@@ -155,7 +155,7 @@ export async function authenticateDxFeed(
 
     if (!response.ok) {
       const text = await response.text()
-      logger.error(`Auth request failed with status ${response.status}`)
+      dxLogger.error(`Auth request failed with status ${response.status}`)
       return { error: `Authentication failed (${response.status}): ${text || response.statusText}` }
     }
 
@@ -171,10 +171,10 @@ export async function authenticateDxFeed(
       parseHistoricalHostFromTradingWss(response.headers.get('wss'))
 
     if (!historicalHost) {
-      logger.warn('Could not derive historical host from auth response')
+      dxLogger.warn('Could not derive historical host from auth response')
     }
 
-    logger.info('Auth successful')
+    dxLogger.info('Auth successful')
 
     const reportAccessToken = data.tradingRestReportToken || data.token
     const accounts = historicalHost
@@ -192,12 +192,12 @@ export async function authenticateDxFeed(
 
     const storeResult = await storeDxFeedToken(JSON.stringify(credentials), login)
     if (storeResult.error) {
-      logger.warn('Failed to store token')
+      dxLogger.warn('Failed to store token')
     }
 
     return { success: true }
   } catch (error) {
-    logger.error('Authentication error:', error)
+    dxLogger.error('Authentication error:', error)
     return { error: 'Failed to authenticate with DxFeed' }
   }
 }
@@ -208,14 +208,14 @@ export async function getDxFeedAccounts(
 ): Promise<DxFeedTradingAccount[]> {
   try {
     if (!historicalHost) {
-      logger.error('No historical host provided')
+      dxLogger.error('No historical host provided')
       return []
     }
 
     const baseUrl = historicalHost.endsWith('/') ? historicalHost.slice(0, -1) : historicalHost
     const url = `${baseUrl}/api/historical/TradingAccount/List`
 
-    logger.debug('Fetching accounts from:', url)
+    dxLogger.debug('Fetching accounts from:', url)
 
     const response = await fetch(url, {
       headers: buildHistoricalAuthHeaders(accessToken),
@@ -223,14 +223,14 @@ export async function getDxFeedAccounts(
 
     if (!response.ok) {
       const text = await response.text()
-      logger.warn(`Failed to fetch accounts (status ${response.status}): ${text}`)
+      dxLogger.warn(`Failed to fetch accounts (status ${response.status}): ${text}`)
       return []
     }
 
     const data: DxFeedAccountListResponse | DxFeedTradingAccount[] = await response.json()
     return extractArrayPayload<DxFeedTradingAccount>(data)
   } catch (error) {
-    logger.error('Error fetching DxFeed accounts:', error)
+    dxLogger.error('Error fetching DxFeed accounts:', error)
     return []
   }
 }
@@ -239,12 +239,12 @@ function extractInstrumentSymbol(contract: DxFeedReportTrade['contract']): strin
   if (!contract) return 'Unknown'
 
   const raw = (contract.symbol || contract.contractName || '').toUpperCase()
-  const withoutExchange = raw.split(':')[0]
+  const withoutExchange = raw.split(':')[0] ?? raw
   const clean = withoutExchange.startsWith('/') ? withoutExchange.slice(1) : withoutExchange
 
   const monthCodeMatch = clean.match(/^([A-Z]+?)[FGHJKMNQUVXZ]\d+$/i)
   if (monthCodeMatch) {
-    return monthCodeMatch[1].toUpperCase()
+    return monthCodeMatch[1] || clean
   }
 
   const lettersOnly = clean.replace(/[^A-Z]/g, '')
@@ -261,7 +261,7 @@ function buildTradesFromDxFeedReport(
   for (const rt of reportTrades) {
     try {
       if (rt.exitDate === 0 || rt.exitDate == null) {
-        logger.debug(`Skipping open position tradeId=${rt.tradeId} (exitDate=0)`)
+        dxLogger.debug(`Skipping open position tradeId=${rt.tradeId} (exitDate=0)`)
         continue
       }
 
@@ -311,9 +311,9 @@ function buildTradesFromDxFeedReport(
 
       trades.push(trade)
 
-      logger.debug(`Created trade: ${instrument} ${side} ${quantity} @ ${rt.entryPrice} -> ${rt.exitPrice} = $${pnl.toFixed(2)}`)
+      dxLogger.debug(`Created trade: ${instrument} ${side} ${quantity} @ ${rt.entryPrice} -> ${rt.exitPrice} = $${pnl.toFixed(2)}`)
     } catch (error) {
-      logger.error(`Error processing DxFeed trade ${rt.tradeId}:`, error)
+      dxLogger.error(`Error processing DxFeed trade ${rt.tradeId}:`, error)
     }
   }
 
@@ -344,7 +344,7 @@ export async function getDxFeedTrades(
     let storedTokenJson = initialTokenJson
     const baseUrl = historicalHost.endsWith('/') ? historicalHost.slice(0, -1) : historicalHost
 
-    logger.info('Fetching DxFeed accounts...')
+    dxLogger.info('Fetching DxFeed accounts...')
     const accounts = await getDxFeedAccounts(accessToken, historicalHost)
 
     const accountNumbers = accounts.map(
@@ -362,7 +362,7 @@ export async function getDxFeedTrades(
       return { processedTrades: [], savedCount: 0, tradesCount: 0 }
     }
 
-    logger.info(`Found ${accounts.length} accounts, fetching trades...`)
+    dxLogger.info(`Found ${accounts.length} accounts, fetching trades...`)
 
     const allTrades: any[] = []
 
@@ -385,7 +385,7 @@ export async function getDxFeedTrades(
 
       if (!response.ok) {
         const text = await response.text()
-        logger.warn(
+        dxLogger.warn(
           `Failed to fetch trades for account ${accountLabel} (status ${response.status}): ${text}`,
         )
         continue
@@ -395,13 +395,13 @@ export async function getDxFeedTrades(
         await response.json()
       const apiError = extractApiErrorMessage(data)
       if (apiError) {
-        logger.warn(`DxFeed returned an error for account ${accountLabel}: ${apiError}`)
+        dxLogger.warn(`DxFeed returned an error for account ${accountLabel}: ${apiError}`)
         continue
       }
 
       const reportTrades = extractArrayPayload<DxFeedReportTrade>(data)
 
-      logger.info(`Received ${reportTrades.length} trades for account ${accountLabel}`)
+      dxLogger.info(`Received ${reportTrades.length} trades for account ${accountLabel}`)
 
       const trades = buildTradesFromDxFeedReport(reportTrades, accountLabel, userId)
       allTrades.push(...trades)
@@ -410,11 +410,11 @@ export async function getDxFeedTrades(
     await updateLastSyncedAt(userId, storedTokenJson)
 
     if (allTrades.length === 0) {
-      logger.info('No trades to save')
+      dxLogger.info('No trades to save')
       return { processedTrades: [], savedCount: 0, tradesCount: 0 }
     }
 
-    logger.info(`Saving ${allTrades.length} trades...`)
+    dxLogger.info(`Saving ${allTrades.length} trades...`)
     const saveResult = await saveTradesAction(allTrades)
 
     if (saveResult.error) {
@@ -425,7 +425,7 @@ export async function getDxFeedTrades(
           tradesCount: allTrades.length,
         }
       }
-      logger.error(`Failed to save trades: ${saveResult.error}`)
+      dxLogger.error(`Failed to save trades: ${saveResult.error}`)
       return {
         error: `Failed to save trades: ${saveResult.error}`,
         processedTrades: allTrades,
@@ -433,7 +433,7 @@ export async function getDxFeedTrades(
       }
     }
 
-    logger.info(`Saved ${saveResult.numberOfTradesAdded} trades`)
+    dxLogger.info(`Saved ${saveResult.numberOfTradesAdded} trades`)
 
     return {
       processedTrades: allTrades,
@@ -441,7 +441,7 @@ export async function getDxFeedTrades(
       tradesCount: allTrades.length,
     }
   } catch (error) {
-    logger.error('Failed to get DxFeed trades:', error)
+    dxLogger.error('Failed to get DxFeed trades:', error)
     return { error: 'Failed to get trades' }
   }
 }
@@ -500,7 +500,7 @@ export async function storeDxFeedToken(
 
     return { success: true }
   } catch (error) {
-    logger.error('Failed to store DxFeed token:', error)
+    dxLogger.error('Failed to store DxFeed token:', error)
     return { error: 'Failed to store token' }
   }
 }
@@ -529,7 +529,7 @@ export async function getDxFeedToken(accountId: string = 'default') {
       accountId: syncData.accountId,
     }
   } catch (error) {
-    logger.error('Failed to get DxFeed token:', error)
+    dxLogger.error('Failed to get DxFeed token:', error)
     return { error: 'Failed to get token' }
   }
 }
@@ -553,7 +553,7 @@ export async function removeDxFeedToken(accountId?: string) {
 
     return { success: true }
   } catch (error) {
-    logger.error('Failed to remove DxFeed token:', error)
+    dxLogger.error('Failed to remove DxFeed token:', error)
     return { error: 'Failed to remove token' }
   }
 }
@@ -575,7 +575,7 @@ export async function getDxFeedSynchronizations() {
 
     return { synchronizations }
   } catch (error) {
-    logger.error('Failed to get DxFeed synchronizations:', error)
+    dxLogger.error('Failed to get DxFeed synchronizations:', error)
     return { error: 'Failed to get synchronizations' }
   }
 }
@@ -605,7 +605,7 @@ export async function updateDxFeedDailySyncTimeAction(
 
     return { success: true }
   } catch (error) {
-    logger.error('Error updating daily sync time:', error)
+    dxLogger.error('Error updating daily sync time:', error)
     return { success: false, error: 'Failed to update daily sync time' }
   }
 }

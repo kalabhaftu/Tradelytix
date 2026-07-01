@@ -12,7 +12,7 @@ import { Spinner } from '@/components/ui/spinner'
 interface MatchTraderProcessorProps {
   csvData: string[][]
   headers: string[]
-  setProcessedTrades: React.Dispatch<React.SetStateAction<Trade[]>>
+  setProcessedTrades: React.Dispatch<React.SetStateAction<TradeType[]>>
   accountNumber: string
 }
 
@@ -35,7 +35,7 @@ const MatchTraderProcessor = ({
 
       setIsProcessing(true)
 
-      const trades: Trade[] = []
+      const trades: TradeType[] = []
 
       // Create case-insensitive header lookup helper
       const findHeaderIndex = (possibleNames: string[]) => {
@@ -63,12 +63,12 @@ const MatchTraderProcessor = ({
           const [, day, month, year, hour, minute, second] = ddmmyyyyMatch
           // Create UTC date from components
           return new Date(Date.UTC(
-            parseInt(year), 
-            parseInt(month) - 1, // Month is 0-indexed
-            parseInt(day),
-            parseInt(hour),
-            parseInt(minute),
-            parseInt(second)
+            parseInt(year!), 
+            parseInt(month!) - 1, // Month is 0-indexed
+            parseInt(day!),
+            parseInt(hour!),
+            parseInt(minute!),
+            parseInt(second!)
           ))
         }
         
@@ -115,12 +115,12 @@ const MatchTraderProcessor = ({
         const timeInPosition = Math.round((closeDate.getTime() - entryDate.getTime()) / 1000)
 
         // Parse prices and handle potential string/number conversion
-        const entryPrice = parseFloat(openPriceIdx !== -1 ? row[openPriceIdx] : '0') || 0
-        const closePrice = parseFloat(closePriceIdx !== -1 ? row[closePriceIdx] : '0') || 0
-        const quantity = parseFloat(volumeIdx !== -1 ? row[volumeIdx] : '0') || 0
-        const pnl = parseFloat(profitIdx !== -1 ? row[profitIdx] : '0') || 0
-        const commission = parseFloat(commissionIdx !== -1 ? row[commissionIdx] : '0') || 0
-        const swap = parseFloat(swapIdx !== -1 ? row[swapIdx] : '0') || 0
+        const entryPrice = parseFloat(openPriceIdx !== -1 ? (row[openPriceIdx] ?? '0') : '0') || 0
+        const closePrice = parseFloat(closePriceIdx !== -1 ? (row[closePriceIdx] ?? '0') : '0') || 0
+        const quantity = parseFloat(volumeIdx !== -1 ? (row[volumeIdx] ?? '0') : '0') || 0
+        const pnl = parseFloat(profitIdx !== -1 ? (row[profitIdx] ?? '0') : '0') || 0
+        const commission = parseFloat(commissionIdx !== -1 ? (row[commissionIdx] ?? '0') : '0') || 0
+        const swap = parseFloat(swapIdx !== -1 ? (row[swapIdx] ?? '0') : '0') || 0
         
         // Parse Stop Loss and Take Profit (treat 0.00 as null/incomplete)
         const stopLossRaw = stopLossIdx !== -1 ? row[stopLossIdx] : null
@@ -129,10 +129,10 @@ const MatchTraderProcessor = ({
         const takeProfit = takeProfitRaw && parseFloat(takeProfitRaw) !== 0 ? takeProfitRaw : null
 
         // Get instrument and side
-        const instrument = symbolIdx !== -1 ? row[symbolIdx] : ''
-        const side = sideIdx !== -1 ? row[sideIdx] : ''
-        const tradeId = idIdx !== -1 ? row[idIdx] : ''
-        const reason = reasonIdx !== -1 ? row[reasonIdx] : ''
+        const instrument = symbolIdx !== -1 ? (row[symbolIdx] ?? '') : ''
+        const side = sideIdx !== -1 ? (row[sideIdx] ?? '') : ''
+        const tradeId = idIdx !== -1 ? (row[idIdx] ?? '') : ''
+        const reason = reasonIdx !== -1 ? (row[reasonIdx] ?? '') : ''
 
         const trade = {
           id: uuidv4(),

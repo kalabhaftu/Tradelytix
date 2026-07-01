@@ -33,7 +33,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const result = await createSubscriptionInvoice(identity.internalUserId, { promoCode, payCurrency })
+    const result = await createSubscriptionInvoice(identity.internalUserId, {
+      ...(promoCode ? { promoCode } : {}),
+      ...(payCurrency ? { payCurrency } : {})
+    })
 
     if (result.alreadyActive) {
       return NextResponse.json({
@@ -58,7 +61,7 @@ export async function POST(request: NextRequest) {
       reusedExisting: Boolean(result.reusedExisting),
     })
   } catch (error) {
-    logger.error('Create invoice failed', error, 'Payment Create Invoice')
+    logger.error({ error, context: 'Payment Create Invoice' }, 'Create invoice failed')
     return NextResponse.json(
       { success: false, error: 'Failed to create payment invoice' },
       { status: 500 }

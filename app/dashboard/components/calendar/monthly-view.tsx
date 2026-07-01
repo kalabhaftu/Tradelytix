@@ -247,7 +247,7 @@ function WeeklySummary({
   weekDays: Date[]
   calendarData: CalendarData
   currentDate: Date
-  onReviewWeek?: (date: Date) => void
+  onReviewWeek?: ((date: Date) => void) | undefined
 }) {
   const { formatValue } = useDashboardDisplay()
   const stats = useMemo(() => {
@@ -275,7 +275,7 @@ function WeeklySummary({
         "flex h-full min-h-[48px] md:min-h-[60px] flex-col items-start justify-center rounded-[4px] md:rounded-[6px] border p-2.5 cursor-pointer transition-all hover:bg-muted/30 dark:hover:bg-muted/10 group lg:min-h-[68px]",
         "bg-muted/25 dark:bg-[#0c0e12]/35 border-border/40 dark:border-border/20 shadow-none hover:border-border/60 dark:hover:border-border/40"
       )}
-      onClick={() => onReviewWeek?.(weekDays[0])}
+      onClick={() => { if (weekDays[0]) onReviewWeek?.(weekDays[0]) }}
     >
       <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider mb-0.5">
         Week {weekIndex + 1}

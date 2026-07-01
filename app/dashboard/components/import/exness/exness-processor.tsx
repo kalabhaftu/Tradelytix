@@ -10,7 +10,7 @@ import { ImportLoading } from '../components/import-loading'
 interface ExnessProcessorProps {
   csvData: string[][]
   headers: string[]
-  setProcessedTrades: React.Dispatch<React.SetStateAction<Trade[]>>
+  setProcessedTrades: React.Dispatch<React.SetStateAction<TradeType[]>>
   accountNumber: string
 }
 
@@ -33,7 +33,7 @@ const ExnessProcessor = ({
 
       setIsProcessing(true)
 
-      const trades: Trade[] = []
+      const trades: TradeType[] = []
 
       for (const row of csvData) {
         // Handle Exness CSV format: ticket,opening_time_utc,closing_time_utc,type,lots,original_position_size,symbol,opening_price,closing_price,stop_loss,take_profit,commission_usd,swap_usd,profit_usd,equity_usd,margin_level,close_reason
@@ -53,17 +53,17 @@ const ExnessProcessor = ({
         const timeInPosition = Math.round((closeDate.getTime() - entryDate.getTime()) / 1000)
 
         // Extract data from CSV
-        const quantity = parseFloat(row[headers.indexOf('lots')]) || 0
-        const entryPrice = parseFloat(row[headers.indexOf('opening_price')]) || 0
-        const closePrice = parseFloat(row[headers.indexOf('closing_price')]) || 0
+        const quantity = parseFloat(row[headers.indexOf('lots')] || '0') || 0
+        const entryPrice = parseFloat(row[headers.indexOf('opening_price')] || '0') || 0
+        const closePrice = parseFloat(row[headers.indexOf('closing_price')] || '0') || 0
         
         const commissionIdx = headers.indexOf('commission_usd') !== -1 ? headers.indexOf('commission_usd') : headers.indexOf('commission')
         const swapIdx = headers.indexOf('swap_usd') !== -1 ? headers.indexOf('swap_usd') : headers.indexOf('swap')
         const profitIdx = headers.indexOf('profit_usd') !== -1 ? headers.indexOf('profit_usd') : headers.indexOf('profit')
 
-        const commission = commissionIdx !== -1 ? parseFloat(row[commissionIdx]) || 0 : 0
-        const swap = swapIdx !== -1 ? parseFloat(row[swapIdx]) || 0 : 0
-        const pnl = profitIdx !== -1 ? parseFloat(row[profitIdx]) || 0 : 0
+        const commission = commissionIdx !== -1 ? parseFloat(row[commissionIdx] || '0') || 0 : 0
+        const swap = swapIdx !== -1 ? parseFloat(row[swapIdx] || '0') || 0 : 0
+        const pnl = profitIdx !== -1 ? parseFloat(row[profitIdx] || '0') || 0 : 0
         
         const stopLossRaw = row[headers.indexOf('stop_loss')]
         const takeProfitRaw = row[headers.indexOf('take_profit')]

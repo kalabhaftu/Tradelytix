@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
           })
 
         if (uploadError || !uploadData) {
-          logger.warn('Feedback attachment upload failed', { type: file.type, size: file.size }, 'api')
+          logger.warn(`Feedback attachment upload failed (type: ${file.type}, size: ${file.size})`)
           continue
         }
 
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
           url: `storage://feedback-attachments/${uploadData.path}`,
         })
       } catch {
-        logger.warn('Feedback attachment upload failed', { type: file.type, size: file.size }, 'api')
+        logger.warn(`Feedback attachment upload failed (type: ${file.type}, size: ${file.size})`)
       }
     }
 
@@ -152,6 +152,10 @@ export async function POST(req: NextRequest) {
       ipAddress: ip,
       userAgent,
     }).returning())[0]
+
+    if (!feedback) {
+      return createErrorResponse('Failed to create feedback', 500)
+    }
 
     return createSuccessResponse({ id: feedback.id })
   } catch (error: any) {

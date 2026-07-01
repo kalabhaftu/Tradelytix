@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { pgTable, uuid, text, integer, boolean, timestamp, jsonb, doublePrecision, json } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, integer, boolean, timestamp, jsonb, doublePrecision, json, index } from 'drizzle-orm/pg-core';
 import { TransactionTypeEnum, MasterAccountStatusEnum, PayoutStatusEnum, PhaseAccountStatusEnum, DrawdownTypeEnum } from './enums';
 import { AdminFeatureFlag, AdminSharingPolicy, User, UserSettings, ImportJob, Notification, Feedback, UserGeoLog, SharedReport, Subscription, Synchronization } from './users';
 import { DailyNote, JournalTemplate, WeeklyReview } from './journal';
@@ -90,6 +90,11 @@ export const PhaseAccount = pgTable('PhaseAccount', {
   startDate: timestamp('startDate', { withTimezone: true, mode: 'date' }).defaultNow(),
   endDate: timestamp('endDate', { withTimezone: true, mode: 'date' }),
   updatedAt: timestamp('updatedAt', { withTimezone: true, mode: 'date' }).defaultNow(),
+}, (table) => {
+  return {
+    masterAccountIdIdx: index('phase_account_master_account_id_idx').on(table.masterAccountId),
+    statusIdx: index('phase_account_status_idx').on(table.status),
+  };
 });
 
 export type PhaseAccountType = typeof PhaseAccount.$inferSelect;

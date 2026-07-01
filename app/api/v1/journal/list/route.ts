@@ -17,14 +17,14 @@ export async function GET(request: NextRequest) {
     const accountId = searchParams.get('accountId')
 
     const journals = await listDailyJournalEntries(internalUserId, {
-      startDate: startDate || undefined,
-      endDate: endDate || undefined,
-      accountId: accountId && accountId !== 'all' ? accountId : undefined,
+      ...(startDate ? { startDate } : {}),
+      ...(endDate ? { endDate } : {}),
+      ...(accountId && accountId !== 'all' ? { accountId } : {}),
     })
 
     return NextResponse.json({ journals })
   } catch (error: any) {
-    logger.error('GET /api/v1/journal/list', { error: error?.message }, 'api')
+    logger.error({ error: error?.message, context: 'api' }, 'GET /api/v1/journal/list')
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

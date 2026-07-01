@@ -141,7 +141,7 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
         })
       }
     } catch (err) {
-      logger.error("Error during manual sync:", err)
+      logger.error("Error during manual sync: " + err)
       await refreshTrades()
       toast.error("Manual sync failed to complete")
     } finally {
@@ -242,7 +242,7 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
                       <SidebarMenuButton
                         size={isOverlay ? 'lg' : 'default'}
                         variant={isCollapsed ? 'icon' : 'default'}
-                        tooltip={item.label}
+                        tooltip={item.label!}
                         isActive={activeId === item.id}
                         asChild
                         className={cn(
@@ -270,7 +270,7 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
                       <SidebarMenuButton
                         size={isOverlay ? 'lg' : 'default'}
                         variant={isCollapsed ? 'icon' : 'default'}
-                        tooltip={item.label}
+                        tooltip={item.label!}
                         isActive={activeId === item.id}
                         asChild
                         className={cn(
@@ -344,7 +344,7 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
                       <SidebarMenuButton
                         size={isOverlay ? 'lg' : 'default'}
                         variant={isCollapsed ? 'icon' : 'default'}
-                        tooltip={item.label}
+                        tooltip={item.label!}
                         isActive={activeId === item.id}
                         asChild
                         className={cn(

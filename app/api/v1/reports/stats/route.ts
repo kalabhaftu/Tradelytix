@@ -40,10 +40,10 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json(result)
     Object.entries(CacheHeaders.privateShort).forEach(([k, v]) => response.headers.set(k, v))
-    logger.info('POST /api/v1/reports/stats', { latencyMs: Date.now() - start }, 'api')
+    logger.info({ latencyMs: Date.now() - start, context: 'api' }, 'POST /api/v1/reports/stats')
     return response
   } catch (error: any) {
-    logger.error('POST /api/v1/reports/stats failed', { error: error?.message, latencyMs: Date.now() - start }, 'api')
+    logger.error('POST /api/v1/reports/stats failed' + ' : ' + error)
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

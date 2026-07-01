@@ -336,7 +336,7 @@ export default function AIChatWorkspace() {
   // Pre-populate account selector when accounts are loaded
   useEffect(() => {
     if (accounts && accounts.length > 0 && selectedAccounts.length === 0) {
-      setSelectedAccounts([accounts[0].id])
+      setSelectedAccounts([accounts[0]!.id])
     }
   }, [accounts])
 
@@ -1467,7 +1467,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
                     <div className="pt-6 space-y-2">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Suggested Follow-Ups</p>
                       <div className="flex flex-wrap gap-2">
-                        {getFollowUps().map((followUp, idx) => (
+                        {(getFollowUps() ?? []).map((followUp, idx) => (
                           <button
                             key={idx}
                             disabled={isSending}

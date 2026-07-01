@@ -25,10 +25,10 @@ export async function GET(request: NextRequest) {
 
     const response = NextResponse.json(result)
     Object.entries(CacheHeaders.privateShort).forEach(([k, v]) => response.headers.set(k, v))
-    logger.info('GET /api/v1/reports/propfirm', { latencyMs: Date.now() - start }, 'api')
+    logger.info({ latencyMs: Date.now() - start, context: 'api' }, 'GET /api/v1/reports/propfirm')
     return response
   } catch (error: any) {
-    logger.error('GET /api/v1/reports/propfirm failed', { error: error?.message, latencyMs: Date.now() - start }, 'api')
+    logger.error('GET /api/v1/reports/propfirm failed' + ' : ' + error)
     if (error.message?.includes('not authenticated') || error.message?.includes('Unauthorized')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

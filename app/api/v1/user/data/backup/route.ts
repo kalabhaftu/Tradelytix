@@ -211,7 +211,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    logger.error('Backup generation failed', error, 'Backup')
+    logger.error({ error, layer: 'Backup' }, 'Backup generation failed')
     return NextResponse.json(
       { success: false, error: 'Failed to generate backup' },
       { status: 500 }

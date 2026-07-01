@@ -12,6 +12,8 @@ import { convertDecimal } from '@/lib/utils/decimal'
 import { NotificationService } from './services/notification-service'
 
 import { logActivity } from '@/lib/activity-logger'
+import { withCache } from '@/lib/cache/helpers'
+import { CacheKeys, CacheTTL } from '@/lib/cache/keys'
 import { calculateWinRate, classifyOutcome, getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { TRADE_COUNT_SELECT, buildGroupedTradeCountSummary } from '@/lib/trade-counts'
 import { buildSyntheticExecutionsFromTrade, buildTradePersistenceData, buildTradeIdentityKey } from '@/lib/trade-core'
@@ -406,131 +408,134 @@ export async function getAccountsAction(options?: { includeArchived?: boolean })
       return []
     }
 
-    // IMPORTANT: Removed unstable_cache wrapper to prevent "items over 2MB cannot be cached" errors
-    // Account data with many phases and trades can exceed Next.js 2MB cache limit
-    // Database queries are already fast with proper indexing
-    let accounts: any[] = [];
-    let masterAccounts: any[] = [];
+    return await withCache(
+      `${CacheKeys.userAccounts(userId)}:archived=${includeArchived}`,
+      CacheTTL.userAccounts,
+      async () => {
+        let accounts: any[] = [];
+        let masterAccounts: any[] = [];
 
-    try {
-      const accountsPromise = db.query.Account.findMany({
-        where: (table, { and, eq }) => and(eq(table.userId, userId), includeArchived ? undefined : eq(table.isArchived, false)),
-        columns: {
-          id: true,
-          number: true,
-          name: true,
-          broker: true,
-          startingBalance: true,
-          createdAt: true,
-          userId: true,
-          isArchived: true,
-        },
-        orderBy: (table, { desc }) => [desc(table.createdAt)]
-      })
-
-      const masterAccountsPromise = db.query.MasterAccount.findMany({
-        where: (table, { and, eq }) => and(eq(table.userId, userId), includeArchived ? undefined : eq(table.isArchived, false)),
-        with: {
-          PhaseAccount: {
-            orderBy: (table, { desc }) => [desc(table.phaseNumber)],
-            limit: 10
-          }
-        },
-        orderBy: (table, { desc }) => [desc(table.createdAt)]
-      }).catch((masterAccountError) => {
-        return []
-      })
-
-      const [regularAccounts, propFirmAccounts] = await Promise.all([
-        accountsPromise,
-        masterAccountsPromise
-      ])
-
-      accounts = regularAccounts
-      masterAccounts = propFirmAccounts
-    } catch (dbError) {
-      // Return empty array instead of throwing to prevent app crash
-      return []
-    }
-
-    // PERFORMANCE FIX: Single trade count query instead of duplicate
-    // Both live and prop-firm accounts use accountNumber field, so one query is sufficient
-    const allTrades = await db.query.Trade.findMany({
-      where: (table, { eq }) => eq(table.userId, userId),
-      columns: TRADE_COUNT_SELECT,
-    })
-    const groupedCounts = buildGroupedTradeCountSummary(allTrades as any)
-
-    const transformedAccounts = accounts.map((account: any) => ({
-      ...account,
-      propfirm: '',
-      accountType: 'live' as const,
-      displayName: account.name || account.number,
-      tradeCount: groupedCounts.groupedCountByLiveAccountNumber.get(account.number) || 0,
-      owner: { id: userId, email: '' },
-      isOwner: true,
-      status: 'active' as const,
-      currentPhase: 'live',
-      group: null,
-      isArchived: account.isArchived || false
-    }))
-
-    const transformedMasterAccounts: any[] = []
-    masterAccounts.forEach((masterAccount: any) => {
-
-      if (masterAccount.PhaseAccount && masterAccount.PhaseAccount.length > 0) {
-            const hasFailedPhase = masterAccount.PhaseAccount.some((p: any) => p.status === 'failed')
-        const isMasterAccountFailed = masterAccount.status === 'failed'
-
-        // Get all phaseIds for this master account (for aggregation when failed)
-        // Only calculate aggregation if there's a failed phase (for accounts page display)
-          masterAccount.PhaseAccount.forEach((phase: any) => {
-          if (phase.status === 'pending') return
-
-                const phaseName = getPhaseDisplayName(masterAccount.evaluationType, phase.phaseNumber)
-
-          // Always use individual phase trade count
-          // Aggregation for failed phases will be calculated on the client side (accounts page)
-          const phaseTradeCount =
-            groupedCounts.groupedCountByPhaseAccountId.get(phase.id) ||
-            groupedCounts.groupedCountByAccountNumber.get(phase.phaseId) ||
-            0
-
-          transformedMasterAccounts.push({
-            id: phase.id, // Use phase ID instead of composite key
-            number: phase.phaseId,
-            name: masterAccount.accountName,
-            propfirm: masterAccount.propFirmName,
-            broker: undefined,
-            startingBalance: phase.accountSize || masterAccount.accountSize,
-            accountType: 'prop-firm' as const,
-            displayName: `${masterAccount.accountName} (${phaseName})`,
-            tradeCount: phaseTradeCount,
-            owner: { id: userId, email: '' },
-            isOwner: true,
-            status: phase.status,
-            currentPhase: phase.phaseNumber,
-            createdAt: phase.createdAt || masterAccount.createdAt,
-            userId: masterAccount.userId,
-            isArchived: masterAccount.isArchived || false,
-            // Add phase details for UI components that need them (named currentPhaseDetails to match useAccounts)
-            currentPhaseDetails: {
-              phaseNumber: phase.phaseNumber,
-              status: phase.status,
-              phaseId: phase.phaseId,
-              masterAccountId: masterAccount.id, // This is the key for deduplication
-              masterAccountName: masterAccount.accountName,
-              evaluationType: masterAccount.evaluationType // Add evaluationType for UI components
-            }
+        try {
+          const accountsPromise = db.query.Account.findMany({
+            where: (table, { and, eq }) => and(eq(table.userId, userId), includeArchived ? undefined : eq(table.isArchived, false)),
+            columns: {
+              id: true,
+              number: true,
+              name: true,
+              broker: true,
+              startingBalance: true,
+              createdAt: true,
+              userId: true,
+              isArchived: true,
+            },
+            orderBy: (table, { desc }) => [desc(table.createdAt)]
           })
-        })
-      }
-      // Remove fallback master account creation - it causes duplicates
-      // If a master account has no phases, it won't be shown (correct behavior)
-    })
 
-    // Combine both account types and ensure strict serialization
-    return JSON.parse(JSON.stringify([...transformedAccounts, ...transformedMasterAccounts]))
+          const masterAccountsPromise = db.query.MasterAccount.findMany({
+            where: (table, { and, eq }) => and(eq(table.userId, userId), includeArchived ? undefined : eq(table.isArchived, false)),
+            with: {
+              PhaseAccount: {
+                orderBy: (table, { desc }) => [desc(table.phaseNumber)],
+                limit: 10
+              }
+            },
+            orderBy: (table, { desc }) => [desc(table.createdAt)]
+          }).catch((masterAccountError) => {
+            return []
+          })
+
+          const [regularAccounts, propFirmAccounts] = await Promise.all([
+            accountsPromise,
+            masterAccountsPromise
+          ])
+
+          accounts = regularAccounts
+          masterAccounts = propFirmAccounts
+        } catch (dbError) {
+          // Return empty array instead of throwing to prevent app crash
+          return []
+        }
+
+        // PERFORMANCE FIX: Single trade count query instead of duplicate
+        // Both live and prop-firm accounts use accountNumber field, so one query is sufficient
+        const allTrades = await db.query.Trade.findMany({
+          where: (table, { eq }) => eq(table.userId, userId),
+          columns: TRADE_COUNT_SELECT,
+        })
+        const groupedCounts = buildGroupedTradeCountSummary(allTrades as any)
+
+        const transformedAccounts = accounts.map((account: any) => ({
+          ...account,
+          propfirm: '',
+          accountType: 'live' as const,
+          displayName: account.name || account.number,
+          tradeCount: groupedCounts.groupedCountByLiveAccountNumber.get(account.number) || 0,
+          owner: { id: userId, email: '' },
+          isOwner: true,
+          status: 'active' as const,
+          currentPhase: 'live',
+          group: null,
+          isArchived: account.isArchived || false
+        }))
+
+        const transformedMasterAccounts: any[] = []
+        masterAccounts.forEach((masterAccount: any) => {
+
+          if (masterAccount.PhaseAccount && masterAccount.PhaseAccount.length > 0) {
+                const hasFailedPhase = masterAccount.PhaseAccount.some((p: any) => p.status === 'failed')
+            const isMasterAccountFailed = masterAccount.status === 'failed'
+
+            // Get all phaseIds for this master account (for aggregation when failed)
+            // Only calculate aggregation if there's a failed phase (for accounts page display)
+              masterAccount.PhaseAccount.forEach((phase: any) => {
+              if (phase.status === 'pending') return
+
+                    const phaseName = getPhaseDisplayName(masterAccount.evaluationType, phase.phaseNumber)
+
+              // Always use individual phase trade count
+              // Aggregation for failed phases will be calculated on the client side (accounts page)
+              const phaseTradeCount =
+                groupedCounts.groupedCountByPhaseAccountId.get(phase.id) ||
+                groupedCounts.groupedCountByAccountNumber.get(phase.phaseId) ||
+                0
+
+              transformedMasterAccounts.push({
+                id: phase.id, // Use phase ID instead of composite key
+                number: phase.phaseId,
+                name: masterAccount.accountName,
+                propfirm: masterAccount.propFirmName,
+                broker: undefined,
+                startingBalance: phase.accountSize || masterAccount.accountSize,
+                accountType: 'prop-firm' as const,
+                displayName: `${masterAccount.accountName} (${phaseName})`,
+                tradeCount: phaseTradeCount,
+                owner: { id: userId, email: '' },
+                isOwner: true,
+                status: phase.status,
+                currentPhase: phase.phaseNumber,
+                createdAt: phase.createdAt || masterAccount.createdAt,
+                userId: masterAccount.userId,
+                isArchived: masterAccount.isArchived || false,
+                // Add phase details for UI components that need them (named currentPhaseDetails to match useAccounts)
+                currentPhaseDetails: {
+                  phaseNumber: phase.phaseNumber,
+                  status: phase.status,
+                  phaseId: phase.phaseId,
+                  masterAccountId: masterAccount.id, // This is the key for deduplication
+                  masterAccountName: masterAccount.accountName,
+                  evaluationType: masterAccount.evaluationType // Add evaluationType for UI components
+                }
+              })
+            })
+          }
+          // Remove fallback master account creation - it causes duplicates
+          // If a master account has no phases, it won't be shown (correct behavior)
+        })
+
+        // Combine both account types and ensure strict serialization
+        return JSON.parse(JSON.stringify([...transformedAccounts, ...transformedMasterAccounts]))
+      }
+    )
   } catch (error) {
     // Return empty array instead of throwing error to prevent frontend crashes
     return []
@@ -743,31 +748,37 @@ export async function getCurrentActivePhase(accountId: string) {
   try {
     const userId = await getUserId()
 
-    const masterAccount = await db.query.MasterAccount.findFirst({
-      where: (table, { eq }) => eq(table.id, accountId),
-      with: {
-        PhaseAccount: {
-          where: (table, { eq }) => eq(table.status, 'active'),
-          orderBy: (table, { asc }) => [asc(table.phaseNumber)],
-          limit: 1
+    return await withCache(
+      `${CacheKeys.propFirmPhase(accountId)}:active`,
+      CacheTTL.propFirmPhase,
+      async () => {
+        const masterAccount = await db.query.MasterAccount.findFirst({
+          where: (table, { eq }) => eq(table.id, accountId),
+          with: {
+            PhaseAccount: {
+              where: (table, { eq }) => eq(table.status, 'active'),
+              orderBy: (table, { asc }) => [asc(table.phaseNumber)],
+              limit: 1
+            }
+          }
+        })
+
+        if (masterAccount && masterAccount.PhaseAccount.length > 0) {
+          return masterAccount.PhaseAccount[0]
         }
+
+        const regularAccount = await db.query.Account.findFirst({
+          where: (table, { and, eq }) => and(eq(table.id, accountId), eq(table.userId, userId)),
+          columns: { id: true }
+        })
+
+        if (!regularAccount) {
+          throw new Error('Account not found')
+        }
+
+        return null
       }
-    })
-
-    if (masterAccount && masterAccount.PhaseAccount.length > 0) {
-      return masterAccount.PhaseAccount[0]
-    }
-
-    const regularAccount = await db.query.Account.findFirst({
-      where: (table, { and, eq }) => and(eq(table.id, accountId), eq(table.userId, userId)),
-      columns: { id: true }
-    })
-
-    if (!regularAccount) {
-      throw new Error('Account not found')
-    }
-
-    return null
+    )
   } catch (error) {
     throw error
   }
@@ -777,21 +788,27 @@ export async function getAccountPhases(accountId: string) {
   try {
     const userId = await getUserId()
 
-    const account = await db.query.Account.findFirst({
-      where: (table, { and, eq }) => and(eq(table.id, accountId), eq(table.userId, userId)),
-      columns: { id: true, name: true }
-    })
+    return await withCache(
+      `${CacheKeys.propFirmPhase(accountId)}:all`,
+      CacheTTL.propFirmPhase,
+      async () => {
+        const account = await db.query.Account.findFirst({
+          where: (table, { and, eq }) => and(eq(table.id, accountId), eq(table.userId, userId)),
+          columns: { id: true, name: true }
+        })
 
-    if (!account) {
-      throw new Error('Account not found')
-    }
+        if (!account) {
+          throw new Error('Account not found')
+        }
 
-    const phases = await db.query.PhaseAccount.findMany({
-      where: (table, { eq }) => eq(table.masterAccountId, accountId),
-      orderBy: (table, { asc }) => [asc(table.startDate)]
-    })
+        const phases = await db.query.PhaseAccount.findMany({
+          where: (table, { eq }) => eq(table.masterAccountId, accountId),
+          orderBy: (table, { asc }) => [asc(table.startDate)]
+        })
 
-    return phases
+        return phases
+      }
+    )
   } catch (error) {
     throw error
   }

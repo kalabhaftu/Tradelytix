@@ -46,7 +46,7 @@ function MiniMonth({
     let trades = 0
     Object.entries(calendarData).forEach(([key, data]) => {
       const [kYear, kMonth] = key.split('-').map(Number)
-      if (kYear === year && kMonth - 1 === getMonth(monthDate)) {
+      if (kYear === year && kMonth !== undefined && kMonth - 1 === getMonth(monthDate)) {
         pnl += data.pnl
         trades += data.tradeNumber
       }

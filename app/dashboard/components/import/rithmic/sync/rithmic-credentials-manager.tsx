@@ -109,7 +109,7 @@ export function RithmicCredentialsManager({
       const result = await response.json();
       setSynchronizations(result.data || []);
     } catch (error) {
-      logger.error("Error fetching synchronizations:", error);
+      logger.error("Error fetching synchronizations: " + (error instanceof Error ? error.message : String(error)));
       toast.error("Failed to load synchronizations");
     } finally {
       setIsLoadingSynchronizations(false);
@@ -131,7 +131,7 @@ export function RithmicCredentialsManager({
       }
 
       try {
-        logger.info("Starting sync for credential:", credential.id);
+        logger.info("Starting sync for credential: " + credential.id);
         setSyncingId(credential.id);
         const result = await performSyncForCredential(credential.id);
 
@@ -141,7 +141,7 @@ export function RithmicCredentialsManager({
         }
       } catch (error) {
         toast.error("Synchronization failed");
-        logger.error("Sync error:", error);
+        logger.error("Sync error: " + (error instanceof Error ? error.message : String(error)));
       } finally {
         setSyncingId(null);
       }
@@ -189,7 +189,7 @@ export function RithmicCredentialsManager({
         updateLastSyncTime(credential.id);
       } catch (error) {
         toast.error("Synchronization failed");
-        logger.error("Load more data error:", error);
+        logger.error("Load more data error: " + (error instanceof Error ? error.message : String(error)));
       } finally {
         setSyncingId(null);
       }
@@ -225,7 +225,7 @@ export function RithmicCredentialsManager({
         );
         toast.success("Synchronization connection removed");
       } catch (error) {
-        logger.error("Error deleting synchronization:", error);
+        logger.error("Error deleting synchronization: " + (error instanceof Error ? error.message : String(error)));
         toast.error("Failed to delete synchronization");
       } finally {
         setDeletingSyncId(null);

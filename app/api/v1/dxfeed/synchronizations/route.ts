@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: cleaned });
   } catch (error) {
-    logger.error("Error fetching DxFeed synchronizations:", error);
+    logger.error("Error fetching DxFeed synchronizations: " + (error instanceof Error ? error.message : String(error)));
     return NextResponse.json(
       {
         success: false,
@@ -67,7 +67,7 @@ export async function DELETE(request: NextRequest) {
       message: "Synchronization removed successfully",
     });
   } catch (error) {
-    logger.error("Error deleting DxFeed synchronization:", error);
+    logger.error("Error deleting DxFeed synchronization: " + (error instanceof Error ? error.message : String(error)));
     return NextResponse.json(
       {
         success: false,

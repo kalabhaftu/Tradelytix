@@ -86,7 +86,7 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-              `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL} wss://*.supabase.co https://api.anthropic.com https://o*.ingest.sentry.io`,
+              `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL} wss://*.supabase.co https://api.anthropic.com https://*.ingest.sentry.io`,
               "style-src 'self' 'unsafe-inline'",
               `img-src 'self' data: blob: ${process.env.NEXT_PUBLIC_SUPABASE_URL}`,
               "font-src 'self'",

@@ -1,6 +1,5 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Moon, Sun, ChevronRight, LineChart, CalendarDays, BookOpen, Fingerprint } from 'lucide-react'
@@ -30,6 +29,7 @@ export default function HomePage() {
               size="icon"
               className="h-8 w-8"
               onClick={() => toggleTheme()}
+              aria-label="Toggle theme"
             >
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
@@ -46,14 +46,11 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <main className="flex-1 flex flex-col justify-center pt-32 pb-20 px-6">
+      <main className="flex-1 flex flex-col">
+        {/* Hero */}
+        <section className="flex-1 flex flex-col justify-center pt-32 pb-20 px-6">
         <div className="max-w-3xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <div className="animate-in fade-in duration-500">
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-6">
               This platform was built for my personal use. If other users need to use it, a paid subscription is required.
             </div>
@@ -80,9 +77,9 @@ export default function HomePage() {
                 Try Demo
               </Button>
             </div>
-          </motion.div>
+          </div>
         </div>
-      </main>
+      </section>
 
       {/* Features */}
       <section className="py-24 px-6 bg-secondary/10 border-t border-border/20">
@@ -157,6 +154,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="border-t border-border/20 py-8 px-6">

@@ -95,6 +95,7 @@ export function CookieConsent() {
               size="icon"
               className="absolute top-2 right-2 text-muted-foreground hover:text-foreground h-8 w-8 rounded-full"
               onClick={handleAcceptEssential}
+              aria-label="Close cookie consent panel"
             >
               <X className="w-4 h-4" />
             </Button>

@@ -14,12 +14,6 @@ export function AppBanner() {
     
     if (isMobile && !isBannerDismissed) {
       setShow(true)
-      
-      // Auto-open attempt: Try to invoke the native app directly on mobile landing
-      const path = window.location.pathname + window.location.search
-      const deepLinkUrl = `tradelytix://open?path=${encodeURIComponent(path)}`
-      
-      window.location.href = deepLinkUrl
     }
   }, [])
 
@@ -57,7 +51,11 @@ export function AppBanner() {
           <Button size="sm" onClick={handleOpenApp} className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs h-8">
             Open
           </Button>
-          <button onClick={handleDismiss} className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
+          <button 
+            onClick={handleDismiss} 
+            className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            aria-label="Dismiss app banner"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>

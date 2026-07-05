@@ -57,6 +57,7 @@
     "vitest.config.ts",
     "playwright.config.ts",
     "jest.setup.ts",
-    "jest.config.ts"
+    "jest.config.ts",
+    "drizzle.config.ts"
   ]
 }

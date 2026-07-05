@@ -1,5 +1,6 @@
-import { logger as appLogger } from '@/lib/logger';
 'use server'
+
+import { logger as appLogger } from '@/lib/logger';
 
 import { saveTradesAction } from '@/server/database'
 import { generateDeterministicTradeId } from '@/lib/trade-id-utils'

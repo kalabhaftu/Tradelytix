@@ -5,6 +5,10 @@ import { vi } from 'vitest'
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co'
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key'
 process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test'
+process.env.UPSTASH_REDIS_REST_URL = 'https://test.upstash.io'
+process.env.UPSTASH_REDIS_REST_TOKEN = 'test-token'
+process.env.TRADOVATE_API_URL = 'https://test.tradovate.com'
+process.env.RESEND_API_KEY = 'test-key'
 
 // Global test utilities
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
@@ -26,3 +30,12 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/',
 }))
 
+
+vi.mock('@upstash/redis', () => ({
+  Redis: class {
+    get() { return null }
+    set() { return 'OK' }
+    del() { return 1 }
+    flushdb() { return 'OK' }
+  }
+}))

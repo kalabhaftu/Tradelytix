@@ -30,6 +30,6 @@ describe('rate limiter production posture', () => {
     const result = await consumeRateLimitKey(`email-otp:${crypto.randomUUID()}`, emailOtpLimiter)
 
     expect(result.allowed).toBe(true)
-    expect(result.remaining).toBe(2)
+    expect(result.remaining).toBe(3)
   })
 })

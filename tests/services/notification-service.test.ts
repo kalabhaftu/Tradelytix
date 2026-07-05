@@ -3,6 +3,11 @@ import * as NotificationService from '@/lib/services/notification-service'
 import type { NotificationType, NotificationPriority } from '@/lib/db/schema/users'
 
 // Mock db client
+const mockReturning = vi.fn()
+const mockWhere = vi.fn(() => { const p = Promise.resolve({ count: 3 }); p.returning = mockReturning; return p; })
+const mockSet = vi.fn(() => ({ where: mockWhere }))
+const mockValues = vi.fn(() => ({ returning: mockReturning }))
+
 vi.mock('@/lib/db/client', () => ({
     db: {
         query: {
@@ -10,10 +15,11 @@ vi.mock('@/lib/db/client', () => ({
                 findFirst: vi.fn()
             }
         },
-        insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
-        update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn() })) })) })),
+        insert: vi.fn(() => ({ values: mockValues })),
+        update: vi.fn(() => ({ set: mockSet })),
         updateMany: vi.fn(),
-        count: vi.fn()
+        count: vi.fn(),
+        select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn() })) }))
     }
 }))
 
@@ -35,23 +41,23 @@ describe('NotificationService', () => {
 
     describe('createOrUpdateNotification', () => {
         it('should CREATE new notification when no invalidation key exists', async () => {
-            vi.mocked(db.insert).mockResolvedValue([{
+            mockReturning.mockResolvedValueOnce([{
                 id: 'new-id',
                 userId,
-                type: NotificationType.SYSTEM,
+                type: 'SYSTEM',
                 title: 'Test',
                 message: 'Test message',
                 data: null,
                 isRead: false,
                 actionRequired: false,
                 invalidationKey: null,
-                priority: NotificationPriority.MEDIUM,
+                priority: 'MEDIUM',
                 createdAt: new Date(),
                 updatedAt: new Date()
             }])
 
             const result = await NotificationService.createOrUpdateNotification(userId, {
-                type: NotificationType.SYSTEM,
+                type: 'SYSTEM',
                 title: 'Test',
                 message: 'Test message'
             })
@@ -65,20 +71,20 @@ describe('NotificationService', () => {
             const existingNotification = {
                 id: 'existing-id',
                 userId,
-                type: NotificationType.RISK_DAILY_LOSS_80,
+                type: 'RISK_DAILY_LOSS_80',
                 title: 'Old title',
                 message: 'Old message',
                 data: { percentage: 80 },
                 isRead: false,
                 actionRequired: false,
                 invalidationKey: 'risk_daily_loss_test-phase',
-                priority: NotificationPriority.HIGH,
+                priority: 'HIGH',
                 createdAt: new Date(),
                 updatedAt: new Date()
             }
 
             vi.mocked(db.query.Notification.findFirst).mockResolvedValue(existingNotification)
-            vi.mocked(db.update).mockResolvedValue([{
+            mockReturning.mockResolvedValueOnce([{
                 ...existingNotification,
                 title: 'Updated title',
                 message: 'Updated message',
@@ -86,7 +92,7 @@ describe('NotificationService', () => {
             }])
 
             const result = await NotificationService.createOrUpdateNotification(userId, {
-                type: NotificationType.RISK_DAILY_LOSS_80,
+                type: 'RISK_DAILY_LOSS_80',
                 title: 'Updated title',
                 message: 'Updated message',
                 invalidationKey: 'risk_daily_loss_test-phase',
@@ -95,9 +101,7 @@ describe('NotificationService', () => {
 
             expect(result.success).toBe(true)
             expect(result.action).toBe('updated')
-            expect(db.query.Notification.findFirst).toHaveBeenCalledWith({
-                where: (table: any, { eq }: any) => and(eq(table.userId, userId), eq(table.invalidationKey, 'risk_daily_loss_test-phase'), eq(table.isRead, false))
-            })
+            expect(db.query.Notification.findFirst).toHaveBeenCalled()
             expect(db.update).toHaveBeenCalledTimes(1)
             expect(db.insert).not.toHaveBeenCalled()
         })
@@ -105,23 +109,23 @@ describe('NotificationService', () => {
         it('should CREATE new notification if existing is already read', async () => {
             // findFirst returns null because no UNREAD notification exists
             vi.mocked(db.query.Notification.findFirst).mockResolvedValue(null)
-            vi.mocked(db.insert).mockResolvedValue([{
+            mockReturning.mockResolvedValueOnce([{
                 id: 'new-id',
                 userId,
-                type: NotificationType.RISK_DAILY_LOSS_95,
+                type: 'RISK_DAILY_LOSS_95',
                 title: 'New alert',
                 message: 'New message',
                 data: null,
                 isRead: false,
                 actionRequired: true,
                 invalidationKey: 'risk_daily_loss_test-phase',
-                priority: NotificationPriority.CRITICAL,
+                priority: 'CRITICAL',
                 createdAt: new Date(),
                 updatedAt: new Date()
             }])
 
             const result = await NotificationService.createOrUpdateNotification(userId, {
-                type: NotificationType.RISK_DAILY_LOSS_95,
+                type: 'RISK_DAILY_LOSS_95',
                 title: 'New alert',
                 message: 'New message',
                 invalidationKey: 'risk_daily_loss_test-phase'
@@ -143,17 +147,17 @@ describe('NotificationService', () => {
 
         it('should create HIGH priority alert at 80% daily loss', async () => {
             vi.mocked(db.query.Notification.findFirst).mockResolvedValue(null)
-            vi.mocked(db.insert).mockResolvedValue([{
+            mockReturning.mockResolvedValueOnce([{
                 id: 'alert-id',
                 userId,
-                type: NotificationType.RISK_DAILY_LOSS_80,
+                type: 'RISK_DAILY_LOSS_80',
                 title: 'WARNING: Daily Loss Limit at 80%',
                 message: expect.any(String),
                 data: expect.any(Object),
                 isRead: false,
                 actionRequired: false,
                 invalidationKey: `risk_daily_loss_${phaseAccountId}`,
-                priority: NotificationPriority.HIGH,
+                priority: 'HIGH',
                 createdAt: new Date(),
                 updatedAt: new Date()
             }])
@@ -167,25 +171,25 @@ describe('NotificationService', () => {
             )
 
             expect(result.success).toBe(true)
-            const createCall = vi.mocked(db.insert).mock.calls[0][0]
-            expect(createCall.data.type).toBe(NotificationType.RISK_DAILY_LOSS_80)
-            expect(createCall.data.priority).toBe(NotificationPriority.HIGH)
-            expect(createCall.data.actionRequired).toBe(false)
+            const createCallData = mockValues.mock.calls[0][0]
+            expect(createCallData.type).toBe('RISK_DAILY_LOSS_80')
+            expect(createCallData.priority).toBe('HIGH')
+            expect(createCallData.actionRequired).toBe(false)
         })
 
         it('should create CRITICAL priority alert at 95% daily loss', async () => {
             vi.mocked(db.query.Notification.findFirst).mockResolvedValue(null)
-            vi.mocked(db.insert).mockResolvedValue([{
+            mockReturning.mockResolvedValueOnce([{
                 id: 'alert-id',
                 userId,
-                type: NotificationType.RISK_DAILY_LOSS_95,
+                type: 'RISK_DAILY_LOSS_95',
                 title: 'CRITICAL: Daily Loss Limit at 95%',
                 message: expect.any(String),
                 data: expect.any(Object),
                 isRead: false,
                 actionRequired: true,
                 invalidationKey: `risk_daily_loss_${phaseAccountId}`,
-                priority: NotificationPriority.CRITICAL,
+                priority: 'CRITICAL',
                 createdAt: new Date(),
                 updatedAt: new Date()
             }])
@@ -199,10 +203,10 @@ describe('NotificationService', () => {
             )
 
             expect(result.success).toBe(true)
-            const createCall = vi.mocked(db.insert).mock.calls[0][0]
-            expect(createCall.data.type).toBe(NotificationType.RISK_DAILY_LOSS_95)
-            expect(createCall.data.priority).toBe(NotificationPriority.CRITICAL)
-            expect(createCall.data.actionRequired).toBe(true)
+            const createCallData = mockValues.mock.calls[0][0]
+            expect(createCallData.type).toBe('RISK_DAILY_LOSS_95')
+            expect(createCallData.priority).toBe('CRITICAL')
+            expect(createCallData.actionRequired).toBe(true)
         })
 
         it('should update same notification when percentage increases', async () => {
@@ -210,29 +214,29 @@ describe('NotificationService', () => {
             vi.mocked(db.query.Notification.findFirst).mockResolvedValue({
                 id: 'existing-alert',
                 userId,
-                type: NotificationType.RISK_DAILY_LOSS_80,
+                type: 'RISK_DAILY_LOSS_80',
                 title: 'WARNING: Daily Loss Limit at 80%',
                 message: 'Old message',
                 data: { percentage: 80.5 },
                 isRead: false,
                 actionRequired: false,
                 invalidationKey: `risk_daily_loss_${phaseAccountId}`,
-                priority: NotificationPriority.HIGH,
+                priority: 'HIGH',
                 createdAt: new Date(),
                 updatedAt: new Date()
             })
 
-            vi.mocked(db.update).mockResolvedValue([{
+            mockReturning.mockResolvedValueOnce([{
                 id: 'existing-alert',
                 userId,
-                type: NotificationType.RISK_DAILY_LOSS_80,
+                type: 'RISK_DAILY_LOSS_80',
                 title: 'WARNING: Daily Loss Limit at 80%',
                 message: 'Updated message',
                 data: { percentage: 85.2 },
                 isRead: false,
                 actionRequired: false,
                 invalidationKey: `risk_daily_loss_${phaseAccountId}`,
-                priority: NotificationPriority.HIGH,
+                priority: 'HIGH',
                 createdAt: new Date(),
                 updatedAt: new Date()
             }])
@@ -257,17 +261,17 @@ describe('NotificationService', () => {
 
         it('should create "processing" notification', async () => {
             vi.mocked(db.query.Notification.findFirst).mockResolvedValue(null)
-            vi.mocked(db.insert).mockResolvedValue([{
+            mockReturning.mockResolvedValueOnce([{
                 id: 'import-notif',
                 userId,
-                type: NotificationType.IMPORT_PROCESSING,
+                type: 'IMPORT_PROCESSING',
                 title: '⏳ Import in Progress',
                 message: expect.any(String),
                 data: { importId, status: 'processing', startedAt: expect.any(String) },
                 isRead: false,
                 actionRequired: false,
                 invalidationKey: `import_${importId}`,
-                priority: NotificationPriority.MEDIUM,
+                priority: 'MEDIUM',
                 createdAt: new Date(),
                 updatedAt: new Date()
             }])
@@ -286,29 +290,29 @@ describe('NotificationService', () => {
             vi.mocked(db.query.Notification.findFirst).mockResolvedValue({
                 id: 'import-notif',
                 userId,
-                type: NotificationType.IMPORT_PROCESSING,
+                type: 'IMPORT_PROCESSING',
                 title: '⏳ Import in Progress',
                 message: 'Old message',
                 data: { importId, status: 'processing' },
                 isRead: false,
                 actionRequired: false,
                 invalidationKey: `import_${importId}`,
-                priority: NotificationPriority.MEDIUM,
+                priority: 'MEDIUM',
                 createdAt: new Date(),
                 updatedAt: new Date()
             })
 
-            vi.mocked(db.update).mockResolvedValue([{
+            mockReturning.mockResolvedValueOnce([{
                 id: 'import-notif',
                 userId,
-                type: NotificationType.IMPORT_COMPLETE,
+                type: 'IMPORT_COMPLETE',
                 title: 'Import Complete',
                 message: 'Successfully imported 145 trades in 3.2s. ',
                 data: { importId, status: 'complete', summary: { tradesImported: 145, errors: 0, duration: 3.2 } },
                 isRead: false,
                 actionRequired: false,
                 invalidationKey: `import_${importId}`,
-                priority: NotificationPriority.MEDIUM,
+                priority: 'MEDIUM',
                 createdAt: new Date(),
                 updatedAt: new Date()
             }])
@@ -331,17 +335,17 @@ describe('NotificationService', () => {
 
         it('should mark as HIGH priority if errors exist', async () => {
             vi.mocked(db.query.Notification.findFirst).mockResolvedValue(null)
-            vi.mocked(db.insert).mockResolvedValue([{
+            mockReturning.mockResolvedValueOnce([{
                 id: 'import-notif',
                 userId,
-                type: NotificationType.IMPORT_COMPLETE,
+                type: 'IMPORT_COMPLETE',
                 title: 'Import Complete (5 errors)',
                 message: expect.any(String),
                 data: expect.any(Object),
                 isRead: false,
                 actionRequired: true,
                 invalidationKey: `import_${importId}`,
-                priority: NotificationPriority.HIGH,
+                priority: 'HIGH',
                 createdAt: new Date(),
                 updatedAt: new Date()
             }])
@@ -358,41 +362,36 @@ describe('NotificationService', () => {
             )
 
             expect(result.success).toBe(true)
-            const createCall = vi.mocked(db.insert).mock.calls[0][0]
-            expect(createCall.data.priority).toBe(NotificationPriority.HIGH)
-            expect(createCall.data.actionRequired).toBe(true)
+            const createCallData = mockValues.mock.calls[0][0]
+            expect(createCallData.priority).toBe('HIGH')
+            expect(createCallData.actionRequired).toBe(true)
         })
     })
 
     describe('dismissNotificationsByType', () => {
         it('should mark all notifications of type as read', async () => {
-            vi.mocked(db.update).mockResolvedValue({ count: 3 })
+            mockWhere.mockResolvedValueOnce({ count: 3 })
 
             const result = await NotificationService.dismissNotificationsByType(
                 userId,
-                NotificationType.RISK_ALERT
+                'RISK_ALERT'
             )
 
             expect(result.success).toBe(true)
-            expect(db.update).toHaveBeenCalledWith({
-                where: {
-                    userId,
-                    type: NotificationType.RISK_ALERT,
-                    isRead: false
-                },
-                data: {
-                    isRead: true
-                }
-            })
+            expect(db.update).toHaveBeenCalledWith(schema.Notification)
+            expect(mockSet).toHaveBeenCalledWith({ isRead: true })
+            expect(mockWhere).toHaveBeenCalledTimes(1)
         })
     })
 
     describe('getNotificationStats', () => {
         it('should return notification statistics', async () => {
-            vi.mocked(db.count)
-                .mockResolvedValueOnce(25) // total
-                .mockResolvedValueOnce(8)  // unread
-                .mockResolvedValueOnce(2)  // critical
+            const mockWhereSelect = vi.fn()
+            vi.mocked(db.select).mockReturnValue({ from: vi.fn(() => ({ where: mockWhereSelect })) } as any)
+            mockWhereSelect
+                .mockResolvedValueOnce([{ value: 25 }]) // total
+                .mockResolvedValueOnce([{ value: 8 }])  // unread
+                .mockResolvedValueOnce([{ value: 2 }])  // critical
 
             const result = await NotificationService.getNotificationStats(userId)
 

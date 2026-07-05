@@ -12,7 +12,7 @@ vi.mock('@/lib/db/client', () => ({
         findFirst: vi.fn(),
       },
     },
-    insert: vi.fn(),
+    insert: vi.fn(() => ({ values: vi.fn().mockResolvedValue([{}]) })),
   },
 }))
 
@@ -34,8 +34,7 @@ describe('POST /api/v1/import/webhook/tradingview', () => {
       id: 'test-account-id',
       number: 'ACC123',
     } as any)
-    vi.mocked(db.insert).mockResolvedValueOnce([{}] as any)
-
+    
     const payload = {
       token: 'e7057f7c-297e-4e16-add8-23ec2166e305',
       symbol: 'EURUSD',
@@ -70,8 +69,7 @@ describe('POST /api/v1/import/webhook/tradingview', () => {
       id: 'test-account-id',
       number: 'ACC123',
     } as any)
-    vi.mocked(db.insert).mockResolvedValueOnce([{}] as any)
-
+    
     const payload = {
       token: 'e7057f7c-297e-4e16-add8-23ec2166e305',
       symbol: 'EURUSD',
@@ -104,8 +102,7 @@ describe('POST /api/v1/import/webhook/tradingview', () => {
       id: 'test-account-id',
       number: 'ACC123',
     } as any)
-    vi.mocked(db.insert).mockResolvedValueOnce([{}] as any)
-
+    
     // No token in payload body
     const payload = {
       symbol: 'EURUSD',

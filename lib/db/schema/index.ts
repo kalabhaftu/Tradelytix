@@ -9,6 +9,7 @@ export * from './trades';
 export * from './playbook';
 export * from './misc';
 export * from './ai';
+export * from './audit';
 
 export { AIChat as AiChat } from './ai';
 export { AIChatMessage as AiChatMessage, AIChatUsageLog as AiChatUsageLog } from './ai';

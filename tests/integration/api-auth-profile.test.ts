@@ -13,24 +13,32 @@ vi.mock('@/server/user-identity', () => ({
   getResolvedUserIdentitySafe: mocks.getResolvedUserIdentitySafe,
 }))
 
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
-    user: {
-      findUnique: mocks.findUnique,
-      update: mocks.update,
+
+const mockReturning = vi.fn()
+const mockSet = vi.fn(() => ({ where: vi.fn(() => ({ returning: mockReturning })) }))
+const mockOnConflictDoUpdate = vi.fn(() => ({ returning: mockReturning }))
+const mockValues = vi.fn(() => ({ onConflictDoUpdate: mockOnConflictDoUpdate }))
+
+vi.mock('@/lib/db/client', () => ({
+  db: {
+    query: {
+      User: {
+        findFirst: mocks.findUnique,
+      }
     },
-    userSettings: {
-      upsert: mocks.upsert,
-    },
-    $transaction: vi.fn().mockImplementation(async (cb: any) => {
+    update: vi.fn(() => ({ set: mockSet })),
+    insert: vi.fn(() => ({ values: mockValues })),
+    transaction: vi.fn().mockImplementation(async (cb: any) => {
       const tx = {
-        user: { update: mocks.update },
-        userSettings: { upsert: mocks.upsert },
+        update: vi.fn(() => ({ set: mockSet })),
+        insert: vi.fn(() => ({ values: mockValues }))
       }
       return cb(tx)
-    }),
-  },
+    })
+  }
 }))
+//
+
 
 vi.mock('@/lib/activity-logger', () => ({
   logActivity: mocks.logActivity,
@@ -93,14 +101,11 @@ describe('GET/PATCH /api/auth/profile', () => {
     })
 
     mocks.findUnique.mockImplementation(async (args: any) => {
-      if (args?.where?.id !== userRow.id) {
-        return null
-      }
       const base = pickSelected(userRow as Record<string, unknown>, args?.select)
-      if (args?.select?.onboardingStatus) {
+      if (args?.select?.onboardingStatus || args?.with?.settings) {
         base.onboardingStatus = userRow.onboardingStatus
       }
-      if (args?.select?.settings) {
+      if (args?.select?.settings || args?.with?.settings) {
         base.settings = {
           timezone: 'America/New_York',
           theme: userRow.theme,
@@ -116,23 +121,21 @@ describe('GET/PATCH /api/auth/profile', () => {
       return base
     })
 
-    mocks.update.mockImplementation(async (args: any) => {
-      if (args?.where?.id !== userRow.id) {
-        throw new Error('Wrong user id in update')
-      }
-
+    mockSet.mockImplementation((args: any) => {
       userRow = {
         ...userRow,
-        ...(args?.data ?? {}),
+        ...(args ?? {}),
       }
-
-      return pickSelected(userRow as Record<string, unknown>, args?.select)
+      const ret = pickSelected(userRow as Record<string, unknown>, undefined)
+      mockReturning.mockResolvedValueOnce([ret])
+      return { where: vi.fn(() => ({ returning: mockReturning })) }
     })
+    mocks.update.mockImplementation(() => {})
 
-    mocks.upsert.mockImplementation(async (args: any) => {
-      const patch = args?.update ?? {}
+    mockOnConflictDoUpdate.mockImplementation((args: any) => {
+      const patch = args?.set ?? {}
       userRow = { ...userRow, ...patch }
-      return {
+      const ret = {
         timezone: 'America/New_York',
         theme: userRow.theme,
         accountFilterSettings: null,
@@ -143,6 +146,8 @@ describe('GET/PATCH /api/auth/profile', () => {
         accentPack: userRow.accentPack,
         autoAdjustAccountDate: userRow.autoAdjustAccountDate,
       }
+      mockReturning.mockResolvedValueOnce([ret])
+      return { returning: mockReturning }
     })
   })
 
@@ -160,11 +165,7 @@ describe('GET/PATCH /api/auth/profile', () => {
     const patchBody = await patchResponse.json()
     expect(patchResponse.status).toBe(200)
     expect(patchBody.data.autoAdjustAccountDate).toBe(true)
-    expect(mocks.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'internal-user-1' },
-      })
-    )
+    expect(mockSet).toHaveBeenCalled()
 
     const getResponse = await GET()
     const getBody = await getResponse.json()

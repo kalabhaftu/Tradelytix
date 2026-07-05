@@ -89,6 +89,15 @@ export async function PATCH(
     if (existing.userId !== identity.internalUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
     const updated = (await db.update(schema.Trade).set(body).where(eq(schema.Trade.id, id)).returning())[0]
+    await db.insert(schema.AuditLog).values({
+      userId: identity.internalUserId,
+      action: 'UPDATE_TRADE',
+      entityId: id,
+      beforeData: existing,
+      afterData: updated,
+      ipAddress: request.headers.get('x-forwarded-for') || null,
+    })
+
 
     await invalidateTradesCache(identity.internalUserId, existing.accountId)
 
@@ -118,6 +127,15 @@ export async function DELETE(
     if (existing.userId !== identity.internalUserId) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
     await db.delete(schema.Trade).where(eq(schema.Trade.id, id))
+    await db.insert(schema.AuditLog).values({
+      userId: identity.internalUserId,
+      action: 'DELETE_TRADE',
+      entityId: id,
+      beforeData: existing,
+      afterData: null,
+      ipAddress: request.headers.get('x-forwarded-for') || null,
+    })
+
     
     await invalidateTradesCache(identity.internalUserId, existing.accountId)
 

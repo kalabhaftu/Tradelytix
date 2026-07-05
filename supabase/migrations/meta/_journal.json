@@ -15,6 +15,13 @@
       "when": 1782919696657,
       "tag": "0001_eminent_mad_thinker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782986128248,
+      "tag": "0002_crazy_drax",
+      "breakpoints": true
     }
   ]
 }

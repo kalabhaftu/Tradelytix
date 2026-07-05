@@ -338,6 +338,12 @@ describe('Financial Calculations - Zella Score Metrics', () => {
       { pnl: 300, commission: 0, entryDate: '2024-01-02T10:00:00Z' },
       { pnl: -100, commission: 0, entryDate: '2024-01-03T10:00:00Z' },
       { pnl: -50, commission: 0, entryDate: '2024-01-04T10:00:00Z' },
+      { pnl: 10, commission: 0, entryDate: '2024-01-05T10:00:00Z' },
+      { pnl: 10, commission: 0, entryDate: '2024-01-06T10:00:00Z' },
+      { pnl: 10, commission: 0, entryDate: '2024-01-07T10:00:00Z' },
+      { pnl: -10, commission: 0, entryDate: '2024-01-08T10:00:00Z' },
+      { pnl: -10, commission: 0, entryDate: '2024-01-09T10:00:00Z' },
+      { pnl: -10, commission: 0, entryDate: '2024-01-10T10:00:00Z' },
     ]
 
     const metrics = calculateMetricsFromTrades(trades)

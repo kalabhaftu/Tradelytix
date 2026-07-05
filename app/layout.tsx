@@ -5,7 +5,7 @@ import { SafeToaster } from "@/components/safe-toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 // Removed Vercel Analytics and Speed Insights to comply with essential-only cookie policy
 import { AuthProvider } from "@/context/auth-provider";
-import CookieNotice from "@/components/ui/cookie-notice";
+import { CookieConsent } from "@/components/ui/cookie-consent";
 import { ConsoleFilterWrapper } from "@/components/console-filter-wrapper";
 import { ThemeProvider } from "@/context/theme-provider";
 import { QueryProvider } from "@/lib/query/query-provider";
@@ -239,7 +239,7 @@ export default async function RootLayout({
                   <TooltipProvider>
                     <ServiceWorkerRegister />
                     <DeploymentMonitor />
-                    <CookieNotice />
+                    <CookieConsent />
                     <SafeToaster />
                     <ClientErrorReporter />
                     <SeasonalManager />

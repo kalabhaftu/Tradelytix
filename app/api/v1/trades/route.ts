@@ -35,28 +35,40 @@ const MAX_ANALYTICS_TRADE_LIMIT = 5000
 const MAX_TABLE_PAGE_LIMIT = 500
 const MAX_FILTER_VALUES = 100
 
-function boundedInt(value: string | null, fallback: number, min: number, max: number) {
-  const parsed = Number.parseInt(value || '', 10)
-  if (!Number.isFinite(parsed)) return fallback
-  return Math.min(max, Math.max(min, parsed))
-}
+import { z } from 'zod'
 
-function boundedFloat(value: string | null) {
-  if (value === null || value.trim() === '') return undefined
-  const parsed = Number.parseFloat(value)
-  return Number.isFinite(parsed) ? parsed : undefined
-}
+// Helper for bounded list
+const boundedListSchema = (max = MAX_FILTER_VALUES) => z.string().nullish().transform(val => {
+  if (!val) return []
+  return val.split(',').map(item => item.trim()).filter(Boolean).slice(0, max)
+})
 
-function boundedList(value: string | null, max = MAX_FILTER_VALUES) {
-  return (value?.split(',') || [])
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .slice(0, max)
-}
-
-function isDateOnly(value: string | null) {
-  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value))
-}
+// Schema for GET parameters
+const getTradesSchema = z.object({
+  accounts: boundedListSchema(),
+  dateFrom: z.string().nullish(),
+  dateTo: z.string().nullish(),
+  tradeDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish().catch(null),
+  instruments: boundedListSchema(),
+  pnlMin: z.string().nullish().transform(val => val ? parseFloat(val) : undefined).pipe(z.number().optional().catch(undefined)),
+  pnlMax: z.string().nullish().transform(val => val ? parseFloat(val) : undefined).pipe(z.number().optional().catch(undefined)),
+  timeRange: z.string().nullish(),
+  weekday: z.string().nullish().transform(val => val ? parseInt(val, 10) : null).pipe(z.number().min(0).max(6).nullable().catch(null)),
+  hour: z.string().nullish().transform(val => val ? parseInt(val, 10) : null).pipe(z.number().min(0).max(23).nullable().catch(null)),
+  includeStats: z.string().nullish().transform(val => val !== 'false'),
+  includeCalendar: z.string().nullish().transform(val => val !== 'false'),
+  groupByExecution: z.string().nullish().transform(val => val === 'true'),
+  includeWidgets: z.string().nullish().transform(val => val !== 'false'),
+  pageLimit: z.string().nullish().transform(val => val ? parseInt(val, 10) : null).pipe(z.number().min(1).max(MAX_TABLE_PAGE_LIMIT).nullable().catch(null)),
+  pageOffset: z.string().nullish().transform(val => val ? parseInt(val, 10) : 0).pipe(z.number().min(0).max(1_000_000).catch(0)),
+  limit: z.string().nullish(), // we compute this later based on needsAnalytics
+  timezone: z.string().nullish().transform(val => val ? val.slice(0, 64) : 'UTC'),
+  search: z.string().nullish().transform(val => val ? val.trim().slice(0, 120) : ''),
+  side: z.string().nullish().transform(val => val ? val.trim().slice(0, 16) : ''),
+  outcome: z.string().nullish().transform(val => val ? val.trim() : ''),
+  tags: boundedListSchema(),
+  liveOnly: z.string().nullish().transform(val => val === 'true')
+})
 
 // PERF: Only select fields the dashboard actually uses (~40% smaller payload)
 const TRADE_SELECT = {
@@ -126,35 +138,50 @@ export async function GET(request: NextRequest) {
     const { internalUserId } = await getResolvedUserIdentity()
     const params = request.nextUrl.searchParams
     
-    // Parse filter params
-    const accountNumbers = boundedList(params.get('accounts'))
-    const dateFrom = params.get('dateFrom')
-    const dateTo = params.get('dateTo')
-    const tradeDate = isDateOnly(params.get('tradeDate')) ? params.get('tradeDate') : null
-    const instruments = boundedList(params.get('instruments'))
-    const pnlMin = boundedFloat(params.get('pnlMin'))
-    const pnlMax = boundedFloat(params.get('pnlMax'))
-    const timeRange = params.get('timeRange') || null
-    const weekday = params.get('weekday') ? boundedInt(params.get('weekday'), -1, 0, 6) : null
-    const hour = params.get('hour') ? boundedInt(params.get('hour'), -1, 0, 23) : null
-    const includeStats = params.get('includeStats') !== 'false'
-    const includeCalendar = params.get('includeCalendar') !== 'false'
-    const groupByExecution = params.get('groupByExecution') === 'true'
-    const includeWidgets = params.get('includeWidgets') !== 'false'
+    // Parse filter params using Zod
+    const parsedParams = getTradesSchema.safeParse(Object.fromEntries(params.entries()))
+    if (!parsedParams.success) {
+      return NextResponse.json({ error: 'Invalid parameters', details: parsedParams.error.format() }, { status: 400 })
+    }
+
+    const {
+      accounts: accountNumbers,
+      dateFrom,
+      dateTo,
+      tradeDate,
+      instruments,
+      pnlMin,
+      pnlMax,
+      timeRange,
+      weekday,
+      hour,
+      includeStats,
+      includeCalendar,
+      groupByExecution,
+      includeWidgets,
+      pageLimit,
+      pageOffset,
+      timezone,
+      search,
+      side,
+      outcome,
+      tags: tagIds,
+      liveOnly
+    } = parsedParams.data
+
     const needsAnalytics = includeStats || includeCalendar || includeWidgets || groupByExecution
-    const pageLimit = params.get('pageLimit') ? boundedInt(params.get('pageLimit'), 50, 1, MAX_TABLE_PAGE_LIMIT) : null
-    const pageOffset = boundedInt(params.get('pageOffset'), 0, 0, 1_000_000)
-    const limit = boundedInt(params.get('limit'), needsAnalytics ? MAX_ANALYTICS_TRADE_LIMIT : (pageLimit || MAX_TABLE_PAGE_LIMIT), 1, needsAnalytics ? MAX_ANALYTICS_TRADE_LIMIT : MAX_TABLE_PAGE_LIMIT)
-    const timezone = params.get('timezone')?.slice(0, 64) || 'UTC'
-    const search = (params.get('search') || '').trim().slice(0, 120)
-    const side = (params.get('side') || '').trim().slice(0, 16)
-    const outcome = (params.get('outcome') || '').trim()
-    const tagIds = boundedList(params.get('tags'))
+    
+    // Process limit
+    let rawLimitStr = params.get('limit')
+    let rawLimit = rawLimitStr ? parseInt(rawLimitStr, 10) : NaN
+    const limitFallback = needsAnalytics ? MAX_ANALYTICS_TRADE_LIMIT : (pageLimit || MAX_TABLE_PAGE_LIMIT)
+    const limitMax = needsAnalytics ? MAX_ANALYTICS_TRADE_LIMIT : MAX_TABLE_PAGE_LIMIT
+    const limit = (!isNaN(rawLimit)) ? Math.min(limitMax, Math.max(1, rawLimit)) : limitFallback
     
     // Build Drizzle where clause — ALL filtering server-side
     const whereConditions: SQL[] = [eq(schema.Trade.userId, internalUserId)]
 
-    if (params.get('liveOnly') === 'true') {
+    if (liveOnly) {
       whereConditions.push(isNotNull(schema.Trade.tradeIdentityKey))
     }
     

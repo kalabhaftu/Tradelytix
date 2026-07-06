@@ -25,6 +25,7 @@ export function CalendarSettings() {
                     size="icon"
                     className="h-6 w-6 p-0 hover:bg-primary/5 hover:text-primary transition-all rounded-md"
                     title="Display Stats Settings"
+                    aria-label="Display Stats Settings"
                 >
                     <SettingsIcon className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-foreground transition-colors" />
                 </Button>

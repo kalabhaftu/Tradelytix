@@ -58,6 +58,7 @@ export function PhaseViewIndicator() {
         size="sm"
         onClick={handleClearView}
         className="h-5 w-5 p-0 hover:bg-muted/80"
+        aria-label="Clear phase filter"
       >
         <X className="h-3 w-3" />
       </Button>

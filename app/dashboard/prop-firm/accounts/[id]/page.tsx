@@ -335,10 +335,10 @@ export default function AccountDetailPage() {
                       onChange={(e) => setEditedAccountName(e.target.value)}
                       className="h-8 w-48"
                     />
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleSaveName}>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleSaveName} aria-label="Confirm rename">
                       <Check className="h-4 w-4" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setIsEditingName(false)}>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setIsEditingName(false)} aria-label="Cancel rename">
                       <X className="h-4 w-4" />
                     </Button>
                   </div>

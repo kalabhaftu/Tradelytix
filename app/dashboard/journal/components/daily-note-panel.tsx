@@ -221,7 +221,7 @@ export function DailyNotePanel({ date, onClose, dailyStats }: DailyNotePanelProp
               </div>
             )}
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8" aria-label="Close daily note panel">
             <X className="h-4 w-4" />
           </Button>
         </div>

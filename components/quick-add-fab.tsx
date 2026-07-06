@@ -102,6 +102,7 @@ export function QuickAddFAB({ className }: QuickAddFABProps) {
                     "lg:hidden", // Match bottom nav breakpoint
                     className
                 )}
+                aria-label="Quick add trade"
             >
                 <Plus className="h-6 w-6" />
             </Button>

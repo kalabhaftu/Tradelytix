@@ -1131,6 +1131,7 @@ export function WeeklyModal({
                             size="sm"
                             className="h-8 w-8 p-0 rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={handleRemoveImage}
+                            aria-label="Remove screenshot"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

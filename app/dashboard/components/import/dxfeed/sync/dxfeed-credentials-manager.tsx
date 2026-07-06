@@ -361,6 +361,7 @@ export function DxFeedCredentialsManager() {
                         }
                       }}
                       disabled={syncingId !== null || !account.hasToken}
+                      aria-label="Sync account"
                     >
                       {syncingId === account.accountId ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -370,7 +371,7 @@ export function DxFeedCredentialsManager() {
                     </Button>
                     <Popover modal>
                       <PopoverTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="More options">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </PopoverTrigger>

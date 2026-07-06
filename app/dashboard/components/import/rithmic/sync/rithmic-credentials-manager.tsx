@@ -440,6 +440,7 @@ export function RithmicCredentialsManager({
                             size="sm"
                             onClick={() => handleSync(credential)}
                             disabled={isAutoSyncing}
+                            aria-label="Sync credentials"
                           >
                             {syncingId === credentialId ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -453,6 +454,7 @@ export function RithmicCredentialsManager({
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0"
+                                aria-label="More options"
                               >
                                 <MoreVertical className="h-4 w-4" />
                               </Button>

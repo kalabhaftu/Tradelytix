@@ -45,6 +45,7 @@ export function DashboardDisplayModeSelector({
             mobile && 'h-9 w-9'
           )}
           title={allModes[mode].label}
+          aria-label={allModes[mode].label}
         >
           <ActiveIcon className="h-4 w-4" />
         </Button>

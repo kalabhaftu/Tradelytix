@@ -208,6 +208,7 @@ export function DataError({ error, onRetry, className = '' }: DataErrorProps): R
           size="sm"
           onClick={onRetry}
           className="shrink-0"
+          aria-label="Retry loading data"
         >
           <RefreshCw className="h-4 w-4" />
         </Button>

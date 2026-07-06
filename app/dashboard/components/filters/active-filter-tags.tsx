@@ -159,6 +159,7 @@ export function ActiveFilterTags({ showAccountNumbers }: { showAccountNumbers: b
               size="sm"
               className="h-full w-8 p-0"
               onClick={scrollToNext}
+              aria-label="Scroll filters right"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>

@@ -101,7 +101,7 @@ function StrategyBlock({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 opacity-40 group-hover:opacity-100 transition-opacity">
+            <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 opacity-40 group-hover:opacity-100 transition-opacity" aria-label="Strategy options">
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>

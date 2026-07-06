@@ -216,6 +216,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
             variant="ghost"
             size="icon"
             className="screenshot-btn h-6 w-6 max-[420px]:h-5 max-[420px]:w-5 sm:h-7 sm:w-7 hover:bg-primary/5 hover:text-primary transition-all bg-muted/30 dark:bg-muted/20 border border-border/50 dark:border-border/30 rounded-lg"
+            aria-label="Capture screenshot"
           >
             <Camera className="h-3.5 w-3.5" />
           </Button>

@@ -238,6 +238,7 @@ export function TagManager({ isOpen, onClose, onRefresh }: TagManagerProps) {
                             size="sm"
                             variant="ghost"
                             className="h-8 px-2"
+                            aria-label="Confirm edit"
                           >
                             <Check className="h-4 w-4 text-profit" />
                           </Button>
@@ -246,6 +247,7 @@ export function TagManager({ isOpen, onClose, onRefresh }: TagManagerProps) {
                             size="sm"
                             variant="ghost"
                             className="h-8 px-2"
+                            aria-label="Cancel edit"
                           >
                             <X className="h-4 w-4 text-muted-foreground" />
                           </Button>

@@ -106,6 +106,7 @@ export function CustomDateRangePicker({
           size="sm"
           onClick={handlePrevMonth}
           className="h-7 w-7 p-0"
+          aria-label="Previous month"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -119,6 +120,7 @@ export function CustomDateRangePicker({
           size="sm"
           onClick={handleNextMonth}
           className="h-7 w-7 p-0"
+          aria-label="Next month"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>

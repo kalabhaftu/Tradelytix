@@ -96,7 +96,7 @@ export default function Navbar() {
           {/* Account Selector — hidden on mobile, shown in profile dropdown */}
           <Popover open={!isMobile && accountPopoverOpen} onOpenChange={setAccountPopoverOpen}>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" data-tour="navbar-accounts-btn" className="hidden h-8 w-8 text-muted-foreground hover:bg-muted/40 hover:text-foreground sm:flex">
+              <Button variant="ghost" size="icon" data-tour="navbar-accounts-btn" className="hidden h-8 w-8 text-muted-foreground hover:bg-muted/40 hover:text-foreground sm:flex" aria-label="Trading accounts">
                 <Wallet className="h-4 w-4" />
               </Button>
             </PopoverTrigger>

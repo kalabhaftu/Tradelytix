@@ -96,6 +96,7 @@ export function ThorSync({ setIsOpen, onBack }: { setIsOpen: (isOpen: boolean) =
               variant="outline"
               size="icon"
               disabled={!user?.thorToken || isGenerating}
+              aria-label="Reveal Thor API Token"
             >
               <EyeIcon className="h-4 w-4" />
             </Button>
@@ -118,6 +119,7 @@ export function ThorSync({ setIsOpen, onBack }: { setIsOpen: (isOpen: boolean) =
           size="icon"
           onClick={handleCopyToken}
           disabled={!user?.thorToken || isGenerating}
+          aria-label="Copy Thor API Token"
         >
           <CopyIcon className="h-4 w-4" />
         </Button>
@@ -126,6 +128,7 @@ export function ThorSync({ setIsOpen, onBack }: { setIsOpen: (isOpen: boolean) =
           size="icon"
           onClick={handleGenerateToken}
           disabled={isGenerating}
+          aria-label="Generate new Thor API Token"
         >
           <RefreshCwIcon className={cn("h-4 w-4", {
             "animate-spin": isGenerating

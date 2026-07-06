@@ -7,6 +7,62 @@
     --font-system: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     --font-satoshi: var(--font-system);
   }
+
+  html {
+    margin: 0;
+    padding: 0;
+    background-color: hsl(var(--background)) !important;
+    color-scheme: dark;
+    overflow-y: scroll !important;
+    overflow-x: hidden !important;
+    scrollbar-gutter: stable !important;
+    -ms-overflow-style: scrollbar !important;
+  }
+
+  html.dark {
+    background-color: hsl(var(--background)) !important;
+    color-scheme: dark;
+  }
+
+  html.light {
+    background-color: hsl(var(--background)) !important;
+    color-scheme: light;
+  }
+
+  body {
+    min-height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: inherit !important;
+    overflow-x: hidden !important;
+  }
+
+  ::-webkit-scrollbar {
+    width: 14px !important;
+    background-color: transparent !important;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background)) !important;
+    border-left: 1px solid hsl(var(--border)) !important;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3) !important;
+    border-radius: 7px !important;
+    border: 3px solid hsl(var(--background)) !important;
+    min-height: 40px !important;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4) !important;
+  }
+
+  /* Firefox scrollbar styles */
+  * {
+    scrollbar-width: thin !important;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent !important;
+  }
 }
 
 

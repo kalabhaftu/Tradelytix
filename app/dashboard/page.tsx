@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import { DashboardClient } from './dashboard-client'
 
 export const metadata = {
-  title: 'Dashboard | Tradelytix',
+  title: 'Dashboard | JJI',
   description: 'Your trading dashboard and widgets.'
 }
 

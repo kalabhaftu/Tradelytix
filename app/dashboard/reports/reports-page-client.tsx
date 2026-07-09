@@ -341,7 +341,7 @@ export default function ReportsPageClient({
             const url = URL.createObjectURL(blob)
             const a = document.createElement('a')
             a.href = url
-            a.download = `tradelytix-metrics-${format(new Date(), 'yyyy-MM-dd')}.csv`
+            a.download = `jji-metrics-${format(new Date(), 'yyyy-MM-dd')}.csv`
             a.style.display = 'none'
             document.body.appendChild(a)
             a.click()
@@ -390,7 +390,7 @@ export default function ReportsPageClient({
                 if (!blob) { toast.error('Snapshot failed'); return }
                 const url = URL.createObjectURL(blob)
                 const a = document.createElement('a')
-                a.download = `tradelytix-report-${Date.now()}.png`
+                a.download = `jji-report-${Date.now()}.png`
                 a.href = url
                 a.style.display = 'none'
                 document.body.appendChild(a)

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useUserStore } from '@/store/user-store'
 import { toast } from 'sonner'
@@ -591,10 +591,10 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }, 1500)
       return () => clearTimeout(timer)
     }
-  }, [onboardingStatus, activeTour, pathname, paused])
+  }, [onboardingStatus, activeTour, pathname, paused, startTour])
 
   // Save onboarding status to DB
-  const saveOnboardingStatus = async (updatedStatus: Partial<OnboardingStatus>) => {
+  const saveOnboardingStatus = useCallback(async (updatedStatus: Partial<OnboardingStatus>) => {
     if (!storeUser) return
 
     const nextStatus = {
@@ -618,7 +618,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Failed to save onboarding status:', error)
     }
-  }
+  }, [storeUser, onboardingStatus, setDbUser])
 
   // Listen for the custom account-created event (instant detection)
   useEffect(() => {
@@ -640,7 +640,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       document.removeEventListener('jji-account-created', handleAccountCreated)
     }
-  }, [createdAccountId, currentStep])
+  }, [createdAccountId, currentStep, nextStep])
 
   // Fallback: Detect newly created account in onboarding via list diffing
   useEffect(() => {
@@ -656,7 +656,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     }
-  }, [accounts, activeTour, createdAccountId, currentStep])
+  }, [accounts, activeTour, createdAccountId, currentStep, nextStep])
 
   // Trigger mock CSV download automatically on the csv-download step
   useEffect(() => {
@@ -754,7 +754,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       if (targetCheckInterval.current) clearInterval(targetCheckInterval.current)
     }
-  }, [activeTour, stepIndex, pathname, paused, isMobile])
+  }, [activeTour, stepIndex, pathname, paused, isMobile, currentStep, nextStep, prevStep, router])
 
   // Setup interactive listeners if step requires real user interaction (using Capture Phase listeners to bypass Radix event prevention)
   useEffect(() => {
@@ -801,10 +801,10 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
         document.removeEventListener('input', handleCaptureAction, { capture: true })
       }
     }
-  }, [activeTour, stepIndex, isTargetVisible, paused, currentStep])
+  }, [activeTour, stepIndex, isTargetVisible, paused, currentStep, nextStep])
 
   // Action methods
-  const startTour = (tourId: TourId) => {
+  const startTour = useCallback((tourId: TourId) => {
     setActiveTour(tourId)
     setStepIndex(0)
     setPaused(false)
@@ -813,9 +813,9 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCreatedAccountType(null)
       initialAccountIds.current = accounts ? accounts.map((a: any) => a.id) : []
     }
-  }
+  }, [accounts])
 
-  const nextStep = () => {
+  const nextStep = useCallback(() => {
     if (!activeTour) return
 
     if (stepIndex < currentSteps.length - 1) {
@@ -823,13 +823,13 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       completeTour()
     }
-  }
+  }, [activeTour, stepIndex, currentSteps.length, completeTour])
 
-  const prevStep = () => {
+  const prevStep = useCallback(() => {
     if (stepIndex > 0) {
       setStepIndex((prev) => prev - 1)
     }
-  }
+  }, [stepIndex])
 
   const skipTour = async () => {
     if (!activeTour) return
@@ -861,7 +861,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success('Tour skipped. You can restart it anytime from settings.')
   }
 
-  const completeTour = async () => {
+  const completeTour = useCallback(async () => {
     if (!activeTour) return
 
     const keyMap: Record<TourId, keyof OnboardingStatus> = {
@@ -901,7 +901,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       toast.success('Tour completed.')
     }
-  }
+  }, [activeTour, createdAccountId, createdAccountType, router, saveOnboardingStatus])
 
   const pauseTour = () => {
     setPaused(true)

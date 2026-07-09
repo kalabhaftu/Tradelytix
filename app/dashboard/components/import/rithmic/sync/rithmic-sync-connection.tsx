@@ -390,13 +390,14 @@ function RithmicSyncConnection({ setIsOpen }: RithmicSyncConnectionProps) {
   }, [
     token,
     wsUrl,
-    currentCredentialId,
     allAccounts,
     availableAccounts,
     selectedAccounts,
     saveCredentialsAndAccounts,
     calculateStartDate,
     connect,
+    credentials.username,
+    setStep,
   ])
 
   return (

@@ -501,7 +501,7 @@ export const DataProvider: React.FC<{
     })();
 
     return activeLoadPromiseRef.current
-  }, [dashboardLayout, initialBootstrapData, setAccounts, setDashboardLayout, setIsLoading, setSupabaseUser, setTrades, setUser]);
+  }, [dashboardLayout, initialBootstrapData, setAccounts, setDashboardLayout, setIsLoading, setSupabaseUser, setTrades, setUser, isDemoMode]);
 
   useEffect(() => {
     if (isDemoMode) {

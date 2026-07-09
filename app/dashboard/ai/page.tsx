@@ -338,7 +338,7 @@ export default function AIChatWorkspace() {
     if (accounts && accounts.length > 0 && selectedAccounts.length === 0) {
       setSelectedAccounts([accounts[0]!.id])
     }
-  }, [accounts])
+  }, [accounts, selectedAccounts.length])
 
   // Fetch Messages for Selected Chat
   const handleChatSelect = async (chatId: string) => {
@@ -872,6 +872,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
         <p className="max-w-md text-muted-foreground text-sm leading-relaxed">
           {paywallError}
         </p>
+        {/* eslint-disable-next-line @next/next/no-location-assign-relative-destination */}
         <Button size="lg" className="px-8 font-semibold" onClick={() => window.location.href = '/subscribe'}>
           Upgrade to Premium
         </Button>
@@ -1306,6 +1307,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
               <Info className="h-4 w-4 shrink-0" />
               <span>You are viewing the <strong>AI Assistant Demo Preview</strong>. Upgrade to Pro to connect your real trading accounts.</span>
             </div>
+            {/* eslint-disable-next-line @next/next/no-location-assign-relative-destination */}
             <Button size="sm" className="h-7 text-xs px-3 font-semibold" onClick={() => window.location.href = '/subscribe'}>
               Upgrade
             </Button>

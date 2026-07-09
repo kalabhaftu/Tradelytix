@@ -146,7 +146,7 @@ export function NotificationCenter() {
     } finally {
       setIsLoading(false)
     }
-  }, [user?.id])
+  }, [user?.id, isDemo])
 
   const refreshUnreadCount = useCallback(async () => {
     if (isDemo) return
@@ -162,7 +162,7 @@ export function NotificationCenter() {
     } catch (error) {
       // Silent fail
     }
-  }, [user?.id])
+  }, [user?.id, isDemo])
 
   useEffect(() => {
     if (!isDemo && (!user?.id || user.id === 'demo-user')) return

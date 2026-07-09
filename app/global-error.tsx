@@ -45,6 +45,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
                             <RefreshCw className="h-4 w-4" />
                             Try Again
                         </Button>
+                        {/* eslint-disable-next-line @next/next/no-location-assign-relative-destination */}
                         <Button onClick={() => window.location.href = '/'} variant="outline" size="lg" className="w-full sm:w-auto gap-2">
                             <Home className="h-4 w-4" />
                             Return Home

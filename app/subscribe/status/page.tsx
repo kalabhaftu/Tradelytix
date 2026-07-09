@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, Clock, Loader2, RefreshCw, XCircle } from 'lucide-react'
 
@@ -27,7 +27,7 @@ export default function SubscribeStatusPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  async function loadStatus(id: string) {
+  const loadStatus = useCallback(async (id: string) => {
     setLoading(true)
     setError(null)
 
@@ -45,7 +45,7 @@ export default function SubscribeStatusPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
 
   useEffect(() => {
     const stored = sessionStorage.getItem('pendingPaymentId')
@@ -56,7 +56,7 @@ export default function SubscribeStatusPage() {
       setLoading(false)
       setError('No pending payment was found in this browser session.')
     }
-  }, [])
+  }, [loadStatus])
 
   const providerStatus = status?.providerStatus || 'unknown'
   const isFinished = providerStatus === 'finished'

@@ -39,8 +39,7 @@ export function ReconnectRefetcher() {
       // components refetch. Cached-but-unused data stays put.
       queryClient.invalidateQueries({ type: 'active' })
       if (process.env.NODE_ENV !== 'production') {
-        // eslint-disable-next-line no-console
-        console.debug('[reconnect] invalidated active queries:', reason)
+                console.debug('[reconnect] invalidated active queries:', reason)
       }
     }
 

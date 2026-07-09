@@ -1,16 +1,9 @@
 import pino from 'pino'
+import * as Sentry from '@sentry/nextjs'
 
-const logger = pino({
+const pinoLogger = pino({
   level: process.env.LOG_LEVEL ?? 'info',
-  ...(process.env.NODE_ENV === 'development'
-    ? { transport: { target: 'pino-pretty', options: { colorize: true } } }
-    : {}),
 })
-
-// Named re-exports so both `import logger from '@/lib/logger'`
-// and `import { logger } from '@/lib/logger'` work seamlessly.
-export { logger }
-export default logger
 
 // Known benign error patterns that can safely be dropped
 const IGNORE_PATTERNS = [
@@ -30,3 +23,65 @@ export function shouldIgnoreError(message?: string, metadata?: unknown): boolean
   return IGNORE_PATTERNS.some((p) => message.includes(p))
 }
 
+const logger = {
+  ...pinoLogger,
+  error: (...args: any[]) => {
+    // Call the original pino error
+    pinoLogger.error(...args)
+
+    // Forward to Sentry
+    try {
+      let messageStr = ''
+      let errorObj: Error | null = null
+      let extraContext: Record<string, any> = {}
+
+      for (const arg of args) {
+        if (arg instanceof Error) {
+          errorObj = arg
+          messageStr += (messageStr ? ' ' : '') + arg.message
+        } else if (typeof arg === 'string') {
+          messageStr += (messageStr ? ' ' : '') + arg
+        } else if (typeof arg === 'object' && arg !== null) {
+          if (arg.err instanceof Error) {
+            errorObj = arg.err
+          } else if (arg.error instanceof Error) {
+            errorObj = arg.error
+          } else if (Array.isArray(arg.originalArgs)) {
+            // console-interceptor support
+            const foundError = arg.originalArgs.find((a: any) => a instanceof Error)
+            if (foundError) errorObj = foundError
+          } else if (arg.message && typeof arg.message === 'string') {
+            messageStr += (messageStr ? ' ' : '') + arg.message
+          }
+          extraContext = { ...extraContext, ...arg }
+        }
+      }
+
+      if (shouldIgnoreError(messageStr, extraContext)) return
+
+      if (errorObj) {
+        Sentry.captureException(errorObj, {
+          extra: extraContext,
+        })
+      } else if (messageStr) {
+        Sentry.captureMessage(messageStr, {
+          level: 'error',
+          extra: extraContext,
+        })
+      } else {
+        Sentry.captureMessage('Unknown error logged', {
+          level: 'error',
+          extra: { args },
+        })
+      }
+    } catch (e) {
+      // Prevent recursive failures
+      pinoLogger.error({ err: e }, 'Failed to send error to Sentry')
+    }
+  }
+} as pino.Logger
+
+// Named re-exports so both `import logger from '@/lib/logger'`
+// and `import { logger } from '@/lib/logger'` work seamlessly.
+export { logger }
+export default logger

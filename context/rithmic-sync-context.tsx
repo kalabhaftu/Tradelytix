@@ -488,6 +488,7 @@ export function RithmicSyncContextProvider({
       handleMessage,
       disconnect,
       resetProcessingState,
+      setIsAutoSyncing,
       clearMessageHistory,
       setSelectedAccounts,
       setAccountsProgress,
@@ -679,6 +680,7 @@ export function RithmicSyncContextProvider({
       clearMessageHistory,
       setAvailableAccounts,
       setIsAutoSyncing,
+      trades,
     ]
   );
 

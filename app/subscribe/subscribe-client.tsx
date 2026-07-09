@@ -185,6 +185,7 @@ export function SubscribeClient() {
               await supabase.auth.signOut()
               localStorage.clear()
               sessionStorage.clear()
+              // eslint-disable-next-line @next/next/no-location-assign-relative-destination
               window.location.href = '/'
             }}
           >

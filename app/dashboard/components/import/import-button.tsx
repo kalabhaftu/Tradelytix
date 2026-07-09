@@ -615,7 +615,8 @@ export default function ImportButton() {
     accountNumber,
     selectedAccountId,
     isLoading,
-    newAccountNumber
+    newAccountNumber,
+    resetImportState,
   ])
 
   return (

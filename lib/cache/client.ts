@@ -2,8 +2,7 @@ import { Redis } from '@upstash/redis'
 import logger from '@/lib/logger'
 
 declare global {
-  // eslint-disable-next-line no-var
-  var _redis: Redis | undefined
+    var _redis: Redis | undefined
 }
 
 function createRedisClient(): Redis {

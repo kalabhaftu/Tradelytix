@@ -89,7 +89,7 @@ export function TradovateCredentialsManager() {
         logger.error("Delete error: " + (error instanceof Error ? error.message : String(error)));
       }
     },
-    [],
+    [deleteAccount],
   );
 
   const handleStartOAuth = useCallback(async (accountId: string = "default") => {

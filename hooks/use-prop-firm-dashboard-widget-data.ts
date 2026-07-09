@@ -165,7 +165,8 @@ export function usePropFirmDashboardWidgetData() {
   }, [id, fetchData])
 
   const accountPayload = cacheEntry?.accountPayload ?? null
-  const trades = cacheEntry?.trades ?? []
+  const emptyTrades = useMemo(() => [], [])
+  const trades = cacheEntry?.trades ?? emptyTrades
   const isDataLoading = id ? (!cacheEntry || cacheEntry.isLoading) : false
   const dataError = cacheEntry?.error ?? null
 

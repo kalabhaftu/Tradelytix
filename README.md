@@ -1,91 +1,85 @@
-# JJI
+# JJI (Just Journal It)
 
-JJI is a trading analytics and journaling platform built to help traders find consistency through the charts. It combines trade tracking, account analytics, journaling, reports, prop-firm workflows, and data-management tools in one dashboard.
+JJI is a professional-grade, no-BS trading analytics and journaling platform. Built for data-driven traders, it cuts out the noise to help you find and maintain your edge in the markets. 
 
-## What JJI helps with
+**Note: JJI is a closed-source, paid platform ($10/month). While it may be open-sourced in the future, it is currently proprietary software.**
 
-- Track trading performance across master, phase, live, and linked accounts.
-- Review PnL, equity curves, win rate, profit factor, risk/reward, drawdown, and consistency metrics.
-- Journal trades with screenshots, tags, setups, emotions, notes, and execution details.
-- Build and refine playbooks with entry, target, confirmation, confluence, risk, and exit rules.
-- Analyze daily and weekly behavior through calendar views, daily notes, and weekly reviews.
-- Manage prop-firm challenges, objectives, phase transitions, payouts, and reference values.
-- Import, export, back up, and clean trading data with user-controlled data tools.
-- Share read-only reports with public links when needed.
+## Core Capabilities
 
-## Tech stack
+- **Deep Analytics**: Visualize equity curves, drawdowns, win rates, and profit factors across master, live, and linked accounts.
+- **Smart Calendar**: Review daily PnL, setups, and trade execution through a clean, interactive calendar interface.
+- **Detailed Journaling**: Log every aspect of a trade—setups, entry/exit rules, psychological states, and chart screenshots.
+- **Prop Firm Ready**: Built-in workflows for managing prop-firm challenges, phase transitions, drawdown limits, and payout objectives.
+- **Data Portability**: Full control over your data with CSV/JSON import and export capabilities.
+
+## Tech Stack
 
 - **Framework**: Next.js App Router
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS, shadcn/ui, Framer Motion
-- **Database**: PostgreSQL via Supabase
-- **ORM**: Prisma
+- **Database**: PostgreSQL (Supabase)
+- **ORM**: Drizzle ORM
 - **Auth**: Supabase Auth
-- **State/data**: Zustand and TanStack Query
-- **Reports/exports**: PDF, image, CSV, Excel, and JSON export utilities
-- **Testing**: Vitest, ESLint, TypeScript checks, Playwright support
+- **State & Data Fetching**: Zustand, TanStack Query
+- **Testing**: Vitest, Playwright
 
-## Getting started
+## Getting Started
 
 ### Prerequisites
-
 - Node.js LTS
 - npm
-- PostgreSQL/Supabase project credentials
+- Supabase project credentials
 
-### Installation
+### Local Installation
 
-```bash
-git clone <repository-url>
-cd <project-directory>
-npm install
-```
+1. Clone the repository and install dependencies:
+   ```bash
+   git clone <repository-url>
+   cd <project-directory>
+   npm install
+   ```
 
-### Environment
+2. Environment Configuration
+   Create `.env` and `.env.local` based on `.env.example`. You will need Supabase, database, auth, and payment webhook keys. Minimum local variables:
+   ```bash
+   DATABASE_URL=
+   DIRECT_URL=
+   NEXT_PUBLIC_SUPABASE_URL=
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=
+   NEXT_PUBLIC_SITE_URL=http://localhost:3000
+   NEXT_PUBLIC_APP_NAME=JJI
+   ```
 
-Create `.env` and `.env.local` with the required app, database, Supabase, auth, payment, and admin values for your environment. At minimum, local development usually needs:
+3. Database Setup
+   Generate the Drizzle client and push the schema:
+   ```bash
+   npm run db:generate
+   npm run db:push
+   ```
 
-```bash
-DATABASE_URL=
-DIRECT_URL=
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-NEXT_PUBLIC_APP_NAME=JJI
-```
+4. Run the Development Server
+   ```bash
+   npm run dev
+   ```
+   Access the app at `http://localhost:3000`.
 
-Then generate the Prisma client:
-
-```bash
-npx prisma generate
-```
-
-### Run locally
-
-```bash
-npm run dev
-```
-
-Open `http://localhost:3000`.
-
-## Useful scripts
+## Useful Commands
 
 ```bash
-npm run type-check   # TypeScript validation
-npm run lint         # ESLint checks
-npm test -- --run    # Vitest suite
-npm run build        # Production build
-npx prisma studio    # Inspect local database data
+npm run type-check   # Validate TypeScript compilation
+npm run lint         # Run ESLint
+npm test -- --run    # Execute Vitest test suite
+npm run build        # Create an optimized production build
+npm run db:studio    # Launch Drizzle Studio to inspect the database
 ```
 
-## Project notes
+## Project Standards
 
-- Keep production-facing branding as **JJI**.
-- Use `https://www.jji.eu.cc` for production URLs.
-- Do not commit real secrets. Keep credentials in local environment files or deployment secrets.
-- Review Supabase storage and database policies before production changes.
+- **Branding**: The production brand is **JJI**.
+- **Production URL**: `https://www.jji.eu.cc`.
+- **Security**: Never commit real secrets. Use `.env.local` for local development. Ensure Supabase RLS (Row Level Security) and storage policies are rigorously audited before deploying production changes.
 
 ## License
 
 Copyright (c) 2026-present JJI.
-All rights reserved unless a separate written license says otherwise.
+All rights reserved. This software is proprietary and closed-source unless explicitly stated otherwise.

@@ -10,7 +10,7 @@ export function AppBanner() {
 
   useEffect(() => {
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-    const isBannerDismissed = localStorage.getItem('tradelytix_app_banner_dismissed') === 'true'
+    const isBannerDismissed = localStorage.getItem('jji_app_banner_dismissed') === 'true'
     
     if (isMobile && !isBannerDismissed) {
       setShow(true)
@@ -19,12 +19,12 @@ export function AppBanner() {
 
   const handleDismiss = () => {
     setShow(false)
-    localStorage.setItem('tradelytix_app_banner_dismissed', 'true')
+    localStorage.setItem('jji_app_banner_dismissed', 'true')
   }
 
   const handleOpenApp = () => {
     const path = window.location.pathname + window.location.search
-    const deepLinkUrl = `tradelytix://open?path=${encodeURIComponent(path)}`
+    const deepLinkUrl = `jji://open?path=${encodeURIComponent(path)}`
     window.location.href = deepLinkUrl
   }
 
@@ -43,7 +43,7 @@ export function AppBanner() {
             <Smartphone className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-foreground">Open in Tradelytix App</h4>
+            <h4 className="text-sm font-semibold text-foreground">Open in JJI App</h4>
             <p className="text-xs text-muted-foreground text-left">Get a premium, native charts experience.</p>
           </div>
         </div>

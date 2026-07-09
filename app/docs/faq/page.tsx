@@ -3,7 +3,7 @@ import { DocsCallout, DocsPage, DocsSection } from '@/components/docs/docs-page'
 const faqs = [
   {
     q: 'Is Tradelytix free?',
-    a: 'No, Tradelytix is a paid platform at $10/month. It was open source until June 19, 2026, after which it became proprietary software. Payment is processed via cryptocurrency through NOWPayments. There is no free tier or trial — all features require an active subscription.',
+    a: 'No, Tradelytix is a paid platform at $10/month. It is currently proprietary software, but may be open-sourced again in the future. Payment is processed via cryptocurrency through NOWPayments. There is no free tier or trial — all features require an active subscription.',
   },
   {
     q: 'Is there a mobile app?',

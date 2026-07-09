@@ -50,7 +50,7 @@ export default function DemoDocsPage() {
         </ol>
       </DocsSection>
 
-      <DocsCallout title="Try it free" tone="success">
+      <DocsCallout title="Try the demo" tone="success">
         Demo mode is available to everyone. No credit card, no sign-up required. It's the fastest way to see if Tradelytix fits your trading workflow.
       </DocsCallout>
     </DocsPage>

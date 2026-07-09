@@ -289,7 +289,7 @@ function OpenSourceNotice() {
         Status Change
       </p>
       <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
-        Tradelytix was open source until June 19, 2026. The project is now proprietary.
+        Tradelytix was open source until June 19, 2026. The project is currently proprietary, but may be open-sourced again in the future.
       </p>
     </div>
   )

@@ -16,8 +16,8 @@ export default function DonatePage() {
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">Support Tradelytix</h1>
         <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-          Tradelytix is a free trading journal and analytics platform. Donations help cover hosting,
-          storage, and the ongoing work required to keep the product stable and improving.
+          Donations help support the ongoing development of Tradelytix, keeping the product 
+          stable, improving, and adding new features for the trading community.
         </p>
         <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
           Choose a wallet below, copy the address, and send from your preferred network.

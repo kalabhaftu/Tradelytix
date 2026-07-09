@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Cookie, X } from "lucide-react"
 
-const COOKIE_CONSENT_KEY = "tradelytix-cookie-consent"
+const COOKIE_CONSENT_KEY = "jji-cookie-consent"
 
 interface ConsentSettings {
   essential: boolean;
@@ -38,8 +38,18 @@ export function CookieConsent() {
       }
     }
 
+    const handleOpenPreferences = () => {
+      setVisible(true)
+      setShowPreferences(true)
+    }
+
     window.addEventListener("keydown", handleKeyPress)
-    return () => window.removeEventListener("keydown", handleKeyPress)
+    window.addEventListener("openCookiePreferences", handleOpenPreferences)
+    
+    return () => {
+      window.removeEventListener("keydown", handleKeyPress)
+      window.removeEventListener("openCookiePreferences", handleOpenPreferences)
+    }
   }, [])
 
   useEffect(() => {

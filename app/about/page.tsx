@@ -14,8 +14,8 @@ export default async function AboutPage() {
         <div className="text-center space-y-3 mb-10">
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">About Tradelytix</h1>
           <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-            A free, open-source trading analytics platform built for traders who want 
-            professional-grade journaling without the premium price tag.
+            A professional-grade trading analytics platform built for traders who want 
+            powerful journaling and clear insights into their performance.
           </p>
         </div>
 
@@ -23,7 +23,7 @@ export default async function AboutPage() {
           {[
             { icon: Target, title: 'Mission', desc: 'Make professional trade journaling accessible to every trader, regardless of their budget.' },
             { icon: Shield, title: 'Privacy First', desc: 'Your trading data stays yours. No selling data, no third-party analytics, no hidden tracking.' },
-            { icon: Zap, title: 'Always Free', desc: 'Built and maintained solo with a commitment to keeping core features free forever.' },
+            { icon: Zap, title: 'Built for Traders', desc: 'Maintained with a commitment to providing a top-tier journaling experience.' },
           ].map((item, i) => (
             <Card key={i}>
               <CardContent className="pt-6 text-center">
@@ -49,13 +49,11 @@ export default async function AboutPage() {
               </p>
               <p>
                 As a CFD trader myself, I know how hard it is to properly journal trades and visualize 
-                performance, especially when you're just starting out and can't justify paying for 
-                expensive tools. That's why I decided to open source it.
+                performance. That's why I built this platform. (Note: Tradelytix is currently closed-source, but may be open-sourced in the future.)
               </p>
               <p>
-                Everything runs on free hosting services. It's not perfect, and there are limitations, 
-                but I believe it can genuinely help people who want to improve their trading discipline 
-                without breaking the bank.
+                The platform is designed for stability and speed. I believe it can genuinely help 
+                traders who want to improve their trading discipline and understand their edge.
               </p>
             </div>
           </CardContent>

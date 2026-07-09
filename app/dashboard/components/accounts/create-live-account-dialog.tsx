@@ -137,7 +137,7 @@ export function CreateLiveAccountDialog({ open, onOpenChange, onSuccess }: LiveA
       // Dispatch custom event to notify onboarding system instantly
       if (typeof window !== 'undefined' && result.data?.id) {
         document.dispatchEvent(
-          new CustomEvent('tradelytix-account-created', {
+          new CustomEvent('jji-account-created', {
             detail: { id: result.data.id, type: 'live' }
           })
         )

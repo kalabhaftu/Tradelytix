@@ -203,7 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mutate(() => true, undefined, { revalidate: false })
     } catch (e) {}
 
-    localStorage.removeItem('tradelytix_user_data')
+    localStorage.removeItem('jji_user_data')
     // Clear Supabase auth tokens (they start with 'sb-')
     clearBrowserAuthStorage()
 

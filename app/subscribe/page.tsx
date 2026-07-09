@@ -1,8 +1,8 @@
 import { SubscribeClient } from './subscribe-client'
 
 export const metadata = {
-  title: 'Subscribe | Tradelytix Pro',
-  description: 'Unlock full access to Tradelytix.'
+  title: 'Subscribe | JJI Pro',
+  description: 'Unlock full access to JJI.'
 }
 
 export default function SubscribePage() {

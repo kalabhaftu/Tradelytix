@@ -208,7 +208,7 @@ export function CreatePropFirmDialog({ open, onOpenChange, onSuccess }: PropFirm
         const activeId = activePhase?.id || result.data.masterAccount?.id
         if (activeId) {
           document.dispatchEvent(
-            new CustomEvent('tradelytix-account-created', {
+            new CustomEvent('jji-account-created', {
               detail: { id: activeId, type: 'prop-firm' }
             })
           )

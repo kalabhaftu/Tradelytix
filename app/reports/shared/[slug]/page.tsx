@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     where: (table, { eq }) => eq(table.slug, slug),
   })
   return {
-    title: report?.title ? `${report.title} | Tradelytix` : 'Shared Trading Report | Tradelytix',
+    title: report?.title ? `${report.title} | JJI` : 'Shared Trading Report | JJI',
     description: 'View this shared trading performance report',
   }
 }

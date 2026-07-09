@@ -1,6 +1,6 @@
 # JJI (Just Journal It)
 
-JJI is a trading analytics and journaling platform. Built for data-driven traders, it helps you track setups and analyze your performance. 
+JJI is a trading analytics and journaling platform. Built for data-driven traders, it helps you track setups and analyze your performance.
 
 **Note: JJI is a closed-source, paid platform ($10/month). While it may be open-sourced in the future, it is currently proprietary software.**
 
@@ -26,6 +26,7 @@ JJI is a trading analytics and journaling platform. Built for data-driven trader
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js LTS
 - npm
 - Supabase project credentials
@@ -33,6 +34,7 @@ JJI is a trading analytics and journaling platform. Built for data-driven trader
 ### Local Installation
 
 1. Clone the repository and install dependencies:
+
    ```bash
    git clone <repository-url>
    cd <project-directory>
@@ -41,6 +43,7 @@ JJI is a trading analytics and journaling platform. Built for data-driven trader
 
 2. Environment Configuration
    Create `.env` and `.env.local` based on `.env.example`. You will need Supabase, database, auth, and payment webhook keys. Minimum local variables:
+
    ```bash
    DATABASE_URL=
    DIRECT_URL=
@@ -52,15 +55,18 @@ JJI is a trading analytics and journaling platform. Built for data-driven trader
 
 3. Database Setup
    Generate the Drizzle client and push the schema:
+
    ```bash
    npm run db:generate
    npm run db:push
    ```
 
 4. Run the Development Server
+
    ```bash
    npm run dev
    ```
+
    Access the app at `http://localhost:3000`.
 
 ## Useful Commands
@@ -76,7 +82,7 @@ npm run db:studio    # Launch Drizzle Studio to inspect the database
 ## Project Standards
 
 - **Branding**: The production brand is **JJI**.
-- **Production URL**: `https://www.jji.eu.cc`.
+- **Production URL**: `https://justjournalit.vercel.app`.
 - **Security**: Never commit real secrets. Use `.env.local` for local development. Ensure Supabase RLS (Row Level Security) and storage policies are rigorously audited before deploying production changes.
 
 ## License

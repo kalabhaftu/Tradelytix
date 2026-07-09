@@ -577,6 +577,18 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [storeUser])
 
+  // Action methods
+  const startTour = useCallback((tourId: TourId) => {
+    setActiveTour(tourId)
+    setStepIndex(0)
+    setPaused(false)
+    if (tourId === 'onboarding') {
+      setCreatedAccountId(null)
+      setCreatedAccountType(null)
+      initialAccountIds.current = accounts ? accounts.map((a: any) => a.id) : []
+    }
+  }, [accounts])
+
   // Automatically trigger onboarding for new users on main dashboard page
   useEffect(() => {
     if (
@@ -802,18 +814,6 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
   }, [activeTour, stepIndex, isTargetVisible, paused, currentStep, nextStep])
-
-  // Action methods
-  const startTour = useCallback((tourId: TourId) => {
-    setActiveTour(tourId)
-    setStepIndex(0)
-    setPaused(false)
-    if (tourId === 'onboarding') {
-      setCreatedAccountId(null)
-      setCreatedAccountType(null)
-      initialAccountIds.current = accounts ? accounts.map((a: any) => a.id) : []
-    }
-  }, [accounts])
 
   const nextStep = useCallback(() => {
     if (!activeTour) return

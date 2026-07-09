@@ -596,6 +596,7 @@ export default function SettingsPage() {
       await supabase.auth.signOut()
       localStorage.clear()
       sessionStorage.clear()
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = '/?deleted=true'
 
     } catch (error) {

@@ -25,6 +25,7 @@ export function AppBanner() {
   const handleOpenApp = () => {
     const path = window.location.pathname + window.location.search
     const deepLinkUrl = `jji://open?path=${encodeURIComponent(path)}`
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = deepLinkUrl
   }
 

@@ -150,11 +150,33 @@ async function handleImageRequest(request) {
   }
 }
 
-// Handle page requests
+// Handle page requests — cache-first (stale-while-revalidate) for the app shell
+// so a flaky/offline network never replaces the whole app with offline.html
+// when we have a previously cached copy.
 async function handlePageRequest(request) {
+  const cache = await caches.open(CACHE_NAME)
+  const cachedResponse = await cache.match(request, { ignoreSearch: false })
+
+  // Background revalidation — update cache for next navigation
+  const revalidate = fetch(request)
+    .then((response) => {
+      if (response && response.ok && response.type === 'basic') {
+        cache.put(request, response.clone()).catch(() => {})
+      }
+      return response
+    })
+    .catch(() => null)
+
+  if (cachedResponse) {
+    // Serve cached shell immediately; revalidate in background
+    revalidate
+    return cachedResponse
+  }
+
   try {
-    const response = await fetch(request)
-    return response
+    const response = await revalidate
+    if (response) return response
+    throw new Error('network failed')
   } catch (error) {
     
     // Serve offline page

@@ -1,9 +1,5 @@
-'use client'
-
 import Link from 'next/link'
 import { ArrowLeft, Shield, Lock, Eye, Database, Globe, UserCheck } from 'lucide-react'
-import { motion } from 'framer-motion'
-import { useRouter } from 'next/navigation'
 
 import { Logo } from '@/components/logo'
 import { Button } from '@/components/ui/button'
@@ -11,7 +7,6 @@ import { Button } from '@/components/ui/button'
 const POLICY_DATE = 'July 2, 2026'
 
 export default function PrivacyPage() {
-  const router = useRouter()
 
   const sections = [
     {
@@ -114,37 +109,34 @@ export default function PrivacyPage() {
 
   return (
     <div className="min-h-screen bg-background selection:bg-primary/30 py-20 px-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: 'easeOut' }}
-        className="max-w-3xl mx-auto"
+      <div
+        className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700"
       >
         <div className="flex items-center justify-between mb-16">
           <div className="flex items-center gap-3">
             <Logo className="w-8 h-8" />
             <span className="text-xl font-bold tracking-tight text-foreground">Tradelytix</span>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => router.push('/')} className="text-muted-foreground hover:text-foreground transition-colors gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back
+          <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground transition-colors gap-2">
+            <Link href="/">
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Link>
           </Button>
         </div>
 
         <div className="space-y-12">
-          <header className="space-y-4 pb-8 border-b border-border/40">
-            <h1 className="text-4xl font-extrabold tracking-tight">Privacy Policy</h1>
-            <p className="text-muted-foreground text-lg">Last updated: {POLICY_DATE}</p>
+          <header className="space-y-3 mb-10 pb-8 border-b border-border/40">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">Privacy Policy</h1>
+            <p className="text-lg text-muted-foreground leading-relaxed">Last updated: {POLICY_DATE}</p>
           </header>
 
           <div className="space-y-10">
             {sections.map((section, idx) => (
-              <motion.section 
+              <section 
                 key={section.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className="space-y-4"
+                className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both"
+                style={{ animationDelay: `${idx * 100}ms` }}
               >
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-primary/10">
@@ -155,7 +147,7 @@ export default function PrivacyPage() {
                 <div className="pl-12">
                   {section.content}
                 </div>
-              </motion.section>
+              </section>
             ))}
           </div>
 
@@ -170,7 +162,7 @@ export default function PrivacyPage() {
             </p>
           </footer>
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }

@@ -11,9 +11,9 @@ export default async function AboutPage() {
   return (
     <PublicLayout>
       <div className="space-y-10">
-        <div className="text-center py-8">
-          <h1 className="text-4xl font-bold tracking-tight mb-4">About Tradelytix</h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed text-lg">
+        <div className="text-center space-y-3 mb-10">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">About Tradelytix</h1>
+          <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
             A free, open-source trading analytics platform built for traders who want 
             professional-grade journaling without the premium price tag.
           </p>
@@ -39,7 +39,7 @@ export default async function AboutPage() {
 
         <Card>
           <CardContent className="pt-6">
-            <h2 className="text-xl font-bold mb-4">The Story</h2>
+            <h2 className="text-2xl font-semibold tracking-tight text-foreground mb-4">The Story</h2>
             <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
               <p>
                 Tradelytix started as a personal trading workflow project and grew into a dedicated

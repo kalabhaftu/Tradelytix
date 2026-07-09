@@ -590,7 +590,7 @@ export default function AccountDetailPage() {
                     </Button>
                   </CardHeader>
                   <CardContent>
-                    <div className="overflow-hidden rounded-2xl border border-border/30 bg-card/40">
+                    <div className="overflow-x-auto rounded-2xl border border-border/30 bg-card/40">
                       <table className="w-full">
                         <thead className="bg-muted/50">
                           <tr className="text-left text-xs">
@@ -623,7 +623,7 @@ export default function AccountDetailPage() {
                 </CardHeader>
                 <CardContent>
                   {isLoadingData ? (
-                    <div className="overflow-hidden rounded-2xl border border-border/30 bg-card/40">
+                    <div className="overflow-x-auto rounded-2xl border border-border/30 bg-card/40">
                       <table className="w-full">
                         <thead className="bg-muted/50">
                           <tr className="text-left text-xs">

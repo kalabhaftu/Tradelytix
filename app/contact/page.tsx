@@ -11,12 +11,12 @@ export default async function ContactPage() {
   return (
     <PublicLayout>
       <div className="max-w-2xl mx-auto space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight flex items-center justify-center gap-3">
+        <div className="text-center space-y-3 mb-10">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground flex items-center justify-center gap-3">
             <Mail className="h-8 w-8 text-primary" />
             Contact
           </h1>
-          <p className="text-muted-foreground mt-2">Get in touch with us</p>
+          <p className="text-lg text-muted-foreground leading-relaxed">Get in touch with us</p>
         </div>
 
         <div className="grid gap-4">
@@ -28,7 +28,7 @@ export default async function ContactPage() {
                     <MessageSquare className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-bold mb-1">Feedback & Bug Reports</h3>
+                    <h3 className="text-xl font-semibold tracking-tight text-foreground mb-2">Feedback & Bug Reports</h3>
                     <p className="text-sm text-muted-foreground mb-3">
                       Found a bug or have a feature idea? Use our feedback form to let us know directly.
                     </p>
@@ -48,7 +48,7 @@ export default async function ContactPage() {
                   <BookOpen className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-bold mb-1">Documentation & Help</h3>
+                  <h3 className="text-xl font-semibold tracking-tight text-foreground mb-2">Documentation & Help</h3>
                   <p className="text-sm text-muted-foreground mb-3">
                     Check our docs for guides, tutorials, and troubleshooting help.
                   </p>
@@ -68,7 +68,7 @@ export default async function ContactPage() {
                     <Heart className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-bold mb-1">Support the Project</h3>
+                    <h3 className="text-xl font-semibold tracking-tight text-foreground mb-2">Support the Project</h3>
                     <p className="text-sm text-muted-foreground mb-3">
                       Want to help keep Tradelytix free? Consider a crypto donation.
                     </p>

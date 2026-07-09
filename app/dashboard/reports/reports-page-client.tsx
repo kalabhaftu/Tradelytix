@@ -368,6 +368,7 @@ export default function ReportsPageClient({
             const rect = element.getBoundingClientRect()
             const dpr = window.devicePixelRatio || 1
 
+            // @ts-ignore
             const html2canvas = (await import('html2canvas')).default
             const canvas = await html2canvas(element, {
                 scale: Math.max(dpr, 2),
@@ -385,7 +386,7 @@ export default function ReportsPageClient({
                 },
             })
 
-            canvas.toBlob((blob) => {
+            canvas.toBlob((blob: Blob | null) => {
                 if (!blob) { toast.error('Snapshot failed'); return }
                 const url = URL.createObjectURL(blob)
                 const a = document.createElement('a')

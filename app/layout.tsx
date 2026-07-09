@@ -15,6 +15,7 @@ import { ErrorBoundaryWrapper } from "@/components/error-boundary";
 import { SeasonalManager } from "@/app/dashboard/components/seasonal/seasonal-manager";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { AppBanner } from "@/components/app-banner";
+import { OfflineIndicator } from "@/components/offline-indicator";
 import Script from "next/script"
 
 const DEFAULT_SITE_URL = 'https://www.tradelytix.eu.cc'
@@ -136,6 +137,7 @@ export default async function RootLayout({
                     <ClientErrorReporter />
                     <SeasonalManager />
                     <AppBanner />
+                    <OfflineIndicator />
                     {children}
                   </TooltipProvider>
                 </AuthProvider>

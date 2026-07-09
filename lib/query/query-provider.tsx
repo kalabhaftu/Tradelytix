@@ -2,13 +2,16 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
+import { ReconnectRefetcher } from '@/components/reconnect-refetcher'
 
 function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        // Don't refetch on window focus — we use Supabase Realtime for updates
+        // Deliberately false (Supabase Realtime handles focus updates).
+        // Offline recovery is handled safely by ReconnectRefetcher.
         refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
         // Retry failed requests twice with exponential backoff
         retry: 2,
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
@@ -43,6 +46,7 @@ export function QueryProvider({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ReconnectRefetcher />
       {children}
     </QueryClientProvider>
   )

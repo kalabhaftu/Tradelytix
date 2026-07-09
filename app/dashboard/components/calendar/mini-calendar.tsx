@@ -9,7 +9,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import html2canvas from 'html2canvas'
 import { toast } from "sonner"
 import { WidgetCard } from '../widget-card'
 import { Button } from "@/components/ui/button"
@@ -61,6 +60,9 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
         logoImg.src = '/android-chrome-512x512.png'
       })
 
+      // @ts-ignore
+      const html2canvas = (await import('html2canvas')).default
+
       const cardCanvas = await html2canvas(calendarRef.current, {
         backgroundColor: resolvedBg,
         scale,
@@ -68,11 +70,11 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
         useCORS: true,
         windowWidth: Math.round(rect.width),
         windowHeight: Math.round(rect.height),
-        onclone: (_clonedDoc, clonedElem) => {
+        onclone: (_clonedDoc: Document, clonedElem: HTMLElement) => {
           clonedElem.style.width = `${rect.width}px`
           clonedElem.style.height = `${rect.height}px`
           clonedElem.style.overflow = 'hidden'
-          clonedElem.querySelectorAll('.screenshot-btn').forEach((el) => {
+          clonedElem.querySelectorAll('.screenshot-btn').forEach((el: Element) => {
             (el as HTMLElement).style.display = 'none'
           })
         },

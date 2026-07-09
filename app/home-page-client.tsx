@@ -52,7 +52,7 @@ export default function HomePage() {
         <div className="max-w-3xl mx-auto text-center">
           <div className="animate-in fade-in duration-500">
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-6">
-              This platform was built for my personal use. If other users need to use it, a paid subscription is required.
+              Open-source trading analytics. Professional-grade journaling.
             </div>
             <h1 className="text-5xl sm:text-7xl font-bold tracking-tighter leading-[1.1] mb-6">
               Master Your Edge.
@@ -136,8 +136,8 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between p-8 sm:p-12 rounded-3xl bg-secondary/20 border border-border/30">
             <div className="mb-8 md:mb-0 text-center md:text-left">
-              <h2 className="text-3xl font-bold tracking-tight mb-2">Tradelytix</h2>
-              <p className="text-muted-foreground">Unlimited access to all features and analytics.</p>
+              <h2 className="text-3xl font-bold tracking-tight mb-2">Tradelytix Pro</h2>
+              <p className="text-muted-foreground">Support development and unlock advanced AI features.</p>
             </div>
             <div className="flex flex-col items-center md:items-end gap-4">
               <div className="flex items-baseline gap-1">

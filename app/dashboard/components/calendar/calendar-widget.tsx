@@ -10,7 +10,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import html2canvas from 'html2canvas'
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -87,13 +86,16 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
       const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim()
       const resolvedBg = bgColor ? `hsl(${bgColor})` : '#0d0d0d'
 
+      // @ts-ignore - dynamic import types
+      const html2canvas = (await import('html2canvas')).default
+
       const cardCanvas = await html2canvas(calendarRef.current, {
         backgroundColor: resolvedBg,
         scale,
         logging: false,
         useCORS: true,
         windowWidth: Math.round(rect.width),
-        onclone: (_clonedDoc, clonedElem) => {
+        onclone: (_clonedDoc: Document, clonedElem: HTMLElement) => {
           clonedElem.style.width = `${rect.width}px`
           clonedElem.style.height = 'auto'
           
@@ -107,7 +109,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
             logoBar.style.display = 'flex'
           }
 
-          clonedElem.querySelectorAll('.screenshot-btn').forEach((el) => {
+          clonedElem.querySelectorAll('.screenshot-btn').forEach((el: Element) => {
             (el as HTMLElement).style.display = 'none'
           })
         },
@@ -141,7 +143,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
 
       const finalCanvas = withGradient ? out : cardCanvas
 
-      finalCanvas.toBlob((blob) => {
+      finalCanvas.toBlob((blob: Blob | null) => {
         if (!blob) { toast.error("Failed to capture screenshot"); return }
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')

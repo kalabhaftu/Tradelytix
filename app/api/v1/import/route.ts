@@ -6,6 +6,8 @@ import { createTradeImportJob } from '@/server/trade-import-jobs'
 import { createErrorResponse } from '@/lib/api-response'
 import { z } from 'zod'
 
+export const maxDuration = 60
+
 const MAX_TRADE_IMPORT_ROWS = 5000
 const MAX_TRADE_IMPORT_BODY_BYTES = 5 * 1024 * 1024
 

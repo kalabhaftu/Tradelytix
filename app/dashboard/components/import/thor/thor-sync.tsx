@@ -200,7 +200,7 @@ export function ThorSync({ setIsOpen, onBack }: { setIsOpen: (isOpen: boolean) =
               <h4 className="text-sm font-semibold">Enable Real-Time Sync</h4>
             </div>
             <p className="text-xs text-muted-foreground">
-              Ensure the local copier is active and running while you trade. Trade executions will sync instantly with Tradelytix.
+              Ensure the local copier is active and running while you trade. Trade executions will sync instantly with JJI.
             </p>
           </div>
         </div>

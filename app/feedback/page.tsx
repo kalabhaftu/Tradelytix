@@ -2,7 +2,7 @@ import { MessageSquare } from 'lucide-react'
 import { FeedbackFormClient } from './feedback-form-client'
 
 export const metadata = {
-  title: 'Feedback | Tradelytix',
+  title: 'Feedback | JJI',
   description: 'Submit product feedback, bugs, and feature requests.'
 }
 

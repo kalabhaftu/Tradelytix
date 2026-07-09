@@ -6,7 +6,7 @@ export default function AppFlowDocsPage() {
     <DocsPage
       badge="Feature Guide"
       title="Application Flow"
-      description="Tradelytix has two major surfaces — a public support/docs experience and an authenticated trading workspace — with a companion mobile app that mirrors the same backend."
+      description="JJI has two major surfaces — a public support/docs experience and an authenticated trading workspace — with a companion mobile app that mirrors the same backend."
     >
       <DocsSection title="1. Public surface & authentication flow">
         <p>

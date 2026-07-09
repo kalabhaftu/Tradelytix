@@ -10,7 +10,6 @@ const COOKIE_CONSENT_KEY = "jji-cookie-consent"
 interface ConsentSettings {
   essential: boolean;
   analytics: boolean;
-  marketing: boolean;
 }
 
 export function CookieConsent() {
@@ -19,7 +18,6 @@ export function CookieConsent() {
   const [preferences, setPreferences] = useState<ConsentSettings>({
     essential: true, // Always true
     analytics: false,
-    marketing: false,
   })
 
   useEffect(() => {
@@ -64,14 +62,14 @@ export function CookieConsent() {
   }, [visible])
 
   const handleAcceptAll = () => {
-    const allConsent = { essential: true, analytics: true, marketing: true }
+    const allConsent = { essential: true, analytics: true }
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(allConsent))
     setPreferences(allConsent)
     setVisible(false)
   }
 
   const handleAcceptEssential = () => {
-    const essentialOnly = { essential: true, analytics: false, marketing: false }
+    const essentialOnly = { essential: true, analytics: false }
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(essentialOnly))
     setPreferences(essentialOnly)
     setVisible(false)
@@ -99,7 +97,7 @@ export function CookieConsent() {
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
           className="fixed bottom-0 left-0 right-0 z-[9999] p-4 sm:p-6 md:left-6 md:right-auto md:max-w-[420px]"
         >
-          <div className="bg-background/95 backdrop-blur-xl border border-border/50 shadow-2xl rounded-2xl overflow-hidden p-6 relative dark:shadow-primary/5">
+          <div className="bg-background/95 backdrop-blur-xl border border-border/50 shadow-lg rounded-2xl overflow-hidden p-6 relative">
             <Button
               variant="ghost"
               size="icon"
@@ -145,15 +143,6 @@ export function CookieConsent() {
                       </div>
                       <div className={`w-10 h-5 rounded-full relative transition-colors ${preferences.analytics ? 'bg-primary' : 'bg-muted'}`}>
                         <div className={`absolute top-1 w-3 h-3 bg-background rounded-full transition-all ${preferences.analytics ? 'right-1' : 'left-1'}`} />
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between cursor-pointer group" onClick={() => togglePreference('marketing')}>
-                      <div className="space-y-0.5">
-                        <span className="text-sm font-medium group-hover:text-primary transition-colors">Marketing</span>
-                        <p className="text-xs text-muted-foreground">Used for targeted advertising</p>
-                      </div>
-                      <div className={`w-10 h-5 rounded-full relative transition-colors ${preferences.marketing ? 'bg-primary' : 'bg-muted'}`}>
-                        <div className={`absolute top-1 w-3 h-3 bg-background rounded-full transition-all ${preferences.marketing ? 'right-1' : 'left-1'}`} />
                       </div>
                     </div>
                   </motion.div>

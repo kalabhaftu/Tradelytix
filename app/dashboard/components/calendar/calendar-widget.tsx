@@ -386,7 +386,7 @@ const CalendarPnl = memo(function CalendarPnl({ className }: CalendarPnlProps) {
 
         <div className="screenshot-logo-bar hidden border-t border-border/10 bg-muted/5 py-4 flex items-center justify-center gap-2 flex-shrink-0">
           <Logo className="h-4 w-4 text-foreground/70" transparent />
-          <span className="text-[10px] font-black tracking-[0.2em] text-foreground/60">TRADELYTIX</span>
+          <span className="text-[10px] font-black tracking-[0.2em] text-foreground/60">JJI</span>
         </div>
       </WidgetCard>
 

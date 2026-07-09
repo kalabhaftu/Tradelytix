@@ -12,18 +12,18 @@ export default async function AboutPage() {
     <PublicLayout>
       <div className="space-y-10">
         <div className="text-center space-y-3 mb-10">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">About Tradelytix</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">About JJI</h1>
           <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-            A professional-grade trading analytics platform built for traders who want 
-            powerful journaling and clear insights into their performance.
+            A trading analytics platform built for traders who want 
+            to journal and analyze their performance.
           </p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
           {[
-            { icon: Target, title: 'Mission', desc: 'Make professional trade journaling accessible to every trader, regardless of their budget.' },
+            { icon: Target, title: 'Mission', desc: 'Make trade journaling accessible to every trader.' },
             { icon: Shield, title: 'Privacy First', desc: 'Your trading data stays yours. No selling data, no third-party analytics, no hidden tracking.' },
-            { icon: Zap, title: 'Built for Traders', desc: 'Maintained with a commitment to providing a top-tier journaling experience.' },
+            { icon: Zap, title: 'Built for Traders', desc: 'Maintained with a commitment to stable performance and clean design.' },
           ].map((item, i) => (
             <Card key={i}>
               <CardContent className="pt-6 text-center">
@@ -42,18 +42,17 @@ export default async function AboutPage() {
             <h2 className="text-2xl font-semibold tracking-tight text-foreground mb-4">The Story</h2>
             <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
               <p>
-                Tradelytix started as a personal trading workflow project and grew into a dedicated
+                JJI (Just Journal It) started as a personal trading workflow project and grew into a dedicated
                 analytics platform shaped around real journaling, review, and performance-tracking needs.
                 Over months of development, the product evolved from a simple tracker into a full trading
                 dashboard with account management, reports, playbooks, reviews, and data controls.
               </p>
               <p>
                 As a CFD trader myself, I know how hard it is to properly journal trades and visualize 
-                performance. That's why I built this platform. (Note: Tradelytix is currently closed-source, but may be open-sourced in the future.)
+                performance. That's why I built this platform. (Note: JJI is currently closed-source, but may be open-sourced in the future.)
               </p>
               <p>
-                The platform is designed for stability and speed. I believe it can genuinely help 
-                traders who want to improve their trading discipline and understand their edge.
+                The platform is designed for stability and speed to help traders track their trading discipline and analyze their edge.
               </p>
             </div>
           </CardContent>

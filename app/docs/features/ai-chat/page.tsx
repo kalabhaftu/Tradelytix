@@ -6,7 +6,7 @@ export default function AiChatDocsPage() {
     <DocsPage
       badge="Feature Guide"
       title="AI Chat & Insights"
-      description="Tradelytix includes AI-powered analysis tools that can review your trading performance, identify patterns, assess risk, and help you build better strategies."
+      description="JJI includes AI-powered analysis tools that can review your trading performance, identify patterns, assess risk, and help you build better strategies."
     >
       <DocsSection title="What AI Chat can do">
         <ul>
@@ -36,7 +36,7 @@ export default function AiChatDocsPage() {
       </DocsSection>
 
       <DocsSection title="AI providers">
-        <p>Tradelytix supports multiple AI providers:</p>
+        <p>JJI supports multiple AI providers:</p>
         <ul>
           <li><strong>OpenAI</strong> — GPT-4 and GPT-3.5 models</li>
           <li><strong>xAI</strong> — Grok models</li>

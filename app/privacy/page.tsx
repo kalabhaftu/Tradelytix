@@ -20,7 +20,7 @@ export default function PrivacyPage() {
     {
       id: "introduction",
       icon: <Shield className="w-5 h-5 text-primary" />,
-      title: "1. No-BS Summary",
+      title: "1. Summary",
       content: (
         <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
           <p>

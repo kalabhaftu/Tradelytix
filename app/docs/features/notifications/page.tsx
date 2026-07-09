@@ -6,10 +6,10 @@ export default function NotificationsDocsPage() {
     <DocsPage
       badge="Feature Guide"
       title="Notifications"
-      description="Stay informed about prop-firm updates, import completions, weekly reviews, and account events with Tradelytix's notification system."
+      description="Stay informed about prop-firm updates, import completions, weekly reviews, and account events with JJI's notification system."
     >
       <DocsSection title="Notification types">
-        <p>Tradelytix supports 30+ typed notification categories:</p>
+        <p>JJI supports 30+ typed notification categories:</p>
         <ul>
           <li><strong>Prop Firm</strong> — Phase passed, failed, funded, payout approved, rule breach warnings</li>
           <li><strong>Import</strong> — Import completed, parsing issues, sync errors</li>
@@ -43,7 +43,7 @@ export default function NotificationsDocsPage() {
       <DocsSection title="Mobile push notifications">
         <p>The mobile app uses Firebase Cloud Messaging for push notifications. To receive push notifications:</p>
         <ol>
-          <li>Install the Tradelytix mobile app</li>
+          <li>Install the JJI mobile app</li>
           <li>Sign in with your account</li>
           <li>Allow notification permissions when prompted</li>
           <li>Configure which notification types should push in Settings → Notifications</li>

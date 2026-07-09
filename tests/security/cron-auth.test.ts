@@ -9,7 +9,7 @@ afterEach(() => {
 })
 
 function request(headers?: HeadersInit) {
-  return new NextRequest('https://www.tradelytix.eu.cc/api/cron/maintenance', { headers })
+  return new NextRequest('https://www.jji.eu.cc/api/cron/maintenance', { headers })
 }
 
 describe('cron auth', () => {

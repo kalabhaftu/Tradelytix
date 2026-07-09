@@ -51,7 +51,7 @@ export default function TradeTableDocsPage() {
       </DocsSection>
 
       <DocsSection title="Trade counts explained">
-        <p>Across Tradelytix, UI labels showing <strong>Trades</strong> use grouped execution counts rather than raw imported rows. If a single order fills across multiple partial fills, it counts as one trade. Raw imported rows are available in the table detail view.</p>
+        <p>Across JJI, UI labels showing <strong>Trades</strong> use grouped execution counts rather than raw imported rows. If a single order fills across multiple partial fills, it counts as one trade. Raw imported rows are available in the table detail view.</p>
       </DocsSection>
     </DocsPage>
   )

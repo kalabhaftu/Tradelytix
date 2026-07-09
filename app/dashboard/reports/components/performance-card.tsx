@@ -152,7 +152,7 @@ export function PerformanceCard({ period, stats, userName }: PerformanceCardProp
                         <div className="flex items-center gap-2 mb-1">
                             <div className="h-5 w-0.5 bg-primary rounded-full" />
                             <span className="text-[9px] font-black uppercase tracking-[0.35em] text-muted-foreground">
-                                Performance Intelligence
+                                Performance Report
                             </span>
                         </div>
                         <h2 className="text-xl font-black tracking-tighter uppercase leading-none text-foreground">

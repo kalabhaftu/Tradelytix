@@ -2,8 +2,8 @@ import { Heart } from 'lucide-react'
 import { DonateCardsClient } from './donate-cards-client'
 
 export const metadata = {
-  title: 'Support Tradelytix | Donate',
-  description: 'Support the ongoing development of Tradelytix.'
+  title: 'Support JJI | Donate',
+  description: 'Support the ongoing development of JJI.'
 }
 
 export default function DonatePage() {
@@ -14,9 +14,9 @@ export default function DonatePage() {
         <div className="inline-flex items-center justify-center p-4 rounded-full bg-primary/10 mb-2">
           <Heart className="h-10 w-10 text-primary" />
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">Support Tradelytix</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">Support JJI</h1>
         <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-          Donations help support the ongoing development of Tradelytix, keeping the product 
+          Donations help support the ongoing development of JJI, keeping the product 
           stable, improving, and adding new features for the trading community.
         </p>
         <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
@@ -30,7 +30,7 @@ export default function DonatePage() {
       {/* Footer */}
       <div className="mt-12 border-t pt-8 text-center">
         <p className="text-sm text-muted-foreground">
-          Thank you for helping keep Tradelytix available to traders who need it.
+          Thank you for helping keep JJI available to traders who need it.
         </p>
       </div>
     </div>

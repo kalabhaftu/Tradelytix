@@ -49,10 +49,10 @@ export default function HomePage() {
         {/* Simple Text Hero */}
         <section className="flex flex-col gap-8 py-16">
           <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-foreground">
-            Trading analytics, simplified.
+            Trading analytics.
           </h1>
           <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
-            A clean, professional journal and analytics platform for traders. Track performance, analyze setups, and refine your edge without distractions.
+            A journal and analytics platform for traders. Track performance, analyze setups, and review your metrics.
           </p>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <Button
@@ -78,20 +78,20 @@ export default function HomePage() {
           <h2 className="text-xl font-semibold tracking-tight mb-8">Platform Features</h2>
           <ul className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm text-muted-foreground">
             <li className="flex flex-col gap-2">
-              <span className="font-medium text-foreground">Deep Analytics</span>
-              <span>Visualize equity curves, drawdowns, and precise metrics to uncover hidden edges in your trading performance.</span>
+              <span className="font-medium text-foreground">Analytics</span>
+              <span>View equity curves, drawdowns, and metrics about your trading performance.</span>
             </li>
             <li className="flex flex-col gap-2">
-              <span className="font-medium text-foreground">Smart Calendar</span>
-              <span>Review your daily PnL, win rates, and daily trade records with an interactive, clean calendar view.</span>
+              <span className="font-medium text-foreground">Trading Calendar</span>
+              <span>Review daily PnL, win rates, and daily trade records in a calendar view.</span>
             </li>
             <li className="flex flex-col gap-2">
-              <span className="font-medium text-foreground">Detailed Journaling</span>
-              <span>Log setups, strategies, and psychological states. Attach chart screenshots to learn from every setup.</span>
+              <span className="font-medium text-foreground">Journal</span>
+              <span>Log setups, strategies, and notes. Attach chart screenshots to review your trades.</span>
             </li>
             <li className="flex flex-col gap-2">
-              <span className="font-medium text-foreground">Prop Firm Ready</span>
-              <span>Built-in tracking for phase transitions, drawdown limits, and rules tailored for prop firm traders.</span>
+              <span className="font-medium text-foreground">Prop Firm Tracking</span>
+              <span>Track phases, drawdown limits, and rules for prop firm evaluations.</span>
             </li>
           </ul>
         </section>

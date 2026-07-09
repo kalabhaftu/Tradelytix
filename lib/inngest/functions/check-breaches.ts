@@ -22,7 +22,7 @@ export const checkBreaches = inngest.createFunction(
       // for (const account of breachedAccounts) {
       //   if (process.env.RESEND_API_KEY) {
       //     await resend.emails.send({
-      //       from: 'Alerts <alerts@tradelytix.app>',
+      //       from: 'Alerts <alerts@jji.app>',
       //       to: [userEmail],
       //       subject: `Prop Firm Rule Breach Detected: ${account.name}`,
       //       html: `<p>Your prop firm account <strong>${account.name}</strong> has breached a rule.</p>`

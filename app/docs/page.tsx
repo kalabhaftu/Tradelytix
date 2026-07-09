@@ -12,12 +12,12 @@ export default function DocsHome() {
   return (
     <DocsPage
       badge="Documentation"
-      title="Tradelytix Knowledge Base"
-      description="Complete guides for the Tradelytix trading analytics platform — covering the web dashboard and the companion mobile app for Android and iOS."
+      title="JJI Knowledge Base"
+      description="Complete guides for the JJI trading analytics platform — covering the web dashboard and the companion mobile app for Android and iOS."
     >
       <DocsSection
         title="Start here"
-        description="New to Tradelytix? Begin with the onboarding path below."
+        description="New to JJI? Begin with the onboarding path below."
       >
         <DocsLinkList
           links={[
@@ -42,7 +42,7 @@ export default function DocsHome() {
 
       <DocsSection
         title="Platforms"
-        description="Tradelytix is available on web and mobile. Both platforms share the same backend and data."
+        description="JJI is available on web and mobile. Both platforms share the same backend and data."
       >
         <DocsCardGrid>
           <DocsInfoCard

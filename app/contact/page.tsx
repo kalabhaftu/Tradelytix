@@ -70,7 +70,7 @@ export default async function ContactPage() {
                   <div>
                     <h3 className="text-xl font-semibold tracking-tight text-foreground mb-2">Support the Project</h3>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Want to support the ongoing development of Tradelytix? Consider a crypto donation.
+                      Want to support the ongoing development of JJI? Consider a crypto donation.
                     </p>
                     <Button asChild variant="outline" size="sm">
                       <Link href="/donate">Donate</Link>
@@ -85,7 +85,7 @@ export default async function ContactPage() {
         <div className="text-center pt-4">
           <p className="text-sm text-muted-foreground">
             For direct inquiries:{' '}
-            <a href="mailto:support@tradelytix.eu.cc" className="text-primary hover:underline">support@tradelytix.eu.cc</a>
+            <a href="mailto:support@jji.eu.cc" className="text-primary hover:underline">support@jji.eu.cc</a>
           </p>
         </div>
       </div>

@@ -54,7 +54,7 @@ export default function ChangelogPage() {
             <Rocket className="h-8 w-8 text-primary" />
             Changelog
           </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed">Track what's new, improved, and fixed in Tradelytix.</p>
+          <p className="text-lg text-muted-foreground leading-relaxed">Track what's new, improved, and fixed in JJI.</p>
         </div>
 
         <div className="space-y-6">

@@ -81,7 +81,7 @@ export function FeedbackFormClient() {
         </div>
         <h1 className="text-2xl font-bold mb-2">Thank You!</h1>
         <p className="text-muted-foreground max-w-md">
-          Your feedback has been submitted successfully. We appreciate you taking the time to help us improve Tradelytix.
+          Your feedback has been submitted successfully. We appreciate you taking the time to help us improve JJI.
         </p>
         <Button className="mt-6" onClick={() => { setSubmitted(false); setCategory(''); setSubject(''); setMessage(''); setFiles([]) }}>
           Submit Another

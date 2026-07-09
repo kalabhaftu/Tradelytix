@@ -6,7 +6,7 @@ export default function TechStackDocsPage() {
     <DocsPage
       badge="For Developers"
       title="Tech Stack"
-      description="Technologies used across the Tradelytix platform — web dashboard, mobile app, and backend infrastructure."
+      description="Technologies used across the JJI platform — web dashboard, mobile app, and backend infrastructure."
     >
       <DocsSection title="Web application">
         <ul>

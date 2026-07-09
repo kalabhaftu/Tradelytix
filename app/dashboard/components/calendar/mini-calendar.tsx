@@ -126,7 +126,7 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
       
       // Draw actual logo image - LARGER size like Tradezella
       const logoSize = Math.round(20 * scale)
-      const logoX = totalW / 2 - Math.round(70 * scale)
+      const logoX = totalW / 2 - Math.round(35 * scale)
       ctx.drawImage(logoImg, logoX, logoYPos - logoSize / 2, logoSize, logoSize)
       
       // Draw text - LARGER font
@@ -135,7 +135,7 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
       ctx.fillStyle = 'rgba(255,255,255,0.5)'
       ctx.textAlign = 'left'
       ctx.textBaseline = 'middle'
-      ctx.fillText('TRADELYTIX', logoX + logoSize + Math.round(10 * scale), logoYPos)
+      ctx.fillText('JJI', logoX + logoSize + Math.round(10 * scale), logoYPos)
 
       out.toBlob((blob) => {
         if (!blob) { toast.error("Failed to capture screenshot"); return }

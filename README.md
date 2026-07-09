@@ -1,8 +1,8 @@
-# Tradelytix
+# JJI
 
-Tradelytix is a trading analytics and journaling platform built to help traders find consistency through the charts. It combines trade tracking, account analytics, journaling, reports, prop-firm workflows, and data-management tools in one dashboard.
+JJI is a trading analytics and journaling platform built to help traders find consistency through the charts. It combines trade tracking, account analytics, journaling, reports, prop-firm workflows, and data-management tools in one dashboard.
 
-## What Tradelytix helps with
+## What JJI helps with
 
 - Track trading performance across master, phase, live, and linked accounts.
 - Review PnL, equity curves, win rate, profit factor, risk/reward, drawdown, and consistency metrics.
@@ -51,7 +51,7 @@ DIRECT_URL=
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
-NEXT_PUBLIC_APP_NAME=Tradelytix
+NEXT_PUBLIC_APP_NAME=JJI
 ```
 
 Then generate the Prisma client:
@@ -80,12 +80,12 @@ npx prisma studio    # Inspect local database data
 
 ## Project notes
 
-- Keep production-facing branding as **Tradelytix**.
-- Use `https://www.tradelytix.eu.cc` for production URLs.
+- Keep production-facing branding as **JJI**.
+- Use `https://www.jji.eu.cc` for production URLs.
 - Do not commit real secrets. Keep credentials in local environment files or deployment secrets.
 - Review Supabase storage and database policies before production changes.
 
 ## License
 
-Copyright (c) 2026-present Tradelytix.
+Copyright (c) 2026-present JJI.
 All rights reserved unless a separate written license says otherwise.

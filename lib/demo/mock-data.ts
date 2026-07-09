@@ -297,7 +297,7 @@ export const MOCK_PAYOUT_ELIGIBILITY = {
 
 export const MOCK_USER_PROFILE = {
   id: 'demo-user',
-  email: 'demo@tradelytix.eu.cc',
+  email: 'demo@jji.eu.cc',
   username: 'demo_trader',
   firstName: 'Demo',
   lastName: 'Trader',

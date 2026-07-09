@@ -12,14 +12,14 @@ export default function CookiesPage() {
         <section className="space-y-3 text-sm text-muted-foreground leading-relaxed">
           <h2 className="text-2xl font-semibold tracking-tight text-foreground mb-4">Essential storage</h2>
           <p>
-            Tradelytix uses essential cookies, local storage, and session storage to keep you signed in, secure your session, remember preferences such as theme and layout, support offline/PWA behavior, and make the application work correctly.
+            JJI uses essential cookies, local storage, and session storage to keep you signed in, secure your session, remember preferences such as theme and layout, support offline/PWA behavior, and make the application work correctly.
           </p>
         </section>
 
         <section className="space-y-3 text-sm text-muted-foreground leading-relaxed">
           <h2 className="text-2xl font-semibold tracking-tight text-foreground mb-4">No advertising cookies</h2>
           <p>
-            Tradelytix does not use advertising cookies. Production monitoring or error reporting may collect technical diagnostics when configured, but those tools are used to operate and secure the service rather than to sell ads.
+            JJI does not use advertising cookies. Production monitoring or error reporting may collect technical diagnostics when configured, but those tools are used to operate and secure the service rather than to sell ads.
           </p>
         </section>
 

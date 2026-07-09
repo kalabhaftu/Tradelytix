@@ -729,7 +729,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: 'Coach Insight: ' + new Date().toLocaleDateString(),
+          title: 'AI Analysis: ' + new Date().toLocaleDateString(),
           content: msg.content,
           category: 'insight'
         })
@@ -868,7 +868,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
         <div className="p-4 bg-primary/10 rounded-full">
           <Brain className="h-16 w-16 text-primary animate-pulse" />
         </div>
-        <h2 className="text-3xl font-extrabold tracking-tight">AI Trading Coach</h2>
+        <h2 className="text-3xl font-extrabold tracking-tight">AI Trading Assistant</h2>
         <p className="max-w-md text-muted-foreground text-sm leading-relaxed">
           {paywallError}
         </p>
@@ -1029,7 +1029,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
                 {Array.isArray(performanceInsights) && performanceInsights.length > 0 && (
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-2 flex items-center gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5" /> Performance Insights
+                      <Sparkles className="h-3.5 w-3.5" /> Performance Summary
                     </h4>
                     <div className="space-y-1.5">
                       {performanceInsights.map((p: string, i: number) => (
@@ -1097,7 +1097,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
                   }}
                 >
                   <Brain className="h-4 w-4 mr-2" />
-                  Discuss This Analysis with Coach
+                  Discuss This Analysis with AI Assistant
                 </Button>
               </div>
             );
@@ -1457,7 +1457,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
                     <div className="flex w-full justify-start">
                       <div className="flex items-center gap-3 py-4 text-muted-foreground text-xs sm:text-sm">
                         <Spinner size="sm" />
-                        <span>Coach is analyzing your metrics...</span>
+                        <span>Analyzing your metrics...</span>
                       </div>
                     </div>
                   )}
@@ -1494,7 +1494,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
               <div className="max-w-3xl mx-auto w-full">
                 <PromptBox
                   onSubmit={(message) => handleStartChat(message)}
-                  placeholder="Ask your Coach (e.g. why am I losing on EURUSD?)"
+                  placeholder="Ask the AI Assistant (e.g. why am I losing on EURUSD?)"
                   disabled={isSending}
                 />
               </div>
@@ -1512,7 +1512,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
                   <Brain className="h-9 w-9 text-primary" />
                 </div>
                 <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                  AI Performance Coach
+                  AI Performance Assistant
                 </h2>
                 <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
                   Get objective, numbers-driven audits on your trading behavior, risk management, and discipline.
@@ -1661,7 +1661,7 @@ In a real subscription, the assistant analyzes your actual trading records. Here
             <div className="pt-4 max-w-2xl mx-auto w-full shrink-0">
               <PromptBox 
                 onSubmit={(message) => handleStartChat(message)}
-                placeholder="Ask your Coach (e.g. why am I losing on EURUSD?)"
+                placeholder="Ask the AI Assistant (e.g. why am I losing on EURUSD?)"
                 disabled={isSending}
               />
             </div>

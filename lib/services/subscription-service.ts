@@ -289,7 +289,7 @@ export async function createSubscriptionInvoice(
     price_currency: 'usd',
     ...(payCurrency !== undefined && { pay_currency: payCurrency }),
     order_id: orderId,
-    order_description: `Tradelytix Pro — Monthly Subscription`,
+    order_description: `JJI Pro — Monthly Subscription`,
   })
 
   // Create payment record
@@ -405,7 +405,7 @@ export async function handleIpnWebhook(payload: IpnPayload) {
       paymentRecord.userId,
       'ACCESS_RESTORED',
       'Access Restored',
-      'Your Tradelytix Pro access is active again.',
+      'Your JJI Pro access is active again.',
       {
         priority: NotificationPriority.HIGH,
         invalidationKey: `access-restored-${paymentRecord.subscriptionId}`,
@@ -597,7 +597,7 @@ export async function grantFreeAccess(params: {
       user.id,
       'ADMIN_FREE_ACCESS_GRANTED',
       'Free Access Granted',
-      params.note || 'You have been granted free access to Tradelytix Pro.'
+      params.note || 'You have been granted free access to JJI Pro.'
     )
   }
 
@@ -621,7 +621,7 @@ export async function revokeFreeAccess(email: string) {
       invite.registeredUserId,
       'ADMIN_FREE_ACCESS_REVOKED',
       'Free Access Revoked',
-      'Your free access to Tradelytix Pro has been revoked.'
+      'Your free access to JJI Pro has been revoked.'
     )
   }
 

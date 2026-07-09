@@ -9,7 +9,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import html2canvas from 'html2canvas'
 import { toast } from "sonner"
 import { WidgetCard } from '../widget-card'
 import { Button } from "@/components/ui/button"
@@ -61,6 +60,9 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
         logoImg.src = '/android-chrome-512x512.png'
       })
 
+      // @ts-ignore
+      const html2canvas = (await import('html2canvas')).default
+
       const cardCanvas = await html2canvas(calendarRef.current, {
         backgroundColor: resolvedBg,
         scale,
@@ -68,11 +70,11 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
         useCORS: true,
         windowWidth: Math.round(rect.width),
         windowHeight: Math.round(rect.height),
-        onclone: (_clonedDoc, clonedElem) => {
+        onclone: (_clonedDoc: Document, clonedElem: HTMLElement) => {
           clonedElem.style.width = `${rect.width}px`
           clonedElem.style.height = `${rect.height}px`
           clonedElem.style.overflow = 'hidden'
-          clonedElem.querySelectorAll('.screenshot-btn').forEach((el) => {
+          clonedElem.querySelectorAll('.screenshot-btn').forEach((el: Element) => {
             (el as HTMLElement).style.display = 'none'
           })
         },
@@ -124,7 +126,7 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
       
       // Draw actual logo image - LARGER size like Tradezella
       const logoSize = Math.round(20 * scale)
-      const logoX = totalW / 2 - Math.round(70 * scale)
+      const logoX = totalW / 2 - Math.round(35 * scale)
       ctx.drawImage(logoImg, logoX, logoYPos - logoSize / 2, logoSize, logoSize)
       
       // Draw text - LARGER font
@@ -133,7 +135,7 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
       ctx.fillStyle = 'rgba(255,255,255,0.5)'
       ctx.textAlign = 'left'
       ctx.textBaseline = 'middle'
-      ctx.fillText('TRADELYTIX', logoX + logoSize + Math.round(10 * scale), logoYPos)
+      ctx.fillText('JJI', logoX + logoSize + Math.round(10 * scale), logoYPos)
 
       out.toBlob((blob) => {
         if (!blob) { toast.error("Failed to capture screenshot"); return }

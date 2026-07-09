@@ -1,5 +1,4 @@
-// Security Configuration for Tradelytix
-// This file contains security-related configurations and best practices
+// Security Configuration for JJI
 
 const securityConfig = {
   // Content Security Policy

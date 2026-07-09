@@ -58,7 +58,7 @@ export default function SettingsDocsPage() {
       </DocsSection>
 
       <DocsSection title="Subscription">
-        <p>Your Tradelytix subscription is managed in settings:</p>
+        <p>Your JJI subscription is managed in settings:</p>
         <ul>
           <li>View current plan and billing status</li>
           <li>Payment history (crypto via NOWPayments)</li>

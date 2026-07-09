@@ -154,7 +154,7 @@ export function AdvancedExportDialog() {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `tradelytix-system-backup-${new Date().toISOString().split('T')[0]}.zip`
+      a.download = `jji-system-backup-${new Date().toISOString().split('T')[0]}.zip`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)

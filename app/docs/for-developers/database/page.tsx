@@ -6,7 +6,7 @@ export default function DatabaseDocsPage() {
     <DocsPage
       badge="For Developers"
       title="Data Model Principles"
-      description="Core data domains and design rules that govern the Tradelytix data model."
+      description="Core data domains and design rules that govern the JJI data model."
     >
       <DocsSection title="Core domains">
         <ul>

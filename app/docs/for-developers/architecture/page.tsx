@@ -6,7 +6,7 @@ export default function ArchitectureDocsPage() {
     <DocsPage
       badge="For Developers"
       title="Architecture"
-      description="Tradelytix is organized around stable product systems: public support surfaces, an authenticated dashboard shell, shared UI primitives, server-owned analytics, and a companion mobile app."
+      description="JJI is organized around stable product systems: public support surfaces, an authenticated dashboard shell, shared UI primitives, server-owned analytics, and a companion mobile app."
     >
       <DocsSection title="System boundaries">
         <ul>

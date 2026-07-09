@@ -180,7 +180,7 @@ export function LexicalEditor({
   const initialEditorState = toLexicalStateString(value)
 
   const initialConfig = {
-    namespace: 'TradelytixEditor',
+    namespace: 'JJIEditor',
     theme,
     editorState: initialEditorState,
     nodes: [

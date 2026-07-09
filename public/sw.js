@@ -1,10 +1,10 @@
-// Tradelytix Service Worker - Optimized for performance
+// JJI Service Worker - Optimized for performance
 // Provides offline functionality, caching, and background sync
 
-const CACHE_NAME = 'tradelytix-v1.3.0'
-const STATIC_CACHE = 'tradelytix-static-v1.3.0'
-const API_CACHE = 'tradelytix-api-v1.3.0'
-const IMAGE_CACHE = 'tradelytix-images-v1.3.0'
+const CACHE_NAME = 'jji-v1.3.0'
+const STATIC_CACHE = 'jji-static-v1.3.0'
+const API_CACHE = 'jji-api-v1.3.0'
+const IMAGE_CACHE = 'jji-images-v1.3.0'
 
 let currentUserId = null
 
@@ -116,7 +116,7 @@ async function handleAPIRequest(request) {
     return await fetch(request)
   } catch (error) {
     return new Response(
-      JSON.stringify({ error: 'Offline', message: 'Tradelytix needs an internet connection to sync live data.' }), 
+      JSON.stringify({ error: 'Offline', message: 'JJI needs an internet connection to sync live data.' }), 
       {
         status: 503,
         headers: { 'Content-Type': 'application/json' }
@@ -150,11 +150,33 @@ async function handleImageRequest(request) {
   }
 }
 
-// Handle page requests
+// Handle page requests — cache-first (stale-while-revalidate) for the app shell
+// so a flaky/offline network never replaces the whole app with offline.html
+// when we have a previously cached copy.
 async function handlePageRequest(request) {
+  const cache = await caches.open(CACHE_NAME)
+  const cachedResponse = await cache.match(request, { ignoreSearch: false })
+
+  // Background revalidation — update cache for next navigation
+  const revalidate = fetch(request)
+    .then((response) => {
+      if (response && response.ok && response.type === 'basic') {
+        cache.put(request, response.clone()).catch(() => {})
+      }
+      return response
+    })
+    .catch(() => null)
+
+  if (cachedResponse) {
+    // Serve cached shell immediately; revalidate in background
+    revalidate
+    return cachedResponse
+  }
+
   try {
-    const response = await fetch(request)
-    return response
+    const response = await revalidate
+    if (response) return response
+    throw new Error('network failed')
   } catch (error) {
     
     // Serve offline page
@@ -170,7 +192,7 @@ async function handlePageRequest(request) {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Offline - Tradelytix</title>
+          <title>Offline - JJI</title>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <style>
@@ -193,7 +215,7 @@ async function handlePageRequest(request) {
               </svg>
             </div>
             <h1>You're Offline</h1>
-            <p>Tradelytix needs an internet connection to sync live data. Reconnect and try again.</p>
+            <p>JJI needs an internet connection to sync live data. Reconnect and try again.</p>
             <button onclick="window.location.reload()">Retry</button>
           </div>
         </body>
@@ -322,7 +344,7 @@ function isImageRequest(url) {
 // IndexedDB helpers for offline storage
 function openIndexedDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('TradelytixOffline', 1)
+    const request = indexedDB.open('JJIOffline', 1)
     
     request.onerror = () => reject(request.error)
     request.onsuccess = () => resolve(request.result)

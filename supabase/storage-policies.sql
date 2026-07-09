@@ -1,4 +1,4 @@
--- Supabase Storage hardening policy for Tradelytix.
+-- Supabase Storage hardening policy for JJI.
 --
 -- This first-pass policy matches the current application path conventions:
 --   trade-images/<folder>/<internal-user-id>/<optional-trade-id>/<file>

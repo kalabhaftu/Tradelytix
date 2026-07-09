@@ -6,7 +6,7 @@ export default function PerformanceBaselineDocsPage() {
     <DocsPage
       badge="For Developers"
       title="Performance Baseline"
-      description="Performance targets for the Tradelytix platform."
+      description="Performance targets for the JJI platform."
     >
       <DocsSection title="Key metrics">
         <ul>

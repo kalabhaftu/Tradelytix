@@ -82,7 +82,7 @@ export function RootPageClient({ nextUrl }: RootPageClientProps) {
           >
             <Logo className="w-10 h-10" />
             <span className="text-xl font-bold tracking-tight text-foreground">
-              Tradelytix
+              JJI
             </span>
           </motion.div>
         </div>
@@ -128,7 +128,7 @@ export function RootPageClient({ nextUrl }: RootPageClientProps) {
               Privacy
             </button>
             <p className="text-[10px] text-muted-foreground/40 uppercase tracking-[0.2em] font-medium">
-              &copy; {new Date().getFullYear()} Tradelytix
+              &copy; {new Date().getFullYear()} JJI
             </p>
           </div>
         </motion.div>

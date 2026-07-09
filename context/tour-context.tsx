@@ -86,7 +86,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     onboarding: [
       {
         id: 'welcome',
-        title: 'Welcome to Tradelytix',
+        title: 'Welcome to JJI',
         content: 'Your advanced trading analytics platform. Let\'s take a quick walkthrough to set up your account, import mock trades, and explore the layout. (Note: For the full CSV import experience, using a desktop browser is recommended.)',
         placement: 'center',
         route: '/dashboard',
@@ -527,7 +527,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {
         id: 'settings-card-connections',
         title: 'Social Identity Connections',
-        content: 'Link or unlink Google and GitHub authentication to simplify logging into your Tradelytix workspace.',
+        content: 'Link or unlink Google and GitHub authentication to simplify logging into your JJI workspace.',
         targetSelector: '[data-tour="settings-card-connections"]',
         placement: 'top',
         route: '/dashboard/settings',
@@ -636,9 +636,9 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    document.addEventListener('tradelytix-account-created', handleAccountCreated)
+    document.addEventListener('jji-account-created', handleAccountCreated)
     return () => {
-      document.removeEventListener('tradelytix-account-created', handleAccountCreated)
+      document.removeEventListener('jji-account-created', handleAccountCreated)
     }
   }, [createdAccountId, currentStep])
 

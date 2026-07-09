@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/auth-provider";
 import { CookieConsent } from "@/components/ui/cookie-consent";
 import { ConsoleFilterWrapper } from "@/components/console-filter-wrapper";
+import { TrackingScripts } from "@/components/tracking-scripts";
 import { ThemeProvider } from "@/context/theme-provider";
 import { QueryProvider } from "@/lib/query/query-provider";
 import { DeploymentMonitor } from "@/components/deployment-monitor";
@@ -15,12 +16,14 @@ import { ErrorBoundaryWrapper } from "@/components/error-boundary";
 import { SeasonalManager } from "@/app/dashboard/components/seasonal/seasonal-manager";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { AppBanner } from "@/components/app-banner";
+import { OfflineIndicator } from "@/components/offline-indicator";
+import { Footer } from "@/components/footer";
 import Script from "next/script"
 
-const DEFAULT_SITE_URL = 'https://www.tradelytix.eu.cc'
-const SITE_NAME = 'Tradelytix'
-const SITE_DESCRIPTION = 'Where traders find consistency through the charts'
-const SOCIAL_PREVIEW_VERSION = 'tradelytix-20260522'
+const DEFAULT_SITE_URL = 'https://justjournalit.vercel.app'
+const SITE_NAME = 'JJI'
+const SITE_DESCRIPTION = 'Just Journal It  Where traders find consistency through the charts'
+const SOCIAL_PREVIEW_VERSION = 'jji-20260522'
 const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || DEFAULT_SITE_URL
 const normalizedSiteUrl = rawSiteUrl.startsWith('http') ? rawSiteUrl : `https://${rawSiteUrl}`
 const socialImage = `/opengraph-image.png?v=${SOCIAL_PREVIEW_VERSION}`
@@ -56,7 +59,7 @@ export const metadata: Metadata = {
         url: socialImage,
         width: 1200,
         height: 630,
-        alt: 'Tradelytix social preview',
+        alt: 'JJI social preview',
       },
     ],
   },
@@ -122,7 +125,7 @@ export default async function RootLayout({
           {`(function(){try{var r=document.documentElement;r.style.colorScheme="dark",r.classList.contains("dark")||r.classList.add("dark");var t=localStorage.getItem("theme")||"dark",e=t;"system"===t&&(e=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"),"light"!==e&&"dark"!==e&&(e="dark"),"light"===e?(r.classList.remove("dark"),r.classList.add("light"),r.style.colorScheme="light"):(r.classList.remove("light"),r.classList.add("dark"),r.style.colorScheme="dark");var a=localStorage.getItem("accentPack")||"classic";r.classList.remove("accent-reports","accent-violet","accent-slate"),"reports"===a?r.classList.add("accent-reports"):"violet"===a?r.classList.add("accent-violet"):"slate"===a&&r.classList.add("accent-slate")}catch(c){document.documentElement.classList.add("dark"),document.documentElement.style.colorScheme="dark"}})();`}
         </Script>
       </head>
-      <body className={`${inter.variable} font-sans min-h-screen overflow-x-clip w-full`}>
+      <body className={`${inter.variable} font-sans min-h-screen flex flex-col overflow-x-clip w-full`}>
         <ErrorBoundaryWrapper showDetails={process.env.NODE_ENV === 'development'}>
           <ThemeProvider>
             <QueryProvider>
@@ -132,11 +135,16 @@ export default async function RootLayout({
                     <ServiceWorkerRegister />
                     <DeploymentMonitor />
                     <CookieConsent />
+                    <TrackingScripts />
                     <SafeToaster />
                     <ClientErrorReporter />
                     <SeasonalManager />
                     <AppBanner />
-                    {children}
+                    <OfflineIndicator />
+                    <div className="flex-1 flex flex-col">
+                      {children}
+                    </div>
+                    <Footer />
                   </TooltipProvider>
                 </AuthProvider>
               </ConsoleFilterWrapper>

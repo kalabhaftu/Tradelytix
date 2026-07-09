@@ -39,7 +39,7 @@ export default function ReportsDocsPage() {
           <li>Configure sharing options: expiration date (optional), password protection (optional)</li>
           <li>Copy the share link and send it to anyone</li>
         </ol>
-        <p>Shared reports show the exact charts and metrics you configured. The recipient does not need a Tradelytix account to view a shared report.</p>
+        <p>Shared reports show the exact charts and metrics you configured. The recipient does not need a JJI account to view a shared report.</p>
       </DocsSection>
 
       <DocsSection title="Exporting reports">
@@ -51,7 +51,7 @@ export default function ReportsDocsPage() {
         </ul>
       </DocsSection>
 
-      <DocsCallout title="Pro tip" tone="success">
+      <DocsCallout title="Tip" tone="success">
         Use sharing to collaborate with a mentor or trading coach. The read-only link gives them access to your performance data without exposing your account credentials.
       </DocsCallout>
     </DocsPage>

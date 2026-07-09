@@ -43,7 +43,7 @@ export function WeeklyReviewTrigger() {
     }
 
     const reviewWeekKey = format(targetWeekStart, 'yyyy-MM-dd')
-    const sessionKey = `tradelytix_weekly_review_checked_${internalUser.id}_${reviewWeekKey}`
+    const sessionKey = `jji_weekly_review_checked_${internalUser.id}_${reviewWeekKey}`
     if (sessionStorage.getItem(sessionKey)) return
 
     const scheduleRetry = () => {

@@ -49,7 +49,7 @@ const docsNavigation: DocsNavSection[] = [
     title: 'Getting Started',
     icon: Rocket,
     items: [
-      { title: 'Introduction', href: '/docs', description: 'Overview of Tradelytix web and mobile' },
+      { title: 'Introduction', href: '/docs', description: 'Overview of JJI web and mobile' },
       { title: 'Quick Start Guide', href: '/docs/getting-started', description: 'Step-by-step setup tutorial' },
       { title: 'Application Flow', href: '/docs/features/app-flow', description: 'How pages, auth, and navigation connect' },
     ],
@@ -88,7 +88,7 @@ const docsNavigation: DocsNavSection[] = [
         href: '/docs/faq',
         description: 'Common questions and solutions',
         subsections: [
-          { title: 'Is Tradelytix free?', href: '/docs/faq#is-tradelytix-free' },
+          { title: 'Is JJI free?', href: '/docs/faq#is-jji-free' },
           { title: 'How do I import trades?', href: '/docs/faq#how-do-i-import-trades' },
           { title: 'What data formats are supported?', href: '/docs/faq#what-data-formats-are-supported' },
           { title: 'Is there a mobile app?', href: '/docs/faq#is-there-a-mobile-app' },
@@ -289,7 +289,7 @@ function OpenSourceNotice() {
         Status Change
       </p>
       <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
-        Tradelytix was open source until June 19, 2026. The project is now proprietary.
+        JJI was open source until June 19, 2026. The project is currently proprietary, but may be open-sourced again in the future.
       </p>
     </div>
   )

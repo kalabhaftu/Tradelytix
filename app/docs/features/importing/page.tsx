@@ -11,7 +11,7 @@ export default function ImportingDocsPage() {
       <DocsSection title="Supported import sources">
         <ul>
           <li><strong>CSV Upload</strong> — Upload comma-separated trade export files from any broker. Map columns manually if the automatic detection doesn't match.</li>
-          <li><strong>TradingView Webhook</strong> — Configure TradingView alerts to send trade data to your Tradelytix webhook endpoint. Supports strategy tester exports.</li>
+          <li><strong>TradingView Webhook</strong> — Configure TradingView alerts to send trade data to your JJI webhook endpoint. Supports strategy tester exports.</li>
           <li><strong>Tradovate Sync</strong> — Connect your Tradovate account for automatic trade syncing. Requires API credentials in settings.</li>
           <li><strong>DxFeed Sync</strong> — Direct integration with DxFeed for trade data.</li>
           <li><strong>Rithmic Sync</strong> — Connect Rithmic trading accounts for automated import.</li>
@@ -40,7 +40,7 @@ export default function ImportingDocsPage() {
         </ul>
       </DocsSection>
 
-      <DocsCallout title="Pro tip" tone="success">
+      <DocsCallout title="Tip" tone="success">
         Always review the parsed preview before saving. The importer tries to auto-detect columns, but date formats, currency symbols, and custom instrument names may need manual correction.
       </DocsCallout>
     </DocsPage>

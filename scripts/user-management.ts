@@ -617,7 +617,7 @@ async function mainMenu() {
   
   while (true) {
     clear()
-    console.log('--- Tradelytix User Management CLI ---')
+    console.log('--- JJI User Management CLI ---')
     console.log('1. List Users')
     console.log('2. Search User')
     console.log('3. Bucket Management')

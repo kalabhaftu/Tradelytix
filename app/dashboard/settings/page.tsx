@@ -1417,7 +1417,7 @@ export default function SettingsPage() {
               variant="outline"
               className="gap-2 h-9 text-xs"
               onClick={() => {
-                localStorage.removeItem('tradelytix_user_data')
+                localStorage.removeItem('jji_user_data')
                 signOut()
               }}
             >

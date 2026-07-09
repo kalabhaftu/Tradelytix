@@ -6,7 +6,7 @@ export default function BackendDocsPage() {
     <DocsPage
       badge="For Developers"
       title="Backend Structure"
-      description="The Tradelytix backend is primarily server-side, handling data aggregation, filtering, authentication, and analytics computations."
+      description="The JJI backend is primarily server-side, handling data aggregation, filtering, authentication, and analytics computations."
     >
       <DocsSection title="API architecture">
         <ul>

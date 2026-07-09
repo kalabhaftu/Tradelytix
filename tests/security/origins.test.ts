@@ -8,11 +8,11 @@ afterEach(() => {
 })
 
 describe('origin security helpers', () => {
-  it('allows the production Tradelytix origin', async () => {
+  it('allows the production JJI origin', async () => {
     process.env.NODE_ENV = 'production'
     const { isAllowedOrigin } = await import('@/lib/security/origins')
 
-    expect(isAllowedOrigin('https://www.tradelytix.eu.cc')).toBe(true)
+    expect(isAllowedOrigin('https://justjournalit.vercel.app')).toBe(true)
   })
 
   it('does not allow arbitrary production origins', async () => {
@@ -34,8 +34,8 @@ describe('origin security helpers', () => {
     process.env.NODE_ENV = 'production'
     const { getCorsHeaders } = await import('@/lib/security/origins')
 
-    expect(getCorsHeaders('https://www.tradelytix.eu.cc')).toMatchObject({
-      'Access-Control-Allow-Origin': 'https://www.tradelytix.eu.cc',
+    expect(getCorsHeaders('https://justjournalit.vercel.app')).toMatchObject({
+      'Access-Control-Allow-Origin': 'https://justjournalit.vercel.app',
       'Access-Control-Allow-Credentials': 'true',
       Vary: 'Origin',
     })

@@ -6,7 +6,7 @@ export default function AppFlowDocsPage() {
     <DocsPage
       badge="Feature Guide"
       title="Application Flow"
-      description="Tradelytix has two major surfaces — a public support/docs experience and an authenticated trading workspace — with a companion mobile app that mirrors the same backend."
+      description="JJI has two major surfaces — a public support/docs experience and an authenticated trading workspace — with a companion mobile app that mirrors the same backend."
     >
       <DocsSection title="1. Public surface & authentication flow">
         <p>
@@ -128,7 +128,7 @@ export default function AppFlowDocsPage() {
           <li>Primary authenticated destination: <code>/dashboard</code></li>
           <li>Support pages (<code>/docs/*</code>, <code>/faq</code>, <code>/feedback</code>) remain public and do not require an account</li>
           <li>Direct access to <code>/dashboard/*</code> without a session redirects to the sign-in page</li>
-          <li>Mobile deep links follow the same routing: <code>tradelytix://dashboard</code> opens the dashboard tab</li>
+          <li>Mobile deep links follow the same routing: <code>jji://dashboard</code> opens the dashboard tab</li>
         </ul>
       </DocsSection>
     </DocsPage>

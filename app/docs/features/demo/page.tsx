@@ -6,10 +6,10 @@ export default function DemoDocsPage() {
     <DocsPage
       badge="Feature Guide"
       title="Demo Mode"
-      description="Explore Tradelytix with pre-loaded sample data before committing your own trade history. Demo mode shows you how the dashboard, reports, and journal work with realistic data."
+      description="Explore JJI with pre-loaded sample data before committing your own trade history. Demo mode shows you how the dashboard, reports, and journal work with realistic data."
     >
       <DocsSection title="What is demo mode?">
-        <p>Demo mode loads a set of sample trades, accounts, and journal entries so you can explore the full Tradelytix experience without importing your own data. It's useful for:</p>
+        <p>Demo mode loads a set of sample trades, accounts, and journal entries so you can explore the full JJI experience without importing your own data. It's useful for:</p>
         <ul>
           <li>Evaluating the platform before subscribing</li>
           <li>Learning how features work in a safe environment</li>
@@ -50,8 +50,8 @@ export default function DemoDocsPage() {
         </ol>
       </DocsSection>
 
-      <DocsCallout title="Try it free" tone="success">
-        Demo mode is available to everyone. No credit card, no sign-up required. It's the fastest way to see if Tradelytix fits your trading workflow.
+      <DocsCallout title="Try the demo" tone="success">
+        Demo mode is available to everyone. No credit card, no sign-up required. It's the fastest way to see if JJI fits your trading workflow.
       </DocsCallout>
     </DocsPage>
   )

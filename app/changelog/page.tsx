@@ -49,12 +49,12 @@ export default function ChangelogPage() {
   return (
     <PublicLayout>
       <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+        <div className="space-y-3 mb-10">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <Rocket className="h-8 w-8 text-primary" />
             Changelog
           </h1>
-          <p className="text-muted-foreground mt-2">Track what's new, improved, and fixed in Tradelytix.</p>
+          <p className="text-lg text-muted-foreground leading-relaxed">Track what's new, improved, and fixed in JJI.</p>
         </div>
 
         <div className="space-y-6">

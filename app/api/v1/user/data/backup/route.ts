@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
       metadata: {
         backupVersion: '1.0',
         exportedAt: new Date().toISOString(),
-        platform: 'Tradelytix',
+        platform: 'JJI',
         userId: identity.authUserId,
         userEmail: user?.email || 'unknown',
         note: 'This backup is for archival purposes only. It cannot be reimported.'
@@ -199,7 +199,7 @@ export async function GET(request: NextRequest) {
 
     // Generate filename
     const timestamp = format(new Date(), 'yyyy-MM-dd_HHmmss')
-    const filename = `tradelytix-backup-${timestamp}.json`
+    const filename = `jji-backup-${timestamp}.json`
 
     return new NextResponse(JSON.stringify(backupData, null, 2), {
       status: 200,

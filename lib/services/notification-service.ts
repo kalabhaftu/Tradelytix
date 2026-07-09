@@ -183,7 +183,7 @@ export async function createRiskAlert(
             if (user && user.email) {
                 const breachTypeStr = riskType === 'daily_loss' ? 'Daily Loss Limit' : 'Max Drawdown Limit'
                 await resend.emails.send({
-                    from: 'Alerts <alerts@tradelytix.app>',
+                    from: 'Alerts <alerts@jji.app>',
                     to: [user.email],
                     subject: `Prop Firm Rule Breach Detected: ${metadata.accountName}`,
                     html: `<p>Your prop firm account <strong>${metadata.accountName}</strong> has breached the ${breachTypeStr}.</p>

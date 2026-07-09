@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Offline - Tradelytix</title>
+    <title>Offline - JJI</title>
     <link rel="icon" href="/favicon.ico">
     <style>
         * {
@@ -259,7 +259,7 @@
         </div>
         <h1>You're Offline</h1>
         <p class="subtitle">
-            Tradelytix needs an internet connection to sync live data. Reconnect and try again.
+            JJI needs an internet connection to sync live data. Reconnect and try again.
         </p>
 
         <div class="connection-status" id="connectionStatus">
@@ -285,7 +285,7 @@
             if (navigator.onLine) {
                 statusIndicator.className = 'status-indicator status-online';
                 statusText.textContent = 'Connection restored';
-                retryBtn.textContent = 'Continue to Tradelytix';
+                retryBtn.textContent = 'Continue to JJI';
                 retryBtn.onclick = () => window.location.href = '/';
             } else {
                 statusIndicator.className = 'status-indicator status-offline';

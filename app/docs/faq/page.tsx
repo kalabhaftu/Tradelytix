@@ -2,20 +2,20 @@ import { DocsCallout, DocsPage, DocsSection } from '@/components/docs/docs-page'
 
 const faqs = [
   {
-    q: 'Is Tradelytix free?',
-    a: 'No, Tradelytix is a paid platform at $10/month. It was open source until June 19, 2026, after which it became proprietary software. Payment is processed via cryptocurrency through NOWPayments. There is no free tier or trial — all features require an active subscription.',
+    q: 'Is JJI free?',
+    a: 'No, JJI is a paid platform at $10/month. It is currently proprietary software, but may be open-sourced again in the future. Payment is processed via cryptocurrency through NOWPayments. There is no free tier or trial — all features require an active subscription.',
   },
   {
     q: 'Is there a mobile app?',
-    a: 'Yes, Tradelytix has a mobile app built with Flutter, available for both Android and iOS. It syncs seamlessly with your web account and includes tabs for the dashboard, trades, journal, challenges, and settings. Push notifications are delivered via Firebase Cloud Messaging. You can download it from the Google Play Store and Apple App Store.',
+    a: 'Yes, JJI has a mobile app built with Flutter, available for both Android and iOS. It syncs seamlessly with your web account and includes tabs for the dashboard, trades, journal, challenges, and settings. Push notifications are delivered via Firebase Cloud Messaging. You can download it from the Google Play Store and Apple App Store.',
   },
   {
     q: 'How do I import trades?',
-    a: 'Navigate to the import flow from the dashboard navbar. Tradelytix supports importing from CSV files, TradingView webhooks, Tradovate sync, DxFeed sync, Rithmic sync, Thor, Match-Trader, and Exness. The import wizard lets you review parsed results — including any parsing errors or warnings — before saving trades to your account. This ensures you have full control over what gets imported.',
+    a: 'Navigate to the import flow from the dashboard navbar. JJI supports importing from CSV files, TradingView webhooks, Tradovate sync, DxFeed sync, Rithmic sync, Thor, Match-Trader, and Exness. The import wizard lets you review parsed results — including any parsing errors or warnings — before saving trades to your account. This ensures you have full control over what gets imported.',
   },
   {
     q: 'What data formats are supported?',
-    a: 'Tradelytix accepts CSV broker exports, TradingView webhook JSON payloads, Tradovate CSV exports, Rithmic CSV exports, and proprietary formats from supported brokers. You can also enter trades manually through the trade entry form. The import engine normalizes all formats into a consistent internal schema so reports and analytics work the same regardless of the source.',
+    a: 'JJI accepts CSV broker exports, TradingView webhook JSON payloads, Tradovate CSV exports, Rithmic CSV exports, and proprietary formats from supported brokers. You can also enter trades manually through the trade entry form. The import engine normalizes all formats into a consistent internal schema so reports and analytics work the same regardless of the source.',
   },
   {
     q: 'Where is my data stored?',
@@ -27,7 +27,7 @@ const faqs = [
   },
   {
     q: 'How do prop-firm challenges work?',
-    a: 'Tradelytix uses a master-account-based lifecycle model for prop-firm challenges. You configure phases (1-phase or 2-phase) with profit targets, maximum drawdown limits, and daily loss limits. The system automatically tracks your progress, transitions between phases when targets are met, and supports payout tracking when you pass. All evaluation accounts are tied to a real master account so your overall performance stays connected.',
+    a: 'JJI uses a master-account-based lifecycle model for prop-firm challenges. You configure phases (1-phase or 2-phase) with profit targets, maximum drawdown limits, and daily loss limits. The system automatically tracks your progress, transitions between phases when targets are met, and supports payout tracking when you pass. All evaluation accounts are tied to a real master account so your overall performance stays connected.',
   },
   {
     q: 'Can I share my trades or reports?',
@@ -43,7 +43,7 @@ const faqs = [
   },
   {
     q: 'What AI features are available?',
-    a: 'Tradelytix includes an AI Chat feature powered by OpenAI and xAI models. You can ask it to analyze your trading performance, audit your risk metrics, calculate strategy expectancy, and run psychological assessments based on your journal entries. The AI has context of your account data and can provide personalized insights rather than generic advice.',
+    a: 'JJI includes an AI Chat feature powered by OpenAI and xAI models. You can ask it to analyze your trading performance, audit your risk metrics, calculate strategy expectancy, and run psychological assessments based on your journal entries. The AI has context of your account data and can provide personalized insights rather than generic advice.',
   },
   {
     q: 'Does the mobile app have all features?',
@@ -56,16 +56,22 @@ export default function FAQPage() {
     <DocsPage
       badge="Resources"
       title="FAQ & Troubleshooting"
-      description="Frequently asked questions about using Tradelytix — pricing, imports, mobile app, data, subscriptions, and more."
+      description="Frequently asked questions about using JJI — pricing, imports, mobile app, data, subscriptions, and more."
     >
       <DocsSection title="Frequently Asked Questions">
         <div className="space-y-8">
-          {faqs.map((faq, i) => (
-            <div key={i}>
-              <h3 className="text-lg font-semibold mb-2">{faq.q}</h3>
-              <p className="text-muted-foreground">{faq.a}</p>
-            </div>
-          ))}
+          {faqs.map((faq, i) => {
+            const finalId = faq.q.toLowerCase()
+              .replace(/[^\w\s-]/g, '')
+              .replace(/\s+/g, '-')
+              .trim();
+            return (
+              <div key={i} id={finalId} className="scroll-mt-24">
+                <h3 className="text-lg font-semibold mb-2">{faq.q}</h3>
+                <p className="text-muted-foreground">{faq.a}</p>
+              </div>
+            )
+          })}
         </div>
       </DocsSection>
 

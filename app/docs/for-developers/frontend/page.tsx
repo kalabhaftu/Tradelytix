@@ -6,7 +6,7 @@ export default function FrontendDocsPage() {
     <DocsPage
       badge="For Developers"
       title="Frontend Guidelines"
-      description="Frontend conventions for the Tradelytix web application. These guidelines help maintain consistency across the dashboard, public pages, and shared components."
+      description="Frontend conventions for the JJI web application. These guidelines help maintain consistency across the dashboard, public pages, and shared components."
     >
       <DocsSection title="Component architecture">
         <ul>

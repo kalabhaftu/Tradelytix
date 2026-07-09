@@ -1,4 +1,4 @@
-const DEFAULT_PRODUCTION_ORIGIN = 'https://www.tradelytix.eu.cc'
+const DEFAULT_PRODUCTION_ORIGIN = 'https://justjournalit.vercel.app'
 
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0', '::1'])
 

@@ -55,7 +55,7 @@ const nextConfig = {
 
   async headers() {
     const allowedOrigin = process.env.APP_BASE_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://www.tradelytix.eu.cc');
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://justjournalit.vercel.app');
 
     return [
       {
@@ -87,7 +87,7 @@ const nextConfig = {
               "default-src 'self'",
               process.env.NODE_ENV === 'development'
                 ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-                : "script-src 'self' 'sha256-WEw2NQ8a1iG/RN8tBeOxPxgPl7SwYkwG97Pxd5MWynA='",
+                : "script-src 'self' 'unsafe-inline'",
               `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL} wss://*.supabase.co https://api.anthropic.com https://*.ingest.sentry.io`,
               "style-src 'self' 'unsafe-inline'",
               `img-src 'self' data: blob: ${process.env.NEXT_PUBLIC_SUPABASE_URL}`,

@@ -5,12 +5,12 @@ export default function GettingStartedDocsPage() {
   return (
     <DocsPage
       badge="Getting Started"
-      title="Getting Started with Tradelytix"
+      title="Getting Started with JJI"
       description="A complete walkthrough from signup to your first trade review — covering the web dashboard and mobile app."
     >
       <DocsSection title="1. Create your account">
         <p>
-          Navigate to the Tradelytix landing page and click <strong>Sign In</strong>. You can sign up
+          Navigate to the JJI landing page and click <strong>Sign In</strong>. You can sign up
           using either an email magic link or an OAuth provider (Google, GitHub, or Discord).
         </p>
         <DocsCardGrid>
@@ -23,7 +23,7 @@ export default function GettingStartedDocsPage() {
           <DocsInfoCard
             icon={CheckCircle2}
             title="OAuth sign-up"
-            description="Choose Google, GitHub, or Discord from the sign-in page. You are redirected to the provider, asked to consent, and returned to Tradelytix with an active session."
+            description="Choose Google, GitHub, or Discord from the sign-in page. You are redirected to the provider, asked to consent, and returned to JJI with an active session."
             items={['Uses your existing provider account', 'No additional credentials to manage', 'Profile info (name, avatar) syncs from the provider']}
           />
         </DocsCardGrid>
@@ -35,7 +35,7 @@ export default function GettingStartedDocsPage() {
 
       <DocsSection title="2. Choose a subscription plan">
         <p>
-          Tradelytix is a paid platform at <strong>$10/month</strong> (billed via cryptocurrency). The
+          JJI is a paid platform at <strong>$10/month</strong> (billed via cryptocurrency). The
           subscription grants full access to every feature including trade import, dashboard widgets,
           journaling, prop-firm tracking, AI chat, backtesting, playbook, and reports.
         </p>
@@ -65,7 +65,7 @@ export default function GettingStartedDocsPage() {
             icon={Import}
             title="CSV import"
             description="Download a broker export as CSV and upload it directly. A mapping preview lets you verify columns before saving."
-            items={['Supported brokers include TradeZella, Edgewonk, and generic CSV formats', 'Map your columns to Tradelytix fields in the preview step', 'Choose an existing account or create a new one during import']}
+            items={['Supported brokers include TradeZella, Edgewonk, and generic CSV formats', 'Map your columns to JJI fields in the preview step', 'Choose an existing account or create a new one during import']}
           />
           <DocsInfoCard
             icon={Import}
@@ -104,7 +104,7 @@ export default function GettingStartedDocsPage() {
 
       <DocsSection title="5. Set your preferences">
         <p>
-          Visit <strong>Settings</strong> from the sidebar to configure how Tradelytix displays and
+          Visit <strong>Settings</strong> from the sidebar to configure how JJI displays and
           processes your data. These settings persist across sessions and devices.
         </p>
         <DocsCardGrid>
@@ -125,14 +125,14 @@ export default function GettingStartedDocsPage() {
 
       <DocsSection title="6. Set up the mobile app">
         <p>
-          Tradelytix offers a companion mobile app built with Flutter, available on both Android and
+          JJI offers a companion mobile app built with Flutter, available on both Android and
           iOS. It syncs with your web account in real time.
         </p>
         <DocsCardGrid>
           <DocsInfoCard
             icon={Smartphone}
             title="Download & sign in"
-            description="Download Tradelytix from the Google Play Store or Apple App Store. Open the app and sign in using the same email magic link or OAuth provider you used on the web."
+            description="Download JJI from the Google Play Store or Apple App Store. Open the app and sign in using the same email magic link or OAuth provider you used on the web."
             items={['No separate registration — your web account works directly', 'After sign-in, the app loads your dashboard, trades, journal, and challenges', 'Push notifications are enabled by default for trade alerts']}
           />
           <DocsInfoCard
@@ -146,7 +146,7 @@ export default function GettingStartedDocsPage() {
 
       <DocsSection title="7. Next steps">
         <p>
-          With trades imported and both platforms set up, explore the deeper features that Tradelytix
+          With trades imported and both platforms set up, explore the deeper features that JJI
           offers for trade analysis and improvement.
         </p>
         <DocsCardGrid>

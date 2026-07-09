@@ -223,7 +223,7 @@ export function DashboardSidebar({ siteUiSettings }: { siteUiSettings: SiteUiSet
                 >
                   <Logo className="h-6 w-6 shrink-0" />
                   {(!isCollapsed || isOverlay) && (
-                    <span className="text-sm font-bold tracking-tight">Tradelytix</span>
+                    <span className="text-sm font-bold tracking-tight">JJI</span>
                   )}
                 </Link>
               </SidebarMenuButton>

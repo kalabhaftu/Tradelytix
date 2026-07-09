@@ -82,14 +82,14 @@ export function SubscribeClient() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Logo className="w-8 h-8" />
-            <span className="text-lg font-bold tracking-tight">Tradelytix</span>
+            <span className="text-lg font-bold tracking-tight">JJI</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight mb-2">Unlock Tradelytix Pro</h1>
+          <h1 className="text-2xl font-bold tracking-tight mb-2">Unlock JJI Pro</h1>
           <p className="text-muted-foreground text-sm">
             Get full access to your trading journal and analytics
           </p>
           <div className="mt-3 text-xs text-muted-foreground bg-muted/40 p-2.5 rounded-lg border border-border/40 text-center leading-relaxed">
-            Tradelytix was originally created for my personal use. If other traders wish to use it, a paid subscription is required to cover API costs and hosting.
+            JJI was originally created for my personal use. If other traders wish to use it, a paid subscription is required to cover API costs and hosting.
           </div>
         </div>
 

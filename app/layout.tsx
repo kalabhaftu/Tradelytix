@@ -20,7 +20,7 @@ import { OfflineIndicator } from "@/components/offline-indicator";
 import { Footer } from "@/components/footer";
 import Script from "next/script"
 
-const DEFAULT_SITE_URL = 'https://www.jji.eu.cc'
+const DEFAULT_SITE_URL = 'https://justjournalit.vercel.app'
 const SITE_NAME = 'JJI'
 const SITE_DESCRIPTION = 'Just Journal It  Where traders find consistency through the charts'
 const SOCIAL_PREVIEW_VERSION = 'jji-20260522'

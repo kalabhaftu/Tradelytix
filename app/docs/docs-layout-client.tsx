@@ -88,7 +88,7 @@ const docsNavigation: DocsNavSection[] = [
         href: '/docs/faq',
         description: 'Common questions and solutions',
         subsections: [
-          { title: 'Is JJI free?', href: '/docs/faq#is-tradelytix-free' },
+          { title: 'Is JJI free?', href: '/docs/faq#is-jji-free' },
           { title: 'How do I import trades?', href: '/docs/faq#how-do-i-import-trades' },
           { title: 'What data formats are supported?', href: '/docs/faq#what-data-formats-are-supported' },
           { title: 'Is there a mobile app?', href: '/docs/faq#is-there-a-mobile-app' },

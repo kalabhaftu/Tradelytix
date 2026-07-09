@@ -60,12 +60,18 @@ export default function FAQPage() {
     >
       <DocsSection title="Frequently Asked Questions">
         <div className="space-y-8">
-          {faqs.map((faq, i) => (
-            <div key={i}>
-              <h3 className="text-lg font-semibold mb-2">{faq.q}</h3>
-              <p className="text-muted-foreground">{faq.a}</p>
-            </div>
-          ))}
+          {faqs.map((faq, i) => {
+            const finalId = faq.q.toLowerCase()
+              .replace(/[^\w\s-]/g, '')
+              .replace(/\s+/g, '-')
+              .trim();
+            return (
+              <div key={i} id={finalId} className="scroll-mt-24">
+                <h3 className="text-lg font-semibold mb-2">{faq.q}</h3>
+                <p className="text-muted-foreground">{faq.a}</p>
+              </div>
+            )
+          })}
         </div>
       </DocsSection>
 

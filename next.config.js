@@ -55,7 +55,7 @@ const nextConfig = {
 
   async headers() {
     const allowedOrigin = process.env.APP_BASE_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://www.jji.eu.cc');
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://justjournalit.vercel.app');
 
     return [
       {

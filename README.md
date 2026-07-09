@@ -1,15 +1,15 @@
 # JJI (Just Journal It)
 
-JJI is a professional-grade, no-BS trading analytics and journaling platform. Built for data-driven traders, it cuts out the noise to help you find and maintain your edge in the markets. 
+JJI is a trading analytics and journaling platform. Built for data-driven traders, it helps you track setups and analyze your performance. 
 
 **Note: JJI is a closed-source, paid platform ($10/month). While it may be open-sourced in the future, it is currently proprietary software.**
 
 ## Core Capabilities
 
-- **Deep Analytics**: Visualize equity curves, drawdowns, win rates, and profit factors across master, live, and linked accounts.
-- **Smart Calendar**: Review daily PnL, setups, and trade execution through a clean, interactive calendar interface.
-- **Detailed Journaling**: Log every aspect of a trade—setups, entry/exit rules, psychological states, and chart screenshots.
-- **Prop Firm Ready**: Built-in workflows for managing prop-firm challenges, phase transitions, drawdown limits, and payout objectives.
+- **Analytics**: View equity curves, drawdowns, win rates, and profit factors across your accounts.
+- **Calendar**: Review daily PnL, setups, and trade execution through a calendar interface.
+- **Journaling**: Log setups, rules, notes, and chart screenshots.
+- **Prop Firm Tracking**: Workflows for tracking prop-firm challenges, phase transitions, drawdown limits, and payout objectives.
 - **Data Portability**: Full control over your data with CSV/JSON import and export capabilities.
 
 ## Tech Stack

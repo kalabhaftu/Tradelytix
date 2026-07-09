@@ -170,7 +170,7 @@ export default function PrivacyPage() {
             <div className="flex flex-wrap gap-6 text-sm text-muted-foreground font-medium">
               <Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
               <Link href="/cookies" className="hover:text-primary transition-colors">Cookie Policy</Link>
-              <Link href="mailto:privacy@jji.eu.cc" className="hover:text-primary transition-colors">Contact Us</Link>
+              <Link href="mailto:justjournalit1@gmail.com" className="hover:text-primary transition-colors">Contact Us</Link>
             </div>
             <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold opacity-70">
               &copy; {new Date().getFullYear()} JJI. All rights reserved.

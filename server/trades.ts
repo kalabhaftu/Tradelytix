@@ -8,7 +8,7 @@ import { getUserIdSafe } from '@/server/auth';
 import { ImageCompressor } from '@/lib/image-compression';
 import { deletePublicStorageUrls } from '@/server/storage-admin';
 
-export async function deleteTrade(tradeId: string) {
+async function deleteTrade(tradeId: string) {
   try {
     const userId = await getUserIdSafe()
     
@@ -67,7 +67,7 @@ export async function deleteTrade(tradeId: string) {
   }
 }
 
-export async function updateTradeImage(
+async function updateTradeImage(
   tradeIds: string[],
   imageUrl: string | null,
   fieldName: 'cardPreviewImage' | 'imageOne' | 'imageTwo' | 'imageThree' | 'imageFour' | 'imageFive' | 'imageSix'

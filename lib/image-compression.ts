@@ -190,7 +190,7 @@ export class ImageCompressor {
 // React hook for image compression
 import { useState, useCallback } from 'react'
 
-export interface UseImageCompressionReturn {
+interface UseImageCompressionReturn {
   compressImage: (file: File, options?: CompressionOptions) => Promise<CompressionResult>
   compressMultiple: (files: File[], options?: CompressionOptions) => Promise<CompressionResult[]>
   isCompressing: boolean
@@ -198,7 +198,7 @@ export interface UseImageCompressionReturn {
   clearHistory: () => void
 }
 
-export function useImageCompression(): UseImageCompressionReturn {
+function useImageCompression(): UseImageCompressionReturn {
   const [isCompressing, setIsCompressing] = useState(false)
   const [compressionHistory, setCompressionHistory] = useState<CompressionResult[]>([])
 
@@ -246,7 +246,7 @@ export function useImageCompression(): UseImageCompressionReturn {
 }
 
 // Batch compression utility
-export class BatchImageProcessor {
+class BatchImageProcessor {
   private queue: Array<{
     file: File
     options: CompressionOptions

@@ -250,7 +250,7 @@ export const CHART_COLORS = {
  * don't reliably work in fill/stroke attributes.
  * These match the CSS vars in globals.css.
  */
-export const RECHARTS_COLORS = {
+const RECHARTS_COLORS = {
   light: {
     bullish: '#83b885',   // --chart-bullish: 123 27% 62%
     bearish: '#c4572a',   // --chart-bearish: 25 70% 45%

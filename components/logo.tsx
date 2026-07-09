@@ -16,7 +16,7 @@ export function Logo({ className, transparent = false }: { className?: string; t
     )
 }
 
-export function LogoText() {
+function LogoText() {
     return (
         <svg width="256" height="64" viewBox="0 0 1180 260" fill="none" xmlns="http://www.w3.org/2000/svg" className="fill-foreground" aria-label="JJI wordmark" role="img">
             <rect width="260" height="260" rx="52" className="fill-current" />

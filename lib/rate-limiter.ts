@@ -82,15 +82,15 @@ function getUpstashLimiter(config: LimiterConfig): Ratelimit {
 
 // ─── Exported limiter configs (drop-in compatible with existing imports) ───
 export const apiLimiter: LimiterConfig = { points: 100, duration: 60 }
-export const authLimiter: LimiterConfig = { points: 10, duration: 60, failClosed: true }
-export const aiLimiter: LimiterConfig = { points: 20, duration: 60 }
+const authLimiter: LimiterConfig = { points: 10, duration: 60, failClosed: true }
+const aiLimiter: LimiterConfig = { points: 20, duration: 60 }
 export const aiReviewLimiter: LimiterConfig = { points: 1, duration: 86400 }
 export const importLimiter: LimiterConfig = { points: 10, duration: 60 }
-export const uploadLimiter: LimiterConfig = { points: 30, duration: 60 }
+const uploadLimiter: LimiterConfig = { points: 30, duration: 60 }
 export const webhookLimiter: LimiterConfig = { points: 20, duration: 60, failClosed: true }
-export const paymentLimiter: LimiterConfig = { points: 30, duration: 60, failClosed: true }
+const paymentLimiter: LimiterConfig = { points: 30, duration: 60, failClosed: true }
 export const feedbackLimiter: LimiterConfig = { points: 5, duration: 60 }
-export const adminLimiter: LimiterConfig = { points: 200, duration: 60, failClosed: true }
+const adminLimiter: LimiterConfig = { points: 200, duration: 60, failClosed: true }
 export const publicLimiter: LimiterConfig = { points: 30, duration: 60 }
 export const errorReportLimiter: LimiterConfig = { points: 10, duration: 60, failClosed: true }
 export const emailOtpLimiter: LimiterConfig = { points: 3, duration: 3600, failClosed: true }
@@ -99,7 +99,7 @@ export const emailOtpLimiter: LimiterConfig = { points: 3, duration: 3600, failC
  * Get identifier for rate limiting.
  * Uses user ID if available, falls back to IP.
  */
-export function getRateLimitIdentifier(req: NextRequest): string {
+function getRateLimitIdentifier(req: NextRequest): string {
   const forwarded = req.headers.get('x-forwarded-for')
   const ipPart = forwarded?.split(',')[0];
   const ip = ipPart ? ipPart.trim() : req.headers.get('x-real-ip') || 'unknown'
@@ -194,7 +194,7 @@ export async function applyRateLimit(
 /**
  * Wrapper for API route handlers with rate limiting.
  */
-export function withRateLimit(
+function withRateLimit(
   handler: (req: NextRequest) => Promise<NextResponse>,
   limiter: LimiterConfig = apiLimiter
 ) {

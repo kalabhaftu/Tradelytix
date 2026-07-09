@@ -53,7 +53,7 @@ export function decimalToNumber(value: unknown): number {
  * @param trade - Trade object with potential Decimal fields
  * @returns Trade object with converted fields
  */
-export function convertTradeDecimals<T extends Record<string, unknown>>(trade: T): T {
+function convertTradeDecimals<T extends Record<string, unknown>>(trade: T): T {
   return {
     ...trade,
     entryPrice: convertDecimal(trade.entryPrice),
@@ -69,7 +69,7 @@ export function convertTradeDecimals<T extends Record<string, unknown>>(trade: T
  * @param trades - Array of trade objects
  * @returns Array with converted Decimal fields
  */
-export function convertTradesDecimals<T extends Record<string, unknown>>(trades: T[]): T[] {
+function convertTradesDecimals<T extends Record<string, unknown>>(trades: T[]): T[] {
   return trades.map(convertTradeDecimals)
 }
 
@@ -80,7 +80,7 @@ export function convertTradesDecimals<T extends Record<string, unknown>>(trades:
  * @param b - Second value
  * @returns Sum as number
  */
-export function safeAdd(a: unknown, b: unknown): number {
+function safeAdd(a: unknown, b: unknown): number {
   return decimalToNumber(a) + decimalToNumber(b)
 }
 
@@ -91,7 +91,7 @@ export function safeAdd(a: unknown, b: unknown): number {
  * @param b - Second value (subtrahend)
  * @returns Difference as number
  */
-export function safeSubtract(a: unknown, b: unknown): number {
+function safeSubtract(a: unknown, b: unknown): number {
   return decimalToNumber(a) - decimalToNumber(b)
 }
 
@@ -102,7 +102,7 @@ export function safeSubtract(a: unknown, b: unknown): number {
  * @param decimals - Number of decimal places (default: 2)
  * @returns Formatted string
  */
-export function formatDecimal(value: unknown, decimals: number = 2): string {
+function formatDecimal(value: unknown, decimals: number = 2): string {
   const num = decimalToNumber(value)
   return num.toFixed(decimals)
 }

@@ -88,7 +88,7 @@ export const WIDGET_DIMENSIONS: Record<WidgetSize, WidgetDimensions> = {
 /**
  * Get Tailwind grid column class for a widget size
  */
-export function getGridColClass(size: WidgetSize): string {
+function getGridColClass(size: WidgetSize): string {
   const span = WIDGET_DIMENSIONS[size].colSpan
   return `col-span-12 md:col-span-${span}`
 }
@@ -96,14 +96,14 @@ export function getGridColClass(size: WidgetSize): string {
 /**
  * Get Tailwind height class for a widget size
  */
-export function getWidgetHeightClass(size: WidgetSize): string {
+function getWidgetHeightClass(size: WidgetSize): string {
   return `h-widget-${size}`
 }
 
 /**
  * Get inline styles for a widget (use sparingly, prefer Tailwind)
  */
-export function getWidgetStyles(size: WidgetSize): React.CSSProperties {
+function getWidgetStyles(size: WidgetSize): React.CSSProperties {
   const dims = WIDGET_DIMENSIONS[size]
   return {
     minWidth: dims.minWidth,
@@ -116,7 +116,7 @@ export function getWidgetStyles(size: WidgetSize): React.CSSProperties {
  * Widget grouping configuration
  * Defines how widgets should be visually grouped
  */
-export const WIDGET_GROUPS = {
+const WIDGET_GROUPS = {
   kpi: {
     name: 'Key Performance Indicators',
     bgClass: 'bg-kpi-section',
@@ -140,7 +140,7 @@ export const WIDGET_GROUPS = {
   },
 } as const
 
-export const CARD_PADDING: Record<WidgetSize, string> = {
+const CARD_PADDING: Record<WidgetSize, string> = {
   'kpi': 'p-4',
   'tiny': 'p-3',
   'small': 'p-4',
@@ -153,12 +153,12 @@ export const CARD_PADDING: Record<WidgetSize, string> = {
 /**
  * Standard card header height (consistent across all widgets)
  */
-export const CARD_HEADER_HEIGHT = '56px'
+const CARD_HEADER_HEIGHT = '56px'
 
 /**
  * Get responsive grid configuration for dashboard
  */
-export function getDashboardGridConfig() {
+function getDashboardGridConfig() {
   return {
     container: 'max-w-[1920px] mx-auto',
     gap: 'gap-3',

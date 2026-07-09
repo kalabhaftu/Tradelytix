@@ -9,7 +9,7 @@ import { eq, and, or, inArray, desc, asc } from 'drizzle-orm'
 const TRADE_CHUNK_SIZE = 25
 const BACKTEST_CHUNK_SIZE = 25
 
-export type ImportJobStage = 'queued' | 'preparing' | 'trades' | 'backtests' | 'completed' | 'failed' | 'cancelled'
+type ImportJobStage = 'queued' | 'preparing' | 'trades' | 'backtests' | 'completed' | 'failed' | 'cancelled'
 
 interface ImportJobState {
   phase: 'preparing' | 'trades' | 'backtests' | 'completed'

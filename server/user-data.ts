@@ -18,7 +18,7 @@ import { getAccountsAction } from './accounts'
 import { type InferSelectModel } from 'drizzle-orm'
 type User = InferSelectModel<typeof schema.User>
 
-export async function getUserData(): Promise<{
+async function getUserData(): Promise<{
   userData: User | null;
   accounts: Account[];
   groups: never[]; // Groups removed - no longer used

@@ -12,7 +12,7 @@ import { lt, and, inArray } from 'drizzle-orm'
  * Clean up old activity logs.
  * Deletes logs older than the specified number of days.
  */
-export async function cleanupActivityLogs(daysOld = 90) {
+async function cleanupActivityLogs(daysOld = 90) {
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - daysOld)
 
@@ -29,7 +29,7 @@ export async function cleanupActivityLogs(daysOld = 90) {
  * Clean up old import jobs.
  * Deletes completed or failed import jobs older than the specified number of days.
  */
-export async function cleanupImportJobs(daysOld = 7) {
+async function cleanupImportJobs(daysOld = 7) {
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - daysOld)
 

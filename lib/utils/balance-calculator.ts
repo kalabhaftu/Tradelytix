@@ -49,7 +49,7 @@ export interface BalanceResult {
 /**
  * Daily balance point for charts
  */
-export interface DailyBalancePoint {
+interface DailyBalancePoint {
   date: string
   balance: number
   dailyPnL: number
@@ -221,7 +221,7 @@ export function calculateAccountBalances(
  * @param options - Calculation options
  * @returns Total equity
  */
-export function calculateTotalEquity(
+function calculateTotalEquity(
   accounts: (AccountType | any)[],
   allTrades: (TradeType | any)[],
   allTransactions: any[] = [],
@@ -374,7 +374,7 @@ export function calculateBalanceInfo(
  * @param calendarData - Pre-aggregated daily data
  * @returns Array of daily balance points for charting
  */
-export function calculateBalanceHistory(
+function calculateBalanceHistory(
   accounts: (AccountType | any)[],
   trades: (TradeType | any)[],
   calendarData: Record<string, { pnl: number, trades?: any[] }>

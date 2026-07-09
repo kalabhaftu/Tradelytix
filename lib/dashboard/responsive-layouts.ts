@@ -11,7 +11,7 @@ export interface DashboardLayoutItem {
   h: number
 }
 
-export type ResponsiveGridItem = {
+type ResponsiveGridItem = {
   i: string
   x: number
   y: number

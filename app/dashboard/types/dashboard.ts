@@ -32,7 +32,7 @@ export type WidgetType =
   | 'propFirmGrowthCurve'
 export type WidgetSize = 'tiny' | 'small' | 'small-long' | 'medium' | 'large' | 'extra-large' | 'kpi'
 
-export interface LayoutItem {
+interface LayoutItem {
   i: string
   x: number
   y: number
@@ -51,7 +51,7 @@ export interface Layouts {
   mobile: Widget[]
 }
 
-export interface LayoutState {
+interface LayoutState {
   layouts: Layouts
   activeLayout: 'desktop' | 'mobile'
 } 

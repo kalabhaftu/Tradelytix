@@ -11,7 +11,7 @@ interface OptimizedAccountsLoadingProps {
   showFilters?: boolean
 }
 
-export function OptimizedAccountsLoading({ 
+function OptimizedAccountsLoading({ 
   className, 
   accountCount = 6, 
   showStats = true, 

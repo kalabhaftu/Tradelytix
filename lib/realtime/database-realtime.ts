@@ -22,8 +22,8 @@ import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/
 import logger from '@/lib/logger';
 
 // Tables that need realtime updates
-export const REALTIME_TABLES = ['Trade', 'Account', 'MasterAccount', 'PhaseAccount', 'Payout', 'DailyNote', 'Notification'] as const
-export type RealtimeTable = typeof REALTIME_TABLES[number]
+const REALTIME_TABLES = ['Trade', 'Account', 'MasterAccount', 'PhaseAccount', 'Payout', 'DailyNote', 'Notification'] as const
+type RealtimeTable = typeof REALTIME_TABLES[number]
 const TABLES_WITH_USER_ID_FILTER = new Set<RealtimeTable>(['Trade', 'Account', 'MasterAccount', 'DailyNote', 'Notification'])
 
 export type ChangeEvent = 'INSERT' | 'UPDATE' | 'DELETE'
@@ -277,7 +277,7 @@ class DatabaseRealtimeManager {
   }
 }
 
-export const DatabaseRealtime = new DatabaseRealtimeManager()
+const DatabaseRealtime = new DatabaseRealtimeManager()
 
 /**
  * React hook for database realtime subscriptions

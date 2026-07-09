@@ -1,6 +1,6 @@
 import { formatCurrency } from '@/lib/utils'
 
-export function formatMoney(value: number | null | undefined) {
+function formatMoney(value: number | null | undefined) {
   return formatCurrency(Number(value || 0))
 }
 

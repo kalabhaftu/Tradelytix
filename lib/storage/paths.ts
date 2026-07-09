@@ -1,5 +1,5 @@
-export const TRADE_IMAGES_BUCKET = 'trade-images'
-export const FEEDBACK_ATTACHMENTS_BUCKET = 'feedback-attachments'
+const TRADE_IMAGES_BUCKET = 'trade-images'
+const FEEDBACK_ATTACHMENTS_BUCKET = 'feedback-attachments'
 
 function safeSegment(value: string) {
   return value.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 160)

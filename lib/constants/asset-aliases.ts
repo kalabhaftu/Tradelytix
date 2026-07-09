@@ -140,7 +140,7 @@ const CRYPTO_ALIASES: Record<string, string> = {
 }
 
 // Combined aliases mapping
-export const ASSET_ALIASES: Record<string, string> = {
+const ASSET_ALIASES: Record<string, string> = {
   ...INDICES_ALIASES,
   ...COMMODITIES_ALIASES,
   ...FOREX_ALIASES,
@@ -152,7 +152,7 @@ export const ASSET_ALIASES: Record<string, string> = {
  * @param searchTerm - The search term or asset name
  * @returns The canonical display name if found, otherwise the original term
  */
-export function getCanonicalAssetName(searchTerm: string): string {
+function getCanonicalAssetName(searchTerm: string): string {
   const upperSearchTerm = searchTerm.toUpperCase()
   return ASSET_ALIASES[upperSearchTerm] || searchTerm
 }
@@ -177,7 +177,7 @@ export function getAssetSearchTerms(canonicalName: string): string[] {
  * @param assetName - The asset name to check against
  * @returns True if the search term matches the asset or any of its aliases
  */
-export function isAssetMatch(searchTerm: string, assetName: string): boolean {
+function isAssetMatch(searchTerm: string, assetName: string): boolean {
   const canonicalName = getCanonicalAssetName(searchTerm)
   const searchTerms = getAssetSearchTerms(assetName)
 
@@ -192,7 +192,7 @@ export function isAssetMatch(searchTerm: string, assetName: string): boolean {
  * @param assetName - The asset name
  * @returns The category name
  */
-export function getAssetCategory(assetName: string): string {
+function getAssetCategory(assetName: string): string {
   const upperName = assetName.toUpperCase()
 
   if (Object.keys(INDICES_ALIASES).some(alias => alias === upperName)) {
@@ -215,7 +215,7 @@ export function getAssetCategory(assetName: string): string {
  * Get common asset aliases for display or suggestions
  * @returns Array of common asset aliases grouped by category
  */
-export function getAssetAliasGroups() {
+function getAssetAliasGroups() {
   return {
     indices: Object.keys(INDICES_ALIASES),
     commodities: Object.keys(COMMODITIES_ALIASES),
@@ -225,7 +225,7 @@ export function getAssetAliasGroups() {
 }
 
 // Test function to verify aliases work correctly
-export const testAliases = () => {
+const testAliases = () => {
 
   // Test some common aliases
   const testCases = [

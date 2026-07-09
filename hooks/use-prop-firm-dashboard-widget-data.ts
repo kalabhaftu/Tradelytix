@@ -25,7 +25,7 @@ type PropFirmTrade = {
   exitTime?: string | Date | null
 }
 
-export type PropFirmWidgetData = {
+type PropFirmWidgetData = {
   account: any | null
   drawdown: any | null
   statistics: any | null

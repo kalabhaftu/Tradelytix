@@ -60,7 +60,7 @@ export function createErrorResponse(
 /**
  * Common error responses
  */
-export const ErrorResponses = {
+const ErrorResponses = {
   unauthorized: () => createErrorResponse('Unauthorized', 401, 'Please log in to access this resource', 'UNAUTHORIZED'),
   forbidden: () => createErrorResponse('Forbidden', 403, 'You do not have permission to access this resource', 'FORBIDDEN'),
   notFound: (resource: string = 'Resource') => createErrorResponse(`${resource} not found`, 404, undefined, 'NOT_FOUND'),

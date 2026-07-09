@@ -203,7 +203,7 @@ export async function authenticateDxFeed(
   }
 }
 
-export async function getDxFeedAccounts(
+async function getDxFeedAccounts(
   accessToken: string,
   historicalHost: string,
 ): Promise<DxFeedTradingAccount[]> {
@@ -467,7 +467,7 @@ async function updateStoredCredentials(userId: string, oldTokenJson: string, new
     ))
 }
 
-export async function storeDxFeedToken(
+async function storeDxFeedToken(
   tokenJson: string,
   accountId: string = 'default',
 ) {

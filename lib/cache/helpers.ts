@@ -43,7 +43,7 @@ export async function withCache<T>(
  * Delete one or more cache keys.
  * Fails silently — a cache invalidation failure is not fatal.
  */
-export async function invalidateCache(...keys: string[]): Promise<void> {
+async function invalidateCache(...keys: string[]): Promise<void> {
   if (keys.length === 0) return
   try {
     await redis.del(...keys)

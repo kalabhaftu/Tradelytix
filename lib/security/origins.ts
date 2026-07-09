@@ -23,7 +23,7 @@ function splitOrigins(value: string | undefined | null) {
     .filter((origin): origin is string => Boolean(origin))
 }
 
-export function getCanonicalOrigin() {
+function getCanonicalOrigin() {
   return (
     normalizeOrigin(process.env.NEXT_PUBLIC_SITE_URL) ||
     normalizeOrigin(process.env.NEXT_PUBLIC_APP_URL) ||
@@ -50,7 +50,7 @@ export function getAllowedOrigins() {
   return [...origins]
 }
 
-export function isLocalOrigin(origin: string) {
+function isLocalOrigin(origin: string) {
   try {
     const url = new URL(origin)
     return LOCALHOST_HOSTS.has(url.hostname)

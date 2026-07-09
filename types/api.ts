@@ -11,14 +11,14 @@ export interface ApiResponse<T = unknown> {
   timestamp: string
 }
 
-export interface ApiError {
+interface ApiError {
   code: string
   message: string
   details?: unknown
   statusCode: number
 }
 
-export interface PaginatedResponse<T> extends ApiResponse<T[]> {
+interface PaginatedResponse<T> extends ApiResponse<T[]> {
   pagination: {
     page: number
     limit: number
@@ -42,7 +42,7 @@ export interface User {
   preferences: UserPreferences
 }
 
-export interface UserPreferences {
+interface UserPreferences {
   theme: 'light' | 'dark' | 'system'
   timezone: string
   currency: string
@@ -50,7 +50,7 @@ export interface UserPreferences {
   notifications: NotificationSettings
 }
 
-export interface NotificationSettings {
+interface NotificationSettings {
   email: boolean
   push: boolean
   marketing: boolean
@@ -89,7 +89,7 @@ export interface Trade {
   ruleBroken?: boolean
 }
 
-export interface TradeSessionData {
+interface TradeSessionData {
   openTime: Date
   closeTime: Date
   duration: number
@@ -119,7 +119,7 @@ export interface Account {
   rules?: AccountRules
 }
 
-export interface AccountRules {
+interface AccountRules {
   maxDailyLoss?: number
   maxDrawdown?: number
   profitTarget?: number
@@ -128,7 +128,7 @@ export interface AccountRules {
   tradingHours?: TradingHours
 }
 
-export interface TradingHours {
+interface TradingHours {
   start: string // HH:mm format
   end: string   // HH:mm format
   timezone: string
@@ -138,7 +138,7 @@ export interface TradingHours {
 /**
  * Widget Types
  */
-export interface WidgetData {
+interface WidgetData {
   id: string
   type: string
   title: string
@@ -159,7 +159,7 @@ export interface ChartDataPoint {
   metadata?: Record<string, unknown>
 }
 
-export interface TimeSeriesDataPoint extends ChartDataPoint {
+interface TimeSeriesDataPoint extends ChartDataPoint {
   x: Date
   volume?: number
   open?: number
@@ -171,7 +171,7 @@ export interface TimeSeriesDataPoint extends ChartDataPoint {
 /**
  * Filter Types
  */
-export interface DateFilter {
+interface DateFilter {
   start?: Date
   end?: Date
   period?: 'day' | 'week' | 'month' | 'quarter' | 'year'
@@ -220,7 +220,7 @@ export interface PerformanceMetrics {
   sortinoRatio?: number
 }
 
-export interface TimeBasedMetrics {
+interface TimeBasedMetrics {
   hourOfDay: Record<string, PerformanceMetrics>
   dayOfWeek: Record<string, PerformanceMetrics>
   monthOfYear: Record<string, PerformanceMetrics>
@@ -245,10 +245,10 @@ export interface ImportJob {
   completedAt?: Date
 }
 
-export type ImportStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
+type ImportStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
 export type ImportType = 'csv' | 'excel' | 'api' | 'manual'
 
-export interface ImportError {
+interface ImportError {
   row?: number
   column?: string
   message: string
@@ -258,7 +258,7 @@ export interface ImportError {
 /**
  * Event Types
  */
-export interface SystemEvent {
+interface SystemEvent {
   id: string
   type: EventType
   userId?: string
@@ -267,7 +267,7 @@ export interface SystemEvent {
   source: string
 }
 
-export type EventType = 
+type EventType = 
   | 'user.created'
   | 'user.updated'
   | 'trade.created'
@@ -282,14 +282,14 @@ export type EventType =
 /**
  * WebSocket Types
  */
-export interface WebSocketMessage<T = unknown> {
+interface WebSocketMessage<T = unknown> {
   type: string
   data: T
   timestamp: Date
   id?: string
 }
 
-export interface WebSocketError {
+interface WebSocketError {
   code: number
   message: string
   reconnect?: boolean
@@ -308,13 +308,13 @@ export interface FormField {
   options?: SelectOption[]
 }
 
-export interface ValidationRule {
+interface ValidationRule {
   type: 'required' | 'email' | 'min' | 'max' | 'pattern'
   value?: string | number
   message: string
 }
 
-export interface SelectOption {
+interface SelectOption {
   label: string
   value: string | number
   disabled?: boolean
@@ -323,7 +323,7 @@ export interface SelectOption {
 /**
  * Utility Types
  */
-export type Nullable<T> = T | null
+type Nullable<T> = T | null
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P]
@@ -338,7 +338,7 @@ export interface DatabaseRecord {
   updatedAt: Date
 }
 
-export interface SoftDeleteRecord extends DatabaseRecord {
+interface SoftDeleteRecord extends DatabaseRecord {
   deletedAt?: Date
 }
 
@@ -353,7 +353,7 @@ export interface FileUpload {
   url?: string
 }
 
-export interface UploadResponse {
+interface UploadResponse {
   url: string
   fileName: string
   fileSize: number

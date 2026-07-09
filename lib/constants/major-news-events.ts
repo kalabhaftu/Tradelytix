@@ -1397,11 +1397,11 @@ export const MAJOR_NEWS_EVENTS: NewsEvent[] = [
 ]
 
 // Helper functions
-export function getNewsByCategory(category: NewsEvent['category']): NewsEvent[] {
+function getNewsByCategory(category: NewsEvent['category']): NewsEvent[] {
   return MAJOR_NEWS_EVENTS.filter(event => event.category === category)
 }
 
-export function getNewsByCountry(country: NewsEvent['country']): NewsEvent[] {
+function getNewsByCountry(country: NewsEvent['country']): NewsEvent[] {
   return MAJOR_NEWS_EVENTS.filter(event => event.country === country || event.country === 'GLOBAL')
 }
 
@@ -1409,7 +1409,7 @@ export function getNewsById(id: string): NewsEvent | undefined {
   return MAJOR_NEWS_EVENTS.find(event => event.id === id)
 }
 
-export function searchNews(query: string): NewsEvent[] {
+function searchNews(query: string): NewsEvent[] {
   const lowerQuery = query.toLowerCase()
   return MAJOR_NEWS_EVENTS.filter(event => 
     event.name.toLowerCase().includes(lowerQuery) ||
@@ -1417,15 +1417,15 @@ export function searchNews(query: string): NewsEvent[] {
   )
 }
 
-export function getRedFolderNews(): NewsEvent[] {
+function getRedFolderNews(): NewsEvent[] {
   return MAJOR_NEWS_EVENTS.filter(event => event.isRedFolder === true)
 }
 
-export function getHighImpactNews(): NewsEvent[] {
+function getHighImpactNews(): NewsEvent[] {
   return MAJOR_NEWS_EVENTS.filter(event => event.impact === 'high')
 }
 
-export function getNewsByImpact(impact: 'high' | 'medium' | 'low'): NewsEvent[] {
+function getNewsByImpact(impact: 'high' | 'medium' | 'low'): NewsEvent[] {
   return MAJOR_NEWS_EVENTS.filter(event => event.impact === impact)
 }
 

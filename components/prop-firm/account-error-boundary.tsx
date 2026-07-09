@@ -17,7 +17,7 @@ interface ErrorBoundaryState {
   error?: Error
 }
 
-export class PropFirmErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class PropFirmErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props)
     this.state = { hasError: false }

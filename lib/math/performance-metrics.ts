@@ -12,7 +12,7 @@ function toNumber(value: number | string | null | undefined): number {
   return Number(value || 0)
 }
 
-export function hasValidStopLossGeometry(
+function hasValidStopLossGeometry(
   side: string | null | undefined,
   entryPrice: number | string,
   stopLoss: number | string | null | undefined

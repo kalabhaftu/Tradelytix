@@ -6,7 +6,7 @@ import { User as SupabaseUser } from '@supabase/supabase-js'
 import { create } from 'zustand'
 import { UserSettingsShape } from '@/lib/user-settings'
 
-export type MergedUser = User & UserSettingsShape
+type MergedUser = User & UserSettingsShape
 
 type UserStore = {
   user: MergedUser | null

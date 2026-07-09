@@ -62,7 +62,7 @@ export function useAutoCacheCleanup(options: UseAutoCacheCleanupOptions = {}) {
 /**
  * Hook to automatically clear caches when accounts change
  */
-export function useAccountChangeDetection() {
+function useAccountChangeDetection() {
   const accountsVersionRef = useRef<number>(0)
   
   return {

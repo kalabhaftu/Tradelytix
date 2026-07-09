@@ -8,7 +8,7 @@ import { revalidateTag } from 'next/cache'
 
 import { eq, and, desc, count } from 'drizzle-orm'
 
-export async function createNotificationAction(data: {
+async function createNotificationAction(data: {
   type: NotificationType
   title: string
   message: string
@@ -36,7 +36,7 @@ export async function createNotificationAction(data: {
   }
 }
 
-export async function getNotificationsAction(options?: {
+async function getNotificationsAction(options?: {
   unreadOnly?: boolean
   limit?: number
 }) {
@@ -56,7 +56,7 @@ export async function getNotificationsAction(options?: {
   return notifications
 }
 
-export async function getUnreadCountAction() {
+async function getUnreadCountAction() {
   const userId = await getUserId()
   if (!userId) return 0
 
@@ -67,7 +67,7 @@ export async function getUnreadCountAction() {
   return result[0]?.count || 0
 }
 
-export async function markNotificationReadAction(notificationId: string) {
+async function markNotificationReadAction(notificationId: string) {
   try {
     const userId = await getUserId()
     if (!userId) return { success: false, error: 'Unauthorized' }
@@ -81,7 +81,7 @@ export async function markNotificationReadAction(notificationId: string) {
   }
 }
 
-export async function markAllNotificationsReadAction() {
+async function markAllNotificationsReadAction() {
   const userId = await getUserId()
   if (!userId) return { success: false, error: 'Unauthorized' }
 
@@ -90,7 +90,7 @@ export async function markAllNotificationsReadAction() {
   revalidateTag(`notifications-${userId}`)
 }
 
-export async function deleteNotificationAction(notificationId: string) {
+async function deleteNotificationAction(notificationId: string) {
   try {
     const userId = await getUserId()
     if (!userId) return { success: false, error: 'Unauthorized' }

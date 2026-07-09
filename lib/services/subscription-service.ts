@@ -177,7 +177,7 @@ export async function getUserAccessStatus(userId: string, userRole?: string): Pr
 // Subscription Lifecycle
 
 /** Ensure a subscription record exists for the user */
-export async function ensureSubscription(userId: string) {
+async function ensureSubscription(userId: string) {
   let sub = await db.query.Subscription.findFirst({ where: eq(Subscription.userId, userId) })
   if (!sub) {
     try {
@@ -438,7 +438,7 @@ async function markPaymentRecordExpired(recordId: string) {
     .where(eq(PaymentRecord.id, recordId))
 }
 
-export async function reconcilePaymentRecord(paymentRecordId: string, userId?: string) {
+async function reconcilePaymentRecord(paymentRecordId: string, userId?: string) {
   const record = await db.query.PaymentRecord.findFirst({
     where: and(
       eq(PaymentRecord.id, paymentRecordId),
@@ -540,7 +540,7 @@ function getDiscountDescription(promo: { type: string; value: number }) {
 
 // Free Access Management (Admin)
 
-export async function grantFreeAccess(params: {
+async function grantFreeAccess(params: {
   email: string
   type: 'lifetime' | 'until_date' | 'one_time_signup'
   expiresAt?: Date
@@ -604,7 +604,7 @@ export async function grantFreeAccess(params: {
   return invite
 }
 
-export async function revokeFreeAccess(email: string) {
+async function revokeFreeAccess(email: string) {
   const invite = await db.query.FreeAccessInvite.findFirst({ where: eq(FreeAccessInvite.email, email) })
   if (!invite) return null
 
@@ -633,7 +633,7 @@ export async function revokeFreeAccess(email: string) {
 /**
  * Reconcile pending payment records with provider status and mirror expiry after the provider window.
  */
-export async function expireAbandonedPayments(userId?: string) {
+async function expireAbandonedPayments(userId?: string) {
   const pendingPayments = await db.query.PaymentRecord.findMany({
     where: and(
       userId ? eq(PaymentRecord.userId, userId) : undefined,

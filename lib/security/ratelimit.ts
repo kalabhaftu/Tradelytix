@@ -13,7 +13,7 @@ const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_RE
     } as unknown as Redis; // Mock stub to prevent crashing if unconfigured
 
 // General API Rate Limiting (e.g., standard endpoints)
-export const apiRateLimit = new Ratelimit({
+const apiRateLimit = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(100, '1 m'),
   analytics: true,
@@ -29,7 +29,7 @@ export const thorRateLimit = new Ratelimit({
 });
 
 // Strict Rate Limiting for Authentication (login/signup)
-export const authRateLimit = new Ratelimit({
+const authRateLimit = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(5, '1 m'),
   analytics: true,
@@ -37,7 +37,7 @@ export const authRateLimit = new Ratelimit({
 });
 
 // Extremely strict limit for OpenAI feature usage
-export const aiRateLimit = new Ratelimit({
+const aiRateLimit = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(10, '1 d'), 
   analytics: true,

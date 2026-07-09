@@ -263,9 +263,9 @@ export function getMockPropFirmDetails(isFailed: boolean) {
   };
 }
 
-export const MOCK_PROP_FIRM_DETAILS = getMockPropFirmDetails(false);
+const MOCK_PROP_FIRM_DETAILS = getMockPropFirmDetails(false);
 
-export const MOCK_PROP_FIRM_SETTINGS = {
+const MOCK_PROP_FIRM_SETTINGS = {
   id: 'mock-propfirm-1',
   number: 'FTMO-PHASE-1',
   name: 'Demo Prop Firm Account',

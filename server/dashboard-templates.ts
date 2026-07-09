@@ -33,7 +33,7 @@ export interface DashboardTemplate {
 const getCanonicalDefaultLayout = (): WidgetLayout[] =>
   cloneDefaultTemplateLayout() as WidgetLayout[]
 
-export async function getDefaultLayout(): Promise<WidgetLayout[]> {
+async function getDefaultLayout(): Promise<WidgetLayout[]> {
   return getCanonicalDefaultLayout()
 }
 
@@ -93,7 +93,7 @@ export async function getActiveTemplate(): Promise<DashboardTemplate | null> {
   }
 }
 
-export async function initializeDefaultTemplate(userId: string): Promise<DashboardTemplate> {
+async function initializeDefaultTemplate(userId: string): Promise<DashboardTemplate> {
   const existingDefault = await safeDbOperation(
     () => db.query.DashboardTemplate.findFirst({
       where: (table, { eq, and }) => and(

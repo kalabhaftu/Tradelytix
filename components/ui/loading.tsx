@@ -28,7 +28,7 @@ interface LoadingSkeletonProps {
 /**
  * Unified loading spinner component
  */
-export function LoadingSpinner({ size = 'md', text, className }: LoadingSpinnerProps) {
+function LoadingSpinner({ size = 'md', text, className }: LoadingSpinnerProps) {
   const sizeClasses = {
     sm: 'h-4 w-4',
     md: 'h-6 w-6',
@@ -94,7 +94,7 @@ export function LoadingToast({ text = 'Loading...', className }: { text?: string
 /**
  * Skeleton loaders for different content types
  */
-export function LoadingSkeleton({ variant = 'card', rows = 3, className }: LoadingSkeletonProps) {
+function LoadingSkeleton({ variant = 'card', rows = 3, className }: LoadingSkeletonProps) {
   switch (variant) {
     case 'card':
       return (
@@ -189,7 +189,7 @@ export function LoadingSkeleton({ variant = 'card', rows = 3, className }: Loadi
 /**
  * Button loading state
  */
-export function LoadingButton({
+function LoadingButton({
   children,
   loading = false,
   loadingText = 'Loading...',
@@ -217,7 +217,7 @@ export function LoadingButton({
 /**
  * Page loading wrapper
  */
-export function PageLoading({ text = 'Loading page...', className }: { text?: string; className?: string }) {
+function PageLoading({ text = 'Loading page...', className }: { text?: string; className?: string }) {
   return (
     <div className={cn('flex min-h-screen items-center justify-center', className)}>
       <div className="flex flex-col items-center gap-4">

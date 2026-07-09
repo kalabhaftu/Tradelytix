@@ -15,14 +15,14 @@ export const reportSurface = {
   toolbar: 'rounded-2xl border border-border/60 bg-card/70 p-3 shadow-sm backdrop-blur',
 }
 
-export function reportPnlClass(value: number) {
+function reportPnlClass(value: number) {
   return value >= 0 ? 'text-long' : 'text-short'
 }
 
-export function reportPanelClass(className?: string) {
+function reportPanelClass(className?: string) {
   return cn(reportSurface.panel, className)
 }
 
-export function reportChartPanelClass(className?: string) {
+function reportChartPanelClass(className?: string) {
   return cn(reportSurface.chartPanel, className)
 }

@@ -8,10 +8,10 @@ import type { DatabaseRecord } from './api'
 // Enums from Prisma schema
 export type AccountStatus = 'active' | 'failed' | 'passed' | 'funded' | 'pending' | null
 export type PhaseType = 'phase_1' | 'phase_2' | 'funded'
-export type PhaseStatus = 'active' | 'passed' | 'failed'
+type PhaseStatus = 'active' | 'passed' | 'failed'
 export type DrawdownType = 'absolute' | 'percent'
-export type DrawdownMode = 'static' | 'trailing'
-export type EvaluationType = 'one_step' | 'two_step'
+type DrawdownMode = 'static' | 'trailing'
+type EvaluationType = 'one_step' | 'two_step'
 export type BreachType = 'daily_drawdown' | 'max_drawdown'
 
 /**
@@ -120,7 +120,7 @@ export interface PropFirmTrade extends DatabaseRecord {
 /**
  * Enhanced Payout Management
  */
-export interface PropFirmPayout extends DatabaseRecord {
+interface PropFirmPayout extends DatabaseRecord {
   accountId: string
   accountNumber: string
   
@@ -174,7 +174,7 @@ export interface DailyAnchor extends DatabaseRecord {
 /**
  * Equity Snapshots for Charts and Tracking
  */
-export interface EquitySnapshot extends DatabaseRecord {
+interface EquitySnapshot extends DatabaseRecord {
   accountId: string
   phaseId?: string
   timestamp: Date
@@ -190,7 +190,7 @@ export interface EquitySnapshot extends DatabaseRecord {
 /**
  * Account Phase Transitions Audit Trail
  */
-export interface AccountTransition extends DatabaseRecord {
+interface AccountTransition extends DatabaseRecord {
   accountId: string
   fromPhaseId?: string
   toPhaseId?: string
@@ -230,7 +230,7 @@ export interface PhaseProgress {
   nextPhaseType?: PhaseType
 }
 
-export interface PayoutEligibility {
+interface PayoutEligibility {
   isEligible: boolean
   daysSinceFunded: number
   daysSinceLastPayout: number
@@ -246,7 +246,7 @@ export interface PayoutEligibility {
 /**
  * Dashboard Display Types
  */
-export interface AccountDashboardData {
+interface AccountDashboardData {
   account: PropFirmAccount
   currentPhase: PhaseAccount
   drawdown: DrawdownCalculation
@@ -257,7 +257,7 @@ export interface AccountDashboardData {
   breaches: Breach[]
 }
 
-export interface AccountSummary {
+interface AccountSummary {
   id: string
   number: string
   name?: string
@@ -275,7 +275,7 @@ export interface AccountSummary {
 /**
  * API Request/Response Types
  */
-export interface CreateAccountRequest {
+interface CreateAccountRequest {
   number: string
   name?: string
   propfirm: string
@@ -291,14 +291,14 @@ export interface CreateAccountRequest {
   profitTarget?: number
 }
 
-export interface UpdateAccountRequest extends Partial<CreateAccountRequest> {
+interface UpdateAccountRequest extends Partial<CreateAccountRequest> {
   status?: AccountStatus
   ddIncludeOpenPnl?: boolean
   progressionIncludeOpenPnl?: boolean
   allowManualPhaseOverride?: boolean
 }
 
-export interface CreateTradeRequest {
+interface CreateTradeRequest {
   accountId: string
   symbol: string
   side: 'long' | 'short'
@@ -314,19 +314,19 @@ export interface CreateTradeRequest {
   tags?: string[]
 }
 
-export interface RequestPayoutRequest {
+interface RequestPayoutRequest {
   accountId: string
   amountRequested: number
   notes?: string
 }
 
-export interface ResetAccountRequest {
+interface ResetAccountRequest {
   accountId: string
   reason: string
   clearTrades?: boolean
 }
 
-export interface AccountStatsResponse {
+interface AccountStatsResponse {
   account: PropFirmAccount
   phases: PhaseAccount[]
   totalTrades: number
@@ -368,21 +368,21 @@ export interface TradeFilter {
 /**
  * Background Job Types
  */
-export interface DailyAnchorJob {
+interface DailyAnchorJob {
   accountId: string
   targetDate: Date
   timezone: string
   resetTime: string
 }
 
-export interface BreachCheckJob {
+interface BreachCheckJob {
   accountId: string
   phaseId: string
   currentEquity: number
   includeOpenPnl: boolean
 }
 
-export interface PayoutEligibilityJob {
+interface PayoutEligibilityJob {
   accountId: string
   checkDate: Date
 }

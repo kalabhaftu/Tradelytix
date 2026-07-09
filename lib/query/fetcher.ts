@@ -37,7 +37,7 @@ export async function postFetcher<T = unknown>(
  * Type-safe query key factory
  * Creates structured keys that React Query uses for caching and invalidation
  */
-export const queryKeys = {
+const queryKeys = {
   // Dashboard
   stats: (filters?: Record<string, unknown>) =>
     ['dashboard-stats', filters ?? {}] as const,

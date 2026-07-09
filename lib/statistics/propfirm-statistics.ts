@@ -111,7 +111,7 @@ function normalizeProgress(current: number, target: number) {
   return Math.max(0, Math.min(100, (current / target) * 100))
 }
 
-export async function fetchPropFirmReportMasters(userId: string): Promise<MasterWithRelations[]> {
+async function fetchPropFirmReportMasters(userId: string): Promise<MasterWithRelations[]> {
   return db.query.MasterAccount.findMany({
     where: (ma, { eq, and }) => and(eq(ma.userId, userId), eq(ma.isArchived, false)),
     orderBy: (ma, { desc }) => [desc(ma.createdAt)],
@@ -196,7 +196,7 @@ export async function fetchPropFirmReportMasters(userId: string): Promise<Master
   }) as Promise<MasterWithRelations[]>
 }
 
-export function mapMasterAccountToReportAccount(master: MasterWithRelations): PropFirmAccountDTO {
+function mapMasterAccountToReportAccount(master: MasterWithRelations): PropFirmAccountDTO {
   const resolvedPhase = resolveReportPhase(master as any)
   const lifecycleStatus = derivePropFirmLifecycleStatus(master as any, resolvedPhase as any)
   const phaseHistory = summarizePhaseHistory(master as any)

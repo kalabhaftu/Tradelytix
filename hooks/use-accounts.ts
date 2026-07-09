@@ -45,7 +45,7 @@ interface UseAccountsOptions {
 // Global broadcast system for cache updates
 const realtimeSubscribers = new Set<() => void>()
 
-export function broadcastAccountsUpdate() {
+function broadcastAccountsUpdate() {
   realtimeSubscribers.forEach(callback => {
     try {
       callback()
@@ -53,7 +53,7 @@ export function broadcastAccountsUpdate() {
   })
 }
 
-export function subscribeToAccountsUpdates(callback: () => void) {
+function subscribeToAccountsUpdates(callback: () => void) {
   realtimeSubscribers.add(callback)
   return () => realtimeSubscribers.delete(callback)
 }

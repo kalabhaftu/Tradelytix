@@ -23,7 +23,7 @@ export const USER_SETTINGS_SELECT = {
 
 export type UserSettingsShape = Pick<UserSettingsType, typeof USER_SETTINGS_FIELDS[number]>
 
-export const USER_SETTINGS_FIELDS = [
+const USER_SETTINGS_FIELDS = [
   'timezone',
   'theme',
   'accountFilterSettings',
@@ -90,7 +90,7 @@ export function mergeUserSettings<T extends Record<string, unknown>>(
   }
 }
 
-export function extractUserSettingsData(
+function extractUserSettingsData(
   source: Partial<UserSettingsShape> | null | undefined
 ): UserSettingsShape {
   const defaults = getDefaultUserSettings()
@@ -194,7 +194,7 @@ export function pickSettingsPatch(source: Record<string, unknown>) {
   return patch
 }
 
-export function settingsCreateFromUser(user: { id: string } & Partial<UserSettingsShape>): NewUserSettings {
+function settingsCreateFromUser(user: { id: string } & Partial<UserSettingsShape>): NewUserSettings {
   return {
     ...extractUserSettingsWriteData(user),
     userId: user.id,

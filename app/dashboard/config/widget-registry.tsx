@@ -731,11 +731,11 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetConfig> = {
   },
 }
 
-export function getWidgetsByCategory(category: WidgetConfig['category']) {
+function getWidgetsByCategory(category: WidgetConfig['category']) {
   return Object.values(WIDGET_REGISTRY).filter(widget => widget.category === category)
 }
 
-export function isValidWidgetSize(type: WidgetType, size: WidgetSize): boolean {
+function isValidWidgetSize(type: WidgetType, size: WidgetSize): boolean {
   return WIDGET_REGISTRY[type].allowedSizes.includes(size)
 }
 
@@ -743,11 +743,11 @@ export function requiresFullWidth(type: WidgetType): boolean {
   return WIDGET_REGISTRY[type].requiresFullWidth || false
 }
 
-export function isKpiRowOnly(type: WidgetType): boolean {
+function isKpiRowOnly(type: WidgetType): boolean {
   return WIDGET_REGISTRY[type].kpiRowOnly || false
 }
 
-export function canPlaceWidgetInRow(type: WidgetType, row: number): boolean {
+function canPlaceWidgetInRow(type: WidgetType, row: number): boolean {
   // If widget is KPI-only, it can only be placed in row 0 (first row with 5 KPI slots)
   if (isKpiRowOnly(type)) {
     return row === 0
@@ -756,7 +756,7 @@ export function canPlaceWidgetInRow(type: WidgetType, row: number): boolean {
   return row > 0
 }
 
-export function getWidgetComponent(type: WidgetType, size: WidgetSize): React.ReactElement {
+function getWidgetComponent(type: WidgetType, size: WidgetSize): React.ReactElement {
   return (
     <WidgetErrorBoundary widgetType={type}>
       {WIDGET_REGISTRY[type].getComponent({ size })}
@@ -764,6 +764,6 @@ export function getWidgetComponent(type: WidgetType, size: WidgetSize): React.Re
   )
 }
 
-export function getWidgetPreview(type: WidgetType): React.ReactElement {
+function getWidgetPreview(type: WidgetType): React.ReactElement {
   return WIDGET_REGISTRY[type].getPreview()
 } 

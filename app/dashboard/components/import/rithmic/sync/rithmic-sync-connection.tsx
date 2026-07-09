@@ -31,7 +31,7 @@ interface RithmicSyncConnectionProps {
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>
 }
 
-export function RithmicSyncConnection({ setIsOpen }: RithmicSyncConnectionProps) {
+function RithmicSyncConnection({ setIsOpen }: RithmicSyncConnectionProps) {
   const user = useUserStore(state => state.user)
   const { 
     connect, 

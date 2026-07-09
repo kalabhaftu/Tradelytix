@@ -20,7 +20,7 @@ export const JOURNAL_EMOTIONS = [
 
 export type JournalEmotion = (typeof JOURNAL_EMOTIONS)[number]
 
-export const JOURNAL_EMOTION_LABELS: Record<JournalEmotion, string> = {
+const JOURNAL_EMOTION_LABELS: Record<JournalEmotion, string> = {
   confident: 'Confident',
   anxious: 'Anxious',
   focused: 'Focused',

@@ -22,13 +22,13 @@ export interface ProcessingResult {
   stats: ProcessingStats
 }
 
-export interface ProcessingWarning {
+interface ProcessingWarning {
   row: number
   field: string
   message: string
 }
 
-export interface ProcessingError {
+interface ProcessingError {
   row: number
   message: string
   fatal: boolean
@@ -43,7 +43,7 @@ export interface ProcessingStats {
   tradesWithCommission: number
 }
 
-export interface MappedFields {
+interface MappedFields {
   instrument: string | null
   side: string | null
   quantity: string | null
@@ -730,7 +730,7 @@ export function processUniversalCSV(
 /**
  * Validate if a CSV can be processed
  */
-export function validateCSV(headers: string[]): { 
+function validateCSV(headers: string[]): { 
   valid: boolean
   mappedFields: MappedFields
   missingRequired: string[]

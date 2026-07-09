@@ -3,7 +3,7 @@ import { getDefaultUserSettings, USER_SETTINGS_SELECT } from '@/lib/user-setting
 import { getBreakEvenThreshold } from '@/lib/metrics/outcome'
 import { normalizePnlDisplayMode } from '@/lib/metrics/pnl'
 
-export async function getMergedRuntimeUserSettings(userId: string) {
+async function getMergedRuntimeUserSettings(userId: string) {
   const settings = await db.query.UserSettings.findFirst({
     where: (table, { eq }) => eq(table.userId, userId),
   })

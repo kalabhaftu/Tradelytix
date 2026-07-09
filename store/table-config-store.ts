@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { VisibilityState, SortingState, ColumnFiltersState } from '@tanstack/react-table'
 
-export interface TableColumnConfig {
+interface TableColumnConfig {
   id: string
   title: string
   visible: boolean
@@ -10,7 +10,7 @@ export interface TableColumnConfig {
   order: number
 }
 
-export interface TableConfig {
+interface TableConfig {
   id: string
   columns: TableColumnConfig[]
   columnVisibility: VisibilityState

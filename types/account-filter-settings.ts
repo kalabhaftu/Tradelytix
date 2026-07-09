@@ -42,7 +42,7 @@ export interface AccountFilterSettings {
 
 export type AccountStatus = 'active' | 'failed' | 'funded' | 'passed' | 'pending'
 
-export interface AccountHierarchy {
+interface AccountHierarchy {
   // Parent account info (for prop firm phase tracking)
   parentAccountNumber?: string
   parentAccountId?: string
@@ -57,7 +57,7 @@ export interface AccountHierarchy {
   phaseType?: 'phase_1' | 'phase_2' | 'funded'
 }
 
-export interface ExtendedAccount {
+interface ExtendedAccount {
   id: string
   number: string
   name?: string

@@ -75,7 +75,7 @@ export interface IpnPayload {
   [key: string]: unknown
 }
 
-export const NOWPAYMENTS_PENDING_STATUSES: NowPaymentStatus[] = [
+const NOWPAYMENTS_PENDING_STATUSES: NowPaymentStatus[] = [
   'waiting',
   'confirming',
   'confirmed',
@@ -193,11 +193,11 @@ export function verifyIpnSignature(payload: Record<string, unknown>, signature: 
   }
 }
 
-export function isTerminalStatus(status: NowPaymentStatus): boolean {
+function isTerminalStatus(status: NowPaymentStatus): boolean {
   return ['finished', 'failed', 'refunded', 'expired'].includes(status)
 }
 
-export function isPendingStatus(status: NowPaymentStatus): boolean {
+function isPendingStatus(status: NowPaymentStatus): boolean {
   return NOWPAYMENTS_PENDING_STATUSES.includes(status)
 }
 

@@ -13,15 +13,15 @@ export const DEFAULT_TRADE_PREVIEW_TRANSFORM: TradePreviewTransform = {
 
 export const MIN_TRADE_PREVIEW_ZOOM = 0.35
 export const MAX_TRADE_PREVIEW_ZOOM = 3
-export const MIN_TRADE_PREVIEW_OFFSET = -500
-export const MAX_TRADE_PREVIEW_OFFSET = 500
+const MIN_TRADE_PREVIEW_OFFSET = -500
+const MAX_TRADE_PREVIEW_OFFSET = 500
 
 export function clampTradePreviewZoom(zoom: number) {
   if (!Number.isFinite(zoom)) return DEFAULT_TRADE_PREVIEW_TRANSFORM.zoom
   return Math.min(MAX_TRADE_PREVIEW_ZOOM, Math.max(MIN_TRADE_PREVIEW_ZOOM, zoom))
 }
 
-export function clampTradePreviewOffset(offset: number, fallback = 0) {
+function clampTradePreviewOffset(offset: number, fallback = 0) {
   if (!Number.isFinite(offset)) return fallback
   return Math.min(MAX_TRADE_PREVIEW_OFFSET, Math.max(MIN_TRADE_PREVIEW_OFFSET, offset))
 }

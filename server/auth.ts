@@ -726,7 +726,7 @@ export async function getUserId(): Promise<string> {
   }
 }
 
-export async function getUserEmail(): Promise<string> {
+async function getUserEmail(): Promise<string> {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()

@@ -59,7 +59,7 @@ export interface ZellaScoreResult {
  * - 1.5-2.0: Good edge (60-80 points)
  * - 2.0+: Excellent edge (80-100 points)
  */
-export function calculateAvgWinLossScore(avgWinLoss: number): number {
+function calculateAvgWinLossScore(avgWinLoss: number): number {
   if (avgWinLoss >= 3.0) return 100
   if (avgWinLoss >= 2.5) return 95 + ((avgWinLoss - 2.5) / 0.5) * 5
   if (avgWinLoss >= 2.0) return 85 + ((avgWinLoss - 2.0) / 0.5) * 10
@@ -79,7 +79,7 @@ export function calculateAvgWinLossScore(avgWinLoss: number): number {
  * - 50-60%: Very good (70-90 points)
  * - 60%+: Excellent (90-100 points)
  */
-export function calculateTradeWinPercentageScore(
+function calculateTradeWinPercentageScore(
   tradeWinPercentage: number,
   topThreshold: number = 70 // More realistic top threshold
 ): number {
@@ -97,7 +97,7 @@ export function calculateTradeWinPercentageScore(
  * Formula: 100 - ((Max Drawdown / Peak P&L) × 100)
  * Lower drawdown = better score
  */
-export function calculateMaxDrawdownScore(maxDrawdownPercent: number): number {
+function calculateMaxDrawdownScore(maxDrawdownPercent: number): number {
   return Math.max(0, 100 - maxDrawdownPercent)
 }
 
@@ -111,7 +111,7 @@ export function calculateMaxDrawdownScore(maxDrawdownPercent: number): number {
  * - 1.5-2.0: Good profitability (70-85 points)
  * - 2.0+: Excellent profitability (85-100 points)
  */
-export function calculateProfitFactorScore(profitFactor: number): number {
+function calculateProfitFactorScore(profitFactor: number): number {
   if (profitFactor >= 3.0) return 100
   if (profitFactor >= 2.5) return 95 + ((profitFactor - 2.5) / 0.5) * 5
   if (profitFactor >= 2.0) return 85 + ((profitFactor - 2.0) / 0.5) * 10
@@ -134,7 +134,7 @@ export function calculateProfitFactorScore(profitFactor: number): number {
  * - 2.0-3.0: Good recovery (70-90 points)
  * - 3.0+: Excellent recovery (90-100 points)
  */
-export function calculateRecoveryFactorScore(recoveryFactor: number): number {
+function calculateRecoveryFactorScore(recoveryFactor: number): number {
   if (recoveryFactor >= 5.0) return 100
   if (recoveryFactor >= 4.0) return 95 + ((recoveryFactor - 4.0) / 1.0) * 5
   if (recoveryFactor >= 3.0) return 85 + ((recoveryFactor - 3.0) / 1.0) * 10

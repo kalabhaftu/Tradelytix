@@ -6,7 +6,7 @@ export type CalendarGradientPresetId =
   | 'ocean-glow'
   | 'sunset-bloom'
 
-export interface CalendarGradientPreset {
+interface CalendarGradientPreset {
   id: CalendarGradientPresetId
   label: string
   description: string
@@ -52,7 +52,7 @@ function shufflePresetIds() {
   return presetIds
 }
 
-export function getNextRandomCalendarGradientPreset() {
+function getNextRandomCalendarGradientPreset() {
   if (randomizedPresetQueue.length === 0) {
     randomizedPresetQueue = shufflePresetIds()
   }

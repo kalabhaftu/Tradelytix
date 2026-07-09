@@ -36,7 +36,7 @@ import {
 
 export { calculateTradeRMultiple as calculateRMultiple }
 
-export interface TradingActivityDTO {
+interface TradingActivityDTO {
   totalTrades: number
   winRate: string
   avgTradesPerMonth: number
@@ -48,7 +48,7 @@ export interface TradingActivityDTO {
   mostLosingPair: string | null
 }
 
-export interface PsychMetricsDTO {
+interface PsychMetricsDTO {
   longestWinStreak: number
   longestLoseStreak: number
   avgWin: string
@@ -68,7 +68,7 @@ export interface PsychMetricsDTO {
   calmarRatio: string
 }
 
-export interface SessionPerformanceDTO {
+interface SessionPerformanceDTO {
   [sessionName: string]: {
     name: string
     range: string
@@ -81,7 +81,7 @@ export interface SessionPerformanceDTO {
   }
 }
 
-export interface RMultipleDistributionDTO {
+interface RMultipleDistributionDTO {
   '<-1R': number
   '-1R to 0R': number
   '0R to 1R': number

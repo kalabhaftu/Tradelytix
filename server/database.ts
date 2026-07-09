@@ -146,7 +146,7 @@ export async function saveTradesAction(data: Trade[]): Promise<TradeResponse> {
 
 
 
-export async function getTradesAction(userId: string | null = null, options?: {
+async function getTradesAction(userId: string | null = null, options?: {
   page?: number
   limit?: number
   offset?: number
@@ -356,7 +356,7 @@ export async function appendTagsToTradesAction(tradeIds: string[], tagIds: strin
   }
 }
 
-export async function updateTradeCommentAction(tradeId: string, comment: string | null) {
+async function updateTradeCommentAction(tradeId: string, comment: string | null) {
   try {
     await db.update(schema.Trade).set({ comment }).where(eq(schema.Trade.id, tradeId)).returning()
     revalidatePath('/')
@@ -365,7 +365,7 @@ export async function updateTradeCommentAction(tradeId: string, comment: string 
   }
 }
 
-  export async function loadDashboardLayoutAction(): Promise<Layouts | null> {
+  async function loadDashboardLayoutAction(): Promise<Layouts | null> {
   return null
 }
 

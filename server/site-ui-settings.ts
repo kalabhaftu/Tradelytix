@@ -35,7 +35,7 @@ export async function getSiteUiSettings(): Promise<SiteUiSettingsPayload> {
   return getCachedSiteUiSettings()
 }
 
-export async function updateSiteUiSettings(
+async function updateSiteUiSettings(
   updates: Partial<SiteUiSettingsPayload>
 ): Promise<SiteUiSettingsPayload> {
   const [existing] = await db.select().from(SiteUiSettings).where(eq(SiteUiSettings.id, SITE_UI_SETTINGS_ID))

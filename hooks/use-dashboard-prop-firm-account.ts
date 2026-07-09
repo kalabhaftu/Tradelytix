@@ -49,7 +49,7 @@ function getCurrentPhase(account: DashboardPropFirmAccountOption) {
   return account.PhaseAccount?.find((phase) => phase.phaseNumber === account.currentPhase) ?? null
 }
 
-export const isTrulyActive = (a: DashboardPropFirmAccountOption) => {
+const isTrulyActive = (a: DashboardPropFirmAccountOption) => {
   const accountStatus = String(a.status || '').toLowerCase()
   const currentPhase = getCurrentPhase(a)
   const currentPhaseStatus = String(currentPhase?.status || '').toLowerCase()

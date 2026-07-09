@@ -14,7 +14,7 @@ import {
 /**
  * Structured error response for fetch operations
  */
-export interface FetchError {
+interface FetchError {
   message: string
   code: string
   status?: number
@@ -254,7 +254,7 @@ export async function fetchWithError<T = unknown>(
  * 
  * @throws FetchError on failure
  */
-export async function fetchOrThrow<T = unknown>(
+async function fetchOrThrow<T = unknown>(
   url: string,
   options: FetchOptions = {}
 ): Promise<T> {
@@ -307,7 +307,7 @@ export function handleFetchError(error: unknown): string {
 /**
  * Check if an error is a FetchError
  */
-export function isFetchError(error: unknown): error is FetchError {
+function isFetchError(error: unknown): error is FetchError {
   return (
     error !== null &&
     typeof error === 'object' &&

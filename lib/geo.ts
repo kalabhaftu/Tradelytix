@@ -31,7 +31,7 @@ export function normalizeCountryCode(value?: string | null): string | null {
   return /^[A-Z]{2}$/.test(normalized) ? normalized : null
 }
 
-export function normalizeCountryName(country?: string | null, countryCode?: string | null): string | null {
+function normalizeCountryName(country?: string | null, countryCode?: string | null): string | null {
   const decodedCountry = decodeLocationPart(country)
   const normalizedCode = normalizeCountryCode(countryCode ?? country)
 
@@ -55,7 +55,7 @@ export function normalizeCityName(value?: string | null): string | null {
   return decoded
 }
 
-export function normalizeGeoRecord<T extends { city?: string | null; country?: string | null; countryCode?: string | null }>(
+function normalizeGeoRecord<T extends { city?: string | null; country?: string | null; countryCode?: string | null }>(
   value: T | null | undefined
 ) {
   if (!value) return null
@@ -72,7 +72,7 @@ export function normalizeGeoRecord<T extends { city?: string | null; country?: s
   }
 }
 
-export function formatGeoLocation(value?: { city?: string | null; country?: string | null; countryCode?: string | null } | null) {
+function formatGeoLocation(value?: { city?: string | null; country?: string | null; countryCode?: string | null } | null) {
   const normalized = normalizeGeoRecord(value)
   if (!normalized) return null
 

@@ -80,7 +80,7 @@ export async function logServerError(
 /**
  * Cleanup old error logs (older than given days).
  */
-export async function cleanupOldErrorLogs(olderThanDays: number = 30): Promise<number> {
+async function cleanupOldErrorLogs(olderThanDays: number = 30): Promise<number> {
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - olderThanDays)
 

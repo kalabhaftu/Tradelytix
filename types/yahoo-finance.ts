@@ -9,7 +9,7 @@ export interface YahooFinanceQuote {
     adjClose?: number;
 }
 
-export interface YahooFinanceChartResult {
+interface YahooFinanceChartResult {
     meta: any;
     timestamp: number[];
     indicators: {
@@ -27,6 +27,6 @@ export interface YahooFinanceChartResult {
 }
 
 // Simplified result type often returned by yahoo-finance2 wrapper
-export interface YahooFinanceResult {
+interface YahooFinanceResult {
     quotes: YahooFinanceQuote[];
 }

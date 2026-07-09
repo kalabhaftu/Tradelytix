@@ -93,7 +93,7 @@ export async function validatePhaseId(
 /**
  * Validates multiple phase IDs at once (for account creation with multiple phases)
  */
-export async function validateMultiplePhaseIds(
+async function validateMultiplePhaseIds(
   userId: string,
   phaseIds: { phaseNumber: number; phaseId: string }[],
   excludeAccountId?: string

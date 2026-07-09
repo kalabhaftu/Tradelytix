@@ -266,7 +266,7 @@ export function TemplateAwareDashboardSkeleton({
 }
 
 /** Generic page skeleton — header + content block */
-export function PageSkeleton() {
+function PageSkeleton() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -284,7 +284,7 @@ export function PageSkeleton() {
 }
 
 /** Compact skeleton for small components (sidebar items, lists) */
-export function CompactSkeleton({ rows = 3 }: { rows?: number }) {
+function CompactSkeleton({ rows = 3 }: { rows?: number }) {
   return (
     <div className="space-y-2">
       {Array(rows).fill(0).map((_, i) => (
@@ -302,7 +302,7 @@ export function CompactSkeleton({ rows = 3 }: { rows?: number }) {
 }
 
 /** Table page skeleton */
-export function TableSkeleton() {
+function TableSkeleton() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -315,7 +315,7 @@ export function TableSkeleton() {
 }
 
 /** Reports page skeleton */
-export function ReportsSkeleton() {
+function ReportsSkeleton() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">

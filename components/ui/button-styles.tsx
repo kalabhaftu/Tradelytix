@@ -48,7 +48,7 @@ export function PrimaryButton({
 /**
  * Secondary action button - for secondary actions like Cancel, Back
  */
-export function SecondaryButton({ 
+function SecondaryButton({ 
   children, 
   loading = false, 
   loadingText = 'Loading...', 
@@ -102,7 +102,7 @@ interface IconButtonProps extends ButtonProps {
   tooltip?: string
 }
 
-export function IconButton({ 
+function IconButton({ 
   icon, 
   label, 
   className, 
@@ -133,7 +133,7 @@ interface ActionGroupProps {
   orientation?: 'horizontal' | 'vertical'
 }
 
-export function ActionGroup({ 
+function ActionGroup({ 
   children, 
   className, 
   orientation = 'horizontal' 
@@ -162,7 +162,7 @@ interface FormActionsProps {
   className?: string
 }
 
-export function FormActions({
+function FormActions({
   onSubmit,
   onCancel,
   submitText = 'Save',
@@ -212,7 +212,7 @@ interface CrudActionsProps {
   size?: 'sm' | 'default'
 }
 
-export function CrudActions({
+function CrudActions({
   onView,
   onEdit,
   onDelete,
@@ -252,7 +252,7 @@ export function CrudActions({
 /**
  * Navigation button for consistent navigation styling
  */
-export function NavButton({ 
+function NavButton({ 
   children, 
   active = false,
   className,

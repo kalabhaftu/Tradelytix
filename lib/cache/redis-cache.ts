@@ -132,7 +132,7 @@ export function isRedisAvailable(): boolean {
  * Get or set pattern (cache-aside)
  * Tries to get from cache first, if miss, fetches data and caches it
  */
-export async function getOrSet<T>(
+async function getOrSet<T>(
   key: string,
   fetcher: () => Promise<T>,
   ttl: number = CacheTTL.SHORT
@@ -165,7 +165,7 @@ export async function invalidateUserCache(userId: string): Promise<void> {
 /**
  * Cache wrapper for dashboard stats
  */
-export async function getCachedDashboardStats<T>(
+async function getCachedDashboardStats<T>(
   userId: string,
   fetcher: () => Promise<T>
 ): Promise<T> {
@@ -176,7 +176,7 @@ export async function getCachedDashboardStats<T>(
 /**
  * Cache wrapper for user data
  */
-export async function getCachedUserData<T>(
+async function getCachedUserData<T>(
   userId: string,
   fetcher: () => Promise<T>
 ): Promise<T> {
@@ -187,7 +187,7 @@ export async function getCachedUserData<T>(
 /**
  * Cache wrapper for account list
  */
-export async function getCachedAccounts<T>(
+async function getCachedAccounts<T>(
   userId: string,
   fetcher: () => Promise<T>
 ): Promise<T> {
@@ -198,7 +198,7 @@ export async function getCachedAccounts<T>(
 /**
  * Cache wrapper for trade list
  */
-export async function getCachedTrades<T>(
+async function getCachedTrades<T>(
   userId: string,
   filters: string,
   fetcher: () => Promise<T>
@@ -210,7 +210,7 @@ export async function getCachedTrades<T>(
 /**
  * Cache wrapper for calendar data
  */
-export async function getCachedCalendarData<T>(
+async function getCachedCalendarData<T>(
   userId: string,
   month: string,
   fetcher: () => Promise<T>

@@ -54,7 +54,7 @@ export async function setCached<T>(
 /**
  * Delete key from cache (Redis or memory)
  */
-export async function deleteCached(key: string): Promise<boolean> {
+async function deleteCached(key: string): Promise<boolean> {
   if (isRedisAvailable()) {
     return await redisDelete(key)
   }
@@ -66,7 +66,7 @@ export async function deleteCached(key: string): Promise<boolean> {
 /**
  * Delete keys matching pattern (Redis or memory)
  */
-export async function deleteCachedPattern(pattern: string): Promise<number> {
+async function deleteCachedPattern(pattern: string): Promise<number> {
   if (isRedisAvailable()) {
     return await redisDeletePattern(pattern)
   }
@@ -77,7 +77,7 @@ export async function deleteCachedPattern(pattern: string): Promise<number> {
 /**
  * Get or set pattern (cache-aside) - unified
  */
-export async function getOrSetCached<T>(
+async function getOrSetCached<T>(
   key: string,
   fetcher: () => Promise<T>,
   ttl: number = CacheTTL.SHORT
@@ -110,7 +110,7 @@ export async function invalidateUserCache(userId: string): Promise<void> {
 /**
  * Get current cache backend
  */
-export function getCacheBackend(): 'redis' | 'memory' {
+function getCacheBackend(): 'redis' | 'memory' {
   return isRedisAvailable() ? 'redis' : 'memory'
 }
 

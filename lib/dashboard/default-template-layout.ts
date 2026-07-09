@@ -8,7 +8,7 @@ export interface TemplateLayoutItem {
   h: number
 }
 
-export const DEFAULT_TEMPLATE_LAYOUT: TemplateLayoutItem[] = [
+const DEFAULT_TEMPLATE_LAYOUT: TemplateLayoutItem[] = [
   { i: 'kpi-1', type: 'accountBalancePnl', size: 'kpi', x: 0, y: 0, w: 1, h: 1 },
   { i: 'kpi-2', type: 'tradeWinRate', size: 'kpi', x: 1, y: 0, w: 1, h: 1 },
   { i: '0f139a04-41eb-43a5-bce7-416c2d4c784d', type: 'profitFactor', size: 'small', x: 2, y: 0, w: 1, h: 1 },

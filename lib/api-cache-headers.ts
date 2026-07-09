@@ -62,7 +62,7 @@ export const CacheHeaders = {
 /**
  * Helper to add cache headers to NextResponse
  */
-export function withCacheHeaders(
+function withCacheHeaders(
   response: Response,
   cacheType: keyof typeof CacheHeaders = 'short'
 ): Response {
@@ -83,7 +83,7 @@ export function withCacheHeaders(
 /**
  * Get cache headers for a specific cache duration
  */
-export function getCacheHeaders(
+function getCacheHeaders(
   maxAge: number,
   staleWhileRevalidate?: number
 ): Record<string, string> {

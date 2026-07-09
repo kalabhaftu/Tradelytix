@@ -40,7 +40,7 @@ interface FetchTradesResult {
   flattenedTrades: TradeType[];
 }
 
-export async function fetchGroupedTradesAction(userId: string): Promise<FetchTradesResult> {
+async function fetchGroupedTradesAction(userId: string): Promise<FetchTradesResult> {
   const trades = await db.query.Trade.findMany({
     where: (table, { eq }) => eq(table.userId, userId),
     orderBy: (table, { asc }) => [asc(table.accountNumber), asc(table.instrument)]
@@ -109,7 +109,7 @@ export async function removeAccountsFromTradesAction(accountNumbers: string[]): 
   await db.delete(schema.Account).where(and(inArray(schema.Account.number, accountNumbers), eq(schema.Account.userId, userId)))
 }
 
-export async function removeAccountFromTradesAction(accountNumber: string): Promise<void> {
+async function removeAccountFromTradesAction(accountNumber: string): Promise<void> {
   const userId = await getUserId()
 
   const tradesWithImages = await db.query.Trade.findMany({
@@ -146,7 +146,7 @@ export async function removeAccountFromTradesAction(accountNumber: string): Prom
   await db.delete(schema.Trade).where(and(eq(schema.Trade.accountNumber, accountNumber), eq(schema.Trade.userId, userId)))
 }
 
-export async function deleteInstrumentGroupAction(accountNumber: string, instrumentGroup: string, userId: string): Promise<void> {
+async function deleteInstrumentGroupAction(accountNumber: string, instrumentGroup: string, userId: string): Promise<void> {
   const tradesWithImages = await db.query.Trade.findMany({
     where: (table, { and, eq }) => and(eq(table.accountNumber, accountNumber), eq(table.instrument, instrumentGroup), eq(table.userId, userId)),
     columns: {
@@ -181,7 +181,7 @@ export async function deleteInstrumentGroupAction(accountNumber: string, instrum
   await db.delete(schema.Trade).where(and(eq(schema.Trade.accountNumber, accountNumber), eq(schema.Trade.instrument, instrumentGroup), eq(schema.Trade.userId, userId)))
 }
 
-export async function updateCommissionForGroupAction(accountNumber: string, instrumentGroup: string, newCommission: number): Promise<void> {
+async function updateCommissionForGroupAction(accountNumber: string, instrumentGroup: string, newCommission: number): Promise<void> {
   const trades = await db.query.Trade.findMany({
     where: (table, { and, eq, like }) => and(eq(table.accountNumber, accountNumber), like(table.instrument, `${instrumentGroup}%`))
   })
@@ -700,7 +700,7 @@ export async function deletePayoutAction(payoutId: string) {
   }
 }
 
-export async function renameInstrumentAction(accountNumber: string, oldInstrumentName: string, newInstrumentName: string): Promise<void> {
+async function renameInstrumentAction(accountNumber: string, oldInstrumentName: string, newInstrumentName: string): Promise<void> {
   try {
     const userId = await getUserId()
     await db.update(schema.Trade).set({ instrument: newInstrumentName }).where(and(eq(schema.Trade.accountNumber, accountNumber), eq(schema.Trade.instrument, oldInstrumentName), eq(schema.Trade.userId, userId)))
@@ -712,7 +712,7 @@ export async function renameInstrumentAction(accountNumber: string, oldInstrumen
   }
 }
 
-export async function checkAndResetAccountsAction() {
+async function checkAndResetAccountsAction() {
 }
 
 export async function invalidateUserCaches(userId: string) {
@@ -728,7 +728,7 @@ export async function invalidateUserCaches(userId: string) {
   }
 }
 
-export async function createAccountAction(accountNumber: string) {
+async function createAccountAction(accountNumber: string) {
   try {
     const userId = await getUserId()
     const account = (await db.insert(schema.Account).values({
@@ -744,7 +744,7 @@ export async function createAccountAction(accountNumber: string) {
   }
 }
 
-export async function getCurrentActivePhase(accountId: string) {
+async function getCurrentActivePhase(accountId: string) {
   try {
     const userId = await getUserId()
 
@@ -784,7 +784,7 @@ export async function getCurrentActivePhase(accountId: string) {
   }
 }
 
-export async function getAccountPhases(accountId: string) {
+async function getAccountPhases(accountId: string) {
   try {
     const userId = await getUserId()
 
@@ -1498,7 +1498,7 @@ export async function checkPhaseProgression(accountId: string) {
   }
 }
 
-export async function progressAccountPhase(masterAccountId: string, currentPhase: any) {
+async function progressAccountPhase(masterAccountId: string, currentPhase: any) {
   try {
     const userId = await getUserId()
 
@@ -1556,7 +1556,7 @@ export async function progressAccountPhase(masterAccountId: string, currentPhase
   }
 }
 
-export async function getAccountHistory(accountId: string) {
+async function getAccountHistory(accountId: string) {
   try {
     const userId = await getUserId()
 
@@ -1686,7 +1686,7 @@ export async function checkAccountBreaches(accountId: string) {
   }
 }
 
-export async function failAccount(accountId: string, currentPhase: any, breachDetails: any) {
+async function failAccount(accountId: string, currentPhase: any, breachDetails: any) {
   try {
     const userId = await getUserId()
 
@@ -1719,7 +1719,7 @@ export async function failAccount(accountId: string, currentPhase: any, breachDe
   }
 }
 
-export async function getFailedAccountsHistory() {
+async function getFailedAccountsHistory() {
   try {
     const userId = await getUserId()
 

@@ -32,13 +32,13 @@ export const ADMIN_WIDGET_DEFAULTS = [
   { widgetType: 'streakKpi', label: 'Streak KPI', visible: true, recommended: false, deprecated: false, status: 'stable' },
 ] as const
 
-export const ADMIN_FEATURE_DEFAULTS = [
+const ADMIN_FEATURE_DEFAULTS = [
   { key: 'analytics.new_widgets', label: 'New Analytics Widgets', description: 'Shows review-stage analytics widgets in the library.', enabled: true, internalOnly: false },
   { key: 'reports.public_sharing', label: 'Public Report Sharing', description: 'Allows users to create public shared reports.', enabled: true, internalOnly: false },
   { key: 'dashboard.admin_presets', label: 'Admin Dashboard Presets', description: 'Allows admins to curate product-owned dashboard presets.', enabled: true, internalOnly: true },
 ] as const
 
-export const DEFAULT_SHARING_POLICY = {
+const DEFAULT_SHARING_POLICY = {
   key: 'default',
   publicSharingEnabled: true,
   defaultExpirationDays: null,

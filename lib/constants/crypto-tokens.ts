@@ -10,7 +10,7 @@ function normalizeTokenKey(value: string) {
   return value.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
-export const TOKEN_META: Record<string, TokenMeta> = {
+const TOKEN_META: Record<string, TokenMeta> = {
   BTC: {
     symbol: 'BTC',
     name: 'Bitcoin',
@@ -65,9 +65,9 @@ for (const token of Object.values(TOKEN_META)) {
   }
 }
 
-export const KNOWN_TOKEN_OPTIONS = Object.values(TOKEN_META)
+const KNOWN_TOKEN_OPTIONS = Object.values(TOKEN_META)
 
-export function resolveKnownTokenSymbol(input: string | null | undefined): string | null {
+function resolveKnownTokenSymbol(input: string | null | undefined): string | null {
   if (!input) return null
   return TOKEN_LOOKUP.get(normalizeTokenKey(input)) ?? null
 }

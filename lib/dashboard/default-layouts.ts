@@ -402,7 +402,7 @@ export const defaultLayouts: PrismaDashboardLayout = {
 };
 
 // New default layouts with KPI widgets - used only for new users and reset functionality
-export const defaultLayoutsWithKPI: PrismaDashboardLayout = {
+const defaultLayoutsWithKPI: PrismaDashboardLayout = {
   id: '',
   userId: '',
   createdAt: new Date(),

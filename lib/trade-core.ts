@@ -13,13 +13,13 @@ function normalizeString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-export function parseTradeNumeric(value: unknown): number | null {
+function parseTradeNumeric(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null
   const parsed = decimalToNumber(value)
   return Number.isFinite(parsed) ? parsed : null
 }
 
-export function parseTradeDate(value: unknown): Date | null {
+function parseTradeDate(value: unknown): Date | null {
   if (!value) return null
   const parsed = value instanceof Date ? value : new Date(String(value))
   return Number.isNaN(parsed.getTime()) ? null : parsed
@@ -41,11 +41,11 @@ export function getTradeClosePriceValue(trade: TradeLike): number | null {
   return parseTradeNumeric((trade as any).closePriceValue) ?? parseTradeNumeric(trade.closePrice)
 }
 
-export function getTradeStopLossValue(trade: TradeLike): number | null {
+function getTradeStopLossValue(trade: TradeLike): number | null {
   return parseTradeNumeric((trade as any).stopLossValue) ?? parseTradeNumeric(trade.stopLoss)
 }
 
-export function getTradeTakeProfitValue(trade: TradeLike): number | null {
+function getTradeTakeProfitValue(trade: TradeLike): number | null {
   return parseTradeNumeric((trade as any).takeProfitValue) ?? parseTradeNumeric(trade.takeProfit)
 }
 

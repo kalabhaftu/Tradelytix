@@ -8,13 +8,13 @@ import { STORAGE_BUCKETS } from '@/lib/constants/storage'
 import { buildTradeImagePath } from '@/lib/storage/paths'
 import logger from '@/lib/logger';
 
-export interface UploadResult {
+interface UploadResult {
   success: boolean
   url?: string
   error?: string
 }
 
-export interface UploadOptions {
+interface UploadOptions {
   userId: string
   folder: string // 'trades', 'notes', 'avatars'
   tradeId?: string
@@ -33,7 +33,7 @@ const IMAGE_SIGNATURES: Record<string, number[][]> = {
   'image/webp': [[0x52, 0x49, 0x46, 0x46]]
 }
 
-export class MediaUploadService {
+class MediaUploadService {
   private supabase = createClient()
   
   async uploadImage(file: File, options: UploadOptions): Promise<UploadResult> {

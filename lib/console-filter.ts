@@ -169,7 +169,7 @@ export function restoreConsole() {
 /**
  * Temporarily disable console filtering
  */
-export function withOriginalConsole<T>(fn: () => T): T {
+function withOriginalConsole<T>(fn: () => T): T {
   const wasFiltered = logger.info !== originalConsole.log
   
   if (wasFiltered) {
@@ -188,14 +188,14 @@ export function withOriginalConsole<T>(fn: () => T): T {
 /**
  * Add a custom suppress pattern
  */
-export function addSuppressPattern(pattern: RegExp) {
+function addSuppressPattern(pattern: RegExp) {
   SUPPRESS_PATTERNS.push(pattern)
 }
 
 /**
  * Remove a suppress pattern
  */
-export function removeSuppressPattern(pattern: RegExp) {
+function removeSuppressPattern(pattern: RegExp) {
   const index = SUPPRESS_PATTERNS.indexOf(pattern)
   if (index > -1) {
     SUPPRESS_PATTERNS.splice(index, 1)
@@ -205,6 +205,6 @@ export function removeSuppressPattern(pattern: RegExp) {
 /**
  * Get current suppress patterns (for debugging)
  */
-export function getSuppressPatterns(): RegExp[] {
+function getSuppressPatterns(): RegExp[] {
   return [...SUPPRESS_PATTERNS]
 }

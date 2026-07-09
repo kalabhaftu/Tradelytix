@@ -41,7 +41,7 @@ export function getRithmicData(id: string): RithmicCredentialSet | null {
   }
 }
 
-export function isValidCredentialSet(data: any): data is RithmicCredentialSet {
+function isValidCredentialSet(data: any): data is RithmicCredentialSet {
   return (
     data &&
     typeof data.id === 'string' &&

@@ -53,7 +53,7 @@ export interface BacktestStats {
   breakevenCount: number
 }
 
-export interface BacktestFormData {
+interface BacktestFormData {
   pair: string
   direction: BacktestDirection
   session: BacktestSession

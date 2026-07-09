@@ -11,7 +11,7 @@ let chunkFailureToastShown = false
  * Detects if an error is a Server Action mismatch error
  * This happens when the client has old action IDs after a new deployment
  */
-export function isServerActionMismatchError(error: unknown): boolean {
+function isServerActionMismatchError(error: unknown): boolean {
   if (!error) return false
 
   const errorMessage = error instanceof Error ? error.message : String(error)
@@ -26,7 +26,7 @@ export function isServerActionMismatchError(error: unknown): boolean {
 /**
  * Detects chunk loading/runtime asset failures.
  */
-export function isChunkLoadError(error: unknown): boolean {
+function isChunkLoadError(error: unknown): boolean {
   if (!error) return false
 
   const errorMessage = error instanceof Error ? error.message : String(error)
@@ -94,7 +94,7 @@ function handleChunkRecovery(showToast: boolean): boolean {
 /**
  * Detects if an error is a deployment-related error
  */
-export function isDeploymentError(error: unknown): boolean {
+function isDeploymentError(error: unknown): boolean {
   if (!error) return false
 
   return isServerActionMismatchError(error) || isChunkLoadError(error)
@@ -158,7 +158,7 @@ export function handleServerActionError(error: unknown, options?: {
  * Wraps an async function with Server Action error handling
  * Usage: const safeAction = withServerActionErrorHandling(myAction)
  */
-export function withServerActionErrorHandling<T extends (...args: any[]) => Promise<any>>(
+function withServerActionErrorHandling<T extends (...args: any[]) => Promise<any>>(
   fn: T,
   options?: {
     autoRefresh?: boolean

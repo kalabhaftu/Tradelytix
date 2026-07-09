@@ -272,7 +272,7 @@ export async function createImportNotification(
  * System Announcement: Admin-to-user broadcasts
  * No invalidation - each announcement is unique
  */
-export async function createSystemAnnouncement(
+async function createSystemAnnouncement(
     userId: string,
     title: string,
     message: string,

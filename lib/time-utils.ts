@@ -6,14 +6,14 @@ export type MarketSession = 'Asia' | 'London' | 'New York';
 export type KillzoneBadge = 'London Killzone' | 'NY Killzone' | 'Lunch Time' | 'NY PM Session';
 
 // Sessions (for analysis) - single continuous assignment in New York time
-export const MARKET_SESSIONS = [
+const MARKET_SESSIONS = [
   { name: 'New York', start: 8, end: 17 },
   { name: 'London', start: 3, end: 8 },
   { name: 'Asia', start: 18, end: 3 }, // Display range; fallback captures the remainder
 ];
 
 // Killzones (indicators only)
-export const KILLZONE_BADGES = [
+const KILLZONE_BADGES = [
   { name: 'London Killzone', start: 2, end: 5 }, // (02:00 - 05:00)
   { name: 'NY Killzone', start: 7, end: 10 },    // Forex (07:00 - 10:00)
   { name: 'Lunch Time', start: 11.5, end: 13 },  // (11:30 - 13:00)
@@ -83,7 +83,7 @@ export function getKillzoneBadge(date: Date | string | number, symbol?: string):
   return null;
 }
 
-export function getNewYorkDateKey(date: Date | string | number): string {
+function getNewYorkDateKey(date: Date | string | number): string {
   const parsedDate = new Date(date);
   if (isNaN(parsedDate.getTime())) return '';
   return formatInTimeZone(parsedDate, DEFAULT_TIMEZONE, 'yyyy-MM-dd');
@@ -103,7 +103,7 @@ export function getNewYorkWeekdayIndex(date: Date | string | number): number | n
   return toZonedTime(parsedDate, DEFAULT_TIMEZONE).getDay();
 }
 
-export function formatUserTime(date: Date | string | number, timezone: string = DEFAULT_TIMEZONE, use24HourFormat: boolean = true): string {
+function formatUserTime(date: Date | string | number, timezone: string = DEFAULT_TIMEZONE, use24HourFormat: boolean = true): string {
   if (!date) return 'N/A';
   const parsedDate = new Date(date);
   if (isNaN(parsedDate.getTime())) return 'N/A';

@@ -113,7 +113,7 @@ export function formatCurrency(value: number, maxDecimals: number = 2): string {
   }).format(value)
 }
 
-export function formatPercentage(value: number, maxDecimals: number = 1): string {
+function formatPercentage(value: number, maxDecimals: number = 1): string {
   if (isNaN(value) || !isFinite(value)) return '0%'
 
   const formatted = (value * 100).toFixed(maxDecimals)
@@ -140,7 +140,7 @@ export function formatQuantity(value: number | string | null | undefined): strin
   return cleanNumber.toString()
 }
 
-export function formatPrice(price: string | number | { toString(): string }, instrument: string, forAggregation: boolean = false): string {
+function formatPrice(price: string | number | { toString(): string }, instrument: string, forAggregation: boolean = false): string {
   if (price === null || price === undefined || price === '') return '0'
 
   // Handle Prisma Decimal type or other objects with toString
@@ -651,7 +651,7 @@ export function formatCalendarData(trades: Trade[], accounts: Account[] = [], ti
   }, {})
 }
 
-export function groupBy<T>(array: T[], key: keyof T): { [key: string]: T[] } {
+function groupBy<T>(array: T[], key: keyof T): { [key: string]: T[] } {
   return array.reduce((result, currentValue) => {
     (result[currentValue[key] as string] = result[currentValue[key] as string] || []).push(
       currentValue

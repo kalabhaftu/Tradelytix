@@ -13,7 +13,7 @@ export function normalizeJournalDate(date: Date | string) {
   return normalized
 }
 
-export function buildDailyJournalWhere(
+function buildDailyJournalWhere(
   userId: string,
   { accountId, startDate, endDate }: DailyJournalQuery = {}
 ) {

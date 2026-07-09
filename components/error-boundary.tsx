@@ -195,7 +195,7 @@ interface DataErrorProps {
   className?: string
 }
 
-export function DataError({ error, onRetry, className = '' }: DataErrorProps): ReactElement | null {
+function DataError({ error, onRetry, className = '' }: DataErrorProps): ReactElement | null {
   if (!error) return null
 
   return (
@@ -228,7 +228,7 @@ interface LoadingOrErrorProps {
   children: ReactNode
 }
 
-export function LoadingOrError({
+function LoadingOrError({
   isLoading,
   error,
   onRetry,

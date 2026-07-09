@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Pencil, Trash2, Plus, X, Loader2, Upload } from 'lucide-react'
 import { FileDropzone } from '@/components/ui/file-dropzone'
 
-export type ImageField = 'imageOne' | 'imageTwo' | 'imageThree' | 'imageFour' | 'imageFive' | 'imageSix'
+type ImageField = 'imageOne' | 'imageTwo' | 'imageThree' | 'imageFour' | 'imageFive' | 'imageSix'
 
 interface TradeImagesGalleryProps {
     images: Record<string, string | null>

@@ -15,7 +15,7 @@ const CURRENT_CACHE_VERSION = '2.0.0' // Increment to force cache clear
 /**
  * Cache version management
  */
-export function checkCacheVersion(): boolean {
+function checkCacheVersion(): boolean {
   if (typeof window === 'undefined') return true
   
   try {
@@ -31,7 +31,7 @@ export function checkCacheVersion(): boolean {
   }
 }
 
-export function updateCacheVersion(): void {
+function updateCacheVersion(): void {
   if (typeof window === 'undefined') return
   
   try {
@@ -43,14 +43,14 @@ export function updateCacheVersion(): void {
 /**
  * LocalStorage cache management
  */
-export interface LocalStorageCacheItem {
+interface LocalStorageCacheItem {
   key?: string
   pattern?: RegExp
   description: string
 }
 
 // All localStorage keys used in the app
-export const LOCAL_STORAGE_KEYS: LocalStorageCacheItem[] = [
+const LOCAL_STORAGE_KEYS: LocalStorageCacheItem[] = [
   { key: 'accounts-store', description: 'Account list cache' },
   { key: 'equity-chart-store', description: 'Equity chart settings' },
   { key: 'table-config-store', description: 'Table configuration' },
@@ -88,7 +88,7 @@ function getAllCacheKeys(excludeKeys: string[] = []): string[] {
 /**
  * Clear specific localStorage cache keys
  */
-export function clearLocalStorageCache(keysToKeep: string[] = ['theme', 'consent-banner-dismissed']): number {
+function clearLocalStorageCache(keysToKeep: string[] = ['theme', 'consent-banner-dismissed']): number {
   if (typeof window === 'undefined') return 0
   
   let clearedCount = 0
@@ -119,7 +119,7 @@ export function clearLocalStorageCache(keysToKeep: string[] = ['theme', 'consent
 /**
  * Clear SessionStorage
  */
-export function clearSessionStorage(): number {
+function clearSessionStorage(): number {
   if (typeof window === 'undefined') return 0
   
   try {
@@ -134,7 +134,7 @@ export function clearSessionStorage(): number {
 /**
  * Clear Service Worker caches
  */
-export async function clearServiceWorkerCaches(): Promise<number> {
+async function clearServiceWorkerCaches(): Promise<number> {
   if (typeof window === 'undefined' || !('caches' in window)) return 0
   
   let clearedCount = 0
@@ -179,7 +179,7 @@ export async function clearIndexedDB(): Promise<number> {
 /**
  * Clear Next.js client-side router cache
  */
-export function clearNextJSCache(): void {
+function clearNextJSCache(): void {
   if (typeof window === 'undefined') return
   
   try {

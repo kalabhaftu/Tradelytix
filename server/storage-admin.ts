@@ -18,7 +18,7 @@ function isExpectedStorageOrigin(parsed: URL) {
   }
 }
 
-export function parsePublicStorageUrl(url: string): StorageObjectRef | null {
+function parsePublicStorageUrl(url: string): StorageObjectRef | null {
   try {
     const parsed = new URL(url)
     if (!isExpectedStorageOrigin(parsed)) {

@@ -479,7 +479,7 @@ export default function UniversalProcessor({
   )
 }
 
-export function UniversalProcessorInfo() {
+function UniversalProcessorInfo() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-start gap-3">

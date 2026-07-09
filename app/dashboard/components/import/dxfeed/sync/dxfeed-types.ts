@@ -42,7 +42,7 @@ export interface DxFeedAccountListResponse {
   data: DxFeedTradingAccount[] | null
 }
 
-export interface DxFeedContractDetail {
+interface DxFeedContractDetail {
   symbolId: number
   symbol: string | null
   exchange: string | null
@@ -80,7 +80,7 @@ export interface DxFeedTradesResponse {
   data: DxFeedReportTrade[] | null
 }
 
-export interface DxFeedTradesMultiAccountResponse {
+interface DxFeedTradesMultiAccountResponse {
   success: boolean
   data: {
     accountId: number

@@ -23,7 +23,7 @@ import { useTheme } from '@/context/theme-provider'
 import { useData } from '@/context/data-provider'
 import { useQuickAddStore } from '@/store/quick-add-store'
 
-export interface DashboardShellAction {
+interface DashboardShellAction {
   id: string
   title: string
   description: string

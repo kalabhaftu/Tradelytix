@@ -30,7 +30,7 @@ export async function generateThorToken() {
   }
 }
 
-export async function getThorToken() {
+async function getThorToken() {
   try {
     const { internalUserId } = await getResolvedUserIdentity()
 

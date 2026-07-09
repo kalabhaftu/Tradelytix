@@ -150,6 +150,6 @@ export const memGet = <T>(key: string) => memoryCache.get<T>(key)
 export const memSet = <T>(key: string, value: T, ttl?: number) => memoryCache.set(key, value, ttl)
 export const memDelete = (key: string) => memoryCache.delete(key)
 export const memDeletePattern = (pattern: string) => memoryCache.deletePattern(pattern)
-export const memClear = () => memoryCache.clear()
-export const memSize = () => memoryCache.size()
+const memClear = () => memoryCache.clear()
+const memSize = () => memoryCache.size()
 

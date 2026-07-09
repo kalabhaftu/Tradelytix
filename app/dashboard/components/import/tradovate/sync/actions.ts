@@ -515,7 +515,7 @@ interface TradovateUserListResponse {
   data?: TradovateUser[]
 }
 
-export async function getTradovateUsername(accessToken: string): Promise<string> {
+async function getTradovateUsername(accessToken: string): Promise<string> {
   const apiBaseUrl = TRADOVATE_ENVIRONMENTS.demo.auth
   const response = await fetch(`${apiBaseUrl}/v1/user/list`, {
     headers: {
@@ -574,7 +574,7 @@ export async function initiateTradovateOAuth(accountId: string = 'default'): Pro
   }
 }
 
-export async function getPropfirmName(accessToken: string): Promise<string> {
+async function getPropfirmName(accessToken: string): Promise<string> {
   const apiBaseUrl = TRADOVATE_ENVIRONMENTS.demo.api
   const response = await fetch(`${apiBaseUrl}/v1/organization/list`, {
     headers: {
@@ -658,7 +658,7 @@ export async function handleTradovateCallback(code: string, state: string): Prom
   }
 }
 
-export async function renewTradovateAccessToken(accessToken: string, environment: 'demo' | 'live' = 'demo'): Promise<TradovateOAuthResult> {
+async function renewTradovateAccessToken(accessToken: string, environment: 'demo' | 'live' = 'demo'): Promise<TradovateOAuthResult> {
   try {
     const apiBaseUrl = environment === 'demo' ? TRADOVATE_ENVIRONMENTS.demo.api : 'https://live.tradovateapi.com'
     
@@ -699,7 +699,7 @@ export async function renewTradovateAccessToken(accessToken: string, environment
   }
 }
 
-export async function refreshTradovateToken(refreshToken: string): Promise<TradovateOAuthResult> {
+async function refreshTradovateToken(refreshToken: string): Promise<TradovateOAuthResult> {
   try {
     if (!TRADOVATE_CLIENT_ID || !TRADOVATE_CLIENT_SECRET) {
       return { error: 'Tradovate OAuth credentials not configured' }
@@ -749,7 +749,7 @@ export async function refreshTradovateToken(refreshToken: string): Promise<Trado
   }
 }
 
-export async function testTradovateAuth(accessToken: string) {
+async function testTradovateAuth(accessToken: string) {
   try {
     const apiBaseUrl = TRADOVATE_ENVIRONMENTS.demo.api
     
@@ -772,7 +772,7 @@ export async function testTradovateAuth(accessToken: string) {
   }
 }
 
-export async function getTradovateAccounts(accessToken: string): Promise<TradovateAccountsResult> {
+async function getTradovateAccounts(accessToken: string): Promise<TradovateAccountsResult> {
   try {
     const apiBaseUrl = TRADOVATE_ENVIRONMENTS.demo.api
     
@@ -934,7 +934,7 @@ async function buildTradesFromFillPairs(
 
 import { encrypt } from '@/lib/security/encryption';
 
-export async function storeTradovateToken(
+async function storeTradovateToken(
   accessToken: string,
   expiresAt: string,
   environment: 'demo' | 'live' = 'demo',
@@ -1095,7 +1095,7 @@ export async function getTradovateSynchronizations() {
   }
 }
 
-export async function setCustomTradovateToken(
+async function setCustomTradovateToken(
   accessToken: string,
   expiresAt: string,
   accountId: string = 'custom',
@@ -1133,7 +1133,7 @@ export async function setCustomTradovateToken(
   }
 }
 
-export async function testCustomTradovateToken(
+async function testCustomTradovateToken(
   accessToken: string,
   environment: 'demo' | 'live' = 'demo'
 ) {

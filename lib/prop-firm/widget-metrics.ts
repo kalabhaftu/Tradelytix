@@ -2,7 +2,7 @@ import { formatInTimeZone } from 'date-fns-tz'
 import { classifyOutcome } from '@/lib/metrics/outcome'
 import { getTradeNetPnl } from '@/lib/metrics/pnl'
 
-export const DEFAULT_PROP_FIRM_RESET_TIMEZONE = 'UTC'
+const DEFAULT_PROP_FIRM_RESET_TIMEZONE = 'UTC'
 
 export type PropFirmWidgetTrade = {
   id: string
@@ -25,7 +25,7 @@ export function getPropFirmTradeTimestamp(trade: PropFirmWidgetTrade) {
   return date && !Number.isNaN(date.getTime()) ? date : null
 }
 
-export function getPropFirmTradeNetPnl(trade: PropFirmWidgetTrade) {
+function getPropFirmTradeNetPnl(trade: PropFirmWidgetTrade) {
   if (trade.netPnL != null) return Number(trade.netPnL) || 0
   return getTradeNetPnl(trade as any)
 }
@@ -94,7 +94,7 @@ export function buildPropFirmGrowth(account: any, trades: PropFirmWidgetTrade[],
   return { points, peakEquity, maxDrawdown, tradingDays: dayKeys.size }
 }
 
-export function findFirstBreach(account: any, trades: PropFirmWidgetTrade[], timezone = DEFAULT_PROP_FIRM_RESET_TIMEZONE) {
+function findFirstBreach(account: any, trades: PropFirmWidgetTrade[], timezone = DEFAULT_PROP_FIRM_RESET_TIMEZONE) {
   const accountSize = Number(account?.accountSize || 0)
   const phase = account?.currentPhase || {}
   const dailyDrawdownPercent = Number(phase.dailyDrawdownPercent || 0)

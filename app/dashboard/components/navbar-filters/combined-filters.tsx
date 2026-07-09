@@ -593,7 +593,7 @@ export function CombinedFilters({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[min(24rem,calc(100vw-1rem))] p-0 sm:w-auto sm:max-w-[95vw]"
+        className="w-[min(24rem,calc(100vw-1rem))] p-0 sm:w-auto sm:max-w-[95vw] flex flex-col overflow-hidden max-h-[85dvh]"
         align="end"
         side="bottom"
         sideOffset={4}

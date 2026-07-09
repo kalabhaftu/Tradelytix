@@ -327,7 +327,7 @@ export function AccountSelector({ onSave }: AccountSelectorProps) {
   const totalAccounts = filteredAccountsList.length
 
   return (
-    <div className="w-full min-w-[280px] sm:min-w-[300px] max-w-[400px] sm:max-w-[450px] flex flex-col max-h-[min(85vh,520px)]">
+    <div className="w-full min-w-[280px] sm:min-w-[300px] max-w-[400px] sm:max-w-[450px] flex flex-col max-h-[min(85vh,520px)] flex-1 min-h-0">
       {/* Header: title + search + quick actions — fixed, never scrolls */}
       <div className="p-3 sm:p-4 pb-2 space-y-3 flex-shrink-0 border-b">
         <div className="space-y-1">

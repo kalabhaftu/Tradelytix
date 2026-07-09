@@ -101,7 +101,7 @@ export default function Navbar() {
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-[min(22rem,calc(100vw-1rem))] p-0"
+              className="w-[min(22rem,calc(100vw-1rem))] p-0 flex flex-col overflow-hidden"
               align="end"
               side="bottom"
               sideOffset={4}
@@ -256,22 +256,22 @@ export default function Navbar() {
       </div>
 
       <Dialog open={mobileAccountsOpen} onOpenChange={setMobileAccountsOpen}>
-        <DialogContent className="max-w-[min(100vw-1rem,32rem)] p-0 overflow-hidden">
-          <DialogHeader className="px-4 pt-4 pb-0">
+        <DialogContent className="max-w-[min(100vw-1rem,32rem)] p-0 flex flex-col overflow-hidden max-h-[85dvh]">
+          <DialogHeader className="px-4 pt-4 pb-0 flex-shrink-0">
             <DialogTitle>Account Filter</DialogTitle>
           </DialogHeader>
-          <div className="max-h-[min(80dvh,42rem)] overflow-y-auto px-1 pb-3">
+          <div className="flex-1 min-h-0 flex flex-col px-1 pb-3">
             <AccountSelector onSave={() => setMobileAccountsOpen(false)} />
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
-        <DialogContent className="max-w-[min(100vw-1rem,32rem)] p-0 overflow-hidden">
-          <DialogHeader className="px-4 pt-4 pb-0">
+        <DialogContent className="max-w-[min(100vw-1rem,32rem)] p-0 flex flex-col overflow-hidden max-h-[85dvh]">
+          <DialogHeader className="px-4 pt-4 pb-0 flex-shrink-0">
             <DialogTitle>Filters</DialogTitle>
           </DialogHeader>
-          <div className="max-h-[min(80dvh,42rem)] overflow-y-auto px-1 pb-3">
+          <div className="flex-1 min-h-0 flex flex-col px-1 pb-3">
             <CombinedFilters
               renderTrigger={false}
               onSave={() => setMobileFiltersOpen(false)}

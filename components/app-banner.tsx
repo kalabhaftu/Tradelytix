@@ -44,7 +44,7 @@ export function AppBanner() {
           </div>
           <div>
             <h4 className="text-sm font-semibold text-foreground">Open in JJI App</h4>
-            <p className="text-xs text-muted-foreground text-left">Get a premium, native charts experience.</p>
+            <p className="text-xs text-muted-foreground text-left">Get a native charts experience.</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

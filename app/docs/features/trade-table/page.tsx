@@ -15,16 +15,16 @@ export default function TradeTableDocsPage() {
       <DocsSection title="Table layout">
         <p>The trade table displays trades in a sortable, filterable virtual table. Columns include:</p>
         <ul>
-          <li><strong>Date/Time</strong> — When the trade was executed</li>
-          <li><strong>Instrument</strong> — Symbol or instrument name</li>
-          <li><strong>Direction</strong> — Long or Short</li>
-          <li><strong>Quantity</strong> — Number of units/contracts</li>
-          <li><strong>Entry Price</strong> — Open price</li>
-          <li><strong>Exit Price</strong> — Close price</li>
-          <li><strong>P&amp;L</strong> — Realised profit or loss</li>
-          <li><strong>Tags</strong> — Assigned tags and models</li>
-          <li><strong>Notes</strong> — Trade notes indicator</li>
-          <li><strong>Screenshots</strong> — Image attachment indicator</li>
+          <li><strong>Date/Time</strong> - When the trade was executed</li>
+          <li><strong>Instrument</strong> - Symbol or instrument name</li>
+          <li><strong>Direction</strong> - Long or Short</li>
+          <li><strong>Quantity</strong> - Number of units/contracts</li>
+          <li><strong>Entry Price</strong> - Open price</li>
+          <li><strong>Exit Price</strong> - Close price</li>
+          <li><strong>P&amp;L</strong> - Realised profit or loss</li>
+          <li><strong>Tags</strong> - Assigned tags and models</li>
+          <li><strong>Notes</strong> - Trade notes indicator</li>
+          <li><strong>Screenshots</strong> - Image attachment indicator</li>
         </ul>
       </DocsSection>
 

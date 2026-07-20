@@ -165,7 +165,7 @@ export async function POST(req: NextRequest) {
         subject: `JJI received your ${payload.category.toLowerCase().replaceAll('_', ' ')} feedback`,
         html: `<p>Thanks for taking the time to help improve JJI.</p>
           <p>We received <strong>${safeSubject}</strong>. Your feedback is now in the support queue and we will follow up if a reply is needed.</p>
-          <p>— The JJI team</p>`,
+          <p>- The JJI team</p>`,
       })
     }
 

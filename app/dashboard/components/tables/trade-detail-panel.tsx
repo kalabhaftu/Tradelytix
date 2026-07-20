@@ -232,7 +232,7 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
                   { label: 'Entry Price', value: trade.entryPrice, field: 'entryPrice' },
-                  { label: 'Exit Price', value: trade.closePrice ?? '—', field: 'closePrice' },
+                  { label: 'Exit Price', value: trade.closePrice ?? '-', field: 'closePrice' },
                   { label: 'Quantity', value: `${trade.quantity} lots`, field: 'quantity' },
                   { label: getPnlDisplayLabel(pnlDisplayMode), value: formatCurrency(displayPnl), color: displayPnl >= 0 ? 'text-long' : displayPnl < 0 ? 'text-short' : 'text-muted-foreground', field: 'pnl' },
                 ].map(({ label, value, color, field }) => (
@@ -240,11 +240,11 @@ export function TradeDetailPanel({ trade, onClose, basePath }: TradeDetailPanelP
                     <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50">{label}</span>
                     <div className="flex items-center gap-1.5 group">
                       <p className={cn("text-lg font-mono font-bold leading-none", color)}>
-                        {field === 'entryPrice' || (field === 'closePrice' && value !== '—') 
+                        {field === 'entryPrice' || (field === 'closePrice' && value !== '-') 
                           ? formatTradePrice(value, trade.instrument) 
                           : value}
                       </p>
-                      {(field === 'entryPrice' || (field === 'closePrice' && value !== '—')) && (
+                      {(field === 'entryPrice' || (field === 'closePrice' && value !== '-')) && (
                         <button
                           onClick={() => copyToClipboard(formatTradePrice(value, trade.instrument), label)}
                           className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-accent rounded-md"

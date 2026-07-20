@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // Protected routes — redirect unauthenticated users to /login
+  // Protected routes - redirect unauthenticated users to /login
   const isProtectedRoute =
     pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
 
@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
     return redirectResponse
   }
 
-  // Auth routes — redirect authenticated users away from /login or /signup
+  // Auth routes - redirect authenticated users away from /login or /signup
   if (user && (pathname === '/login' || pathname === '/signup')) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'

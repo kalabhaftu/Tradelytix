@@ -27,7 +27,7 @@ export function logActivity(params: LogActivityParams): void {
     })
     .execute()
     .catch(() => {
-      // Silently swallow — logging must never break the primary operation
+      // Silently swallow - logging must never break the primary operation
     })
 }
 

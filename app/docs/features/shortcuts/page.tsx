@@ -20,14 +20,14 @@ export default function ShortcutsDocsPage() {
 
       <DocsSection title="Other shortcuts">
         <ul>
-          <li><strong>Escape</strong> — Close dialogs, sheets, popovers, and modals</li>
-          <li><strong>Enter</strong> — Confirm current action in dialog</li>
-          <li><strong>Arrow keys</strong> — Navigate within tables and lists</li>
+          <li><strong>Escape</strong> - Close dialogs, sheets, popovers, and modals</li>
+          <li><strong>Enter</strong> - Confirm current action in dialog</li>
+          <li><strong>Arrow keys</strong> - Navigate within tables and lists</li>
         </ul>
       </DocsSection>
 
       <DocsSection title="Modal behavior">
-        <p>All dialogs, sheets, and popovers are keyboard accessible. Focus is managed automatically — when a modal opens, focus moves to the first interactive element. Escape always closes the active modal.</p>
+        <p>All dialogs, sheets, and popovers are keyboard accessible. Focus is managed automatically - when a modal opens, focus moves to the first interactive element. Escape always closes the active modal.</p>
       </DocsSection>
     </DocsPage>
   )

@@ -17,7 +17,7 @@
  *   their per-section skeleton (via `isFetching`) while existing data stays
  *   visible. No global loading state. No `window.location.reload()`.
  *
- * Explicitly not merged with `useDeploymentCheck` — that hook only reloads
+ * Explicitly not merged with `useDeploymentCheck` - that hook only reloads
  * when the /api/build-id endpoint reports a new build. Reconnect is a
  * different problem (stale data, not stale bundle) and must not trigger it.
  */

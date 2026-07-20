@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
 // Use this in every server component, server action, and API route
-// that needs the authenticated user. Never use getSession() — it's
+// that needs the authenticated user. Never use getSession() - it's
 // client-side only and doesn't verify the JWT server-side.
 export async function getServerUser() {
   const supabase = await createClient()

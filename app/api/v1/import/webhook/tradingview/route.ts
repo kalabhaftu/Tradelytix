@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (!defaultAccount) {
-      return createErrorResponse('No account found — create an account first', 422, undefined, 'ACCOUNT_REQUIRED')
+      return createErrorResponse('No account found - create an account first', 422, undefined, 'ACCOUNT_REQUIRED')
     }
 
     const tradeId = nanoid()

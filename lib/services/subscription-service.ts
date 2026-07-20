@@ -289,7 +289,7 @@ export async function createSubscriptionInvoice(
     price_currency: 'usd',
     ...(payCurrency !== undefined && { pay_currency: payCurrency }),
     order_id: orderId,
-    order_description: `JJI Pro — Monthly Subscription`,
+    order_description: `JJI Pro - Monthly Subscription`,
   })
 
   // Create payment record
@@ -727,7 +727,7 @@ export async function runSubscriptionChecks() {
             `Your payment is overdue. You have ${GRACE_DAYS + daysUntilDue} day(s) left before access is suspended.`)
           results.notified++
         } else if (daysUntilDue < -GRACE_DAYS) {
-          // Past grace period — expire
+          // Past grace period - expire
           await db.update(Subscription).set({ status: 'expired' }).where(eq(Subscription.id, sub.id))
           await createPaymentNotification(sub.userId, 'SUBSCRIPTION_EXPIRED', 'Subscription Expired',
             'Your subscription has expired. Please renew to regain access.')

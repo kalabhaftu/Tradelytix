@@ -26,7 +26,7 @@ export default function JournalDocsPage() {
           <li>Open a trade from the <strong>Trade Table</strong></li>
           <li>Add notes in the edit panel</li>
           <li>Upload screenshots or chart images</li>
-          <li>Set a featured image — the preview crop is saved so journal cards show the framing you chose</li>
+          <li>Set a featured image - the preview crop is saved so journal cards show the framing you chose</li>
           <li>Add tags for categorisation (links to the playbook system)</li>
         </ul>
       </DocsSection>
@@ -44,7 +44,7 @@ export default function JournalDocsPage() {
       <DocsSection title="Image management">
         <p>Images uploaded to journal entries and trades support:</p>
         <ul>
-          <li>Preview cropping — drag to select the visible crop area</li>
+          <li>Preview cropping - drag to select the visible crop area</li>
           <li>Full-image viewing in gallery mode</li>
           <li>Delete and replace workflows</li>
           <li>Responsive sizing across devices</li>

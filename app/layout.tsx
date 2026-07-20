@@ -23,7 +23,7 @@ import { BRAND } from '@/lib/constants/brand'
 
 const DEFAULT_SITE_URL = BRAND.siteUrl
 const SITE_NAME = BRAND.name
-const SITE_DESCRIPTION = `${BRAND.fullName} — ${BRAND.tagline}`
+const SITE_DESCRIPTION = `${BRAND.fullName} - ${BRAND.tagline}`
 const SOCIAL_PREVIEW_VERSION = 'jji-20260522'
 const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || DEFAULT_SITE_URL
 const normalizedSiteUrl = rawSiteUrl.startsWith('http') ? rawSiteUrl : `https://${rawSiteUrl}`

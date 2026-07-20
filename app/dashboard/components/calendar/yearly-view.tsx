@@ -121,12 +121,12 @@ function MiniMonth({
                         !hasTrades &&
                         "bg-muted/30 dark:bg-[#0c0e12]/40 border-border/20 dark:border-transparent text-muted-foreground/40 dark:text-muted-foreground/20",
 
-                      // Profit — green
+                      // Profit - green
                       hasTrades &&
                         classifyOutcome(data.pnl, breakEvenThreshold) === 'win' &&
                         "bg-long/10 border-long/20 dark:bg-long/20 dark:border-long/35 text-long dark:text-slate-200",
 
-                      // Loss — red/orange
+                      // Loss - red/orange
                       hasTrades &&
                         classifyOutcome(data.pnl, breakEvenThreshold) === 'loss' &&
                         "bg-short/10 border-short/20 dark:bg-short/20 dark:border-short/35 text-short dark:text-slate-200",

@@ -19,7 +19,7 @@ export default function DemoDocsPage() {
       </DocsSection>
 
       <DocsSection title="Entering demo mode">
-        <p>From the landing page or sign-in screen, look for the <strong>Try Demo</strong> button. Clicking it loads the demo environment immediately — no account or subscription required.</p>
+        <p>From the landing page or sign-in screen, look for the <strong>Try Demo</strong> button. Clicking it loads the demo environment immediately - no account or subscription required.</p>
         <p>Demo mode mimics the full dashboard experience with:</p>
         <ul>
           <li>Sample trade data with realistic P&amp;L, win rates, and drawdowns</li>

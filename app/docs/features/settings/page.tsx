@@ -19,12 +19,12 @@ export default function SettingsDocsPage() {
 
       <DocsSection title="Preferences">
         <ul>
-          <li><strong>Theme</strong> — Light, Dark, or System default</li>
-          <li><strong>Accent Pack</strong> — Choose from available accent color schemes</li>
-          <li><strong>Timezone</strong> — Set your local timezone for trade date grouping</li>
-          <li><strong>Time Format</strong> — 12-hour or 24-hour display</li>
-          <li><strong>Break-even Threshold</strong> — P&amp;L threshold (in currency units) below which a trade is considered break-even</li>
-          <li><strong>Starting Day of Week</strong> — Monday or Sunday as week start for reports</li>
+          <li><strong>Theme</strong> - Light, Dark, or System default</li>
+          <li><strong>Accent Pack</strong> - Choose from available accent color schemes</li>
+          <li><strong>Timezone</strong> - Set your local timezone for trade date grouping</li>
+          <li><strong>Time Format</strong> - 12-hour or 24-hour display</li>
+          <li><strong>Break-even Threshold</strong> - P&amp;L threshold (in currency units) below which a trade is considered break-even</li>
+          <li><strong>Starting Day of Week</strong> - Monday or Sunday as week start for reports</li>
         </ul>
       </DocsSection>
 
@@ -68,8 +68,8 @@ export default function SettingsDocsPage() {
 
       <DocsSection title="Account actions">
         <ul>
-          <li><strong>Sign Out</strong> — End current session</li>
-          <li><strong>Delete Account</strong> — Permanently delete your account and all associated data. This action is irreversible.</li>
+          <li><strong>Sign Out</strong> - End current session</li>
+          <li><strong>Delete Account</strong> - Permanently delete your account and all associated data. This action is irreversible.</li>
         </ul>
       </DocsSection>
     </DocsPage>

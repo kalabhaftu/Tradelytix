@@ -6,13 +6,13 @@ export default function AppFlowDocsPage() {
     <DocsPage
       badge="Feature Guide"
       title="Application Flow"
-      description="JJI has two major surfaces — a public support/docs experience and an authenticated trading workspace — with a companion mobile app that mirrors the same backend."
+      description="JJI has two major surfaces - a public support/docs experience and an authenticated trading workspace - with a companion mobile app that mirrors the same backend."
     >
       <DocsSection title="1. Public surface & authentication flow">
         <p>
           Unauthenticated users land on the public surface: the landing page, documentation, feedback
           form, FAQ, and donation page. All public pages share a common header that displays a
-          context-aware primary action — <strong>Sign In</strong> when no session is active, or
+          context-aware primary action - <strong>Sign In</strong> when no session is active, or
           <strong>Back to App</strong> (pointing to <code>/dashboard</code>) when a session exists.
         </p>
         <DocsCardGrid>
@@ -20,7 +20,7 @@ export default function AppFlowDocsPage() {
             icon={ArrowRight}
             title="Magic link sign-in"
             description="The user enters their email and receives a one-time link. Clicking it creates or resumes a Supabase session. The browser redirects to /dashboard with a persistent cookie."
-            items={['No password database to compromise', 'Session lasts up to 30 days of inactivity before requiring re-auth', 'Works across devices — sign in on mobile with the same email']}
+            items={['No password database to compromise', 'Session lasts up to 30 days of inactivity before requiring re-auth', 'Works across devices - sign in on mobile with the same email']}
           />
           <DocsInfoCard
             icon={Shield}
@@ -33,7 +33,7 @@ export default function AppFlowDocsPage() {
 
       <DocsSection title="2. Web dashboard shell">
         <p>
-          After authentication, the user enters the dashboard shell — the primary workspace for all
+          After authentication, the user enters the dashboard shell - the primary workspace for all
           trading analytics. The shell provides consistent navigation, global filters, and a command
           palette that follows the user across every page.
         </p>

@@ -74,7 +74,7 @@ export function MonthlyReturnsMatrix({ equityCurve }: MonthlyReturnsMatrixProps)
                 {Array.from({ length: 12 }, (_, i) => {
                   const pnl = matrix[year]?.months[i]
                   if (pnl === undefined) {
-                    return <td key={i} className="text-center py-2 px-1"><span className="text-muted-foreground/20">—</span></td>
+                    return <td key={i} className="text-center py-2 px-1"><span className="text-muted-foreground/20">-</span></td>
                   }
                   const intensity = getIntensity(pnl)
                   const isPositive = pnl >= 0

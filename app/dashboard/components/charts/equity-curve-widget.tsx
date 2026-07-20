@@ -17,7 +17,7 @@ export default function EquityCurveWidget() {
   const { chartStyle } = useTheme()
   const { formatValue, isPrivacyMode } = useDashboardDisplay()
 
-  // Split gradient offset — green above zero, red below zero
+  // Split gradient offset - green above zero, red below zero
   const gradientOffset = React.useMemo(() => {
     if (!Array.isArray(chartData) || chartData.length === 0) return 1
     const dataMax = Math.max(...chartData.map((d: any) => d.equity ?? 0))

@@ -23,7 +23,7 @@ export default async function RootLayout({ children }: { children: ReactElement 
   const initialBootstrapData = await getInitBootstrapData()
   const siteUiSettings = await getSiteUiSettings()
 
-  // Subscription access gate — admins bypass, unpaid users redirect to /subscribe
+  // Subscription access gate - admins bypass, unpaid users redirect to /subscribe
   if (initialBootstrapData.isAuthenticated && initialBootstrapData.user?.id) {
     const access = await checkSubscriptionAccess(initialBootstrapData.user.id)
     if (!access.hasAccess && access.redirectTo) {

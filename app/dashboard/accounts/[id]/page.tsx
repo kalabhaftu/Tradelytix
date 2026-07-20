@@ -118,12 +118,12 @@ function AccountTradesTab({ accountNumber, trades }: { accountNumber: string; tr
                   return (
                     <tr key={trade.id || i} className="border-b border-border/20 hover:bg-muted/20 transition-colors">
                       <td className="px-4 py-2.5 text-xs text-muted-foreground font-mono">
-                        {tradeDate ? format(new Date(tradeDate), 'MMM dd, yyyy') : '—'}
+                        {tradeDate ? format(new Date(tradeDate), 'MMM dd, yyyy') : '-'}
                       </td>
-                      <td className="px-4 py-2.5 font-semibold text-xs">{trade.instrument || trade.symbol || '—'}</td>
+                      <td className="px-4 py-2.5 font-semibold text-xs">{trade.instrument || trade.symbol || '-'}</td>
                       <td className="px-4 py-2.5 text-center">
                         <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded", trade.side === 'LONG' || trade.side === 'BUY' ? "bg-long/10 text-long" : "bg-short/10 text-short")}>
-                          {trade.side || '—'}
+                          {trade.side || '-'}
                         </span>
                       </td>
                       <td className={cn("px-4 py-2.5 text-right font-mono text-xs font-bold", (trade.pnl || 0) >= 0 ? "text-long" : "text-short")}>

@@ -10,11 +10,11 @@ export default function AiChatDocsPage() {
     >
       <DocsSection title="What AI Chat can do">
         <ul>
-          <li><strong>Performance Analysis</strong> — Ask questions about your trading performance, trends, and areas for improvement</li>
-          <li><strong>Risk Audit</strong> — The AI can review your risk management, position sizing, and drawdown patterns</li>
-          <li><strong>Strategy Expectancy</strong> — Calculate and explain the expectancy of your strategies based on historical data</li>
-          <li><strong>Psychological Assessment</strong> — Identify emotional patterns in your trading (fear of missing out, revenge trading, overconfidence)</li>
-          <li><strong>Trade Review</strong> — Paste a specific trade or scenario for AI analysis</li>
+          <li><strong>Performance Analysis</strong> - Ask questions about your trading performance, trends, and areas for improvement</li>
+          <li><strong>Risk Audit</strong> - The AI can review your risk management, position sizing, and drawdown patterns</li>
+          <li><strong>Strategy Expectancy</strong> - Calculate and explain the expectancy of your strategies based on historical data</li>
+          <li><strong>Psychological Assessment</strong> - Identify emotional patterns in your trading (fear of missing out, revenge trading, overconfidence)</li>
+          <li><strong>Trade Review</strong> - Paste a specific trade or scenario for AI analysis</li>
         </ul>
       </DocsSection>
 
@@ -29,7 +29,7 @@ export default function AiChatDocsPage() {
         <p>Example prompts:</p>
         <ul>
           <li>"What's my win rate this month and how does it compare to last month?"</li>
-          <li>"Analyze my risk management — am I risking too much per trade?"</li>
+          <li>"Analyze my risk management - am I risking too much per trade?"</li>
           <li>"Which of my setups has the best profit factor?"</li>
           <li>"Review my trading psychology based on my recent losing streak"</li>
         </ul>
@@ -38,8 +38,8 @@ export default function AiChatDocsPage() {
       <DocsSection title="AI providers">
         <p>JJI supports multiple AI providers:</p>
         <ul>
-          <li><strong>OpenAI</strong> — GPT-4 and GPT-3.5 models</li>
-          <li><strong>xAI</strong> — Grok models</li>
+          <li><strong>OpenAI</strong> - GPT-4 and GPT-3.5 models</li>
+          <li><strong>xAI</strong> - Grok models</li>
         </ul>
         <p>You can configure the preferred provider in Settings → AI Preferences.</p>
       </DocsSection>

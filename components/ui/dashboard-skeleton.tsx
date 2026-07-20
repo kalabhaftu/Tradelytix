@@ -4,11 +4,11 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent } from "@/components/ui/card"
 
 /**
- * Unified skeleton system — uses the same Skeleton component as
+ * Unified skeleton system - uses the same Skeleton component as
  * Accounts / Data / Journal pages for 1:1 visual parity.
  */
 
-/** KPI skeleton — matches the real KPI card layout */
+/** KPI skeleton - matches the real KPI card layout */
 function KpiSkeleton() {
   return (
     <Card className="border-border/24 bg-card/76">
@@ -29,7 +29,7 @@ function KpiSkeleton() {
   )
 }
 
-/** Widget skeleton — matches the WidgetCard layout with title + chart area + footer stats */
+/** Widget skeleton - matches the WidgetCard layout with title + chart area + footer stats */
 function WidgetSkeleton({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
     <Card className={cn("border-border/24 bg-card/76 overflow-hidden", className)} style={style}>
@@ -54,7 +54,7 @@ function WidgetSkeleton({ className, style }: { className?: string; style?: Reac
   )
 }
 
-/** Calendar skeleton — matches the calendar widget shape */
+/** Calendar skeleton - matches the calendar widget shape */
 function CalendarWidgetSkeleton({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
     <Card className={cn("border-border/24 bg-card/76 overflow-hidden", className)} style={style}>
@@ -85,7 +85,7 @@ function CalendarWidgetSkeleton({ className, style }: { className?: string; styl
   )
 }
 
-/** Table skeleton — matches trade table shape */
+/** Table skeleton - matches trade table shape */
 function TradeTableSkeleton({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
     <Card className={cn("border-border/24 bg-card/76 overflow-hidden", className)} style={style}>
@@ -264,7 +264,7 @@ export function TemplateAwareDashboardSkeleton({
   )
 }
 
-/** Generic page skeleton — header + content block */
+/** Generic page skeleton - header + content block */
 function PageSkeleton() {
   return (
     <div className="min-h-screen bg-background p-6">

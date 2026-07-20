@@ -79,16 +79,16 @@ const DayCell = memo(function DayCell({
           ? "min-h-[68px] sm:min-h-[76px] lg:min-h-[84px]" 
           : "min-h-[48px] md:min-h-[60px] lg:min-h-[68px] cursor-pointer",
 
-        // No trades — uses theme tokens so it works in any color scheme
+        // No trades - uses theme tokens so it works in any color scheme
         !hasTrades && isCurrentMonth && "bg-muted/30 dark:bg-[#0c0e12]/40 border-border/40 dark:border-border/20 hover:border-border/60 dark:hover:border-border/40",
 
-        // Profit — green tint via CSS token
+        // Profit - green tint via CSS token
         hasTrades && isProfit && "bg-long/10 border-long/20 hover:bg-long/20 hover:border-long/30 dark:bg-long/20 dark:border-long/35 dark:hover:bg-long/30 dark:hover:border-long/50",
 
-        // Loss — red tint via CSS token
+        // Loss - red tint via CSS token
         hasTrades && isLoss && "bg-short/10 border-short/20 hover:bg-short/20 hover:border-short/30 dark:bg-short/20 dark:border-short/35 dark:hover:bg-short/30 dark:hover:border-short/50",
 
-        // Breakeven — neutral muted tint
+        // Breakeven - neutral muted tint
         hasTrades && isBreakEven && "bg-muted/40 border border-muted/50 text-foreground hover:bg-muted/50",
 
         // Not current month
@@ -153,7 +153,7 @@ const DayCell = memo(function DayCell({
         "hidden flex-col w-full h-full relative p-2 justify-center items-center",
         !isMiniCalendar && "min-[1024px]:flex"
       )}>
-        {/* Day number — top right  */}
+        {/* Day number - top right  */}
         <span
           className={cn(
             "absolute top-1.5 right-1.5 font-bold leading-none",
@@ -428,7 +428,7 @@ export default function MonthlyView({
             </div>
           )}
 
-          {/* Week rows — grid to align perfectly with calendar rows */}
+          {/* Week rows - grid to align perfectly with calendar rows */}
           <div 
             className={cn(
               "grid gap-1 md:gap-1.5 min-h-0",

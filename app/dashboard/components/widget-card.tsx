@@ -56,7 +56,7 @@ interface WidgetCardProps {
 }
 
 /**
- * Shared widget wrapper — applies the reports page design language
+ * Shared widget wrapper - applies the reports page design language
  * to all dashboard widgets for visual consistency.
  *
  * MOBILE: renders with GPU-safe flat styles (no glass, no blur, no isolation).

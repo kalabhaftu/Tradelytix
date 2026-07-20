@@ -42,7 +42,7 @@ export const useTemplateEditStore = create<TemplateEditState>((set, get) => ({
 
   updateLayout: (layout) => {
     const { currentLayout } = get()
-    // Reference check only — avoids JSON.stringify on every drag frame
+    // Reference check only - avoids JSON.stringify on every drag frame
     if (currentLayout === layout) return
     set({
       currentLayout: layout,

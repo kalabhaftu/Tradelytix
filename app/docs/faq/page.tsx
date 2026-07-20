@@ -3,7 +3,7 @@ import { DocsCallout, DocsPage, DocsSection } from '@/components/docs/docs-page'
 const faqs = [
   {
     q: 'Is JJI free?',
-    a: 'No, JJI is a paid platform at $10/month. It is currently proprietary software, but may be open-sourced again in the future. Payment is processed via cryptocurrency through NOWPayments. There is no free tier or trial — all features require an active subscription.',
+    a: 'No, JJI is a paid platform at $10/month. It is currently proprietary software, but may be open-sourced again in the future. Payment is processed via cryptocurrency through NOWPayments. There is no free tier or trial - all features require an active subscription.',
   },
   {
     q: 'Is there a mobile app?',
@@ -11,7 +11,7 @@ const faqs = [
   },
   {
     q: 'How do I import trades?',
-    a: 'Navigate to the import flow from the dashboard navbar. JJI supports importing from CSV files, TradingView webhooks, Tradovate sync, DxFeed sync, Rithmic sync, Thor, Match-Trader, and Exness. The import wizard lets you review parsed results — including any parsing errors or warnings — before saving trades to your account. This ensures you have full control over what gets imported.',
+    a: 'Navigate to the import flow from the dashboard navbar. JJI supports importing from CSV files, TradingView webhooks, Tradovate sync, DxFeed sync, Rithmic sync, Thor, Match-Trader, and Exness. The import wizard lets you review parsed results - including any parsing errors or warnings - before saving trades to your account. This ensures you have full control over what gets imported.',
   },
   {
     q: 'What data formats are supported?',
@@ -19,11 +19,11 @@ const faqs = [
   },
   {
     q: 'Where is my data stored?',
-    a: 'All data is stored in a PostgreSQL database hosted on Supabase. Every user\'s data is strictly scoped and isolated — there is no cross-user access. The dashboard, journal, reports, and all other features read from the same underlying data store, so any change you make is reflected everywhere immediately.',
+    a: 'All data is stored in a PostgreSQL database hosted on Supabase. Every user\'s data is strictly scoped and isolated - there is no cross-user access. The dashboard, journal, reports, and all other features read from the same underlying data store, so any change you make is reflected everywhere immediately.',
   },
   {
     q: 'Why does the dashboard look empty?',
-    a: 'First, check your account-level filters and date range at the top of the dashboard — a mismatched filter is the most common cause. Next, confirm that your trade data was imported successfully by visiting the trades page. If you see trades there but the dashboard is still empty, review the troubleshooting checklist in the docs. If the problem persists, use the feedback form to reach out with details.',
+    a: 'First, check your account-level filters and date range at the top of the dashboard - a mismatched filter is the most common cause. Next, confirm that your trade data was imported successfully by visiting the trades page. If you see trades there but the dashboard is still empty, review the troubleshooting checklist in the docs. If the problem persists, use the feedback form to reach out with details.',
   },
   {
     q: 'How do prop-firm challenges work?',
@@ -31,7 +31,7 @@ const faqs = [
   },
   {
     q: 'Can I share my trades or reports?',
-    a: 'Yes, you can generate public read-only share links for any report. These links can be shared with anyone — even non-users — and display a snapshot of the report data. You can revoke or expire shared links at any time from your account settings.',
+    a: 'Yes, you can generate public read-only share links for any report. These links can be shared with anyone - even non-users - and display a snapshot of the report data. You can revoke or expire shared links at any time from your account settings.',
   },
   {
     q: 'How do I cancel my subscription?',
@@ -39,7 +39,7 @@ const faqs = [
   },
   {
     q: 'How do I delete my account?',
-    a: 'Go to Settings → Account Actions → Delete Account. This action is permanent and irreversible — all your trades, journal entries, challenge data, reports, and account information will be deleted immediately. There is no recovery option, so make sure you export any data you want to keep before proceeding.',
+    a: 'Go to Settings → Account Actions → Delete Account. This action is permanent and irreversible - all your trades, journal entries, challenge data, reports, and account information will be deleted immediately. There is no recovery option, so make sure you export any data you want to keep before proceeding.',
   },
   {
     q: 'What AI features are available?',
@@ -47,7 +47,7 @@ const faqs = [
   },
   {
     q: 'Does the mobile app have all features?',
-    a: 'The mobile app covers the core feature set — dashboard overview, trade list and management, journal entries, and prop-firm challenge tracking. However, some advanced features are currently web-only: widget customization on the dashboard, detailed report generation and export, and the admin panel. The team is working to close this gap in future releases.',
+    a: 'The mobile app covers the core feature set - dashboard overview, trade list and management, journal entries, and prop-firm challenge tracking. However, some advanced features are currently web-only: widget customization on the dashboard, detailed report generation and export, and the admin panel. The team is working to close this gap in future releases.',
   },
 ]
 
@@ -56,7 +56,7 @@ export default function FAQPage() {
     <DocsPage
       badge="Resources"
       title="FAQ & Troubleshooting"
-      description="Frequently asked questions about using JJI — pricing, imports, mobile app, data, subscriptions, and more."
+      description="Frequently asked questions about using JJI - pricing, imports, mobile app, data, subscriptions, and more."
     >
       <DocsSection title="Frequently Asked Questions">
         <div className="space-y-8">
@@ -78,7 +78,7 @@ export default function FAQPage() {
       <DocsCallout title="Still need help?" tone="default">
         If you need help with something not covered here, please use the
         feedback form in the app and include as much detail as possible about
-        your issue — including steps to reproduce, screenshots, and your account
+        your issue - including steps to reproduce, screenshots, and your account
         email. This helps us resolve your problem quickly.
       </DocsCallout>
     </DocsPage>

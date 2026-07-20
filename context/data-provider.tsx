@@ -424,7 +424,7 @@ export const DataProvider: React.FC<{
           }
         }
 
-        // Step 2: Fetch initial data from v1 init endpoint (NO trades — those come via React Query)
+        // Step 2: Fetch initial data from v1 init endpoint (NO trades - those come via React Query)
         // If SSR bootstrap already provided authenticated data, skip this duplicate DB-heavy fetch.
         const initData = initialBootstrapData?.isAuthenticated
           ? initialBootstrapData
@@ -463,7 +463,7 @@ export const DataProvider: React.FC<{
 
         // NOTE: Trades are NO LONGER fetched here.
         // They come via useFilteredTrades() React Query hook below.
-        // Set empty trades in store — legacy consumers will get data from context.formattedTrades
+        // Set empty trades in store - legacy consumers will get data from context.formattedTrades
         setTrades([])
 
         // Calculate balanceToDate for accounts (without trades, uses trade count from API)
@@ -593,7 +593,7 @@ export const DataProvider: React.FC<{
       }
     }
 
-    // Defer initial ping by 10s — avoids adding to the connection burst on dashboard load
+    // Defer initial ping by 10s - avoids adding to the connection burst on dashboard load
     const initialPingTimeout = setTimeout(ping, 10_000)
 
     const intervalId = setInterval(ping, FOUR_HOURS)
@@ -667,7 +667,7 @@ export const DataProvider: React.FC<{
   }, [accounts]);
 
   // SERVER-COMPUTED: formattedTrades, statistics, calendarData
-  // Previously 110+ lines of client-side useMemo filtering — now all server-side via /api/v1/trades
+  // Previously 110+ lines of client-side useMemo filtering - now all server-side via /api/v1/trades
   const formattedTrades = useMemo(() => {
     if (serverTradeData?.trades && serverTradeData.trades.length > 0) {
       return serverTradeData.trades;

@@ -179,7 +179,7 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
   }, [calendarData, currentDate])
 
   return (
-    // Outer wrapper is what html2canvas captures — it covers the full widget area
+    // Outer wrapper is what html2canvas captures - it covers the full widget area
     <div ref={calendarRef} className="w-full h-full relative">
       <WidgetCard noPadding data-widget-card="true" className="overflow-hidden flex flex-col h-full">
 
@@ -222,7 +222,7 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
             <div className="px-1.5 py-0.5 rounded text-[10px] font-black bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-500/20">
               {tradedDaysCount}d
             </div>
-            {/* Screenshot dropdown — icon only, hidden in screenshot */}
+            {/* Screenshot dropdown - icon only, hidden in screenshot */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

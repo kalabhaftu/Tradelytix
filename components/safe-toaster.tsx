@@ -140,7 +140,7 @@ function CustomToast({
   )
 }
 
-/** Safe Toaster provider — renders the Sonner container with custom styling */
+/** Safe Toaster provider - renders the Sonner container with custom styling */
 export function SafeToaster() {
   const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
@@ -169,7 +169,7 @@ export function SafeToaster() {
 }
 
 /**
- * Custom toast utility — call instead of sonner's `toast()` for the branded UI.
+ * Custom toast utility - call instead of sonner's `toast()` for the branded UI.
  * For backward compatibility, you can still use `toast()` from sonner directly.
  */
 export function showToast({

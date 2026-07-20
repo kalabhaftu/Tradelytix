@@ -214,7 +214,7 @@
     --sidebar-ring: 210 40% 98%;
   }
 
-  /* Accent Pack: Reports Aesthetic — sage green + deep amber */
+  /* Accent Pack: Reports Aesthetic - sage green + deep amber */
   .accent-reports {
     --success: 123 27% 62%;               /* Sage green (matches --chart-bullish) */
     --success-foreground: 0 0% 100%;
@@ -831,10 +831,10 @@ code > [data-line]::before {
 }
 
 /* ==========================================================================
-   MOBILE DASHBOARD — GPU-SAFE RENDERING
+   MOBILE DASHBOARD - GPU-SAFE RENDERING
 
    Problem: On mobile Chromium, excessive GPU compositing layers cause
-   texture memory corruption — flickering, ghost text, rainbow noise bands.
+   texture memory corruption - flickering, ghost text, rainbow noise bands.
 
    Root causes fixed here:
    1. sticky + z-index nav → implicit compositing of ALL content below it
@@ -845,7 +845,7 @@ code > [data-line]::before {
    ========================================================================== */
 @media (max-width: 1023px) {
   /*
-   * 1. NAVBAR — FLAT, NO GPU LAYER
+   * 1. NAVBAR - FLAT, NO GPU LAYER
    * sticky + any transform/opacity = composited layer.
    * Any element scrolling beneath a composited sticky gets implicitly
    * composited too → cascade of 50+ layers → GPU OOM → texture corruption.
@@ -855,7 +855,7 @@ code > [data-line]::before {
   nav[class*="sticky"] {
     transform: none !important;
     will-change: auto !important;
-    /* Remove backdrop-blur on mobile — single largest compositing trigger */
+    /* Remove backdrop-blur on mobile - single largest compositing trigger */
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     /* Ensure opaque background so no alpha compositing needed */
@@ -873,7 +873,7 @@ code > [data-line]::before {
   }
 
   /*
-   * 3. WIDGET CARDS — OPAQUE + CONTAINED
+   * 3. WIDGET CARDS - OPAQUE + CONTAINED
    * Semi-transparent backgrounds (bg-card/80, bg-card/95) require
    * per-element compositing on mobile. Force fully opaque.
    * contain: layout style paint lets browser skip repaints of card
@@ -897,7 +897,7 @@ code > [data-line]::before {
   }
 
   /*
-   * 4. KPI ROW — NO STACKING CONTEXT
+   * 4. KPI ROW - NO STACKING CONTEXT
    */
   .kpi-row-container {
     z-index: auto !important;
@@ -905,7 +905,7 @@ code > [data-line]::before {
   }
 
   /*
-   * 5. WIDGET WRAPPERS — CONTENT VISIBILITY
+   * 5. WIDGET WRAPPERS - CONTENT VISIBILITY
    * Disable content-visibility auto on mobile to prevent GPU layer thrashing
    * and widget size measurement feedback loops.
    */
@@ -915,7 +915,7 @@ code > [data-line]::before {
   }
 
   /*
-   * 6. RECHARTS — STABLE HEIGHT ON MOBILE
+   * 6. RECHARTS - STABLE HEIGHT ON MOBILE
    * content-visibility containment can cause Recharts to measure 0 height.
    * We give each chart a minimum so it renders correctly.
    * The widget shell sets explicit heights via inline style; this is a
@@ -926,9 +926,9 @@ code > [data-line]::before {
   }
 
   /*
-   * 7. ISOLATE GROUPS — kill all stacking contexts in widget grid
+   * 7. ISOLATE GROUPS - kill all stacking contexts in widget grid
    * lg:isolate on the grid wrappers creates isolation on desktop,
-   * which is fine — but on mobile it creates unnecessary GPU layers.
+   * which is fine - but on mobile it creates unnecessary GPU layers.
    */
   .lg\:isolate {
     isolation: auto !important;

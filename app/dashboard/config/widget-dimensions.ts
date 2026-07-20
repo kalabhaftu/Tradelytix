@@ -181,14 +181,14 @@ export interface WidgetGridDefault {
 }
 
 export const WIDGET_GRID_DEFAULTS: Record<string, WidgetGridDefault> = {
-  // KPIs — handled separately, but included for completeness
+  // KPIs - handled separately, but included for completeness
   accountBalancePnl: { defaultW: 1, defaultH: 1, minW: 1, minH: 1 },
   tradeWinRate:      { defaultW: 1, defaultH: 1, minW: 1, minH: 1 },
   dayWinRate:        { defaultW: 1, defaultH: 1, minW: 1, minH: 1 },
   profitFactor:      { defaultW: 1, defaultH: 1, minW: 1, minH: 1 },
   avgWinLoss:        { defaultW: 1, defaultH: 1, minW: 1, minH: 1 },
 
-  // Charts — 4 cols wide, 4 rows tall (320px)
+  // Charts - 4 cols wide, 4 rows tall (320px)
   netDailyPnL:              { defaultW: 4, defaultH: 4, minW: 3, minH: 3 },
   dailyCumulativePnL:       { defaultW: 4, defaultH: 4, minW: 3, minH: 3 },
   accountBalanceChart:      { defaultW: 4, defaultH: 4, minW: 3, minH: 3 },
@@ -202,10 +202,10 @@ export const WIDGET_GRID_DEFAULTS: Record<string, WidgetGridDefault> = {
   // Session analysis
   sessionAnalysis:        { defaultW: 4, defaultH: 4, minW: 3, minH: 3 },
 
-  // Tables — 5 rows = ~400px which fits 10 trade rows without scroll by default
+  // Tables - 5 rows = ~400px which fits 10 trade rows without scroll by default
   recentTrades: { defaultW: 4, defaultH: 5, minW: 3, minH: 4 },
 
-  // Calendars — advanced unchanged, mini gets more height for taller cells
+  // Calendars - advanced unchanged, mini gets more height for taller cells
   calendarAdvanced: { defaultW: 12, defaultH: 6, minW: 4, minH: 5 },
   calendarMini:     { defaultW: 8, defaultH: 8, minW: 4, minH: 6 },
 

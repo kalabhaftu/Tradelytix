@@ -93,7 +93,7 @@ export default function Navbar() {
 
         {/* Right: Account Selector + Filters + Template + Import + Notifications + Theme + Profile */}
         <div className="flex items-center gap-1 sm:gap-1.5">
-          {/* Account Selector — hidden on mobile, shown in profile dropdown */}
+          {/* Account Selector - hidden on mobile, shown in profile dropdown */}
           <Popover open={!isMobile && accountPopoverOpen} onOpenChange={setAccountPopoverOpen}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" data-tour="navbar-accounts-btn" className="hidden h-8 w-8 text-muted-foreground hover:bg-muted/40 hover:text-foreground sm:flex" aria-label="Trading accounts">
@@ -115,7 +115,7 @@ export default function Navbar() {
             <DashboardDisplayModeSelector />
           </div>
 
-          {/* Filters — hidden on mobile */}
+          {/* Filters - hidden on mobile */}
           <div className="hidden sm:block">
             <CombinedFilters
               onSave={() => setFiltersPopoverOpen(false)}
@@ -124,12 +124,12 @@ export default function Navbar() {
             />
           </div>
 
-          {/* Template Selector — hidden on mobile */}
+          {/* Template Selector - hidden on mobile */}
           <div className="hidden md:block">
             <TemplateSelector />
           </div>
 
-          {/* Quick Add Trade — always visible on desktop */}
+          {/* Quick Add Trade - always visible on desktop */}
           <Button
             variant="ghost"
             size="icon"
@@ -141,18 +141,18 @@ export default function Navbar() {
             <Plus className="h-4 w-4" />
           </Button>
 
-          {/* Import — always visible, icon only on mobile */}
+          {/* Import - always visible, icon only on mobile */}
           <ImportButton />
 
-          {/* Notifications — always visible */}
+          {/* Notifications - always visible */}
           <NotificationCenter />
 
-          {/* Theme — hidden on mobile, in profile dropdown */}
+          {/* Theme - hidden on mobile, in profile dropdown */}
           <div className="hidden sm:block">
             <ThemeSwitcher />
           </div>
 
-          {/* Profile dropdown — includes mobile-only items */}
+          {/* Profile dropdown - includes mobile-only items */}
           <DropdownMenu open={profileMenuOpen} onOpenChange={setProfileMenuOpen}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">

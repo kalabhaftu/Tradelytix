@@ -36,7 +36,7 @@ export function MaeMfeScatter({ trades }: MaeMfeScatterProps) {
           mae: Math.abs(Number(t.mae)),
           mfe: Math.abs(Number(t.mfe)),
           pnl,
-          instrument: t.instrument || t.symbol || '—',
+          instrument: t.instrument || t.symbol || '-',
           isWin: pnl > 0,
         }
       })

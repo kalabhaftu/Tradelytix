@@ -72,7 +72,7 @@ export function PerformanceCard({ period, stats, userName }: PerformanceCardProp
 
             canvas.toBlob((blob: Blob | null) => {
                 if (!blob) {
-                    toast.error('Export failed — could not generate image')
+                    toast.error('Export failed - could not generate image')
                     return
                 }
                 const url = URL.createObjectURL(blob)
@@ -135,7 +135,7 @@ export function PerformanceCard({ period, stats, userName }: PerformanceCardProp
                 )}
                 style={{ minHeight: 280 }}
             >
-                {/* Subtle background glow — using radial gradients supported by html2canvas */}
+                {/* Subtle background glow - using radial gradients supported by html2canvas */}
                 <div 
                     className="pointer-events-none absolute inset-0 opacity-20 z-0" 
                     style={{

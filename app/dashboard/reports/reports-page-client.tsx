@@ -325,11 +325,11 @@ export default function ReportsPageClient({
                 // Best / Worst
                 ['', ''],
                 ['--- BEST & WORST ---', ''],
-                ['Most Traded Day', tradingActivity.mostTradedDay || '—'],
-                ['Most Profitable Day', tradingActivity.mostProfitableDay || '—'],
-                ['Most Profitable Instrument', tradingActivity.mostProfitablePair || '—'],
-                ['Most Losing Day', tradingActivity.mostLosingDay || '—'],
-                ['Most Losing Instrument', tradingActivity.mostLosingPair || '—'],
+                ['Most Traded Day', tradingActivity.mostTradedDay || '-'],
+                ['Most Profitable Day', tradingActivity.mostProfitableDay || '-'],
+                ['Most Profitable Instrument', tradingActivity.mostProfitablePair || '-'],
+                ['Most Losing Day', tradingActivity.mostLosingDay || '-'],
+                ['Most Losing Instrument', tradingActivity.mostLosingPair || '-'],
             ]
 
             const csvContent = [
@@ -696,23 +696,23 @@ export default function ReportsPageClient({
                                                     </TableRow>
                                                     <TableRow className="border-border/10 hover:bg-transparent">
                                                         <TableCell className="text-[10px] font-black uppercase text-muted-foreground/60 py-3">Most Traded Day</TableCell>
-                                                        <TableCell className="text-right font-bold py-3">{tradingActivity.mostTradedDay || '—'}</TableCell>
+                                                        <TableCell className="text-right font-bold py-3">{tradingActivity.mostTradedDay || '-'}</TableCell>
                                                     </TableRow>
                                                     <TableRow className="border-border/10 hover:bg-transparent">
                                                         <TableCell className="text-[10px] font-black uppercase text-muted-foreground/60 py-3">Most Profitable Day</TableCell>
-                                                        <TableCell className="text-right font-bold py-3 text-long">{tradingActivity.mostProfitableDay || '—'}</TableCell>
+                                                        <TableCell className="text-right font-bold py-3 text-long">{tradingActivity.mostProfitableDay || '-'}</TableCell>
                                                     </TableRow>
                                                     <TableRow className="border-border/10 hover:bg-transparent">
                                                         <TableCell className="text-[10px] font-black uppercase text-muted-foreground/60 py-3">Most Profitable Pair</TableCell>
-                                                        <TableCell className="text-right font-bold py-3 text-long">{tradingActivity.mostProfitablePair || '—'}</TableCell>
+                                                        <TableCell className="text-right font-bold py-3 text-long">{tradingActivity.mostProfitablePair || '-'}</TableCell>
                                                     </TableRow>
                                                     <TableRow className="border-border/10 hover:bg-transparent">
                                                         <TableCell className="text-[10px] font-black uppercase text-muted-foreground/60 py-3">Most Losing Day</TableCell>
-                                                        <TableCell className="text-right font-bold py-3 text-short">{tradingActivity.mostLosingDay || '—'}</TableCell>
+                                                        <TableCell className="text-right font-bold py-3 text-short">{tradingActivity.mostLosingDay || '-'}</TableCell>
                                                     </TableRow>
                                                     <TableRow className="border-border/10 hover:bg-transparent">
                                                         <TableCell className="text-[10px] font-black uppercase text-muted-foreground/60 py-3">Most Losing Pair</TableCell>
-                                                        <TableCell className="text-right font-bold py-3 text-short">{tradingActivity.mostLosingPair || '—'}</TableCell>
+                                                        <TableCell className="text-right font-bold py-3 text-short">{tradingActivity.mostLosingPair || '-'}</TableCell>
                                                     </TableRow>
                                                     <TableRow className="border-none hover:bg-transparent">
                                                         <TableCell className="text-[10px] font-black uppercase text-muted-foreground/60 py-3">Account Yield</TableCell>
@@ -935,7 +935,7 @@ export default function ReportsPageClient({
                                                     <TableCell className="text-[10px] font-bold font-mono py-2 opacity-60">
                                                         {trade.entryDate ? formatTimeInZone(trade.entryDate.includes('Z') ? trade.entryDate : `${trade.entryDate}Z`, 'yyyy-MM-dd HH:mm') : 'N/A'}
                                                     </TableCell>
-                                                    <TableCell className="text-[10px] font-black py-2">{trade.instrument || trade.symbol || '—'}</TableCell>
+                                                    <TableCell className="text-[10px] font-black py-2">{trade.instrument || trade.symbol || '-'}</TableCell>
                                                     <TableCell className="py-2">
                                                         <span className={cn(
                                                             "text-[9px] font-black uppercase px-2 py-0.5 rounded-full",

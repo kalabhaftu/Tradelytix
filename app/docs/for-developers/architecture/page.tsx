@@ -10,8 +10,8 @@ export default function ArchitectureDocsPage() {
     >
       <DocsSection title="System boundaries">
         <ul>
-          <li><strong>Public layer:</strong> Landing page, docs, feedback — share a coherent shell without requiring authentication</li>
-          <li><strong>Dashboard shell:</strong> Sidebar, navbar, filters, command palette, quick-add — the shared authenticated workspace</li>
+          <li><strong>Public layer:</strong> Landing page, docs, feedback - share a coherent shell without requiring authentication</li>
+          <li><strong>Dashboard shell:</strong> Sidebar, navbar, filters, command palette, quick-add - the shared authenticated workspace</li>
           <li><strong>Analytics engine:</strong> Server-side data aggregation powers dashboard, reports, and journal</li>
           <li><strong>Mobile app:</strong> Flutter client consuming the same backend via REST APIs and Supabase Realtime</li>
         </ul>

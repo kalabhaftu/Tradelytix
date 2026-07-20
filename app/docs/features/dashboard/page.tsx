@@ -11,12 +11,12 @@ export default function DashboardDocsPage() {
       <DocsSection title="KPI row">
         <p>The top row displays key performance indicators for the currently filtered data set. KPIs include:</p>
         <ul>
-          <li><strong>Total P&amp;L</strong> — Net profit or loss for the filtered period</li>
-          <li><strong>Win Rate</strong> — Percentage of profitable trades</li>
-          <li><strong>Profit Factor</strong> — Gross profit divided by gross loss</li>
-          <li><strong>Total Trades</strong> — Grouped execution count (not raw rows)</li>
-          <li><strong>Avg RR</strong> — Average risk-to-reward ratio</li>
-          <li><strong>Max Drawdown</strong> — Largest peak-to-trough decline</li>
+          <li><strong>Total P&amp;L</strong> - Net profit or loss for the filtered period</li>
+          <li><strong>Win Rate</strong> - Percentage of profitable trades</li>
+          <li><strong>Profit Factor</strong> - Gross profit divided by gross loss</li>
+          <li><strong>Total Trades</strong> - Grouped execution count (not raw rows)</li>
+          <li><strong>Avg RR</strong> - Average risk-to-reward ratio</li>
+          <li><strong>Max Drawdown</strong> - Largest peak-to-trough decline</li>
         </ul>
         <p>KPI cards are responsive: they scale down for narrow screens and expand on wide viewports.</p>
       </DocsSection>
@@ -24,21 +24,21 @@ export default function DashboardDocsPage() {
       <DocsSection title="Analytics widgets">
         <p>Widgets below the KPI row provide deeper analysis:</p>
         <ul>
-          <li><strong>Equity Curve</strong> — Cumulative P&amp;L over time with drawdown shading</li>
-          <li><strong>Drawdown Chart</strong> — Visual drawdown periods with recovery</li>
-          <li><strong>Distribution</strong> — P&amp;L distribution histogram</li>
-          <li><strong>Instrument Breakdown</strong> — Performance by instrument/symbol</li>
-          <li><strong>Monthly P&amp;L</strong> — Monthly profit/loss heatmap</li>
-          <li><strong>Day of Week</strong> — Performance broken down by weekday</li>
+          <li><strong>Equity Curve</strong> - Cumulative P&amp;L over time with drawdown shading</li>
+          <li><strong>Drawdown Chart</strong> - Visual drawdown periods with recovery</li>
+          <li><strong>Distribution</strong> - P&amp;L distribution histogram</li>
+          <li><strong>Instrument Breakdown</strong> - Performance by instrument/symbol</li>
+          <li><strong>Monthly P&amp;L</strong> - Monthly profit/loss heatmap</li>
+          <li><strong>Day of Week</strong> - Performance broken down by weekday</li>
         </ul>
       </DocsSection>
 
       <DocsSection title="Dashboard filters">
         <p>Filters control what data appears across the dashboard, reports, and journal:</p>
         <ul>
-          <li><strong>Account filter</strong> — Select which live and prop-firm accounts to include</li>
-          <li><strong>Date range</strong> — Set custom date ranges or use presets (Today, This Week, This Month, etc.)</li>
-          <li><strong>Additional filters</strong> — Filter by instrument, tag, model, setup, and outcome</li>
+          <li><strong>Account filter</strong> - Select which live and prop-firm accounts to include</li>
+          <li><strong>Date range</strong> - Set custom date ranges or use presets (Today, This Week, This Month, etc.)</li>
+          <li><strong>Additional filters</strong> - Filter by instrument, tag, model, setup, and outcome</li>
         </ul>
         <p>All widgets and KPIs update automatically when filters change.</p>
       </DocsSection>

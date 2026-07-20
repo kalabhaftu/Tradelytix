@@ -843,7 +843,7 @@ OUTPUT REQUIREMENTS:
           return `- ${bias} Bias: ${data.trades} trades, $${data.pnl.toFixed(2)} P&L, ${winRate}% WR, ${alignmentRate}% aligned with bias`
         }).join('\n') || 'No bias data recorded'}
     ${tradesWithBias > 0 && biasAlignment < 50 ?
-        `[WARNING] Only ${biasAlignment.toFixed(1)}% of trades align with stated bias. They're trading AGAINST their market sentiment—potential counter-trend losses!` : ''}
+        `[WARNING] Only ${biasAlignment.toFixed(1)}% of trades align with stated bias. They're trading AGAINST their market sentiment-potential counter-trend losses!` : ''}
 
     **News Trading Analysis** (High-Impact Events):
     - News Day Trades: ${newsTradesStats.totalNewsDays} trades ($${newsDayPnL.toFixed(2)} P&L, ${newsDayWinRate.toFixed(1)}% WR)
@@ -857,7 +857,7 @@ OUTPUT REQUIREMENTS:
           return `- ${eventId}: ${data.trades} trades, $${data.pnl.toFixed(2)} P&L, ${winRate}% WR, ${data.tradedDuring} during release`
         }).join('\n')}` : ''}
     ${newsTradesStats.tradedDuringNews > 0 && tradedDuringNewsPnL < 0 ?
-        `[WARNING] Negative P&L when trading DURING news releases. News volatility might be hurting performance—consider waiting for clarity!` : ''}
+        `[WARNING] Negative P&L when trading DURING news releases. News volatility might be hurting performance-consider waiting for clarity!` : ''}
     ${newsTradesStats.totalNewsDays > 0 && noNewsDayWinRate > newsDayWinRate + 10 ?
         `[INSIGHT] Win rate is ${(noNewsDayWinRate - newsDayWinRate).toFixed(1)}% higher on non-news days. Consider avoiding high-impact news!` : ''}
 

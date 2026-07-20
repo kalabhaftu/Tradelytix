@@ -87,7 +87,7 @@ export async function PATCH(request: NextRequest) {
       widgetStyle
     } = body
 
-    // Validate input — only check fields that are actually provided
+    // Validate input - only check fields that are actually provided
     if (chartStyle !== undefined && chartStyle !== 'smooth' && chartStyle !== 'sharp') {
       return NextResponse.json(
         { error: 'Invalid chartStyle format' },
@@ -136,7 +136,7 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    // Build update data — only include fields that were sent
+    // Build update data - only include fields that were sent
     const currentUser = await db.query.User.findFirst({
       where: (table, { eq }) => eq(table.id, internalUserId),
       with: {

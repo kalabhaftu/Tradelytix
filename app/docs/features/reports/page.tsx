@@ -10,13 +10,13 @@ export default function ReportsDocsPage() {
     >
       <DocsSection title="Report types">
         <ul>
-          <li><strong>Performance Summary</strong> — Overall stats: P&amp;L, win rate, profit factor, trades, drawdown</li>
-          <li><strong>Equity Analysis</strong> — Equity curve with detailed drawdown periods</li>
-          <li><strong>Trade Distribution</strong> — P&amp;L histogram, trade duration analysis</li>
-          <li><strong>Instrument Analysis</strong> — Breakdown by symbol/instrument</li>
-          <li><strong>Time-based Analysis</strong> — Performance by day of week, hour, month</li>
-          <li><strong>Setup/Model Analysis</strong> — Performance grouped by assigned setups and models</li>
-          <li><strong>Prop Firm Report</strong> — Challenge-specific reporting with rule compliance</li>
+          <li><strong>Performance Summary</strong> - Overall stats: P&amp;L, win rate, profit factor, trades, drawdown</li>
+          <li><strong>Equity Analysis</strong> - Equity curve with detailed drawdown periods</li>
+          <li><strong>Trade Distribution</strong> - P&amp;L histogram, trade duration analysis</li>
+          <li><strong>Instrument Analysis</strong> - Breakdown by symbol/instrument</li>
+          <li><strong>Time-based Analysis</strong> - Performance by day of week, hour, month</li>
+          <li><strong>Setup/Model Analysis</strong> - Performance grouped by assigned setups and models</li>
+          <li><strong>Prop Firm Report</strong> - Challenge-specific reporting with rule compliance</li>
         </ul>
       </DocsSection>
 
@@ -45,9 +45,9 @@ export default function ReportsDocsPage() {
       <DocsSection title="Exporting reports">
         <p>Reports can be exported in multiple formats:</p>
         <ul>
-          <li><strong>PDF</strong> — Print-ready report with all charts and tables</li>
-          <li><strong>CSV</strong> — Raw data export for spreadsheet analysis</li>
-          <li><strong>PNG</strong> — Chart screenshots</li>
+          <li><strong>PDF</strong> - Print-ready report with all charts and tables</li>
+          <li><strong>CSV</strong> - Raw data export for spreadsheet analysis</li>
+          <li><strong>PNG</strong> - Chart screenshots</li>
         </ul>
       </DocsSection>
 

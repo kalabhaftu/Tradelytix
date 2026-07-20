@@ -78,7 +78,7 @@ export function useFilteredTrades(filters: TradeFilters, enabled = true, isDemoM
       return res.json()
     },
     enabled,
-    staleTime: 2 * 60 * 1000, // 2 min — realtime subscriptions handle live updates
+    staleTime: 2 * 60 * 1000, // 2 min - realtime subscriptions handle live updates
     gcTime: 5 * 60 * 1000,
   })
 }

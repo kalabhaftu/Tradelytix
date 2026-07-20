@@ -6,7 +6,7 @@ import { sql } from 'drizzle-orm'
  * Lightweight health-check that touches the database to prevent Supabase
  * free-tier from pausing due to inactivity.
  *
- * No auth required — the query is a harmless `SELECT 1`.
+ * No auth required - the query is a harmless `SELECT 1`.
  */
 export async function GET() {
   try {

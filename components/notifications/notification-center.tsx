@@ -142,7 +142,7 @@ export function NotificationCenter() {
         setUnreadCount(result.data.unreadCount)
       }
     } catch (error) {
-      // Silently fail — user sees empty notification state
+      // Silently fail - user sees empty notification state
     } finally {
       setIsLoading(false)
     }

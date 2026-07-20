@@ -20,7 +20,7 @@ async function loadSiteUiSettings(): Promise<SiteUiSettingsPayload> {
       showFeedbackButton: settings?.showFeedbackButton ?? true,
     }
   } catch {
-    // During build-time prerendering there's no DB connection — return defaults
+    // During build-time prerendering there's no DB connection - return defaults
     return { showDonateButton: true, showFeedbackButton: true }
   }
 }

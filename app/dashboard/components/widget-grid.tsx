@@ -224,7 +224,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
     }) as (WidgetLayout | null)[]
   }, [kpiWidgets])
 
-  // Non-KPI widgets — these go in the react-grid-layout
+  // Non-KPI widgets - these go in the react-grid-layout
   const gridWidgets = useMemo(() => {
     return layout.filter(w => !isKpiRowWidget(w))
   }, [layout])
@@ -394,7 +394,7 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
 
   return (
     <div className={cn('space-y-3 lg:isolate', className)}>
-      {/* KPI Row — mobile 1-up, tablet 2+2+1, narrow desktop 3+2, wide desktop 5-up */}
+      {/* KPI Row - mobile 1-up, tablet 2+2+1, narrow desktop 3+2, wide desktop 5-up */}
       <div className="px-3 sm:px-4 pt-3 sm:pt-4 kpi-row-container lg:isolate lg:relative lg:z-10">
         <div
           className={cn(
@@ -456,12 +456,12 @@ export default function WidgetGrid({ className }: WidgetGridProps) {
         </div>
       </div>
 
-      {/* Main Grid — react-grid-layout */}
+      {/* Main Grid - react-grid-layout */}
       {/* The ref div MUST always be in the DOM so ResizeObserver can measure width */}
       <div className="px-2 lg:isolate" ref={gridContainerRef} data-tour="widget-canvas">
         {isMobile ? (
           /* ----------------------------------------------------------------
-           * MOBILE RENDERING PATH — GPU-SAFE
+           * MOBILE RENDERING PATH - GPU-SAFE
            *
            * Flat DOM: no nested flex containers, no stacking contexts,
            * no relative/z-index, no group hover, no transition-all.

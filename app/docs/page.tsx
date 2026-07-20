@@ -13,7 +13,7 @@ export default function DocsHome() {
     <DocsPage
       badge="Documentation"
       title="JJI Knowledge Base"
-      description="Complete guides for the JJI trading analytics platform — covering the web dashboard and the companion mobile app for Android and iOS."
+      description="Complete guides for the JJI trading analytics platform - covering the web dashboard and the companion mobile app for Android and iOS."
     >
       <DocsSection
         title="Start here"
@@ -24,7 +24,7 @@ export default function DocsHome() {
             {
               href: '/docs/getting-started',
               label: 'Quick Start Guide',
-              description: 'Sign up, import your first trades, configure your dashboard, and set up the mobile app — all in one walkthrough.',
+              description: 'Sign up, import your first trades, configure your dashboard, and set up the mobile app - all in one walkthrough.',
             },
             {
               href: '/docs/features/app-flow',

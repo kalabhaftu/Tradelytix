@@ -57,7 +57,7 @@ export function useAccountFilterSettings(): UseAccountFilterSettingsResult {
       }
       return fetchAccountFilterSettings()
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes — no network call if cache is fresh
+    staleTime: 1000 * 60 * 5, // 5 minutes - no network call if cache is fresh
     gcTime: 1000 * 60 * 10,   // keep in memory 10 minutes
     // initialData seeds the query as if the fetch already succeeded.
     // Unlike placeholderData, this makes isLoading=false immediately

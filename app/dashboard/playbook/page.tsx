@@ -160,7 +160,7 @@ function StrategyBlock({
               {(model.stats?.totalPnL || 0) >= 0 ? '+' : ''}${((model.stats?.totalPnL || 0) / model.stats!.tradeCount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           ) : (
-            <span className="text-xl font-bold tracking-tight text-muted-foreground">—</span>
+            <span className="text-xl font-bold tracking-tight text-muted-foreground">-</span>
           )}
         </div>
       </div>

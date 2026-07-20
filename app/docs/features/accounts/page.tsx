@@ -10,10 +10,10 @@ export default function AccountsDocsPage() {
     >
       <DocsSection title="Account types">
         <ul>
-          <li><strong>Live Accounts</strong> — Standard trading accounts connected to a broker. Use these for your regular trading history.</li>
-          <li><strong>Master Accounts</strong> — Prop-firm challenge containers that hold multiple phase accounts.</li>
-          <li><strong>Phase Accounts</strong> — Individual phases within a prop-firm challenge (e.g., Phase 1, Phase 2, Funded).</li>
-          <li><strong>Demo Accounts</strong> — Practice accounts for simulated trading.</li>
+          <li><strong>Live Accounts</strong> - Standard trading accounts connected to a broker. Use these for your regular trading history.</li>
+          <li><strong>Master Accounts</strong> - Prop-firm challenge containers that hold multiple phase accounts.</li>
+          <li><strong>Phase Accounts</strong> - Individual phases within a prop-firm challenge (e.g., Phase 1, Phase 2, Funded).</li>
+          <li><strong>Demo Accounts</strong> - Practice accounts for simulated trading.</li>
         </ul>
       </DocsSection>
 
@@ -24,7 +24,7 @@ export default function AccountsDocsPage() {
           <li>Go to Accounts → Add Account</li>
           <li>Select the account type (Live, Prop Firm, Demo)</li>
           <li>Fill in account details: name, broker, starting balance, currency</li>
-          <li>Save — the account is now available in filters</li>
+          <li>Save - the account is now available in filters</li>
         </ol>
         <h3>Managing accounts</h3>
         <ul>

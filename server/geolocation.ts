@@ -14,7 +14,7 @@ interface GeoData {
 /**
  * Capture user geolocation from IP address.
  * Uses ip-api.com (free, no key needed for non-commercial).
- * Fire-and-forget — never blocks the auth flow.
+ * Fire-and-forget - never blocks the auth flow.
  */
 export async function captureUserGeo(userId: string, ipAddress: string): Promise<void> {
   try {
@@ -36,7 +36,7 @@ export async function captureUserGeo(userId: string, ipAddress: string): Promise
       ipAddress,
     })
   } catch (err) {
-    // Silent failure — geo tracking should never break the user flow
+    // Silent failure - geo tracking should never break the user flow
     logger.error({ event: 'system_error', error: err }, '[GeoCapture] Failed:')
   }
 }

@@ -137,7 +137,7 @@ export function TemplateSelector() {
       }
       await switchTemplate(cloned.id)
       if (nameDialogMode === 'clone') {
-        toast.success(`Template "${finalName}" created — you can now edit it`)
+        toast.success(`Template "${finalName}" created - you can now edit it`)
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Failed to save template'

@@ -24,7 +24,7 @@ export async function withCache<T>(
       return cached
     }
   } catch (err) {
-    logger.warn({ key, err }, 'cache:read-failed — computing fresh')
+    logger.warn({ key, err }, 'cache:read-failed - computing fresh')
   }
 
   logger.debug({ key }, 'cache:miss')
@@ -33,7 +33,7 @@ export async function withCache<T>(
   try {
     await redis.set(key, result, { ex: ttl })
   } catch (err) {
-    logger.warn({ key, err }, 'cache:write-failed — result still returned')
+    logger.warn({ key, err }, 'cache:write-failed - result still returned')
   }
 
   return result
@@ -41,7 +41,7 @@ export async function withCache<T>(
 
 /**
  * Delete one or more cache keys.
- * Fails silently — a cache invalidation failure is not fatal.
+ * Fails silently - a cache invalidation failure is not fatal.
  */
 async function invalidateCache(...keys: string[]): Promise<void> {
   if (keys.length === 0) return

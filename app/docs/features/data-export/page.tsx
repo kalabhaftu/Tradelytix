@@ -10,11 +10,11 @@ export default function DataExportDocsPage() {
     >
       <DocsSection title="Export formats">
         <ul>
-          <li><strong>CSV</strong> — Raw trade data export compatible with Excel, Google Sheets, and any spreadsheet application</li>
-          <li><strong>Excel (XLSX)</strong> — Formatted spreadsheet with multiple sheets for trades, accounts, and summaries</li>
-          <li><strong>PDF</strong> — Print-ready report exports with charts, tables, and formatting</li>
-          <li><strong>JSON</strong> — Machine-readable data export for programmatic access</li>
-          <li><strong>PNG</strong> — Chart and widget screenshots</li>
+          <li><strong>CSV</strong> - Raw trade data export compatible with Excel, Google Sheets, and any spreadsheet application</li>
+          <li><strong>Excel (XLSX)</strong> - Formatted spreadsheet with multiple sheets for trades, accounts, and summaries</li>
+          <li><strong>PDF</strong> - Print-ready report exports with charts, tables, and formatting</li>
+          <li><strong>JSON</strong> - Machine-readable data export for programmatic access</li>
+          <li><strong>PNG</strong> - Chart and widget screenshots</li>
         </ul>
       </DocsSection>
 
@@ -45,7 +45,7 @@ export default function DataExportDocsPage() {
       </DocsSection>
 
       <DocsCallout title="Data portability" tone="success">
-        You own your data. Export at any time — there are no limits on how often you can export or how much data you can download.
+        You own your data. Export at any time - there are no limits on how often you can export or how much data you can download.
       </DocsCallout>
     </DocsPage>
   )

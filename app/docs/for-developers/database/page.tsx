@@ -23,7 +23,7 @@ export default function DatabaseDocsPage() {
 
       <DocsSection title="Key design rules">
         <ul>
-          <li>All data is user-scoped — every table includes a user_id foreign key</li>
+          <li>All data is user-scoped - every table includes a user_id foreign key</li>
           <li>Soft deletes where possible for audit trail</li>
           <li>Aggregation happens server-side, not in the client</li>
           <li>Timestamps are stored in UTC, converted to user timezone at render</li>

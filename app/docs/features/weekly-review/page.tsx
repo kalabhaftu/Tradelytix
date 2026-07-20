@@ -10,22 +10,22 @@ export default function WeeklyReviewDocsPage() {
     >
       <DocsSection title="What the weekly review includes">
         <ul>
-          <li><strong>Performance Summary</strong> — Total P&amp;L, win rate, number of trades, profit factor for the week</li>
-          <li><strong>Comparison</strong> — How this week compares to the previous week and your rolling 4-week average</li>
-          <li><strong>Day-by-Day Breakdown</strong> — P&amp;L and trade count for each day of the week</li>
-          <li><strong>Best &amp; Worst Trades</strong> — Highlight of the best and worst performing trades</li>
-          <li><strong>Setup Performance</strong> — Which setups/models performed best during the week</li>
-          <li><strong>Risk Metrics</strong> — Average R/R, max drawdown, largest loser</li>
-          <li><strong>Journal Prompt</strong> — Guided questions to reflect on your week</li>
+          <li><strong>Performance Summary</strong> - Total P&amp;L, win rate, number of trades, profit factor for the week</li>
+          <li><strong>Comparison</strong> - How this week compares to the previous week and your rolling 4-week average</li>
+          <li><strong>Day-by-Day Breakdown</strong> - P&amp;L and trade count for each day of the week</li>
+          <li><strong>Best &amp; Worst Trades</strong> - Highlight of the best and worst performing trades</li>
+          <li><strong>Setup Performance</strong> - Which setups/models performed best during the week</li>
+          <li><strong>Risk Metrics</strong> - Average R/R, max drawdown, largest loser</li>
+          <li><strong>Journal Prompt</strong> - Guided questions to reflect on your week</li>
         </ul>
       </DocsSection>
 
       <DocsSection title="Accessing the weekly review">
         <p>The weekly review is available from:</p>
         <ul>
-          <li><strong>Dashboard</strong> — A weekly review widget shows a summary with a link to the full review</li>
-          <li><strong>Reports</strong> — The weekly review is listed alongside other report types</li>
-          <li><strong>Notifications</strong> — If enabled, you receive a notification when a new weekly review is ready</li>
+          <li><strong>Dashboard</strong> - A weekly review widget shows a summary with a link to the full review</li>
+          <li><strong>Reports</strong> - The weekly review is listed alongside other report types</li>
+          <li><strong>Notifications</strong> - If enabled, you receive a notification when a new weekly review is ready</li>
         </ul>
       </DocsSection>
 

@@ -6,7 +6,7 @@ export default function GettingStartedDocsPage() {
     <DocsPage
       badge="Getting Started"
       title="Getting Started with JJI"
-      description="A complete walkthrough from signup to your first trade review — covering the web dashboard and mobile app."
+      description="A complete walkthrough from signup to your first trade review - covering the web dashboard and mobile app."
     >
       <DocsSection title="1. Create your account">
         <p>
@@ -17,7 +17,7 @@ export default function GettingStartedDocsPage() {
           <DocsInfoCard
             icon={CheckCircle2}
             title="Email magic link"
-            description="Enter your email address and click Continue. A one-time sign-in link is sent to your inbox — no password required. Click the link and your session starts immediately."
+            description="Enter your email address and click Continue. A one-time sign-in link is sent to your inbox - no password required. Click the link and your session starts immediately."
             items={['Check spam if the email does not arrive within 60 seconds', 'The link expires after 15 minutes; request a new one if needed', 'No password to remember or reset']}
           />
           <DocsInfoCard
@@ -29,7 +29,7 @@ export default function GettingStartedDocsPage() {
         </DocsCardGrid>
         <p>
           After your first sign-in a workspace is provisioned automatically. You land on the dashboard
-          shell — your starting point for all trading analytics.
+          shell - your starting point for all trading analytics.
         </p>
       </DocsSection>
 
@@ -84,7 +84,7 @@ export default function GettingStartedDocsPage() {
       <DocsSection title="4. Review the dashboard">
         <p>
           The dashboard is your performance command center. It aggregates all imported trades into KPI
-          cards, charts, and a calendar overview — all scoped by your active filters.
+          cards, charts, and a calendar overview - all scoped by your active filters.
         </p>
         <DocsCardGrid>
           <DocsInfoCard
@@ -133,7 +133,7 @@ export default function GettingStartedDocsPage() {
             icon={Smartphone}
             title="Download & sign in"
             description="Download JJI from the Google Play Store or Apple App Store. Open the app and sign in using the same email magic link or OAuth provider you used on the web."
-            items={['No separate registration — your web account works directly', 'After sign-in, the app loads your dashboard, trades, journal, and challenges', 'Push notifications are enabled by default for trade alerts']}
+            items={['No separate registration - your web account works directly', 'After sign-in, the app loads your dashboard, trades, journal, and challenges', 'Push notifications are enabled by default for trade alerts']}
           />
           <DocsInfoCard
             icon={Smartphone}

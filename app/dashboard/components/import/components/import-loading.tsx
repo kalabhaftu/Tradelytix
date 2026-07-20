@@ -182,7 +182,7 @@ export function ImportLoading() {
               "{currentQuote?.text}"
             </p>
             <p className="text-xs sm:text-sm text-foreground/60 font-semibold tracking-wide uppercase">
-              — {currentQuote?.author}
+              - {currentQuote?.author}
             </p>
           </div>
         </motion.div>

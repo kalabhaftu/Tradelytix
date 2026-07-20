@@ -8,7 +8,7 @@ const changelog = [
     version: '2.0.0',
     date: '2026-03-26',
     highlights: [
-      { type: 'feature', text: 'Full V1 API consolidation — all legacy routes removed' },
+      { type: 'feature', text: 'Full V1 API consolidation - all legacy routes removed' },
       { type: 'feature', text: 'Dynamic widget dashboard with 20+ customizable widgets' },
       { type: 'feature', text: 'Lexical rich-text journaling engine' },
       { type: 'feature', text: 'Prop firm multi-phase evaluation tracking with breach detection' },
@@ -34,7 +34,7 @@ const changelog = [
     version: '1.0.0',
     date: '2025-12-01',
     highlights: [
-      { type: 'feature', text: 'Initial release — trade import, journaling, accounts management' },
+      { type: 'feature', text: 'Initial release - trade import, journaling, accounts management' },
       { type: 'feature', text: 'Prop firm evaluation tracking (CFD focused)' },
       { type: 'feature', text: 'Dashboard with equity curve, drawdown, and calendar widgets' },
       { type: 'feature', text: 'Supabase authentication (Discord + Google OAuth)' },

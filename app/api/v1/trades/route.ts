@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
     const limitMax = needsAnalytics ? MAX_ANALYTICS_TRADE_LIMIT : MAX_TABLE_PAGE_LIMIT
     const limit = (!isNaN(rawLimit)) ? Math.min(limitMax, Math.max(1, rawLimit)) : limitFallback
     
-    // Build Drizzle where clause — ALL filtering server-side
+    // Build Drizzle where clause - ALL filtering server-side
     const whereConditions: SQL[] = [eq(schema.Trade.userId, internalUserId)]
 
     if (liveOnly) {

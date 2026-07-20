@@ -11,10 +11,10 @@ export default function PlaybookDocsPage() {
       <DocsSection title="What the playbook does">
         <p>The playbook lets you define:</p>
         <ul>
-          <li><strong>Setups</strong> — Named trading setups with defined entry criteria, targets, and risk rules</li>
-          <li><strong>Models</strong> — Strategy templates that group multiple setups</li>
-          <li><strong>Rules</strong> — Specific conditions for entry, target, confirmation, confluence, and exit</li>
-          <li><strong>Tags</strong> — Label system that connects playbook entries to trade records</li>
+          <li><strong>Setups</strong> - Named trading setups with defined entry criteria, targets, and risk rules</li>
+          <li><strong>Models</strong> - Strategy templates that group multiple setups</li>
+          <li><strong>Rules</strong> - Specific conditions for entry, target, confirmation, confluence, and exit</li>
+          <li><strong>Tags</strong> - Label system that connects playbook entries to trade records</li>
         </ul>
       </DocsSection>
 
@@ -37,7 +37,7 @@ export default function PlaybookDocsPage() {
           <li>Filter trades by setup to see which strategies perform best</li>
           <li>Compare win rates and P&amp;L across different setups</li>
           <li>Identify which setups need refinement or retirement</li>
-          <li>Track execution quality — did you follow the rules?</li>
+          <li>Track execution quality - did you follow the rules?</li>
         </ul>
       </DocsSection>
 

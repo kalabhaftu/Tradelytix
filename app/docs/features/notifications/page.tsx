@@ -11,22 +11,22 @@ export default function NotificationsDocsPage() {
       <DocsSection title="Notification types">
         <p>JJI supports 30+ typed notification categories:</p>
         <ul>
-          <li><strong>Prop Firm</strong> — Phase passed, failed, funded, payout approved, rule breach warnings</li>
-          <li><strong>Import</strong> — Import completed, parsing issues, sync errors</li>
-          <li><strong>Risk</strong> — Drawdown warnings, daily loss limit approached</li>
-          <li><strong>Strategy</strong> — Backtesting results, playbook suggestions</li>
-          <li><strong>Payment</strong> — Subscription renewal, payment received, payment failed</li>
-          <li><strong>Access</strong> — New device sign-in, account changes</li>
-          <li><strong>System</strong> — Maintenance notices, feature updates</li>
-          <li><strong>Weekly Review</strong> — Weekly performance summary notification</li>
+          <li><strong>Prop Firm</strong> - Phase passed, failed, funded, payout approved, rule breach warnings</li>
+          <li><strong>Import</strong> - Import completed, parsing issues, sync errors</li>
+          <li><strong>Risk</strong> - Drawdown warnings, daily loss limit approached</li>
+          <li><strong>Strategy</strong> - Backtesting results, playbook suggestions</li>
+          <li><strong>Payment</strong> - Subscription renewal, payment received, payment failed</li>
+          <li><strong>Access</strong> - New device sign-in, account changes</li>
+          <li><strong>System</strong> - Maintenance notices, feature updates</li>
+          <li><strong>Weekly Review</strong> - Weekly performance summary notification</li>
         </ul>
       </DocsSection>
 
       <DocsSection title="Where notifications appear">
         <ul>
-          <li><strong>Web dashboard</strong> — Notification bell icon in the top navbar. Unread count badge shows outstanding notifications.</li>
-          <li><strong>Mobile app</strong> — Push notifications via Firebase Cloud Messaging. Notification bell in the app header.</li>
-          <li><strong>In-app notification center</strong> — Full notification history with read/unread state and action links.</li>
+          <li><strong>Web dashboard</strong> - Notification bell icon in the top navbar. Unread count badge shows outstanding notifications.</li>
+          <li><strong>Mobile app</strong> - Push notifications via Firebase Cloud Messaging. Notification bell in the app header.</li>
+          <li><strong>In-app notification center</strong> - Full notification history with read/unread state and action links.</li>
         </ul>
       </DocsSection>
 

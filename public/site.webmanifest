@@ -1,7 +1,7 @@
 {
   "name": "JJI",
   "short_name": "JJI",
-  "description": "Just Journal It — a focused trading journal and analytics workspace.",
+  "description": "Just Journal It - a focused trading journal and analytics workspace.",
   "id": "/app-launch",
   "start_url": "/app-launch",
   "scope": "/",

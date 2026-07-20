@@ -3,7 +3,7 @@ const regionDisplayNames =
     ? new Intl.DisplayNames(['en'], { type: 'region' })
     : null
 
-const PLACEHOLDER_VALUES = new Set(['', 'unknown', 'xx', 'null', 'undefined', '-', '—'])
+const PLACEHOLDER_VALUES = new Set(['', 'unknown', 'xx', 'null', 'undefined', '-', '-'])
 
 function decodeLocationPart(value?: string | null): string | null {
   if (!value) return null

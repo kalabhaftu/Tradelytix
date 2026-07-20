@@ -13,7 +13,6 @@ import {
   FileText,
   LineChart,
   Moon,
-  ShieldCheck,
   Smartphone,
   Sun,
   Target,
@@ -166,13 +165,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="bg-muted/20">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-14 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
-            <div className="max-w-2xl"><div className="flex items-center gap-2 text-sm font-semibold"><ShieldCheck className="h-4 w-4" /> Built around your trading record</div><p className="mt-3 text-sm leading-relaxed text-muted-foreground">Learn how JJI handles data, storage, and account controls in the <Link href="/privacy" className="text-foreground underline underline-offset-4">Privacy Policy</Link>. Read the <Link href="/terms" className="text-foreground underline underline-offset-4">Terms of Service</Link> before using the platform.</p></div>
-            <div className="flex shrink-0 flex-wrap gap-3"><Button asChild className="rounded-xl"><Link href="/contact">Contact JJI <ArrowRight className="ml-2 h-4 w-4" /></Link></Button><Button asChild variant="outline" className="rounded-xl"><Link href="/docs">Browse docs</Link></Button></div>
-          </div>
-        </section>
-
         <section id="features">
           <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
             <div className="max-w-2xl"><p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">The workspace</p><h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-5xl">Everything around the trade, in one place.</h2><p className="mt-4 text-muted-foreground">JJI keeps the operational work close to the reflection that makes it useful.</p></div>
@@ -189,6 +181,13 @@ export default function HomePage() {
 
         <section className="mx-auto flex w-full max-w-7xl flex-col items-center px-4 py-20 text-center sm:px-6 lg:px-8 lg:py-28">
           <FileText className="h-6 w-6 text-primary" /><h2 className="mt-5 text-3xl font-semibold tracking-[-0.04em] sm:text-5xl">Make the next session easier to review.</h2><p className="mt-4 max-w-xl text-muted-foreground">Start with the web workspace, then keep your journal close with the JJI mobile app.</p><Button asChild size="lg" className="mt-8 h-12 rounded-xl px-7"><Link href={primaryHref}>{isAuthenticated ? 'Open JJI' : 'Create your workspace'} <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+        </section>
+
+        <section className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-center gap-x-5 gap-y-2 px-4 pb-10 text-sm text-muted-foreground sm:px-6 lg:px-8">
+          <Link href="/privacy" className="transition-colors hover:text-foreground">Privacy</Link>
+          <Link href="/terms" className="transition-colors hover:text-foreground">Terms</Link>
+          <Link href="/contact" className="transition-colors hover:text-foreground">Contact</Link>
+          <Link href="/docs" className="transition-colors hover:text-foreground">Docs</Link>
         </section>
       </main>
     </div>

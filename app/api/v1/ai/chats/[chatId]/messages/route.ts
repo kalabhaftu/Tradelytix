@@ -7,6 +7,9 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { streamText } from 'ai'
 import { subDays } from 'date-fns'
 import { eq, and, or, inArray, desc, asc } from 'drizzle-orm'
+import { createHash } from 'crypto'
+import { getOrSetCached } from '@/lib/cache/unified-cache'
+import { CachePrefix, CacheTTL } from '@/lib/cache/redis-cache'
 
 export const maxDuration = 60
 
@@ -362,10 +365,16 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { prompt } = body
+    // Web uses `prompt`; mobile historically used `content`. Accept both so
+    // clients stay interoperable during rolling deployments.
+    const prompt = typeof body?.prompt === 'string' ? body.prompt : body?.content
 
     if (!prompt || !prompt.trim()) {
       return NextResponse.json({ error: 'Message content is required' }, { status: 400 })
+    }
+
+    if (prompt.length > 8000) {
+      return NextResponse.json({ error: 'Message content is too long' }, { status: 400 })
     }
 
     // 1. Abuse Protection Pre-filters
@@ -398,7 +407,19 @@ export async function POST(
     })
 
     // 3. Resolve Data Context
-    const dataContext = await resolveDataContext(userId, chat)
+    const contextFingerprint = createHash('sha256').update(JSON.stringify({
+      accounts: chat.accounts ?? [],
+      dateRange: chat.dateRange,
+      customFrom: chat.customFrom,
+      customTo: chat.customTo,
+      dataSources: chat.dataSources ?? [],
+    })).digest('hex').slice(0, 24)
+    const contextCacheKey = `${CachePrefix.AI_CONTEXT}${userId}:${chatId}:${contextFingerprint}`
+    const dataContext = await getOrSetCached(
+      contextCacheKey,
+      () => resolveDataContext(userId, chat),
+      CacheTTL.VERY_LONG
+    )
 
     // 4. Construct System Prompt
     const systemPrompt = `You are The Trading Intelligence Assistant. You operate as a professional trading analyst and performance coach.

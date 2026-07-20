@@ -32,6 +32,7 @@ export const CachePrefix = {
   TRADE_LIST: 'trade:list:',
   CALENDAR_DATA: 'calendar:data:',
   MARKET_DATA: 'market:data:',
+  AI_CONTEXT: 'ai:context:',
 } as const
 
 // Cache TTLs (Time To Live) in seconds
@@ -159,6 +160,7 @@ export async function invalidateUserCache(userId: string): Promise<void> {
     deleteCachePattern(`${CachePrefix.ACCOUNT_LIST}${userId}*`),
     deleteCachePattern(`${CachePrefix.TRADE_LIST}${userId}*`),
     deleteCachePattern(`${CachePrefix.CALENDAR_DATA}${userId}*`),
+    deleteCachePattern(`${CachePrefix.AI_CONTEXT}${userId}:*`),
   ])
 }
 
@@ -218,4 +220,3 @@ async function getCachedCalendarData<T>(
   const key = `${CachePrefix.CALENDAR_DATA}${userId}:${month}`
   return getOrSet(key, fetcher, CacheTTL.MEDIUM)
 }
-

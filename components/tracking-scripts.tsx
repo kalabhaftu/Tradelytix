@@ -47,11 +47,6 @@ export function TrackingScripts() {
         <Script id="analytics-tracking" strategy="afterInteractive">
           {`
             console.log("Analytics tracking script activated.");
-            // Add your Google Analytics or PostHog script here
-            // window.dataLayer = window.dataLayer || [];
-            // function gtag(){dataLayer.push(arguments);}
-            // gtag('js', new Date());
-            // gtag('config', 'G-XXXXXXXXXX');
           `}
         </Script>
       )}

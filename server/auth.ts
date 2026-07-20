@@ -628,8 +628,7 @@ export async function verifyOtp(email: string, token: string, type: 'email' | 's
         }
 
       } catch (dbError) {
-        // Don't throw - authentication succeeded, database sync is secondary
-        // The app will work with just Supabase auth, database sync can happen later
+        logger.error({ event: 'auth_user_sync_failed', error: dbError }, 'Supabase auth succeeded but user database sync failed')
       }
 
       logActivity({ userId: data.user.id, action: 'USER_LOGIN', entity: 'Auth' })

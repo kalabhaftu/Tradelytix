@@ -1,6 +1,6 @@
 import { inngest } from '../client'
 import logger from '@/lib/logger'
-import { db } from '@/lib/db/client'
+import { directSyncUnderDevelopmentMessage } from '@/lib/integrations/direct-sync-status'
 
 export const syncRithmicData = inngest.createFunction(
   { id: 'sync-rithmic-data' },
@@ -9,9 +9,8 @@ export const syncRithmicData = inngest.createFunction(
     const { userId, importId } = event.data
 
     await step.run('process-rithmic-sync', async () => {
-      logger.info({ userId, importId }, 'Processing Rithmic sync')
-      // Simulate sync logic for now
-      return { status: 'completed' }
+      logger.info({ userId, importId }, 'Rithmic sync skipped while under development')
+      return { status: 'skipped', message: directSyncUnderDevelopmentMessage('Rithmic') }
     })
   }
 )

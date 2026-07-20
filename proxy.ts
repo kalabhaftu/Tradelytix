@@ -2,6 +2,7 @@ import { getSafeRedirectPath } from '@/lib/security/redirects'
 import { getCorsHeaders } from '@/lib/security/origins'
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient, type CookieOptions } from "@supabase/ssr"
+import { logger } from '@/lib/logger'
 
 const publicRoutes = ["/", "/subscribe", "/app-launch", "/not-found", "/api/auth", "/docs", "/privacy", "/feedback", "/donate", "/changelog", "/about", "/contact", "/reports/shared"]
 const protectedRoutes = ["/dashboard", "/admin"]
@@ -211,7 +212,7 @@ export default async function proxy(request: NextRequest) {
 
     return addCorsHeaders(request, addSecurityHeaders(authResponse))
   } catch (error) {
-    console.error("Proxy error:", error)
+    logger.error({ error }, "Proxy error:")
     if (isProtectedRoute) {
       if (pathname.startsWith('/api/')) {
         return addCorsHeaders(request, addSecurityHeaders(NextResponse.json({ error: 'Internal server error' }, { status: 500 })))

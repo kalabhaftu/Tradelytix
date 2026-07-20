@@ -575,7 +575,7 @@ export const DataProvider: React.FC<{
 
   useDataProviderRealtime({
     userId: user?.id,
-    enabled: !!user?.id && !isLoading,
+    enabled: !isDemoMode && !!user?.id && !isLoading,
     queryClient,
     reloadBootstrapData: loadData,
   })
@@ -583,6 +583,8 @@ export const DataProvider: React.FC<{
   // SUPABASE KEEP-ALIVE HEARTBEAT
   // Pings DB every 4 hours to prevent free-tier pause
   useEffect(() => {
+    if (isDemoMode) return
+
     const FOUR_HOURS = 4 * 60 * 60 * 1000
 
     const ping = () => {
@@ -609,7 +611,7 @@ export const DataProvider: React.FC<{
       clearInterval(intervalId)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [])
+  }, [isDemoMode])
 
   const refreshTrades = useCallback(async () => {
     if (!user?.id) return

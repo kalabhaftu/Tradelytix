@@ -90,7 +90,7 @@ const nextConfig = {
                 : "script-src 'self' 'unsafe-inline'",
               `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL} wss://*.supabase.co https://api.anthropic.com https://*.ingest.sentry.io`,
               "style-src 'self' 'unsafe-inline'",
-              `img-src 'self' data: blob: ${process.env.NEXT_PUBLIC_SUPABASE_URL}`,
+              `img-src 'self' data: blob: https://lh3.googleusercontent.com ${process.env.NEXT_PUBLIC_SUPABASE_URL}`,
               "font-src 'self'",
               "object-src 'none'",
               "frame-ancestors 'none'",

@@ -68,8 +68,8 @@ export default function DocsHome() {
           <DocsInfoCard
             icon={Upload}
             title="Trade Import"
-            description="Import trades from broker exports, CSV files, TradingView webhooks, Tradovate, DxFeed, Rithmic, Thor, Match-Trader, and Exness."
-            items={['Supported formats and sources', 'Parsing review before saving', 'Account mapping']}
+            description="Import trades from broker exports, CSV files, TradingView webhooks, Thor, Match-Trader, Exness, and other supported CSV formats."
+            items={['Supported file formats and webhook sources', 'Parsing review before saving', 'Direct broker sync marked under development']}
           />
           <DocsInfoCard
             icon={LayoutDashboard}

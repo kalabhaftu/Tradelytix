@@ -85,7 +85,7 @@ export function DashboardClient() {
         {/* Edit Mode Controls */}
         <EditModeControls />
         <ErrorBoundaryWrapper context="Widgets">
-          <div className="px-4 dashboard-page-content">
+          <div className="px-4 pb-24 lg:pb-0 dashboard-page-content">
             <WidgetCanvas />
           </div>
         </ErrorBoundaryWrapper>

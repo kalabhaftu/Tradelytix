@@ -61,7 +61,7 @@ const getTradesSchema = z.object({
   includeWidgets: z.string().nullish().transform(val => val !== 'false'),
   pageLimit: z.string().nullish().transform(val => val ? parseInt(val, 10) : null).pipe(z.number().min(1).max(MAX_TABLE_PAGE_LIMIT).nullable().catch(null)),
   pageOffset: z.string().nullish().transform(val => val ? parseInt(val, 10) : 0).pipe(z.number().min(0).max(1_000_000).catch(0)),
-  limit: z.string().nullish(), // we compute this later based on needsAnalytics
+  limit: z.string().nullish(),
   timezone: z.string().nullish().transform(val => val ? val.slice(0, 64) : 'UTC'),
   search: z.string().nullish().transform(val => val ? val.trim().slice(0, 120) : ''),
   side: z.string().nullish().transform(val => val ? val.trim().slice(0, 16) : ''),

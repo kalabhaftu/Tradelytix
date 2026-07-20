@@ -226,8 +226,7 @@ export default function AIChatWorkspace() {
 
   useEffect(() => {
     if (isDemoMode) {
-      // Setup mock chats for Demo
-      const mockChats: ChatSession[] = [
+      const demoChats: ChatSession[] = [
         {
           id: 'demo-1',
           title: 'Review Risk on NQ & ES',
@@ -255,9 +254,9 @@ export default function AIChatWorkspace() {
           updatedAt: new Date(Date.now() - 86400000).toISOString()
         }
       ]
-      setChats(mockChats)
+      setChats(demoChats)
       
-      const mockInsights: SavedInsight[] = [
+      const demoInsights: SavedInsight[] = [
         {
           id: 'insight-1',
           title: 'Revenge Trading Pattern Identified',
@@ -266,7 +265,7 @@ export default function AIChatWorkspace() {
           createdAt: new Date().toISOString()
         }
       ]
-      setSavedInsights(mockInsights)
+      setSavedInsights(demoInsights)
       setIsLoadingChats(false)
       setIsInitializing(false)
     } else {
@@ -448,10 +447,9 @@ Emotional states directly correlate with performance. Operating under stress or 
       }
       setMessages([userMsg])
       
-      // Stream mock response
       let fullText = `### Key Findings
 [DEMO MODE PREVIEW] You are experiencing the AI assistant simulator.
-In a real subscription, the assistant analyzes your actual trading records. Here is a sample analysis of the mock data:
+With an active workspace, the assistant analyzes your actual trading records. Here is a sample analysis of the demo data:
 
 ### Root Causes
 - Inconsistent risk rules.

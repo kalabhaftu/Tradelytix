@@ -184,13 +184,18 @@ export async function PATCH(request: NextRequest) {
     })
 
     const updated = await db.transaction(async (tx) => {
-      const baseUser = (await tx.update(schema.User).set(userUpdateData).where(eq(schema.User.id, internalUserId)).returning({
-        id: schema.User.id,
-        email: schema.User.email,
-        firstName: schema.User.firstName,
-        lastName: schema.User.lastName,
-        onboardingStatus: schema.User.onboardingStatus,
-      }))[0]
+      // The update projection is intentionally smaller than the hydrated
+      // user record above; normalize it before combining settings.
+      let baseUser: any = currentUser
+      if (Object.keys(userUpdateData).length > 0) {
+        baseUser = (await tx.update(schema.User).set(userUpdateData).where(eq(schema.User.id, internalUserId)).returning({
+          id: schema.User.id,
+          email: schema.User.email,
+          firstName: schema.User.firstName,
+          lastName: schema.User.lastName,
+          onboardingStatus: schema.User.onboardingStatus,
+        }))[0]
+      }
 
       const effectiveSettings = mergeUserSettings({}, {
         ...(currentUser.settings ?? {}),

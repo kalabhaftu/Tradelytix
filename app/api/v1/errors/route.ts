@@ -1,6 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { db } from '@/lib/db/client'
-import * as schema from '@/lib/db/schema'
+import * as Sentry from '@sentry/nextjs'
 import { applyRateLimit, errorReportLimiter } from '@/lib/rate-limiter'
 import { getResolvedUserIdentitySafe } from '@/server/user-identity'
 import { extractIP } from '@/server/geolocation'
@@ -59,16 +58,22 @@ export async function POST(req: NextRequest) {
     const identity = await getResolvedUserIdentitySafe()
     const source = (body.source === 'SERVER' || body.source === 'API') ? body.source : 'CLIENT'
 
-    ;(await db.insert(schema.ErrorLog).values({
-      source,
-      level: body.level || 'ERROR',
-      message: String(body.message).slice(0, 2000),
-      stack: body.stack ? String(body.stack).slice(0, 5000) : null,
-      url: body.url ? String(body.url).slice(0, 500) : null,
-      userId: identity?.internalUserId || null,
-      metadata: sanitizeMetadata(body.metadata),
-      ipAddress: ip,
-    }).returning())[0]
+    const message = String(body.message).slice(0, 2000)
+    const error = new Error(message)
+    if (body.stack) error.stack = String(body.stack).slice(0, 5000)
+
+    const context = {
+      level: body.level === 'WARNING' ? 'warning' : 'error',
+      tags: { source },
+      extra: {
+        url: body.url ? String(body.url).slice(0, 500) : null,
+        ipAddress: ip,
+        metadata: sanitizeMetadata(body.metadata),
+      },
+      ...(identity?.internalUserId ? { user: { id: identity.internalUserId } } : {}),
+    } satisfies NonNullable<Parameters<typeof Sentry.captureException>[1]>
+
+    Sentry.captureException(error, context)
 
     return NextResponse.json({ success: true })
   } catch {

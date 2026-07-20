@@ -14,6 +14,7 @@ import { createTradeWithDefaults } from '@/lib/trade-factory'
 import { getResolvedUserIdentity } from '@/server/user-identity'
 import { DEFAULT_INCLUDED_FEE_TYPES, type TradovateIncludedFeeTypes } from './fee-types'
 import { logger as baseLogger } from '@/lib/logger';
+import { DIRECT_SYNC_STATUS, directSyncUnderDevelopmentMessage } from '@/lib/integrations/direct-sync-status'
 
 // Helper function to format dates in the required format: 2025-06-05T08:38:40+00:00
 function formatDateForAPI(date: Date): string {
@@ -547,6 +548,11 @@ async function getTradovateUsername(accessToken: string): Promise<string> {
 }
 
 export async function initiateTradovateOAuth(accountId: string = 'default'): Promise<TradovateOAuthResult> {
+  if (DIRECT_SYNC_STATUS.isPaused) {
+    void accountId
+    return { error: directSyncUnderDevelopmentMessage('Tradovate') }
+  }
+
   try {
     if (!TRADOVATE_CLIENT_ID || !TRADOVATE_REDIRECT_URI) {
       return { error: 'Tradovate OAuth credentials not configured' }
@@ -595,6 +601,12 @@ async function getPropfirmName(accessToken: string): Promise<string> {
 }
 
 export async function handleTradovateCallback(code: string, state: string): Promise<TradovateOAuthResult> {
+  if (DIRECT_SYNC_STATUS.isPaused) {
+    void code
+    void state
+    return { error: directSyncUnderDevelopmentMessage('Tradovate') }
+  }
+
   try {
     if (!TRADOVATE_CLIENT_ID || !TRADOVATE_CLIENT_SECRET || !TRADOVATE_REDIRECT_URI) {
       return { error: 'Tradovate OAuth credentials not configured' }
@@ -1188,6 +1200,12 @@ export async function getTradovateTrades(
   accessToken: string,
   options?: { userId?: string; accountId?: string; includeAllFees?: boolean; includedFeeTypes?: TradovateIncludedFeeTypes }
 ): Promise<TradovateTradesResult> {
+  if (DIRECT_SYNC_STATUS.isPaused) {
+    void accessToken
+    void options
+    return { error: directSyncUnderDevelopmentMessage('Tradovate') }
+  }
+
   try {
     const includedFeeTypes: TradovateIncludedFeeTypes | boolean =
       options?.includedFeeTypes ?? (options?.includeAllFees ? true : DEFAULT_INCLUDED_FEE_TYPES)
@@ -1316,6 +1334,12 @@ export async function updateDailySyncTimeAction(
   accountId: string,
   utcTimeString: string | null
 ): Promise<{ success: boolean; error?: string }> {
+  if (DIRECT_SYNC_STATUS.isPaused) {
+    void accountId
+    void utcTimeString
+    return { success: false, error: directSyncUnderDevelopmentMessage('Tradovate') }
+  }
+
   try {
     const { internalUserId } = await getResolvedUserIdentity()
     if (!internalUserId) {

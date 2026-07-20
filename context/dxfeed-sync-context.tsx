@@ -34,7 +34,7 @@ interface DxFeedSyncContextType {
 
 const DxFeedSyncContext = createContext<DxFeedSyncContextType | undefined>(undefined)
 
-export function DxFeedSyncContextProvider({ children }: { children: ReactNode }) {
+export function DxFeedSyncContextProvider({ children, disabled = false }: { children: ReactNode; disabled?: boolean }) {
   const [isAutoSyncing, setIsAutoSyncing] = useState(false)
   const isAutoSyncingRef = useRef(false)
   const [accounts, setAccounts] = useState<DxFeedSyncAccount[]>([])
@@ -61,6 +61,11 @@ export function DxFeedSyncContextProvider({ children }: { children: ReactNode })
   )
 
   const loadAccounts = useCallback(async () => {
+    if (disabled) {
+      setAccounts([])
+      return
+    }
+
     try {
       const response = await fetch('/api/v1/dxfeed/synchronizations', {
         method: 'GET',
@@ -77,19 +82,24 @@ export function DxFeedSyncContextProvider({ children }: { children: ReactNode })
     } catch (error) {
       console.warn('Failed to load DxFeed accounts:', error)
     }
-  }, [normalizeSynchronization])
+  }, [disabled, normalizeSynchronization])
 
   const deleteAccount = useCallback(async (accountId: string) => {
     setAccounts((prev) => prev.filter((acc) => acc.accountId !== accountId))
+    if (disabled) return
     await fetch('/api/v1/dxfeed/synchronizations', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ accountId }),
     })
-  }, [])
+  }, [disabled])
 
   const performSyncForAccount = useCallback(
     async (accountId: string) => {
+      if (disabled) {
+        return { success: false, message: 'DxFeed sync is disabled in demo mode' }
+      }
+
       const account = accounts.find((acc) => acc.accountId === accountId)
       if (!account) {
         return { success: false, message: `Account ${accountId} not found` }
@@ -151,10 +161,11 @@ export function DxFeedSyncContextProvider({ children }: { children: ReactNode })
         return { success: false, message: errorMsg }
       }
     },
-    [accounts, refreshTrades, loadAccounts],
+    [accounts, disabled, refreshTrades, loadAccounts],
   )
 
   const performSyncForAllAccounts = useCallback(async () => {
+    if (disabled) return
     if (isAutoSyncingRef.current) return
 
     isAutoSyncingRef.current = true
@@ -174,9 +185,10 @@ export function DxFeedSyncContextProvider({ children }: { children: ReactNode })
       isAutoSyncingRef.current = false
       setIsAutoSyncing(false)
     }
-  }, [accounts, performSyncForAccount])
+  }, [accounts, disabled, performSyncForAccount])
 
   const checkAndPerformSyncs = useCallback(async () => {
+    if (disabled) return
     if (!enableAutoSync || isAutoSyncingRef.current) return
 
     isAutoSyncingRef.current = true
@@ -201,7 +213,7 @@ export function DxFeedSyncContextProvider({ children }: { children: ReactNode })
       isAutoSyncingRef.current = false
       setIsAutoSyncing(false)
     }
-  }, [enableAutoSync, accounts, syncInterval, performSyncForAccount])
+  }, [disabled, enableAutoSync, accounts, syncInterval, performSyncForAccount])
 
   useEffect(() => {
     if (!enableAutoSync) return

@@ -96,9 +96,9 @@ export function NotificationCenter() {
     }
     if (isDemo || user?.id === 'demo-user') {
       setIsLoading(true)
-      const mockNotifications: any[] = [
+      const demoNotifications: any[] = [
         {
-          id: 'mock-notif-1',
+          id: 'demo-notif-1',
           userId: 'demo-user',
           type: 'PHASE_TRANSITION_PENDING',
           title: 'Phase 1 Passed!',
@@ -107,7 +107,7 @@ export function NotificationCenter() {
           createdAt: new Date().toISOString()
         },
         {
-          id: 'mock-notif-2',
+          id: 'demo-notif-2',
           userId: 'demo-user',
           type: 'WEEKLY_PERFORMANCE',
           title: 'Weekly Review Ready',
@@ -116,7 +116,7 @@ export function NotificationCenter() {
           createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
         },
         {
-          id: 'mock-notif-3',
+          id: 'demo-notif-3',
           userId: 'demo-user',
           type: 'RISK_DAILY_LOSS_80',
           title: 'Risk Warning (80%)',
@@ -125,7 +125,7 @@ export function NotificationCenter() {
           createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
         }
       ]
-      setNotifications(mockNotifications)
+      setNotifications(demoNotifications)
       setUnreadCount(2)
       setIsLoading(false)
       return

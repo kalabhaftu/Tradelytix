@@ -1,7 +1,7 @@
 "use client"
 
 import Link from 'next/link'
-import { ArrowLeft, Shield, Lock, Eye, Database, Globe, UserCheck, AlertTriangle, Settings2 } from 'lucide-react'
+import { ArrowLeft, Shield, Lock, Eye, Database, Globe, UserCheck, AlertTriangle, Settings2, Mail } from 'lucide-react'
 
 import { Logo } from '@/components/logo'
 import { Button } from '@/components/ui/button'
@@ -116,6 +116,30 @@ export default function PrivacyPage() {
             Depending on your location, you may have rights under the GDPR, CCPA, or other privacy laws. 
             You can request to access, correct, or delete your personal data by contacting our support team. 
             If you request account deletion, we will wipe your trading data from our active databases.
+          </p>
+        </div>
+      )
+    },
+    {
+      id: "retention",
+      icon: <Database className="w-5 h-5 text-primary" />,
+      title: "8. Retention & Deletion",
+      content: (
+        <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+          <p>
+            We retain account and trading data for as long as needed to provide the service, meet security and payment obligations, or resolve disputes. You can request account and data deletion through the account controls or by contacting us. Some limited records may remain where retention is required by law or needed to prevent abuse.
+          </p>
+        </div>
+      )
+    },
+    {
+      id: "contact",
+      icon: <Mail className="w-5 h-5 text-primary" />,
+      title: "9. Contact",
+      content: (
+        <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+          <p>
+            For privacy questions or requests, contact <a href="mailto:justjournalit1@gmail.com" className="text-primary hover:underline">justjournalit1@gmail.com</a>. Please include enough information for us to identify your account without sending passwords or authentication codes.
           </p>
         </div>
       )

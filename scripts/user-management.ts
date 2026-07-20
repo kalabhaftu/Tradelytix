@@ -430,7 +430,7 @@ async function runDatabaseAudit(autoFix = false) {
     'ActivityLog', 'ImportJob', 'JournalTemplate', 'Notification', 'WeeklyReview',
     'TradeTag', 'TradingModel', 'UserGeoLog', 'UserGoal', 'SharedReport',
     'DashboardTemplate', 'LiveAccountTransaction', 'WeeklyAIReview', 'Subscription',
-    'PaymentRecord', 'PromoRedemption', 'Feedback', 'UserSettings', 'ErrorLog'
+    'PaymentRecord', 'PromoRedemption', 'Feedback', 'UserSettings'
   ]
   
   let totalOrphanRecords = 0

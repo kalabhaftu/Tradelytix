@@ -10,6 +10,7 @@ import { eq, and } from 'drizzle-orm'
 import { formatTimestamp } from '@/lib/date-utils'
 import { createTradeWithDefaults } from '@/lib/trade-factory'
 import { getResolvedUserIdentity } from '@/server/user-identity'
+import { DIRECT_SYNC_STATUS, directSyncUnderDevelopmentMessage } from '@/lib/integrations/direct-sync-status'
 import type {
   DxFeedLoginRequest,
   DxFeedLoginResponse,
@@ -124,6 +125,12 @@ export async function authenticateDxFeed(
   login: string,
   password: string,
 ): Promise<{ success?: boolean; error?: string }> {
+  if (DIRECT_SYNC_STATUS.isPaused) {
+    void login
+    void password
+    return { error: directSyncUnderDevelopmentMessage('DxFeed') }
+  }
+
   try {
     if (!DXFEED_AUTH_URL || !DXFEED_PLATFORM_KEY) {
       return { error: 'DxFeed configuration not set' }
@@ -325,6 +332,12 @@ export async function getDxFeedTrades(
   initialTokenJson: string,
   options?: { userId?: string },
 ): Promise<DxFeedTradesResult> {
+  if (DIRECT_SYNC_STATUS.isPaused) {
+    void initialTokenJson
+    void options
+    return { error: directSyncUnderDevelopmentMessage('DxFeed') }
+  }
+
   try {
     const credentials = parseStoredCredentials(initialTokenJson)
     if (!credentials) {
@@ -585,6 +598,12 @@ export async function updateDxFeedDailySyncTimeAction(
   accountId: string,
   utcTimeString: string | null,
 ): Promise<{ success: boolean; error?: string }> {
+  if (DIRECT_SYNC_STATUS.isPaused) {
+    void accountId
+    void utcTimeString
+    return { success: false, error: directSyncUnderDevelopmentMessage('DxFeed') }
+  }
+
   try {
     const { internalUserId } = await getResolvedUserIdentity()
     if (!internalUserId) {

@@ -124,7 +124,7 @@ function MiniCalendar({ calendarData }: MiniCalendarProps) {
       const barY = (withGradient ? padding : 0) + cardH
       const logoYPos = barY + Math.round((logoBarHeight / 2) * scale)
       
-      // Draw actual logo image - LARGER size like Tradezella
+      // Draw actual logo image at the calendar marker size.
       const logoSize = Math.round(20 * scale)
       const logoX = totalW / 2 - Math.round(35 * scale)
       ctx.drawImage(logoImg, logoX, logoYPos - logoSize / 2, logoSize, logoSize)

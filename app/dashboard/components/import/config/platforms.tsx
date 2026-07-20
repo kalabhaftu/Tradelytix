@@ -18,6 +18,7 @@ import { DxFeedSync } from '../dxfeed/sync/dxfeed-sync'
 import { ThorSync } from '../thor/thor-sync'
 import { Step } from '../import-button'
 import { Sparkles, Plus, Wand2 } from 'lucide-react'
+import { DIRECT_SYNC_STATUS } from '@/lib/integrations/direct-sync-status'
 
 type StepText = string
 
@@ -328,14 +329,15 @@ export const platforms: PlatformConfig[] = [
     platformName: 'rithmic-sync',
     type: 'rithmic-sync',
     name: 'Rithmic Sync',
-    description: 'Sync your trades automatically with Rithmic credentials',
+    description: 'Live sync is under development',
     category: 'Direct Account Sync',
-    details: 'Daily automated background sync for your Rithmic accounts.',
+    details: DIRECT_SYNC_STATUS.message,
     logo: {
       path: '/logos/rithmic.png',
       alt: 'Rithmic Logo'
     },
     isRithmic: true,
+    isComingSoon: true,
     customComponent: RithmicSyncWrapper,
     steps: [
       {
@@ -385,13 +387,14 @@ export const platforms: PlatformConfig[] = [
     platformName: 'tradovate-sync',
     type: 'tradovate-sync',
     name: 'Tradovate Sync',
-    description: 'Sync your trades automatically with Tradovate OAuth',
+    description: 'Live sync is under development',
     category: 'Direct Account Sync',
-    details: 'Daily automated synchronization for Tradovate accounts.',
+    details: DIRECT_SYNC_STATUS.message,
     logo: {
       path: '/logos/tradovate.png',
       alt: 'Tradovate Logo'
     },
+    isComingSoon: true,
     customComponent: TradovateSync,
     steps: [
       {
@@ -413,13 +416,14 @@ export const platforms: PlatformConfig[] = [
     platformName: 'dxfeed-sync',
     type: 'dxfeed-sync',
     name: 'DxFeed Sync',
-    description: 'Sync your trades automatically with DxFeed account',
+    description: 'Live sync is under development',
     category: 'Direct Account Sync',
-    details: 'Daily automated synchronization for DxFeed accounts.',
+    details: DIRECT_SYNC_STATUS.message,
     logo: {
       path: '/logos/dxfeed.png',
       alt: 'DxFeed Logo'
     },
+    isComingSoon: true,
     customComponent: DxFeedSync,
     steps: [
       {

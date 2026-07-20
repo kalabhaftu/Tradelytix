@@ -9,6 +9,7 @@ import { logServerError } from '@/lib/error-logger'
 import { createErrorResponse, createSuccessResponse } from '@/lib/api-response'
 import { z } from 'zod'
 import { buildFeedbackAttachmentPath } from '@/lib/storage/paths'
+import { escapeHtml, sendEmail } from '@/lib/email'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 const MAX_FILES = 3
@@ -155,6 +156,17 @@ export async function POST(req: NextRequest) {
 
     if (!feedback) {
       return createErrorResponse('Failed to create feedback', 500)
+    }
+
+    if (payload.email) {
+      const safeSubject = escapeHtml(payload.subject)
+      void sendEmail({
+        to: payload.email,
+        subject: `JJI received your ${payload.category.toLowerCase().replaceAll('_', ' ')} feedback`,
+        html: `<p>Thanks for taking the time to help improve JJI.</p>
+          <p>We received <strong>${safeSubject}</strong>. Your feedback is now in the support queue and we will follow up if a reply is needed.</p>
+          <p>— The JJI team</p>`,
+      })
     }
 
     return createSuccessResponse({ id: feedback.id })

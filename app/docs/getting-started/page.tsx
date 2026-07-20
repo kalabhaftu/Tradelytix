@@ -65,13 +65,13 @@ export default function GettingStartedDocsPage() {
             icon={Import}
             title="CSV import"
             description="Download a broker export as CSV and upload it directly. A mapping preview lets you verify columns before saving."
-            items={['Supported brokers include TradeZella, Edgewonk, and generic CSV formats', 'Map your columns to JJI fields in the preview step', 'Choose an existing account or create a new one during import']}
+            items={['Upload broker exports and generic CSV formats', 'Map your columns to JJI fields in the preview step', 'Choose an existing account or create a new one during import']}
           />
           <DocsInfoCard
             icon={Import}
             title="Webhooks & sync sources"
-            description="For live syncing, configure a TradingView webhook or connect a Tradovate, DxFeed, Rithmic, Thor, Match-Trader, or Exness account."
-            items={['TradingView webhooks: copy the webhook URL from Settings → Integrations', 'Tradovate: authenticate via OAuth and select the accounts to sync', 'DxFeed, Rithmic, Thor, Match-Trader, Exness: enter your API credentials in Settings → Data Sources']}
+            description="For live automation, configure a TradingView webhook or Thor sync. Tradovate, DxFeed, and Rithmic live broker sync are currently under development."
+            items={['TradingView webhooks: copy the webhook URL from Settings -> Integrations', 'Thor sync remains available where configured', 'Tradovate, DxFeed, and Rithmic files can still be imported through CSV flows']}
           />
         </DocsCardGrid>
         <p>
@@ -118,7 +118,7 @@ export default function GettingStartedDocsPage() {
             icon={Settings}
             title="Trading defaults"
             description="Configure the break-even threshold (used to classify trades as winners, losers, or break-even) and default account settings."
-            items={['Break-even threshold: trades within ±X% or ±X ticks of zero are classified as break-even', 'Default commission and fee rates apply to imported trades that lack cost data', 'Linked accounts connect Tradovate and other sync sources']}
+            items={['Break-even threshold: trades within ±X% or ±X ticks of zero are classified as break-even', 'Default commission and fee rates apply to imported trades that lack cost data', 'Linked accounts support available sync sources and saved import settings']}
           />
         </DocsCardGrid>
       </DocsSection>

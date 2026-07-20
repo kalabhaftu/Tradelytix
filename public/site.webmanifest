@@ -1,13 +1,22 @@
 {
   "name": "JJI",
   "short_name": "JJI",
-  "description": "Where traders find consistency through the charts",
+  "description": "Just Journal It — a focused trading journal and analytics workspace.",
   "id": "/app-launch",
   "start_url": "/app-launch",
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "browser"],
-  "orientation": "portrait-primary",
+  "orientation": "any",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["finance", "productivity"],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    { "name": "Dashboard", "short_name": "Dashboard", "url": "/dashboard" },
+    { "name": "Log a trade", "short_name": "Quick add", "url": "/dashboard/table?action=quick-add" },
+    { "name": "Journal", "short_name": "Journal", "url": "/dashboard/journal" }
+  ],
   "theme_color": "#09090b",
   "background_color": "#09090b",
   "icons": [

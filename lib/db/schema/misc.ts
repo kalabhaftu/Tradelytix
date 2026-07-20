@@ -1,6 +1,6 @@
 import { relations } from 'drizzle-orm';
 import { pgTable, uuid, text, integer, boolean, timestamp, jsonb, doublePrecision, json } from 'drizzle-orm/pg-core';
-import { ErrorSourceEnum, ErrorLevelEnum, PromoTypeEnum, PromoApplicabilityEnum, FreeAccessTypeEnum } from './enums';
+import { PromoTypeEnum, PromoApplicabilityEnum, FreeAccessTypeEnum } from './enums';
 import { AdminFeatureFlag, AdminSharingPolicy, User, UserSettings, ImportJob, Notification, Feedback, UserGeoLog, SharedReport, Subscription, Synchronization } from './users';
 
 
@@ -38,22 +38,6 @@ export const SiteUiSettings = pgTable('SiteUiSettings', {
 
 export type SiteUiSettingsType = typeof SiteUiSettings.$inferSelect;
 export type NewSiteUiSettings = typeof SiteUiSettings.$inferInsert;
-
-export const ErrorLog = pgTable('ErrorLog', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  source: ErrorSourceEnum('source').notNull(),
-  level: ErrorLevelEnum('level').default('ERROR'),
-  message: text('message').notNull(),
-  stack: text('stack'),
-  url: text('url'),
-  userId: text('userId'),
-  metadata: jsonb('metadata'),
-  ipAddress: text('ipAddress'),
-  createdAt: timestamp('createdAt', { withTimezone: true, mode: 'date' }).defaultNow(),
-});
-
-export type ErrorLogType = typeof ErrorLog.$inferSelect;
-export type NewErrorLog = typeof ErrorLog.$inferInsert;
 
 export const PaymentRecord = pgTable('PaymentRecord', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -167,5 +151,4 @@ export const PromoRedemptionRelations = relations(PromoRedemption, ({ one, many 
 export const FreeAccessInviteRelations = relations(FreeAccessInvite, ({ one, many }) => ({
   Subscription: many(Subscription),
 }));
-
 

@@ -1,18 +1,15 @@
-import { db } from '@/lib/db/client'
-import * as schema from '@/lib/db/schema'
-import { lt } from 'drizzle-orm'
+import * as Sentry from '@sentry/nextjs'
 
 import logger from '@/lib/logger';
-import { ErrorSourceEnum, ErrorLevelEnum } from '@/lib/db/schema';
 
-type ErrorSource = (typeof ErrorSourceEnum.enumValues)[number];
-type ErrorLevel = (typeof ErrorLevelEnum.enumValues)[number];
+type ErrorSource = 'CLIENT' | 'SERVER' | 'API'
+type ErrorLevel = 'WARNING' | 'ERROR' | 'CRITICAL'
 
 export function shouldIgnoreError(message: string, metadata?: Record<string, unknown>) {
   return false;
 }
 
-interface ErrorLogInput {
+interface SentryErrorInput {
   source: ErrorSource
   level?: ErrorLevel | undefined
   message: string
@@ -23,30 +20,30 @@ interface ErrorLogInput {
   ipAddress?: string | undefined
 }
 
-/**
- * Log an error to the ErrorLog table.
- * Fire-and-forget — never throws, never blocks the caller.
- */
-export async function logError(input: ErrorLogInput): Promise<void> {
+export async function logError(input: SentryErrorInput): Promise<void> {
   try {
     const messageStr = String(input.message || '')
     if (shouldIgnoreError(messageStr, input.metadata)) {
       return
     }
 
-    await db.insert(schema.ErrorLog).values({
-      source: input.source,
-      level: input.level ?? 'ERROR',
-      message: messageStr.slice(0, 2000),
-      stack: input.stack?.slice(0, 5000),
-      url: input.url?.slice(0, 500),
-      userId: input.userId,
-      metadata: input.metadata as any,
-      ipAddress: input.ipAddress,
-    })
+    const error = new Error(messageStr)
+    if (input.stack) error.stack = input.stack
+
+    const context = {
+      level: input.level === 'WARNING' ? 'warning' : 'error',
+      tags: { source: input.source },
+      extra: {
+        url: input.url,
+        ipAddress: input.ipAddress,
+        metadata: input.metadata,
+      },
+      ...(input.userId ? { user: { id: input.userId } } : {}),
+    } satisfies NonNullable<Parameters<typeof Sentry.captureException>[1]>
+
+    Sentry.captureException(error, context)
   } catch (err) {
-    // Last resort — log to console if DB write fails
-    logger.error({ err }, '[ErrorLogger] Failed to persist error log:')
+    logger.error({ err }, '[SentryCapture] Failed to capture error:')
   }
 }
 
@@ -75,18 +72,4 @@ export async function logServerError(
     ipAddress: context.ipAddress,
     metadata: context.metadata,
   })
-}
-
-/**
- * Cleanup old error logs (older than given days).
- */
-async function cleanupOldErrorLogs(olderThanDays: number = 30): Promise<number> {
-  const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() - olderThanDays)
-
-  const result = await db.delete(schema.ErrorLog)
-    .where(lt(schema.ErrorLog.createdAt, cutoff))
-    .returning({ id: schema.ErrorLog.id })
-
-  return result.length
 }

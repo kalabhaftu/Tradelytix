@@ -4,9 +4,7 @@ import { db } from '@/lib/db/client'
 import * as schema from '@/lib/db/schema'
 import { eq, and, count } from 'drizzle-orm'
 import { revalidateTag } from 'next/cache'
-import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy')
+import { escapeHtml, sendEmail } from '@/lib/email'
 
 type NotificationType = 'FUNDED_PENDING_APPROVAL' | 'FUNDED_APPROVED' | 'FUNDED_DECLINED' | 'PHASE_TRANSITION_PENDING' | 'PAYOUT_APPROVED' | 'PAYOUT_REJECTED' | 'SYSTEM' | 'RISK_ALERT' | 'IMPORT_STATUS' | 'WEEKLY_PERFORMANCE' | 'STRATEGY_DEVIATION' | 'SYSTEM_ANNOUNCEMENT' | 'TRADE_STATUS' | 'RISK_DAILY_LOSS_80' | 'RISK_DAILY_LOSS_95' | 'RISK_MAX_DRAWDOWN_80' | 'RISK_MAX_DRAWDOWN_95' | 'RISK_BREACH' | 'IMPORT_PROCESSING' | 'IMPORT_COMPLETE' | 'STRATEGY_SESSION_VIOLATION' | 'FEEDBACK_REPLY' | 'PAYMENT_DUE_SOON' | 'PAYMENT_DUE_TODAY' | 'PAYMENT_OVERDUE' | 'SUBSCRIPTION_EXPIRED' | 'PAYMENT_RECEIVED' | 'PAYMENT_FAILED' | 'ACCESS_RESTORED' | 'ADMIN_FREE_ACCESS_GRANTED' | 'ADMIN_FREE_ACCESS_REVOKED';
 
@@ -182,17 +180,14 @@ export async function createRiskAlert(
             })
             if (user && user.email) {
                 const breachTypeStr = riskType === 'daily_loss' ? 'Daily Loss Limit' : 'Max Drawdown Limit'
-                await resend.emails.send({
-                    from: 'Alerts <alerts@jji.app>',
-                    to: [user.email],
+                await sendEmail({
+                    to: user.email,
                     subject: `Prop Firm Rule Breach Detected: ${metadata.accountName}`,
-                    html: `<p>Your prop firm account <strong>${metadata.accountName}</strong> has breached the ${breachTypeStr}.</p>
+                    html: `<p>Your prop firm account <strong>${escapeHtml(metadata.accountName)}</strong> has breached the ${escapeHtml(breachTypeStr)}.</p>
                            <p>Current: $${metadata.used.toFixed(2)} / Limit: $${metadata.limit.toFixed(2)} (${currentPercentage.toFixed(1)}%)</p>`
                 })
             }
-        } catch (error) {
-            console.error('Failed to send breach email', error)
-        }
+        } catch { /* Notification still persists when email delivery is unavailable. */ }
     }
 
     return await createOrUpdateNotification(userId, {

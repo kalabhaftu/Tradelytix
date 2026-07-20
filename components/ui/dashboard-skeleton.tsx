@@ -130,13 +130,12 @@ function getSkeletonMinHeight(item: TemplateAwareLayoutItem) {
 function renderSkeletonForItem(item: TemplateAwareLayoutItem, style?: React.CSSProperties, className?: string) {
   const kind = getSkeletonKind(item.type)
   const props = {
-    key: item.i,
     ...(className !== undefined && { className }),
     ...(style !== undefined && { style })
   }
-  if (kind === 'calendar') return <CalendarWidgetSkeleton {...props} />
-  if (kind === 'recent-trades') return <TradeTableSkeleton {...props} />
-  return <WidgetSkeleton {...props} />
+  if (kind === 'calendar') return <CalendarWidgetSkeleton key={item.i} {...props} />
+  if (kind === 'recent-trades') return <TradeTableSkeleton key={item.i} {...props} />
+  return <WidgetSkeleton key={item.i} {...props} />
 }
 
 interface TemplateAwareLayoutItem {

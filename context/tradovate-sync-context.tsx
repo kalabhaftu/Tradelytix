@@ -32,7 +32,7 @@ interface TradovateSyncContextType {
 
 const TradovateSyncContext = createContext<TradovateSyncContextType | undefined>(undefined)
 
-export function TradovateSyncContextProvider({ children }: { children: ReactNode }) {
+export function TradovateSyncContextProvider({ children, disabled = false }: { children: ReactNode; disabled?: boolean }) {
   const [isAutoSyncing, setIsAutoSyncing] = useState(false)
   const [accounts, setAccounts] = useState<SynchronizationType[]>([])
   const [syncInterval, setSyncInterval] = useState(15) // 15 minutes default
@@ -65,6 +65,11 @@ export function TradovateSyncContextProvider({ children }: { children: ReactNode
 
   // Load accounts from API
   const loadAccounts = useCallback(async () => {
+    if (disabled) {
+      setAccounts([])
+      return
+    }
+
     try {
       const response = await fetch("/api/v1/tradovate/synchronizations", {
         method: "GET",
@@ -81,10 +86,14 @@ export function TradovateSyncContextProvider({ children }: { children: ReactNode
     } catch (error) {
       console.warn('Failed to load Tradovate accounts:', error)
     }
-  }, [normalizeSynchronization])
+  }, [disabled, normalizeSynchronization])
 
   const updateIncludedFeeTypesForAccount = useCallback(
     async (accountId: string, includedFeeTypes: Record<string, boolean>) => {
+      if (disabled) {
+        return { success: false, error: 'Tradovate sync is disabled in demo mode' }
+      }
+
       const res = await fetch('/api/v1/tradovate/synchronizations', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -97,20 +106,25 @@ export function TradovateSyncContextProvider({ children }: { children: ReactNode
       await loadAccounts()
       return { success: true }
     },
-    [loadAccounts]
+    [disabled, loadAccounts]
   )
 
   const deleteAccount = useCallback(async (accountId: string) => {
     setAccounts(prev => prev.filter(acc => acc.accountId !== accountId))
+    if (disabled) return
     await fetch("/api/v1/tradovate/synchronizations", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ accountId })
     })
-  }, [])
+  }, [disabled])
 
   // Perform sync for a specific account
   const performSyncForAccount = useCallback(async (accountId: string) => {
+    if (disabled) {
+      return { success: false, message: 'Tradovate sync is disabled in demo mode' }
+    }
+
     const account = accounts.find(acc => acc.accountId === accountId)
     if (!account) {
       const errorMsg = `Account ${accountId} not found`
@@ -185,10 +199,11 @@ export function TradovateSyncContextProvider({ children }: { children: ReactNode
       console.error('Sync error:', error)
       return { success: false, message: errorMsg }
     }
-  }, [accounts, refreshTrades, loadAccounts])
+  }, [accounts, disabled, refreshTrades, loadAccounts])
 
   // Perform sync for all accounts
   const performSyncForAllAccounts = useCallback(async () => {
+    if (disabled) return
     if (isAutoSyncing) {
       return
     }
@@ -213,10 +228,11 @@ export function TradovateSyncContextProvider({ children }: { children: ReactNode
     } finally {
       setIsAutoSyncing(false)
     }
-  }, [isAutoSyncing, accounts, performSyncForAccount])
+  }, [disabled, isAutoSyncing, accounts, performSyncForAccount])
 
   // Auto-sync checking
   const checkAndPerformSyncs = useCallback(async () => {
+    if (disabled) return
     if (!enableAutoSync || isAutoSyncing) return
 
     try {
@@ -238,7 +254,7 @@ export function TradovateSyncContextProvider({ children }: { children: ReactNode
     } catch (error) {
       console.warn('Error during tradovate auto-sync check:', error)
     }
-  }, [enableAutoSync, isAutoSyncing, accounts, syncInterval, performSyncForAccount]);
+  }, [disabled, enableAutoSync, isAutoSyncing, accounts, syncInterval, performSyncForAccount]);
 
   // Auto-sync checking interval
   useEffect(() => {

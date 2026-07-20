@@ -1,16 +1,18 @@
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 
-// Use a fallback to mock Redis if environment variables are missing during build/dev
-const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-  ? Redis.fromEnv()
+// Support both Vercel KV and Upstash naming. Keep builds/dev bootable without credentials.
+const redisUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL
+const redisToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN
+const redis = redisUrl && redisToken
+  ? new Redis({ url: redisUrl, token: redisToken })
   : {
       sadd: async () => 1,
       eval: async () => [0, 0],
       zrange: async () => [],
       zremrangebyscore: async () => 0,
       zadd: async () => 0,
-    } as unknown as Redis; // Mock stub to prevent crashing if unconfigured
+    } as unknown as Redis;
 
 // General API Rate Limiting (e.g., standard endpoints)
 const apiRateLimit = new Ratelimit({

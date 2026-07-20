@@ -1,59 +1,76 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useLayoutEffect } from 'react'
 import * as mockData from '@/lib/demo/mock-data'
 
 export function DemoNetworkInterceptor() {
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (typeof window === 'undefined') return
 
     const originalFetch = window.fetch
+    const jsonResponse = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+      status,
+      headers: { 'Content-Type': 'application/json' }
+    })
 
     window.fetch = async function (input, init) {
-      const urlString = typeof input === 'string' ? input : (input as Request).url || ''
+      const request = input instanceof Request ? input : null
+      const urlString = typeof input === 'string' ? input : request?.url || ''
       
       try {
         const parsedUrl = new URL(urlString, window.location.origin)
         const pathname = parsedUrl.pathname
-        const method = init?.method || 'GET'
+        const method = (init?.method || request?.method || 'GET').toUpperCase()
+        const isInternalApi =
+          parsedUrl.origin === window.location.origin &&
+          (
+            pathname.startsWith('/api/v1/') ||
+            pathname.startsWith('/api/auth/') ||
+            pathname === '/api/build-id' ||
+            pathname.startsWith('/api/health/')
+          )
 
-        if (pathname.startsWith('/api/v1/') || pathname.startsWith('/api/auth/')) {
+        if (isInternalApi) {
           // Simulated network lag for realistic feel
           await new Promise(resolve => setTimeout(resolve, 80))
 
+          if (pathname.match(/^\/api\/build-id$/)) {
+            return jsonResponse({ buildId: 'demo-build' })
+          }
+
+          if (pathname.match(/^\/api\/health\/ping$/)) {
+            return jsonResponse({ success: true, demo: true })
+          }
+
+          if (pathname.match(/^\/api\/auth\/check$/)) {
+            return jsonResponse({ authenticated: true, user: mockData.MOCK_USER_PROFILE })
+          }
+
+          if (pathname.match(/^\/api\/auth\/restore$/)) {
+            return jsonResponse({ success: true, user: mockData.MOCK_USER_PROFILE })
+          }
+
           // Specific POST/PATCH handlers must come before the generic non-GET blocker
           if (method === 'POST' && pathname.match(/^\/api\/v1\/reports\/stats$/)) {
-            return new Response(JSON.stringify(mockData.getMockReportStats()), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
-            })
+            return jsonResponse(mockData.getMockReportStats())
           }
 
           if (pathname.match(/^\/api\/auth\/profile$/) || pathname.match(/^\/api\/v1\/profile$/)) {
-            return new Response(JSON.stringify({ success: true, data: mockData.MOCK_USER_PROFILE }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
-            })
+            return jsonResponse({ success: true, data: mockData.MOCK_USER_PROFILE, user: mockData.MOCK_USER_PROFILE })
           }
 
           if (pathname.match(/^\/api\/v1\/auth\/webhook-token$/) || pathname.match(/^\/api\/v1\/settings\/webhook-token$/)) {
-            return new Response(JSON.stringify({ success: true, token: mockData.MOCK_WEBHOOK_TOKEN.token, data: mockData.MOCK_WEBHOOK_TOKEN }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
-            })
+            return jsonResponse({ success: true, token: mockData.MOCK_WEBHOOK_TOKEN.token, data: mockData.MOCK_WEBHOOK_TOKEN })
           }
 
           // Generic non-GET blocker (e.g. simulating actions like settings save)
           if (method !== 'GET') {
-            return new Response(JSON.stringify({ success: true, message: 'Action simulated in Demo Mode' }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
-            })
+            return jsonResponse({ success: true, message: 'Action simulated in Demo Mode', demo: true })
           }
 
           // GET handlers
           if (pathname.match(/^\/api\/v1\/init$/)) {
-            return new Response(JSON.stringify({
+            return jsonResponse({
               isAuthenticated: true,
               user: mockData.MOCK_USER_PROFILE,
               accounts: mockData.MOCK_ACCOUNTS,
@@ -67,54 +84,36 @@ export function DemoNetworkInterceptor() {
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
               }
-            }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
             })
           }
 
           if (pathname.match(/^\/api\/v1\/accounts$/)) {
-            return new Response(JSON.stringify({
+            return jsonResponse({
               success: true,
               data: mockData.MOCK_ACCOUNTS,
               pagination: { total: mockData.MOCK_ACCOUNTS.length, page: 1, limit: 50, totalPages: 1 }
-            }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
             })
           }
           
           if (pathname.match(/^\/api\/v1\/accounts\/mock-acc-1$/)) {
-            return new Response(JSON.stringify({ success: true, data: mockData.MOCK_LIVE_ACCOUNT_DETAILS }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
-            })
+            return jsonResponse({ success: true, data: mockData.MOCK_LIVE_ACCOUNT_DETAILS })
           }
 
           if (pathname.match(/^\/api\/v1\/prop-firm\/accounts$/)) {
-            return new Response(JSON.stringify({
+            return jsonResponse({
               success: true,
               data: mockData.MOCK_ACCOUNTS.filter(a => a.accountType === 'prop-firm')
-            }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
             })
           }
 
           if (pathname.match(/^\/api\/v1\/prop-firm\/accounts\/[^\/]+$/)) {
             const isFailedAcc = pathname.includes('mock-propfirm-failed');
             const data = mockData.getMockPropFirmDetails(isFailedAcc);
-            return new Response(JSON.stringify({ success: true, data }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
-            });
+            return jsonResponse({ success: true, data });
           }
 
           if (pathname.match(/^\/api\/v1\/prop-firm\/accounts\/[^\/]+\/payouts\/eligibility$/)) {
-            return new Response(JSON.stringify({ success: true, data: mockData.MOCK_PAYOUT_ELIGIBILITY }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
-            });
+            return jsonResponse({ success: true, data: mockData.MOCK_PAYOUT_ELIGIBILITY });
           }
 
           if (pathname.match(/^\/api\/v1\/prop-firm\/accounts\/[^\/]+\/trades$/)) {
@@ -122,48 +121,33 @@ export function DemoNetworkInterceptor() {
             const targetAccId = isFailedAcc ? 'mock-propfirm-failed' : 'mock-propfirm-1';
             const allTrades = mockData.getMockTradesList();
             const propFirmTrades = allTrades.filter(t => t.accountId === targetAccId);
-            return new Response(JSON.stringify({ success: true, data: { trades: propFirmTrades } }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
-            });
+            return jsonResponse({ success: true, data: { trades: propFirmTrades } });
           }
 
           if (pathname.match(/^\/api\/v1\/trades$/)) {
-            return new Response(JSON.stringify(mockData.getMockDemoData()), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
-            })
+            return jsonResponse(mockData.getMockDemoData())
           }
 
           if (pathname.match(/^\/api\/v1\/goals$/)) {
-            return new Response(JSON.stringify({ success: true, goals: mockData.MOCK_GOALS }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
-            })
+            return jsonResponse({ success: true, goals: mockData.MOCK_GOALS })
           }
 
           if (pathname.match(/^\/api\/v1\/notifications$/)) {
-            return new Response(JSON.stringify({
+            return jsonResponse({
               success: true,
               data: {
                 notifications: mockData.MOCK_NOTIFICATIONS,
                 unreadCount: 2
               }
-            }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
             })
           }
 
           if (pathname.match(/^\/api\/v1\/subscription\/status$/) || pathname.match(/^\/api\/v1\/settings\/subscription$/)) {
-            return new Response(JSON.stringify({ success: true, data: mockData.MOCK_SUBSCRIPTION }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
-            })
+            return jsonResponse({ success: true, data: mockData.MOCK_SUBSCRIPTION })
           }
 
           if (pathname.match(/^\/api\/v1\/tags$/)) {
-            return new Response(JSON.stringify({
+            return jsonResponse({
               success: true,
               tags: [
                 { id: 'tag-1', name: 'Trend', color: '#3b82f6' },
@@ -172,14 +156,11 @@ export function DemoNetworkInterceptor() {
                 { id: 'tag-4', name: 'Range', color: '#f59e0b' },
                 { id: 'tag-5', name: 'Session Start', color: '#8b5cf6' }
               ]
-            }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
             })
           }
 
           if (pathname.match(/^\/api\/v1\/user\/trading-models/)) {
-            return new Response(JSON.stringify({
+            return jsonResponse({
               success: true,
               data: [
                 { id: 'tm-1', name: 'EMA Cross', description: 'Exponential Moving Average crossover', rules: [], setups: [], notes: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
@@ -188,26 +169,20 @@ export function DemoNetworkInterceptor() {
                 { id: 'tm-4', name: 'Liquidity Sweep', description: 'Liquidity grab before reversal', rules: [], setups: [], notes: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
                 { id: 'tm-5', name: 'Order Block', description: 'Institutional order block entry', rules: [], setups: [], notes: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
               ]
-            }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
             })
           }
 
           if (pathname.match(/^\/api\/v1\/live-accounts\/transactions$/)) {
-            return new Response(JSON.stringify({
+            return jsonResponse({
               success: true,
               data: [
                 { id: 'mock-tx-1', accountId: 'mock-acc-1', type: 'DEPOSIT', amount: 100000, description: 'Initial Deposit', createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() }
               ]
-            }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
             })
           }
 
           if (pathname.match(/^\/api\/v1\/reports\/propfirm$/)) {
-            return new Response(JSON.stringify({
+            return jsonResponse({
               success: true,
               data: {
                 accounts: [{
@@ -231,24 +206,49 @@ export function DemoNetworkInterceptor() {
                   phaseHistory: [{ id: 'mock-phase-1', phaseNumber: 1, phaseId: 'FTMO-PHASE-1', status: 'active', isFundedStage: false }]
                 }]
               }
-            }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
             })
           }
 
           if (pathname.match(/^\/api\/v1\/settings\/account-filters$/)) {
-            return new Response(JSON.stringify({
+            return jsonResponse({
               success: true,
               data: { selectedAccountIds: [], showAllAccounts: true }
-            }), {
-              status: 200,
-              headers: { 'Content-Type': 'application/json' }
             })
           }
+
+          if (pathname.match(/^\/api\/v1\/(tradovate|dxfeed|rithmic)\/synchronizations$/)) {
+            return jsonResponse({ success: true, data: [] })
+          }
+
+          if (pathname.match(/^\/api\/v1\/weekly-review$/)) {
+            return jsonResponse({ success: true, data: [] })
+          }
+
+          if (pathname.match(/^\/api\/v1\/journal\/ai-analysis$/)) {
+            return jsonResponse({ success: true, analysis: null })
+          }
+
+          if (pathname.match(/^\/api\/v1\/ai\/chats$/) || pathname.match(/^\/api\/v1\/ai\/insights$/)) {
+            return jsonResponse({ success: true, data: [] })
+          }
+
+          if (pathname.match(/^\/api\/v1\/news-events$/)) {
+            return jsonResponse([])
+          }
+
+          if (pathname.match(/^\/api\/v1\/settings\/backtest-mode$/)) {
+            return jsonResponse({ success: true, mode: 'manual' })
+          }
+
+          if (pathname.match(/^\/api\/v1\/backtesting$/)) {
+            return jsonResponse({ backtests: [] })
+          }
+
+          console.warn(`[Demo] Blocked unhandled internal API request: ${method} ${pathname}`)
+          return jsonResponse({ success: true, data: [], demo: true })
         }
       } catch (e) {
-        // Fallback to original fetch
+        console.warn('[Demo] Failed to inspect request before demo interception', e)
       }
 
       return originalFetch.apply(this, [input, init])

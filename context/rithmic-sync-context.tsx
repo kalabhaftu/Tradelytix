@@ -76,8 +76,10 @@ const RithmicSyncContext = createContext<RithmicSyncContextType | undefined>(
 
 export function RithmicSyncContextProvider({
   children,
+  disabled = false,
 }: {
   children: ReactNode;
+  disabled?: boolean;
 }) {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -815,6 +817,8 @@ export function RithmicSyncContextProvider({
   }, [syncInterval, isAutoSyncing, performSyncForCredential, isLoading]);
 
   useEffect(() => {
+    if (disabled) return;
+
     const intervalMs = 1 * 60 * 1000; // 1 minute
 
     const intervalId = setInterval(() => {
@@ -824,11 +828,29 @@ export function RithmicSyncContextProvider({
     return () => {
       clearInterval(intervalId);
     };
-  }, [syncInterval, checkAndPerformSyncs]);
+  }, [disabled, syncInterval, checkAndPerformSyncs]);
 
   return (
     <RithmicSyncContext.Provider
-      value={{
+      value={disabled ? {
+        connect: () => {},
+        disconnect: () => {},
+        isConnected: false,
+        connectionStatus: "Disabled in demo mode",
+        handleMessage: () => {},
+        performSyncForCredential: async () => ({
+          success: false,
+          rateLimited: false,
+          message: "Rithmic sync is disabled in demo mode",
+        }),
+        calculateStartDate,
+        authenticateAndGetAccounts: async () => ({
+          success: false,
+          rateLimited: false,
+          message: "Rithmic sync is disabled in demo mode",
+        }),
+        getWebSocketUrl,
+      } : {
         // Core connection management
         connect,
         disconnect,

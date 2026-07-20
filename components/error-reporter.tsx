@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import logger from '@/lib/logger'
+import * as Sentry from '@sentry/nextjs'
 
 function isNextRedirectError(error: unknown): boolean {
   if (!error) return false
@@ -30,16 +30,16 @@ export function ClientErrorReporter() {
       if (sentErrors.current.has(key)) return
       sentErrors.current.add(key)
 
-      logger.error({
-        err: event.error || new Error(event.message || 'Unhandled Client Error'),
-        stack: event.error?.stack,
-        metadata: {
+      const error = event.error || new Error(event.message || 'Unhandled Client Error')
+      Sentry.captureException(error, {
+        tags: { source: 'window.error' },
+        extra: {
           filename: event.filename,
           lineno: event.lineno,
           colno: event.colno,
           userAgent: navigator.userAgent,
         },
-      }, event.message || 'Unhandled Client Error')
+      })
     }
 
     const handleRejection = (event: PromiseRejectionEvent) => {
@@ -52,14 +52,10 @@ export function ClientErrorReporter() {
       if (sentErrors.current.has(key)) return
       sentErrors.current.add(key)
 
-      logger.error({
-        err: error || new Error(message),
-        stack: error?.stack,
-        metadata: {
-          type: 'unhandledrejection',
-          userAgent: navigator.userAgent,
-        },
-      }, message)
+      Sentry.captureException(error instanceof Error ? error : new Error(message), {
+        tags: { source: 'unhandledrejection' },
+        extra: { userAgent: navigator.userAgent },
+      })
     }
 
     window.addEventListener('error', handleError)

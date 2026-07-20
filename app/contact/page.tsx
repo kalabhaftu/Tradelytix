@@ -4,6 +4,12 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Mail, MessageSquare, BookOpen, Heart } from 'lucide-react'
 import { getSiteUiSettings } from '@/server/site-ui-settings'
+import { BRAND } from '@/lib/constants/brand'
+
+export const metadata = {
+  title: `Contact | ${BRAND.name}`,
+  description: `Contact the ${BRAND.fullName} team for support, feedback, and questions.`,
+}
 
 export default async function ContactPage() {
   const siteUiSettings = await getSiteUiSettings()

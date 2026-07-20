@@ -25,6 +25,7 @@ export async function evaluateAllActivePhases() {
           columns: {
             id: true,
             accountName: true,
+            accountSize: true,
             status: true
           }
         }
@@ -46,8 +47,12 @@ export async function evaluateAllActivePhases() {
 
         results.evaluated++
 
-        // If account failed, mark phase and master account as failed, and record breach
+        // If account failed, mark phase/master failed and ensure one breach record exists.
         if (evaluation.isFailed) {
+          const existingBreach = await db.query.BreachRecord.findFirst({
+            where: eq(BreachRecord.phaseAccountId, phase.id),
+          })
+
           await db.transaction(async (tx) => {
             await tx.update(PhaseAccount)
               .set({
@@ -60,19 +65,21 @@ export async function evaluateAllActivePhases() {
               .set({ status: 'failed' })
               .where(eq(MasterAccount.id, phase.masterAccountId))
 
-            await tx.insert(BreachRecord).values({
-              id: crypto.randomUUID(),
-              phaseAccountId: phase.id,
-              breachType: evaluation.drawdown.breachType || 'max_drawdown',
-              breachAmount: evaluation.drawdown.breachAmount || 0,
-              breachTime: new Date(),
-              currentEquity: evaluation.drawdown.currentEquity,
-              accountSize: evaluation.drawdown.dailyStartBalance || 0,
-              dailyStartBalance: evaluation.drawdown.dailyStartBalance,
-              highWaterMark: evaluation.drawdown.highWaterMark,
-              notes: `Auto-detected breach during background evaluation. ${evaluation.drawdown.breachType?.replace('_', ' ')} exceeded by $${evaluation.drawdown.breachAmount?.toFixed(2)}`,
-              updatedAt: new Date()
-            })
+            if (!existingBreach) {
+              await tx.insert(BreachRecord).values({
+                id: crypto.randomUUID(),
+                phaseAccountId: phase.id,
+                breachType: evaluation.drawdown.breachType || 'max_drawdown',
+                breachAmount: evaluation.drawdown.breachAmount || 0,
+                breachTime: evaluation.drawdown.breachTime || new Date(),
+                currentEquity: evaluation.drawdown.currentEquity,
+                accountSize: phase.MasterAccount.accountSize,
+                dailyStartBalance: evaluation.drawdown.dailyStartBalance,
+                highWaterMark: evaluation.drawdown.highWaterMark,
+                notes: `Auto-detected breach during background evaluation. ${evaluation.drawdown.breachType?.replace('_', ' ')} exceeded by $${evaluation.drawdown.breachAmount?.toFixed(2)}`,
+                updatedAt: new Date()
+              })
+            }
           })
 
           results.failed++

@@ -129,7 +129,7 @@ export function CircularProgress({
         )}
       </svg>
 
-      {/* Segment counts below gauge (TradeZella style) */}
+      {/* Segment counts below gauge */}
       {isSegmented && segmentData && segments && (
         <div className="flex items-center justify-center gap-3 mt-1">
           <span className="text-xxs font-bold text-profit">{segments.wins}</span>

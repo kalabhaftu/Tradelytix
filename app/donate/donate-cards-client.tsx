@@ -58,7 +58,7 @@ export function DonateCardsClient() {
       <Card>
         <CardContent className="py-12 text-center">
           <Heart className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-muted-foreground">Donation addresses coming soon</p>
+          <p className="text-muted-foreground">No donation addresses are configured yet.</p>
         </CardContent>
       </Card>
     )

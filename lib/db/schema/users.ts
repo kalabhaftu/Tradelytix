@@ -8,7 +8,7 @@ import { DashboardTemplate, AdminWidgetSetting, AdminDashboardPreset } from './d
 import { Trade, TradeExecution, TradeTag } from './trades';
 import { TradingModel, ActivityLog, UserGoal } from './playbook';
 import { WeeklyAIReview, AIChat, AISavedInsight, AIChatMessage, AdminAISetting, AIChatUsageLog } from './ai';
-import { FeedbackReply, DonationAddress, SiteUiSettings, ErrorLog, PaymentRecord, PromoCode, PromoRedemption, FreeAccessInvite } from './misc';
+import { FeedbackReply, DonationAddress, SiteUiSettings, PaymentRecord, PromoCode, PromoRedemption, FreeAccessInvite } from './misc';
 
 export const AdminFeatureFlag = pgTable('AdminFeatureFlag', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -305,4 +305,3 @@ export const SynchronizationRelations = relations(Synchronization, ({ one, many 
     references: [User.id]
   }),
 }));
-

@@ -11,7 +11,6 @@ import { CommandPalette } from "@/components/command-palette";
 import { GlobalTradeController } from "../dashboard/components/global-trade-controller";
 import { WeeklyReviewTrigger } from "@/components/weekly-review-trigger";
 import { KeyboardShortcutsModal } from "@/components/ui/keyboard-shortcuts-modal";
-import { getSiteUiSettings } from "@/server/site-ui-settings";
 
 import { TourProvider } from "@/context/tour-context";
 import { TourTooltip } from "@/components/tour/tour-tooltip";
@@ -22,15 +21,15 @@ import { DxFeedSyncContextProvider } from "@/context/dxfeed-sync-context";
 import { RithmicSyncContextProvider } from "@/context/rithmic-sync-context";
 
 export default async function DemoLayout({ children }: { children: ReactElement }) {
-  const siteUiSettings = await getSiteUiSettings()
+  const siteUiSettings = { showDonateButton: true, showFeedbackButton: true }
 
   return (
     <TooltipProvider>
       <DemoNetworkInterceptor />
       <DataProvider isDemoMode={true}>
-        <TradovateSyncContextProvider>
-          <DxFeedSyncContextProvider>
-            <RithmicSyncContextProvider>
+        <TradovateSyncContextProvider disabled>
+          <DxFeedSyncContextProvider disabled>
+            <RithmicSyncContextProvider disabled>
               <TourProvider>
                 <TagsProvider>
                   <TemplateProvider initialActiveTemplate={null}>

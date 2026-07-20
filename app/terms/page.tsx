@@ -1,4 +1,5 @@
 import PublicLayout from '@/components/layouts/public-layout'
+import Link from 'next/link'
 
 export default function TermsPage() {
   return (
@@ -24,6 +25,13 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground mb-4">Your content and exports</h2>
+          <p>
+            You keep responsibility for the trades, notes, screenshots, and other content you submit. JJI gives you tools to export and delete data where those tools are available; keep your own backup of information you cannot afford to lose. Do not upload credentials, secrets, or material you do not have permission to use.
+          </p>
+        </section>
+
+        <section className="space-y-3 text-sm text-muted-foreground leading-relaxed">
           <h2 className="text-2xl font-semibold tracking-tight text-foreground mb-4">Subscriptions and payments</h2>
           <p>
             Paid features may be processed by third-party payment providers. Subscription access can be changed, suspended, or revoked for failed payments, fraud, abuse, or violation of these terms. Crypto payments may be final once processed by the payment provider or blockchain network.
@@ -34,6 +42,13 @@ export default function TermsPage() {
           <h2 className="text-2xl font-semibold tracking-tight text-foreground mb-4">Availability and liability</h2>
           <p>
             JJI is provided as-is. We work to keep it reliable and secure, but we do not guarantee uninterrupted access, perfect accuracy, or suitability for any specific trading strategy. To the maximum extent allowed by law, JJI is not liable for trading losses, lost profits, data-entry mistakes, import errors, or indirect damages.
+          </p>
+        </section>
+
+        <section className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground mb-4">Changes and contact</h2>
+          <p>
+            We may update these terms as the service changes. The latest version is published on this page with its update date. Questions about these terms can be sent through the <Link href="/contact" className="text-primary hover:underline">contact page</Link>.
           </p>
         </section>
       </div>

@@ -4,7 +4,6 @@ export function createClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  // Check if we have placeholder or missing values
   const hasPlaceholderValues = !supabaseUrl || !supabaseKey ||
     supabaseUrl.includes('[YOUR_PROJECT_REF]') ||
     supabaseKey.includes('your-anon-key') ||
@@ -13,10 +12,12 @@ export function createClient() {
     supabaseUrl === 'https://placeholder.supabase.co' ||
     supabaseKey === 'placeholder-key'
 
-  // If we have placeholder values, return a mock client
-  // This prevents build failures while still allowing the app to compile
   if (hasPlaceholderValues) {
-    // Return a mock client for development/build
+    if (process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE !== 'phase-production-build') {
+      throw new Error('Supabase client is not configured')
+    }
+
+    // Build/dev-only inert client. Runtime production must have real Supabase env.
     return {
         auth: {
           getUser: async () => ({ data: { user: null }, error: null }),
@@ -87,7 +88,7 @@ export function createClient() {
             }),
             remove: async (paths: string[]) => ({ data: null, error: null }),
             getPublicUrl: (path: string) => ({
-              data: { publicUrl: `https://mock-storage.com/${path}` }
+              data: { publicUrl: `about:blank#${encodeURIComponent(path)}` }
             }),
             list: async () => ({ data: [], error: null }),
           }),

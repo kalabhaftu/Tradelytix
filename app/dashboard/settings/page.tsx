@@ -659,7 +659,7 @@ export default function SettingsPage() {
                 Core Onboarding Tour
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Take a quick walkthrough of the core platform layout, configure your timezone/theme in settings, and log a mock trade.
+                Take a quick walkthrough of the core platform layout, configure your timezone/theme in settings, and log a sample trade.
               </p>
             </div>
             <Button

@@ -5,6 +5,7 @@ import { getResolvedUserIdentity } from "@/server/user-identity"
 import { and, eq } from 'drizzle-orm'
 
 import { encrypt, decrypt } from '@/lib/security/encryption';
+import { DIRECT_SYNC_STATUS, directSyncUnderDevelopmentMessage } from '@/lib/integrations/direct-sync-status'
 
 export async function getRithmicSynchronizations() {
   const { internalUserId } = await getResolvedUserIdentity()
@@ -19,6 +20,11 @@ export async function getRithmicSynchronizations() {
 }
 
 export async function setRithmicSynchronization(synchronization: any) {
+  if (DIRECT_SYNC_STATUS.isPaused) {
+    void synchronization
+    throw new Error(directSyncUnderDevelopmentMessage('Rithmic'))
+  }
+
   const { internalUserId } = await getResolvedUserIdentity()
   const token = synchronization.token ? encrypt(synchronization.token) : synchronization.token;
   

@@ -4,6 +4,12 @@ import { PublicHeader } from '@/components/layouts/public-header'
 import { filterSupportNavItems, getSiteUiSettings } from '@/server/site-ui-settings'
 
 import { DocsLayoutClient } from './docs-layout-client'
+import { BRAND } from '@/lib/constants/brand'
+
+export const metadata = {
+  title: `Docs | ${BRAND.name}`,
+  description: `Guides for using the ${BRAND.fullName} web workspace and mobile app.`,
+}
 
 export default async function DocsLayout({ children }: { children: ReactNode }) {
   const siteUiSettings = await getSiteUiSettings()

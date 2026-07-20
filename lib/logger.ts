@@ -10,12 +10,7 @@ const IGNORE_PATTERNS = [
   'ResizeObserver loop',
   'The play() request was interrupted',
   'AbortError',
-  'NetworkError when attempting to fetch resource',
-  'Load failed',
-  'Failed to fetch',
-  'ChunkLoadError',
-  'Loading chunk',
-  'Minified React error',
+  'ResizeObserver loop completed with undelivered notifications',
 ]
 
 export function shouldIgnoreError(message?: string, metadata?: unknown): boolean {
@@ -23,11 +18,11 @@ export function shouldIgnoreError(message?: string, metadata?: unknown): boolean
   return IGNORE_PATTERNS.some((p) => message.includes(p))
 }
 
-const logger = {
-  ...pinoLogger,
-  error: (...args: any[]) => {
-    // Call the original pino error
-    pinoLogger.error(...args)
+const originalError = pinoLogger.error.bind(pinoLogger) as (...args: any[]) => void
+
+pinoLogger.error = (...args: any[]) => {
+  // Call the original pino error
+  originalError(...args)
 
     // Forward to Sentry
     try {
@@ -76,10 +71,11 @@ const logger = {
       }
     } catch (e) {
       // Prevent recursive failures
-      pinoLogger.error({ err: e }, 'Failed to send error to Sentry')
+      originalError({ err: e }, 'Failed to send error to Sentry')
     }
   }
-} as pino.Logger
+
+const logger = pinoLogger as pino.Logger
 
 // Named re-exports so both `import logger from '@/lib/logger'`
 // and `import { logger } from '@/lib/logger'` work seamlessly.

@@ -36,7 +36,7 @@ export default function NotificationsDocsPage() {
           <li>Enable/disable notification categories</li>
           <li>Choose which notifications trigger push alerts on mobile</li>
           <li>Set quiet hours (no push notifications during specified times)</li>
-          <li>Choose email notification preferences (coming soon)</li>
+          <li>Receive email for critical prop-firm breach alerts when email delivery is configured</li>
         </ul>
       </DocsSection>
 

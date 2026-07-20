@@ -71,7 +71,6 @@ export function useFilteredTrades(filters: TradeFilters, enabled = true, isDemoM
     queryKey: ['v1', 'trades', queryString, isDemoMode],
     queryFn: async () => {
       if (isDemoMode) {
-        // Return dummy response
         return getMockDemoData();
       }
       const res = await fetch(`/api/v1/trades?${queryString}`)
@@ -83,5 +82,4 @@ export function useFilteredTrades(filters: TradeFilters, enabled = true, isDemoM
     gcTime: 5 * 60 * 1000,
   })
 }
-
 

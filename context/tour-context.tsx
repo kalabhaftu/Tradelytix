@@ -6,6 +6,7 @@ import { useUserStore } from '@/store/user-store'
 import { toast } from 'sonner'
 import { useData } from '@/context/data-provider'
 import { clearAccountsCache } from '@/hooks/use-accounts'
+import { logger } from '@/lib/logger'
 
 export type TourId = 'onboarding' | 'dashboard' | 'analytics' | 'settings'
 
@@ -87,7 +88,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {
         id: 'welcome',
         title: 'Welcome to JJI',
-        content: 'Your advanced trading analytics platform. Let\'s take a quick walkthrough to set up your account, import mock trades, and explore the layout. (Note: For the full CSV import experience, using a desktop browser is recommended.)',
+        content: 'Your advanced trading analytics platform. Let\'s take a quick walkthrough to set up your account, import sample trades, and explore the layout. (Note: For the full CSV import experience, using a desktop browser is recommended.)',
         placement: 'center',
         route: '/dashboard',
         actionType: 'none',
@@ -165,7 +166,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {
         id: 'enter-account-number',
         title: 'Enter Account Number',
-        content: 'Type in any mock account number (minimum 6 digits) to identify this portfolio.',
+        content: 'Type in any sample account number (minimum 6 digits) to identify this portfolio.',
         targetSelector: 'input[id="number"], input[id="phase1AccountId"]',
         placement: 'bottom',
         route: '/dashboard/accounts',
@@ -187,7 +188,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {
         id: 'csv-download',
         title: 'Generate Mock Trades',
-        content: 'To demonstrate the import system, we have generated and downloaded a \'mock_trades.csv\' file to your computer. Click Next to import it!',
+        content: 'To demonstrate the import system, we have generated and downloaded a \'sample_trades.csv\' file to your computer. Click Next to import it!',
         placement: 'center',
         route: '/dashboard/accounts',
         icon: 'import',
@@ -195,7 +196,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {
         id: 'click-import-btn',
         title: 'Import Dialog',
-        content: 'Let\'s load the mock trades. Click the \'Import Trades\' button in the navigation header to open the parser dialog.',
+        content: 'Let\'s load the sample trades. Click the \'Import Trades\' button in the navigation header to open the parser dialog.',
         targetSelector: '[data-tour="import-nav-btn"]',
         placement: 'bottom',
         route: '/dashboard/accounts',
@@ -217,7 +218,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {
         id: 'upload-csv-file',
         title: 'Dropzone Upload',
-        content: 'Drag and drop the \'mock_trades.csv\' file we downloaded earlier into this dropzone, or click to select it from your files. (Mobile users: you can click Next to simulate).',
+        content: 'Drag and drop the \'sample_trades.csv\' file we downloaded earlier into this dropzone, or click to select it from your files. (Mobile users: you can click Next to simulate).',
         targetSelector: '[data-tour="file-upload-dropzone"]',
         placement: 'bottom',
         route: '/dashboard/accounts',
@@ -628,9 +629,108 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setDbUser(result.data)
       }
     } catch (error) {
-      console.error('Failed to save onboarding status:', error)
+      logger.error({ error }, 'Failed to save onboarding status:')
     }
   }, [storeUser, onboardingStatus, setDbUser])
+
+  const skipTour = async () => {
+    if (!activeTour) return
+
+    const keyMap: Record<TourId, keyof OnboardingStatus> = {
+      onboarding: 'core_onboarding_completed',
+      dashboard: 'dashboard_tour_completed',
+      analytics: 'analytics_tour_completed',
+      settings: 'settings_tour_completed',
+    }
+
+    // Clean up created demo account on skip
+    if (activeTour === 'onboarding' && createdAccountId) {
+      try {
+        const endpoint = createdAccountType === 'prop-firm'
+          ? `/api/v1/prop-firm/accounts/${createdAccountId}`
+          : `/api/v1/accounts/${createdAccountId}`
+
+        await fetch(endpoint, { method: 'DELETE' })
+        clearAccountsCache()
+      } catch (error) {
+        logger.error({ error }, 'Failed to delete onboarding demo account on skip:')
+      }
+    }
+
+    saveOnboardingStatus({ [keyMap[activeTour]]: true })
+    setActiveTour(null)
+    setPaused(false)
+    toast.success('Tour skipped. You can restart it anytime from settings.')
+  }
+
+  const completeTour = useCallback(async () => {
+    if (!activeTour) return
+
+    const keyMap: Record<TourId, keyof OnboardingStatus> = {
+      onboarding: 'core_onboarding_completed',
+      dashboard: 'dashboard_tour_completed',
+      analytics: 'analytics_tour_completed',
+      settings: 'settings_tour_completed',
+    }
+
+    // Clean up created demo account on complete
+    if (activeTour === 'onboarding' && createdAccountId) {
+      const toastId = toast.loading('Completing onboarding and cleaning up demo portfolio...')
+      try {
+        const endpoint = createdAccountType === 'prop-firm'
+          ? `/api/v1/prop-firm/accounts/${createdAccountId}`
+          : `/api/v1/accounts/${createdAccountId}`
+
+        const response = await fetch(endpoint, { method: 'DELETE' })
+        if (response.ok) {
+          clearAccountsCache()
+          toast.success('Demo account deleted to keep workspace clean!', { id: toastId })
+        } else {
+          toast.error('Failed to clean up demo account.', { id: toastId })
+        }
+      } catch (error) {
+        logger.error({ error }, 'Failed to delete onboarding demo account:')
+        toast.error('Error cleaning up demo account.', { id: toastId })
+      }
+    }
+
+    saveOnboardingStatus({ [keyMap[activeTour]]: true })
+    setActiveTour(null)
+    setPaused(false)
+
+    if (activeTour === 'onboarding') {
+      router.push('/dashboard')
+    } else {
+      toast.success('Tour completed.')
+    }
+  }, [activeTour, createdAccountId, createdAccountType, router, saveOnboardingStatus])
+
+  const nextStep = useCallback(() => {
+    if (!activeTour) return
+
+    if (stepIndex < currentSteps.length - 1) {
+      setStepIndex((prev) => prev + 1)
+    } else {
+      completeTour()
+    }
+  }, [activeTour, stepIndex, currentSteps.length, completeTour])
+
+  const prevStep = useCallback(() => {
+    if (stepIndex > 0) {
+      setStepIndex((prev) => prev - 1)
+    }
+  }, [stepIndex])
+
+  const pauseTour = () => {
+    setPaused(true)
+  }
+
+  const resumeTour = () => {
+    setPaused(false)
+    if (currentStep?.route && pathname !== currentStep.route) {
+      router.push(currentStep.route)
+    }
+  }
 
   // Listen for the custom account-created event (instant detection)
   useEffect(() => {
@@ -670,17 +770,17 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [accounts, activeTour, createdAccountId, currentStep, nextStep])
 
-  // Trigger mock CSV download automatically on the csv-download step
+  // Trigger sample CSV download automatically on the csv-download step
   useEffect(() => {
     if (activeTour === 'onboarding' && currentStep?.id === 'csv-download') {
       const timer = setTimeout(() => {
-        downloadMockCSV()
+        downloadSampleCSV()
       }, 500)
       return () => clearTimeout(timer)
     }
   }, [activeTour, currentStep])
 
-  const downloadMockCSV = () => {
+  const downloadSampleCSV = () => {
     try {
       const headers = ["Symbol", "Side", "Quantity", "Entry Price", "Close Price", "Entry Date", "Close Date", "PnL"]
       const rows = [
@@ -693,13 +793,13 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.setAttribute("href", url)
-      link.setAttribute("download", "mock_trades.csv")
+      link.setAttribute("download", "sample_trades.csv")
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      toast.success("Mock CSV file downloaded successfully!")
+      toast.success("Sample CSV file downloaded successfully!")
     } catch (e) {
-      console.error("Failed to generate mock CSV:", e)
+      logger.error({ error: e }, "Failed to generate sample CSV:")
     }
   }
 
@@ -815,104 +915,6 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [activeTour, stepIndex, isTargetVisible, paused, currentStep, nextStep])
 
-  const nextStep = useCallback(() => {
-    if (!activeTour) return
-
-    if (stepIndex < currentSteps.length - 1) {
-      setStepIndex((prev) => prev + 1)
-    } else {
-      completeTour()
-    }
-  }, [activeTour, stepIndex, currentSteps.length, completeTour])
-
-  const prevStep = useCallback(() => {
-    if (stepIndex > 0) {
-      setStepIndex((prev) => prev - 1)
-    }
-  }, [stepIndex])
-
-  const skipTour = async () => {
-    if (!activeTour) return
-
-    const keyMap: Record<TourId, keyof OnboardingStatus> = {
-      onboarding: 'core_onboarding_completed',
-      dashboard: 'dashboard_tour_completed',
-      analytics: 'analytics_tour_completed',
-      settings: 'settings_tour_completed',
-    }
-
-    // Clean up created demo account on skip
-    if (activeTour === 'onboarding' && createdAccountId) {
-      try {
-        const endpoint = createdAccountType === 'prop-firm'
-          ? `/api/v1/prop-firm/accounts/${createdAccountId}`
-          : `/api/v1/accounts/${createdAccountId}`
-
-        await fetch(endpoint, { method: 'DELETE' })
-        clearAccountsCache()
-      } catch (error) {
-        console.error('Failed to delete onboarding demo account on skip:', error)
-      }
-    }
-
-    saveOnboardingStatus({ [keyMap[activeTour]]: true })
-    setActiveTour(null)
-    setPaused(false)
-    toast.success('Tour skipped. You can restart it anytime from settings.')
-  }
-
-  const completeTour = useCallback(async () => {
-    if (!activeTour) return
-
-    const keyMap: Record<TourId, keyof OnboardingStatus> = {
-      onboarding: 'core_onboarding_completed',
-      dashboard: 'dashboard_tour_completed',
-      analytics: 'analytics_tour_completed',
-      settings: 'settings_tour_completed',
-    }
-
-    // Clean up created demo account on complete
-    if (activeTour === 'onboarding' && createdAccountId) {
-      const toastId = toast.loading('Completing onboarding and cleaning up demo portfolio...')
-      try {
-        const endpoint = createdAccountType === 'prop-firm'
-          ? `/api/v1/prop-firm/accounts/${createdAccountId}`
-          : `/api/v1/accounts/${createdAccountId}`
-
-        const response = await fetch(endpoint, { method: 'DELETE' })
-        if (response.ok) {
-          clearAccountsCache()
-          toast.success('Demo account deleted to keep workspace clean!', { id: toastId })
-        } else {
-          toast.error('Failed to clean up demo account.', { id: toastId })
-        }
-      } catch (error) {
-        console.error('Failed to delete onboarding demo account:', error)
-        toast.error('Error cleaning up demo account.', { id: toastId })
-      }
-    }
-
-    saveOnboardingStatus({ [keyMap[activeTour]]: true })
-    setActiveTour(null)
-    setPaused(false)
-
-    if (activeTour === 'onboarding') {
-      router.push('/dashboard')
-    } else {
-      toast.success('Tour completed.')
-    }
-  }, [activeTour, createdAccountId, createdAccountType, router, saveOnboardingStatus])
-
-  const pauseTour = () => {
-    setPaused(true)
-  }
-
-  const resumeTour = () => {
-    setPaused(false)
-    if (currentStep?.route && pathname !== currentStep.route) {
-      router.push(currentStep.route)
-    }
-  }
 
   return (
     <TourContext.Provider

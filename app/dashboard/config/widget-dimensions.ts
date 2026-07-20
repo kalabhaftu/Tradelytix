@@ -1,7 +1,7 @@
 /**
  * Widget Dimensions Configuration
  * 
- * TradeZella-inspired fixed widget sizing system.
+ * Fixed widget sizing system.
  * All widgets maintain consistent dimensions for professional layout.
  */
 
@@ -24,7 +24,7 @@ export interface WidgetDimensions {
 }
 
 /**
- * Fixed widget dimensions matching TradeZella's professional layout
+ * Fixed widget dimensions for the dashboard layout.
  * 
  * Grid System: 12 columns
  * Gap: 1rem (16px)

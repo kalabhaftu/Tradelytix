@@ -77,7 +77,7 @@ async function deleteCachedPattern(pattern: string): Promise<number> {
 /**
  * Get or set pattern (cache-aside) - unified
  */
-async function getOrSetCached<T>(
+export async function getOrSetCached<T>(
   key: string,
   fetcher: () => Promise<T>,
   ttl: number = CacheTTL.SHORT
@@ -104,6 +104,7 @@ export async function invalidateUserCache(userId: string): Promise<void> {
     deleteCachedPattern(`${CachePrefix.ACCOUNT_LIST}${userId}*`),
     deleteCachedPattern(`${CachePrefix.TRADE_LIST}${userId}*`),
     deleteCachedPattern(`${CachePrefix.CALENDAR_DATA}${userId}*`),
+    deleteCachedPattern(`${CachePrefix.AI_CONTEXT}${userId}:*`),
   ])
 }
 
@@ -113,4 +114,3 @@ export async function invalidateUserCache(userId: string): Promise<void> {
 function getCacheBackend(): 'redis' | 'memory' {
   return isRedisAvailable() ? 'redis' : 'memory'
 }
-

@@ -19,10 +19,11 @@ import { AppBanner } from "@/components/app-banner";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import { Footer } from "@/components/footer";
 import Script from "next/script"
+import { BRAND } from '@/lib/constants/brand'
 
-const DEFAULT_SITE_URL = 'https://justjournalit.vercel.app'
-const SITE_NAME = 'JJI'
-const SITE_DESCRIPTION = 'Just Journal It  Where traders find consistency through the charts'
+const DEFAULT_SITE_URL = BRAND.siteUrl
+const SITE_NAME = BRAND.name
+const SITE_DESCRIPTION = `${BRAND.fullName} — ${BRAND.tagline}`
 const SOCIAL_PREVIEW_VERSION = 'jji-20260522'
 const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || DEFAULT_SITE_URL
 const normalizedSiteUrl = rawSiteUrl.startsWith('http') ? rawSiteUrl : `https://${rawSiteUrl}`
@@ -95,6 +96,7 @@ export default async function RootLayout({
     <html lang="en" className={`${inter.variable} dark`} translate="no" suppressHydrationWarning>
       <head>
         {/* Prevent Google Translate */}
+        <meta name="application-name" content={BRAND.name} />
         <meta name="google" content="notranslate" />
         <meta name="googlebot" content="notranslate" />
         <meta name="googlebot-news" content="notranslate" />

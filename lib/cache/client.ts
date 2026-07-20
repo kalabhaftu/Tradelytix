@@ -6,25 +6,23 @@ declare global {
 }
 
 function createRedisClient(): Redis {
-  if (
-    !process.env.UPSTASH_REDIS_REST_URL ||
-    !process.env.UPSTASH_REDIS_REST_TOKEN
-  ) {
-    logger.warn('UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN is not set. Cache will fail-open in production, but expect degraded performance.')
-    // Provide a mock Redis instance that just no-ops and fails open
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN
+
+  if (!url || !token) {
+    logger.warn('Redis/KV credentials are not set. Cache will fail-open, but rate limits and cache-backed features will be degraded.')
+    // Build/dev-only fail-open client for unconfigured environments.
     return {
       get: async () => null,
       set: async () => 'OK',
       setex: async () => 'OK',
       del: async () => 0,
       ping: async () => 'PONG',
-      // The rest of the methods can throw or be mocked if needed. 
-      // For a basic mock to not crash the app, this is sufficient.
     } as unknown as Redis
   }
   return new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    url,
+    token,
   })
 }
 
